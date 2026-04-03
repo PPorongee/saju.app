@@ -118,8 +118,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 823,
-      "lastAccessed": 1775236550794,
+      "accessCount": 847,
+      "lastAccessed": 1775237101978,
       "type": "file"
     },
     {
@@ -135,6 +135,12 @@
       "type": "file"
     },
     {
+      "path": "src\\app\\globals.css",
+      "accessCount": 33,
+      "lastAccessed": 1775237107299,
+      "type": "directory"
+    },
+    {
       "path": "src\\app\\api\\saju\\route.ts",
       "accessCount": 32,
       "lastAccessed": 1775233184748,
@@ -144,12 +150,6 @@
       "path": "src\\lib\\saju-calc.ts",
       "accessCount": 27,
       "lastAccessed": 1774266089600,
-      "type": "directory"
-    },
-    {
-      "path": "src\\app\\globals.css",
-      "accessCount": 18,
-      "lastAccessed": 1775231780188,
       "type": "directory"
     },
     {
@@ -184,8 +184,8 @@
     },
     {
       "path": "src",
-      "accessCount": 7,
-      "lastAccessed": 1775228139141,
+      "accessCount": 8,
+      "lastAccessed": 1775236890143,
       "type": "directory"
     },
     {

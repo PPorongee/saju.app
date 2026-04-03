@@ -131,6 +131,7 @@ h1, h2, h3, .gradient-text, .feature-title {
   font-family: inherit;
   position: relative;
   overflow: hidden;
+  min-height: 44px;
 }
 .btn-primary {
   background: linear-gradient(135deg, #F0C75E, #E8B030);
@@ -263,7 +264,7 @@ input:focus, select:focus {
   flex: 1;
   border: none;
   border-radius: 50px;
-  padding: 10px;
+  padding: 12px;
   font-weight: 700;
   font-size: 16px;
   cursor: pointer;
@@ -271,6 +272,7 @@ input:focus, select:focus {
   background: transparent;
   color: rgba(255,255,255,0.5);
   font-family: inherit;
+  min-height: 44px;
 }
 .pill-toggle button.active {
   background: linear-gradient(135deg, #F0C75E, #E8B030);
@@ -287,16 +289,19 @@ input:focus, select:focus {
 }
 .time-option {
   text-align: center;
-  padding: 8px 2px;
+  padding: 10px 4px;
   border-radius: 10px;
   min-width: 0;
+  min-height: 44px;
   cursor: pointer;
   transition: all 0.2s;
   background: rgba(255,255,255,0.06);
   border: 1.5px solid transparent;
   font-size: 11px;
   overflow: hidden;
+  touch-action: manipulation;
 }
+.time-option:active { background: rgba(255,255,255,0.12); }
 .time-option:hover { border-color: var(--primary-light); }
 .time-option.selected {
   background: rgba(240,199,94,0.15);
@@ -328,10 +333,10 @@ input:focus, select:focus {
   display: flex; align-items: center; gap: 8px; margin-top: 8px;
 }
 .exact-time-select {
-  flex: 0 0 auto; width: 80px; padding: 8px 10px; border-radius: 10px;
+  flex: 0 0 auto; width: 80px; padding: 10px 10px; border-radius: 10px;
   background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12);
-  color: var(--text); font-size: 14px; font-weight: 600;
-  appearance: auto; cursor: pointer;
+  color: var(--text); font-size: 16px; font-weight: 600;
+  appearance: auto; cursor: pointer; min-height: 44px;
 }
 .exact-time-select:focus { border-color: var(--primary); outline: none; }
 .exact-time-siju {
@@ -358,6 +363,7 @@ input:focus, select:focus {
   font-weight: 600;
   background: rgba(255,255,255,0.06);
   color: var(--text);
+  min-height: 44px;
 }
 .option-card:hover { border-color: var(--primary-light); background: rgba(240,199,94,0.08); }
 .option-card.selected {
@@ -387,6 +393,7 @@ input:focus, select:focus {
   color: rgba(255,255,255,0.5);
   transition: all 0.2s;
   font-family: inherit;
+  min-height: 44px;
 }
 .pair-btn.active {
   background: linear-gradient(135deg, #F0C75E, #E8B030);
@@ -657,7 +664,8 @@ input:focus, select:focus {
   position: fixed;
   top: 20px;
   left: 20px;
-  height: 42px;
+  height: 44px;
+  min-height: 44px;
   padding: 0 16px;
   border-radius: 21px;
   border: 2px solid rgba(240,199,94,0.4);
@@ -754,7 +762,9 @@ input:focus, select:focus {
   box-shadow: 0 4px 24px rgba(240,199,94,0.4);
   transition: all 0.3s;
   font-family: inherit;
+  min-height: 48px;
 }
+.paywall-cta:active { transform: scale(0.97); }
 .paywall-cta:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 28px rgba(240,199,94,0.5);
@@ -841,3 +851,17 @@ input:focus, select:focus {
   .pillar .branch { font-size: 22px; }
   h1 { font-size: 28px; }
 }
+@media (max-width: 320px) {
+  .feature-grid { grid-template-columns: 1fr; gap: 10px; }
+  .feature-card { min-height: 100px; padding: 20px 16px; }
+}
+
+/* Touch & interaction improvements */
+.btn, .feature-card, .option-card, .pair-btn, .pill-toggle button, .back-btn, .paywall-cta {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.97); }
+.option-card:active { transform: scale(0.97); }
+.pair-btn:active { transform: scale(0.97); }
+.pill-toggle button:active { transform: scale(0.97); }

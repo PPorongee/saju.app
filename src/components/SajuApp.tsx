@@ -853,7 +853,7 @@ export default function SajuApp() {
                     </div>
                   </div>
                 ))}
-                <button style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid rgba(255,100,100,0.2)', background: 'rgba(255,100,100,0.08)', color: '#FF8A8A', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginTop: '4px', fontFamily: 'inherit' }} onClick={() => {
+                <button style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,100,100,0.2)', background: 'rgba(255,100,100,0.08)', color: '#FF8A8A', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginTop: '4px', fontFamily: 'inherit', minHeight: '44px' }} onClick={() => {
                   localStorage.removeItem('saju-saved-results');
                   setShowSavedResults(false);
                 }}>{t('deleteAll', lang)}</button>
@@ -3391,9 +3391,9 @@ export default function SajuApp() {
           style={{
             background: 'linear-gradient(135deg, rgba(240,199,94,0.25), rgba(255,208,128,0.15))',
             border: '1px solid rgba(240,199,94,0.4)',
-            borderRadius: '20px', padding: '6px 14px', fontSize: '13px', fontWeight: 700,
+            borderRadius: '20px', padding: '10px 14px', fontSize: '13px', fontWeight: 700,
             color: '#F0C75E', cursor: 'pointer', backdropFilter: 'blur(8px)',
-            display: 'flex', alignItems: 'center', gap: '6px'
+            display: 'flex', alignItems: 'center', gap: '6px', minHeight: '44px'
           }}
         >
           <span>⭐</span>
@@ -3404,8 +3404,8 @@ export default function SajuApp() {
           onClick={() => setLang(lang === 'ko' ? 'en' : 'ko')}
           style={{
             background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: '20px', padding: '6px 14px', fontSize: '13px', fontWeight: 700,
-            color: 'var(--text)', cursor: 'pointer', backdropFilter: 'blur(8px)'
+            borderRadius: '20px', padding: '10px 14px', fontSize: '13px', fontWeight: 700,
+            color: 'var(--text)', cursor: 'pointer', backdropFilter: 'blur(8px)', minHeight: '44px'
           }}
         >
           {t('langToggle', lang)}
@@ -3424,46 +3424,50 @@ export default function SajuApp() {
         {currentScreen === 9 && renderChargeScreen()}
       </div>
       {!storageConsent && (
-        <>
-        {/* Spacer to prevent content from being hidden behind consent banner */}
-        <div style={{ height: '120px' }} />
         <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
-          background: 'rgba(10,14,42,0.98)', backdropFilter: 'blur(12px)',
-          borderTop: '1px solid rgba(240,199,94,0.2)', padding: '16px 20px',
-          display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center',
-          WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation'
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(10,14,42,0.95)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '20px',
         }}>
-          <p style={{ fontSize: '13px', color: 'var(--text-dim)', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
-            {lang === 'en'
-              ? 'We use local storage to save your results. No data is sent to external servers.'
-              : '결과 저장을 위해 로컬 저장소를 사용합니다. 외부 서버로 데이터가 전송되지 않습니다.'}
-          </p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="button" style={{
-              padding: '12px 32px', borderRadius: '20px', border: 'none',
-              background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A',
-              fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
-              minHeight: '44px'
-            }} onClick={() => {
-              localStorage.setItem('saju-storage-consent', 'yes');
-              setStorageConsent(true);
-            }}>
-              {lang === 'en' ? 'Accept' : '동의'}
-            </button>
-            <button type="button" style={{
-              padding: '12px 32px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.2)',
-              background: 'transparent', color: 'var(--text-dim)',
-              fontSize: '15px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
-              minHeight: '44px'
-            }} onClick={() => setStorageConsent(true)}>
-              {lang === 'en' ? 'Decline' : '거절'}
-            </button>
+          <div style={{
+            background: 'rgba(20,24,80,0.95)', borderRadius: '20px',
+            border: '1px solid rgba(240,199,94,0.3)', padding: '32px 24px',
+            maxWidth: '360px', width: '100%', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔮</div>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#F0C75E', marginBottom: '12px' }}>
+              {lang === 'en' ? 'Welcome to Starlight Saju!' : '별빛 사주에 오신 것을 환영합니다!'}
+            </h3>
+            <p style={{ fontSize: '14px', color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: '24px' }}>
+              {lang === 'en'
+                ? 'We use local storage to save your results. No personal data is sent to external servers.'
+                : '결과 저장을 위해 로컬 저장소를 사용합니다. 개인정보는 외부 서버로 전송되지 않습니다.'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button type="button" style={{
+                padding: '14px 36px', borderRadius: '50px', border: 'none',
+                background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A',
+                fontSize: '16px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+                minHeight: '48px', touchAction: 'manipulation',
+              }} onClick={() => {
+                localStorage.setItem('saju-storage-consent', 'yes');
+                setStorageConsent(true);
+              }}>
+                {lang === 'en' ? 'Accept' : '동의'}
+              </button>
+              <button type="button" style={{
+                padding: '14px 36px', borderRadius: '50px',
+                border: '1px solid rgba(255,255,255,0.3)', background: 'transparent',
+                color: 'var(--text-dim)', fontSize: '16px', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+                minHeight: '48px', touchAction: 'manipulation',
+              }} onClick={() => setStorageConsent(true)}>
+                {lang === 'en' ? 'Decline' : '거절'}
+              </button>
+            </div>
           </div>
         </div>
-        </>
       )}
     </>
   );
