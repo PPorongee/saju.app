@@ -2567,13 +2567,23 @@ export default function SajuApp() {
         '##3.아기의 타고난 기질## 아기 일간(' + CG[babySaju.dStem] + '/' + OH_CG[babySaju.dStem] + ')의 성격, 잘하는 것, 좋아할 것 예측. 시주가 없어도 일주와 월주로 추론. 5줄.\n' +
         '##4.엄마의 양육 스타일 궁합## 엄마 일간(' + CG[momSaju.dStem] + ')과 아기 일간(' + CG[babySaju.dStem] + ')의 관계가 육아에서 어떻게 나타나는지. 잘 맞는 점, 주의할 점(부드럽게). 5줄.\n' +
         '##5.아이가 크면서 빛나는 시기## 아기 사주의 대운 흐름상 어떤 나이대에 가장 빛날지 예측. 학업/재능/인간관계. 5줄.\n' +
-        '##6.기운 합 분석 & 맞춤 태교## 엄마와 아기의 오행 상생/상극 관계를 분석하고, 이를 바탕으로 맞춤 태교를 추천해줘:\n' +
-        '- 엄마-아기 오행 조합에 딱 맞는 태교 음악 장르/분위기\n' +
-        '- 오행별 추천 태교 활동 (산책 방향, 색상 테라피, 음식, 명상법)\n' +
-        '- 출산 전까지 엄마 사주 기준 행운의 색/음식/방향/습관\n' +
-        '- 태교할 때 피해야 할 것 (기신 오행 관련 활동)\n' +
-        '엄마와 아기의 기운이 시너지 나는 포인트를 중심으로 따뜻하게. 7줄 이상.\n' +
-        '##7.출산 시기 & 산후 운세## 출산 예정일 전후의 엄마 월운/일운 분석. 출산에 좋은 기운이 드는 날이 있는지, 산후 회복이 빠른 시기, 출산 후 3개월간 엄마의 컨디션 흐름 예측. 5줄.\n' +
+        '##6.기운 합 분석 & 맞춤 태교## 엄마와 아기의 오행 상생/상극 관계를 명리학적으로 깊이 있게 분석해줘:\n' +
+        '- 엄마 일간(' + CG[momSaju.dStem] + '/' + OH_CG[momSaju.dStem] + ')과 아기 일간(' + CG[babySaju.dStem] + '/' + OH_CG[babySaju.dStem] + ')의 오행 관계가 상생인지 상극인지, 그게 육아에서 어떻게 나타나는지 명리학 근거와 함께\n' +
+        '- 두 사주의 용신/기신이 서로에게 어떤 영향을 주는지\n' +
+        '- 엄마-아기 오행 조합에 맞는 태교 방법 추천:\n' +
+        '  · 태교 음악 (오행별 음계/장르 근거로 구체적 추천)\n' +
+        '  · 태교 활동 (산책 방향, 색상 테라피, 명상법, 그림/독서 등)\n' +
+        '  · 태교 음식 (엄마와 아기 오행을 보충하는 음식)\n' +
+        '  · 태교할 때 피해야 할 것 (기신 오행 관련)\n' +
+        '모든 추천에 명리학적 근거를 반드시 함께. 10줄 이상.\n' +
+        '##7.행운 아이템 & 개운법## 엄마와 아기의 사주를 함께 고려한 맞춤 추천:\n' +
+        '- 🎨 행운의 색 2가지 (엄마+아기 오행 보완 근거)\n' +
+        '- 💎 럭키 아이템 3가지 (일상에서 쓸 수 있는 것, 오행 근거)\n' +
+        '- 📍 행운의 방향 (산책/외출 시 좋은 방위)\n' +
+        '- 🏠 아기방 인테리어 추천 (오행 기반 색상/방향/소품)\n' +
+        '- 👶 사주로 보는 추천 육아법 (아기 일간 성격에 맞는 양육 접근법 3가지)\n' +
+        '- 🎯 엄마의 취미 추천 (임신 중 + 출산 후, 용신 오행 보충하는 활동 3가지)\n' +
+        '각각 명리학적 근거를 괄호로 설명. 8줄 이상.\n' +
         '##8.아기가 가져올 가정의 변화## 아기의 사주가 가정 전체의 에너지를 어떻게 바꾸는지. 부부 관계에 미치는 영향, 재물운 변화, 가족 분위기 변화를 사주적 근거로. 아기가 태어난 후 가정이 어떻게 달라지는지 구체적으로. 5줄.\n' +
         '##9.엄마에게 보내는 편지## 사주를 바탕으로 예비 엄마에게 보내는 따뜻한 응원 메시지. "당신의 사주를 보니 이런 엄마가 될 거야"라는 느낌으로 감동적이고 진심 담아서. 비유를 많이 써서 가슴에 와닿게. 5줄.\n\n' +
         '비유적 표현을 적극 사용해! 매 섹션마다 최소 2개의 재미있고 따뜻한 비유를 넣어줘.\n' +
@@ -2695,6 +2705,22 @@ export default function SajuApp() {
                 {data.score}{t('scoreUnit', lang)}
               </div>
               <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>{data.tierLabel}</p>
+              <div style={{ marginTop: '16px', textAlign: 'left', padding: '12px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px' }}>
+                {[
+                  { min: 95, emoji: '🌟', label: lang === 'en' ? '95~100: Destined Bond' : '95~100점: 천생의 인연', desc: lang === 'en' ? 'Heavenly stems harmonize perfectly. Baby chose you — a once-in-a-lifetime connection.' : '천간합이 완벽하게 이루어진 관계. 아기가 엄마를 선택한 거야 — 전생의 인연이야.' },
+                  { min: 85, emoji: '💕', label: lang === 'en' ? '85~94: Perfect Match' : '85~94점: 찰떡궁합', desc: lang === 'en' ? 'Five elements complement each other beautifully. Natural synergy between mom and baby.' : '오행이 서로를 아름답게 보완하는 구조. 엄마와 아기가 자연스럽게 시너지를 내.' },
+                  { min: 75, emoji: '🌸', label: lang === 'en' ? '75~84: Helping Bond' : '75~84점: 서로 돕는 관계', desc: lang === 'en' ? 'Some elements support each other. Growing stronger together through mutual nurturing.' : '일부 오행이 상생 관계. 서로를 키워주며 함께 성장하는 아름다운 인연이야.' },
+                  { min: 0, emoji: '🤗', label: lang === 'en' ? '60~74: Warm Harmony' : '60~74점: 따뜻한 조화', desc: lang === 'en' ? 'Different energies create balance. Love fills every gap — differences become strengths.' : '다른 기운이 오히려 균형을 만들어. 사랑이 모든 빈자리를 채워주는 관계야.' },
+                ].map((tier, i) => {
+                  const isActive = (i === 0 && data.score >= 95) || (i === 1 && data.score >= 85 && data.score < 95) || (i === 2 && data.score >= 75 && data.score < 85) || (i === 3 && data.score < 75);
+                  return (
+                    <div key={i} style={{ padding: '8px 10px', borderRadius: '8px', marginBottom: '6px', background: isActive ? 'rgba(233,30,140,0.1)' : 'transparent', border: isActive ? '1px solid rgba(233,30,140,0.3)' : '1px solid transparent', opacity: isActive ? 1 : 0.5 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700 }}>{tier.emoji} {tier.label} {isActive && '← ✨'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>{tier.desc}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="card" style={{ background: 'rgba(255,240,245,0.08)', border: '1px solid rgba(233,30,140,0.15)', borderRadius: '20px', padding: '24px' }}>
