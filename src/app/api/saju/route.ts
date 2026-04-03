@@ -6,7 +6,7 @@ const SYSTEM_EN = 'You are a world-class Saju (Korean Four Pillars astrology) ma
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = (process.env.OPENAI_API_KEY || '').trim();
+    const apiKey = (process.env.OPENAI_API_KEY || '').replace(/[\s\r\n]+/g, '');
     if (!apiKey) {
       return new Response('API key not configured. Set OPENAI_API_KEY in Vercel.', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
