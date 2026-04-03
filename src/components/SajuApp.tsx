@@ -2567,15 +2567,15 @@ export default function SajuApp() {
         '##3.아기의 타고난 기질## 아기 일간(' + CG[babySaju.dStem] + '/' + OH_CG[babySaju.dStem] + ')의 성격, 잘하는 것, 좋아할 것 예측. 시주가 없어도 일주와 월주로 추론. 5줄.\n' +
         '##4.엄마의 양육 스타일 궁합## 엄마 일간(' + CG[momSaju.dStem] + ')과 아기 일간(' + CG[babySaju.dStem] + ')의 관계가 육아에서 어떻게 나타나는지. 잘 맞는 점, 주의할 점(부드럽게). 5줄.\n' +
         '##5.아이가 크면서 빛나는 시기## 아기 사주의 대운 흐름상 어떤 나이대에 가장 빛날지 예측. 학업/재능/인간관계. 5줄.\n' +
-        '##6.임신 기간 엄마를 위한 조언## 출산 전까지 엄마 사주 기준 행운의 색/음식/방향/습관. 태교에 좋은 활동. 5줄.\n' +
-        '##7.아기 태명 추천## 아기의 사주 오행(일간 ' + CG[babySaju.dStem] + '/' + OH_CG[babySaju.dStem] + ')과 엄마의 사주를 함께 고려해서 순우리말 태명 4개를 추천해줘.\n' +
-        '각 태명마다:\n' +
-        '1) 태명\n' +
-        '2) 이 이름의 의미와 느낌\n' +
-        '3) 아기 사주와 이 이름이 연결되는 이유 (오행/기운 근거)\n' +
-        '4) 이 이름을 부르면 어떤 기운이 생기는지\n' +
-        '"(트렌디)", "(귀여운)" 같은 라벨은 절대 붙이지 마. 이름만 자연스럽게.\n' +
-        '뜬금없는 이름이 아니라 아기의 사주 기운과 연결되는 이름으로! 귀엽고 부르기 좋은 감성으로.\n\n' +
+        '##6.기운 합 분석 & 맞춤 태교## 엄마와 아기의 오행 상생/상극 관계를 분석하고, 이를 바탕으로 맞춤 태교를 추천해줘:\n' +
+        '- 엄마-아기 오행 조합에 딱 맞는 태교 음악 장르/분위기\n' +
+        '- 오행별 추천 태교 활동 (산책 방향, 색상 테라피, 음식, 명상법)\n' +
+        '- 출산 전까지 엄마 사주 기준 행운의 색/음식/방향/습관\n' +
+        '- 태교할 때 피해야 할 것 (기신 오행 관련 활동)\n' +
+        '엄마와 아기의 기운이 시너지 나는 포인트를 중심으로 따뜻하게. 7줄 이상.\n' +
+        '##7.출산 시기 & 산후 운세## 출산 예정일 전후의 엄마 월운/일운 분석. 출산에 좋은 기운이 드는 날이 있는지, 산후 회복이 빠른 시기, 출산 후 3개월간 엄마의 컨디션 흐름 예측. 5줄.\n' +
+        '##8.아기가 가져올 가정의 변화## 아기의 사주가 가정 전체의 에너지를 어떻게 바꾸는지. 부부 관계에 미치는 영향, 재물운 변화, 가족 분위기 변화를 사주적 근거로. 아기가 태어난 후 가정이 어떻게 달라지는지 구체적으로. 5줄.\n' +
+        '##9.엄마에게 보내는 편지## 사주를 바탕으로 예비 엄마에게 보내는 따뜻한 응원 메시지. "당신의 사주를 보니 이런 엄마가 될 거야"라는 느낌으로 감동적이고 진심 담아서. 비유를 많이 써서 가슴에 와닿게. 5줄.\n\n' +
         '비유적 표현을 적극 사용해! 매 섹션마다 최소 2개의 재미있고 따뜻한 비유를 넣어줘.\n' +
         '예시: "엄마가 따뜻한 볕이라면 아기는 그 볕을 받아 피어나는 꽃이야", "이 아기는 엄마 인생에 떨어진 행운의 별똥별 같은 존재야", "엄마의 부족한 수(水) 기운을 아기가 촉촉한 빗물처럼 채워주는 구조야"\n' +
         '고전 명리 지식을 자연스럽게 녹여서 설명해. 원문 한자 인용은 최소화하고 현대적 해설 중심으로.\n' +
@@ -2681,12 +2681,9 @@ export default function SajuApp() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-          <button className="btn btn-glow" style={{ flex: 1, background: 'linear-gradient(135deg,#E91E8C,#FF6FB7)', boxShadow: '0 4px 20px rgba(233,30,140,0.3)' }} onClick={runPregnancyCompat}>
+        <div style={{ marginTop: '20px' }}>
+          <button className="btn btn-glow btn-full" style={{ background: 'linear-gradient(135deg,#E91E8C,#FF6FB7)', boxShadow: '0 4px 20px rgba(233,30,140,0.3)' }} onClick={runPregnancyCompat}>
             {t('energyAnalysis', lang)}
-          </button>
-          <button className="btn btn-glow" style={{ flex: 1, background: 'linear-gradient(135deg,#38B2AC,#68D391)', boxShadow: '0 4px 20px rgba(56,178,172,0.3)' }} onClick={runDailyGuide}>
-            {t('dailyGuide', lang)}
           </button>
         </div>
 
@@ -2975,19 +2972,25 @@ export default function SajuApp() {
     ];
     const yearlyIcons = ['🔮', '📅', '📊', '🎯', '📋', '🛡', '🍀'];
 
+    const isMarriedUser = userData.relationship === 3;
+    const title5 = isMarriedUser ? (lang === 'en' ? 'Marriage & Spouse Analysis' : '부부 관계 & 배우자 분석') : t('secTitle5', lang);
+    const hint5 = isMarriedUser ? (lang === 'en' ? 'Spouse compatibility & relationship dynamics...' : '배우자 궁합과 부부 관계 역학...') : t('secHint5', lang);
+    const title13 = isMarriedUser ? (lang === 'en' ? 'Marriage Future & Crisis Management' : '부부의 미래 & 위기 관리') : t('secTitle13', lang);
+    const hint13 = isMarriedUser ? (lang === 'en' ? 'Couple timeline & crisis recovery...' : '부부 관계 타임라인과 위기 극복법...') : t('secHint13', lang);
+
     const sectionTitles = isYearly ? yearlySectionTitles : [
       t('secTitle1', lang), t('secTitle2', lang), t('secTitle3', lang), t('secTitle4', lang),
-      t('secTitle5', lang), t('secTitle6', lang), t('secTitle7', lang), t('secTitle8', lang),
+      title5, t('secTitle6', lang), t('secTitle7', lang), t('secTitle8', lang),
       t('secTitle9', lang), t('secTitle10', lang), t('secTitle11', lang), t('secTitle12', lang),
-      t('secTitle13', lang), t('secTitle14', lang), t('secTitle15', lang), t('secTitle16', lang),
+      title13, t('secTitle14', lang), t('secTitle15', lang), t('secTitle16', lang),
       t('secTitle17', lang)
     ];
 
     const sectionHints = isYearly ? yearlySectionHints : [
       t('secHint1', lang), t('secHint2', lang), t('secHint3', lang), t('secHint4', lang),
-      t('secHint5', lang), t('secHint6', lang), t('secHint7', lang), t('secHint8', lang),
+      hint5, t('secHint6', lang), t('secHint7', lang), t('secHint8', lang),
       t('secHint9', lang), t('secHint10', lang), t('secHint11', lang), t('secHint12', lang),
-      t('secHint13', lang), t('secHint14', lang), t('secHint15', lang), t('secHint16', lang),
+      hint13, t('secHint14', lang), t('secHint15', lang), t('secHint16', lang),
       t('secHint17', lang)
     ];
 
