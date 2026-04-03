@@ -346,12 +346,18 @@ export default function SajuApp() {
     return 11;
   }
 
-  /* Star balance system */
+  /* Star balance system - free 10 stars on first visit */
   const [starBalance, setStarBalance] = useState(0);
   const [compatPaywall, setCompatPaywall] = useState(false);
   useEffect(() => {
     const saved = localStorage.getItem('saju-stars');
-    if (saved) { try { setStarBalance(parseInt(saved) || 0); } catch { /* ignore */ } }
+    if (saved !== null) {
+      try { setStarBalance(parseInt(saved) || 0); } catch { /* ignore */ }
+    } else {
+      // First visit: give 10 free stars
+      setStarBalance(10);
+      localStorage.setItem('saju-stars', '10');
+    }
   }, []);
   function updateStarBalance(newBalance: number) {
     setStarBalance(newBalance);
@@ -1881,7 +1887,7 @@ export default function SajuApp() {
     const data = compatResult ? (() => { try { return JSON.parse(compatResult.html); } catch { return null; } })() : null;
 
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '20px' }}>
+      <div className="inner screen-enter" style={{ paddingTop: '56px' }}>
         <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
         <h2 className="gradient-text" style={{ textAlign: 'center', marginBottom: '24px' }}>{t('compatAnalysis', lang)}</h2>
 
@@ -2589,7 +2595,7 @@ export default function SajuApp() {
     const data = pregResult ? (() => { try { return JSON.parse(pregResult); } catch { return null; } })() : null;
 
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '20px' }}>
+      <div className="inner screen-enter" style={{ paddingTop: '56px' }}>
         <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
         <h2 style={{ textAlign: 'center', marginBottom: '8px', background: 'linear-gradient(135deg,#E91E8C,#FF6FB7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
           {t('pregGuide', lang)}

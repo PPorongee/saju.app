@@ -118,8 +118,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 771,
-      "lastAccessed": 1775229703543,
+      "accessCount": 779,
+      "lastAccessed": 1775231159345,
       "type": "file"
     },
     {
@@ -130,8 +130,8 @@
     },
     {
       "path": "src\\lib\\i18n.ts",
-      "accessCount": 47,
-      "lastAccessed": 1775229582829,
+      "accessCount": 51,
+      "lastAccessed": 1775231048815,
       "type": "file"
     },
     {
@@ -142,8 +142,8 @@
     },
     {
       "path": "src\\app\\api\\saju\\route.ts",
-      "accessCount": 18,
-      "lastAccessed": 1775227066433,
+      "accessCount": 20,
+      "lastAccessed": 1775231119106,
       "type": "file"
     },
     {
@@ -160,8 +160,8 @@
     },
     {
       "path": "src\\app\\globals.css",
-      "accessCount": 11,
-      "lastAccessed": 1774176792789,
+      "accessCount": 14,
+      "lastAccessed": 1775231147496,
       "type": "directory"
     },
     {

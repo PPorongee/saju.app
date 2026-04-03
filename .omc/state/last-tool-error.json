@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd \\\"C:/Users/jshim/Desktop/saju-app\\\" && git init && git add -A && git commit -m \\\"별빛 사주 v1.0 - AI Saju fortune-telling web app\\n\\nFeatures: Personal saju, compatibility, 2026 fortune, pr...",
-  "error": "Exit code 128\nInitialized empty Git repository in C:/Users/jshim/Desktop/saju-app/.git/\nwarning: in the working copy of '.claude/settings.local.json', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of '.env.example', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of '.omc/prd.json', LF will be replaced by CRLF the nex...",
-  "timestamp": "2026-04-03T15:24:55.754Z",
+  "tool_input_preview": "{\"command\":\"cd \\\"C:/Users/jshim/Desktop/saju-app\\\" && npx vercel --prod --yes 2>&1\",\"timeout\":120000,\"description\":\"Deploy to Vercel production\"}",
+  "error": "Exit code 1\n<claude-code-hint v=\"1\" type=\"plugin\" value=\"vercel@claude-plugins-official\" />\nLoading scopes…\nError: The specified token is not valid. Use `vercel login` to generate a new token.",
+  "timestamp": "2026-04-03T15:26:16.840Z",
   "retry_count": 1
 }

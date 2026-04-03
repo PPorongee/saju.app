@@ -2,10 +2,14 @@ import OpenAI from 'openai';
 import { NextRequest } from 'next/server';
 import { SAJU_SYSTEM_PROMPT, SAJU_SYSTEM_PROMPT_EN } from '@/lib/saju-prompt';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error('OPENAI_API_KEY is not set');
+      return new Response('서버 설정 오류: API 키가 설정되지 않았습니다.', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
+    const openai = new OpenAI({ apiKey });
     const { prompt, maxTokens, lang } = await req.json();
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
