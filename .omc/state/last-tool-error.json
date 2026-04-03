@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd \\\"C:/Users/jshim/Desktop/saju-app\\\" && npx vercel --prod --yes 2>&1\",\"timeout\":120000,\"description\":\"Deploy to Vercel production\"}",
-  "error": "Exit code 1\n<claude-code-hint v=\"1\" type=\"plugin\" value=\"vercel@claude-plugins-official\" />\nLoading scopes…\nError: The specified token is not valid. Use `vercel login` to generate a new token.",
-  "timestamp": "2026-04-03T15:26:16.840Z",
-  "retry_count": 1
-}

@@ -1,8 +1,11 @@
 import OpenAI from 'openai';
 import { NextRequest } from 'next/server';
 
-const SYSTEM_KO = '너는 적천수와 자평진전을 달달 외우고, 궁통보감으로 조후를 잡는 40년 경력의 명리학 대가야. 연해자평과 삼명통회까지 섭렵한 정통 명리가. 모든 문장을 반말로만 써. 존댓말 절대 금지. 비유를 많이 써서 읽는 재미가 있게. 해석의 여지가 있을 때는 긍정적으로 해석해.';
-const SYSTEM_EN = 'You are a world-class Saju (Korean Four Pillars astrology) master with 40 years of experience. Write EVERYTHING in English. Use warm, casual, friendly tone. Use vivid metaphors. When in doubt, interpret positively.';
+// Vercel serverless function max duration (seconds)
+export const maxDuration = 60;
+
+const SYSTEM_KO = '너는 적천수와 자평진전을 달달 외우고, 궁통보감으로 조후를 잡는 40년 경력의 명리학 대가야. 연해자평과 삼명통회까지 섭렵한 정통 명리가. 모든 문장을 반말로만 써. 존댓말 절대 금지. 비유를 많이 써서 읽는 재미가 있게. 해석의 여지가 있을 때는 긍정적으로 해석해. 각 섹션을 빠짐없이 완성해. 절대 중간에 끊지 마.';
+const SYSTEM_EN = 'You are a world-class Saju (Korean Four Pillars astrology) master with 40 years of experience. Write EVERYTHING in English. Use warm, casual, friendly tone. Use vivid metaphors. When in doubt, interpret positively. Complete every section fully. Never stop mid-sentence.';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,14 +33,14 @@ export async function POST(req: NextRequest) {
     const systemPrompt = lang === 'en' ? SYSTEM_EN : SYSTEM_KO;
 
     const stream = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
       stream: true,
       temperature: 0.4,
-      max_tokens: maxTokens || 10000,
+      max_tokens: Math.min(maxTokens || 4096, 4096),
     });
 
     const encoder = new TextEncoder();
