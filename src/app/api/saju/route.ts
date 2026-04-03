@@ -1,13 +1,14 @@
 import OpenAI from 'openai';
 import { NextRequest } from 'next/server';
-import { SAJU_SYSTEM_PROMPT, SAJU_SYSTEM_PROMPT_EN } from '@/lib/saju-prompt';
+
+const SYSTEM_KO = '너는 적천수와 자평진전을 달달 외우고, 궁통보감으로 조후를 잡는 40년 경력의 명리학 대가야. 연해자평과 삼명통회까지 섭렵한 정통 명리가. 모든 문장을 반말로만 써. 존댓말 절대 금지. 비유를 많이 써서 읽는 재미가 있게. 해석의 여지가 있을 때는 긍정적으로 해석해.';
+const SYSTEM_EN = 'You are a world-class Saju (Korean Four Pillars astrology) master with 40 years of experience. Write EVERYTHING in English. Use warm, casual, friendly tone. Use vivid metaphors. When in doubt, interpret positively.';
 
 export async function POST(req: NextRequest) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.error('OPENAI_API_KEY is not set');
-      return new Response('서버 설정 오류: API 키가 설정되지 않았습니다.', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      return new Response('API key not configured. Set OPENAI_API_KEY in Vercel.', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
     const openai = new OpenAI({ apiKey });
     const { prompt, maxTokens, lang } = await req.json();
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       return new Response(msg, { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
 
-    const systemPrompt = lang === 'en' ? SAJU_SYSTEM_PROMPT_EN : SAJU_SYSTEM_PROMPT;
+    const systemPrompt = lang === 'en' ? SYSTEM_EN : SYSTEM_KO;
 
     const stream = await openai.chat.completions.create({
       model: 'gpt-4o',
