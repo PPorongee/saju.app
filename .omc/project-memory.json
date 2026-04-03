@@ -142,9 +142,15 @@
     },
     {
       "path": "src\\app\\api\\saju\\route.ts",
-      "accessCount": 20,
-      "lastAccessed": 1775231119106,
+      "accessCount": 22,
+      "lastAccessed": 1775231721784,
       "type": "file"
+    },
+    {
+      "path": "src\\app\\globals.css",
+      "accessCount": 18,
+      "lastAccessed": 1775231780188,
+      "type": "directory"
     },
     {
       "path": "src\\app\\layout.tsx",
@@ -156,12 +162,6 @@
       "path": "",
       "accessCount": 15,
       "lastAccessed": 1775227001900,
-      "type": "directory"
-    },
-    {
-      "path": "src\\app\\globals.css",
-      "accessCount": 14,
-      "lastAccessed": 1775231147496,
       "type": "directory"
     },
     {

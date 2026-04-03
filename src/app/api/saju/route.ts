@@ -58,9 +58,21 @@ export async function POST(req: NextRequest) {
     return new Response(readable, {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' }
     });
-  } catch (err) {
-    console.error('API route error:', err);
-    return new Response('AI 서비스 연결에 실패했어. 잠시 후 다시 시도해줘!', {
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('API route error:', errMsg);
+    const debugInfo = process.env.NODE_ENV === 'development' ? ' (' + errMsg + ')' : '';
+    // Check common OpenAI errors
+    if (errMsg.includes('401') || errMsg.includes('Incorrect API key')) {
+      return new Response('API 키가 유효하지 않습니다. Vercel 환경변수를 확인해주세요.' + debugInfo, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
+    if (errMsg.includes('429') || errMsg.includes('Rate limit')) {
+      return new Response('요청이 너무 많아요. 잠시 후 다시 시도해줘!', { status: 429, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
+    if (errMsg.includes('insufficient_quota')) {
+      return new Response('OpenAI API 크레딧이 부족합니다. API 결제를 확인해주세요.', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
+    return new Response('AI 서비스 연결에 실패했어. 잠시 후 다시 시도해줘!' + debugInfo, {
       status: 500,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' }
     });
