@@ -289,6 +289,10 @@ interface SavedProfile {
   wantToKnow: number;
 }
 
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
 /* ===== Main Component ===== */
 export default function SajuApp() {
   const [lang, setLang] = useState<Lang>('ko');
@@ -304,10 +308,14 @@ export default function SajuApp() {
   }, []);
 
   /* Privacy consent */
-  const [storageConsent, setStorageConsent] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('saju-storage-consent') === 'yes';
-  });
+  const [storageConsent, setStorageConsent] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
+    if (localStorage.getItem('saju-storage-consent') === 'yes') {
+      setStorageConsent(true);
+    }
+  }, []);
   const [appMode, setAppMode] = useState<'saju' | 'compat' | 'pregnancy' | 'yearly'>('saju');
   const [userData, setUserData] = useState<UserData>({
     name: '', gender: 'm',
@@ -350,15 +358,15 @@ export default function SajuApp() {
   const [starBalance, setStarBalance] = useState(0);
   const [compatPaywall, setCompatPaywall] = useState(false);
   useEffect(() => {
+    if (!storageConsent) return;
     const saved = localStorage.getItem('saju-stars');
     if (saved !== null) {
       try { setStarBalance(parseInt(saved) || 0); } catch { /* ignore */ }
     } else {
-      // First visit: give 10 free stars
       setStarBalance(10);
       localStorage.setItem('saju-stars', '10');
     }
-  }, []);
+  }, [storageConsent]);
   function updateStarBalance(newBalance: number) {
     setStarBalance(newBalance);
     safeSetItem('saju-stars', String(newBalance));
@@ -396,13 +404,42 @@ export default function SajuApp() {
   const [profiles, setProfiles] = useState<SavedProfile[]>([]);
   const [showSavedResults, setShowSavedResults] = useState(false);
   useEffect(() => {
+    if (!storageConsent) return;
     const saved = localStorage.getItem('saju-profiles');
     if (saved) { try { setProfiles(JSON.parse(saved)); } catch(e) { /* ignore */ } }
-  }, []);
+  }, [storageConsent]);
 
   const updateUser = useCallback((field: string, value: unknown) => {
     setUserData(prev => ({ ...prev, [field]: value }));
   }, []);
+
+  /* Saved results loaded from localStorage */
+  const [savedResults, setSavedResults] = useState<{name: string; date: string; type: string; text: string}[]>([]);
+  useEffect(() => {
+    try { setSavedResults(JSON.parse(localStorage.getItem('saju-saved-results') || '[]')); } catch { /* ignore */ }
+  }, [currentScreen]);
+
+  /* Clamp day when month/year changes */
+  useEffect(() => {
+    const max = getDaysInMonth(userData.year, userData.month);
+    if (userData.day > max) updateUser('day', max);
+  }, [userData.year, userData.month]);
+  useEffect(() => {
+    const max = getDaysInMonth(compatPerson1.year, compatPerson1.month);
+    if (compatPerson1.day > max) setCompatPerson1(p => ({ ...p, day: max }));
+  }, [compatPerson1.year, compatPerson1.month]);
+  useEffect(() => {
+    const max = getDaysInMonth(compatPerson2.year, compatPerson2.month);
+    if (compatPerson2.day > max) setCompatPerson2(p => ({ ...p, day: max }));
+  }, [compatPerson2.year, compatPerson2.month]);
+  useEffect(() => {
+    const max = getDaysInMonth(pregData.year, pregData.month);
+    if (pregData.day > max) setPregData(p => ({ ...p, day: max }));
+  }, [pregData.year, pregData.month]);
+  useEffect(() => {
+    const max = getDaysInMonth(pregData.dueYear, pregData.dueMonth);
+    if (pregData.dueDay > max) setPregData(p => ({ ...p, dueDay: max }));
+  }, [pregData.dueYear, pregData.dueMonth]);
 
   function saveProfiles(updated: SavedProfile[]) {
     setProfiles(updated);
@@ -815,11 +852,6 @@ export default function SajuApp() {
 
   /* ===== SCREEN 0: Intro ===== */
   function renderIntro() {
-    const savedResults: { name: string; date: string; type: string; text: string }[] = (() => {
-      if (typeof window === 'undefined') return [];
-      try { return JSON.parse(localStorage.getItem('saju-saved-results') || '[]'); } catch { return []; }
-    })();
-
     return (
       <div className="inner screen-enter" style={{ textAlign: 'center', paddingTop: '60px' }}>
         <div style={{ fontSize: '72px', animation: 'float 3s ease-in-out infinite', marginBottom: '16px', filter: 'drop-shadow(0 0 24px rgba(240,199,94,0.5))' }}>
@@ -988,7 +1020,7 @@ export default function SajuApp() {
               </div>
               <div className="input-group">
                 <select value={userData.day} onChange={e => updateUser('day', parseInt(e.target.value))}>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                  {Array.from({ length: getDaysInMonth(userData.year, userData.month) }, (_, i) => i + 1).map(d => (
                     <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>
                   ))}
                 </select>
@@ -1163,7 +1195,7 @@ export default function SajuApp() {
               doCalculation();
             }
           }}>
-            {questionStep < 4 ? t('next', lang) : t('viewResults', lang)}
+            {questionStep < 3 ? t('next', lang) : t('viewResults', lang)}
           </button>
         </div>
       </div>
@@ -1190,7 +1222,28 @@ export default function SajuApp() {
 
   /* ===== SCREEN 4: Results ===== */
   function renderResults() {
-    if (!sajuResult) return null;
+    if (!sajuResult) {
+      // Saved result view — no saju calc data, just AI text
+      if (aiText) {
+        return (
+          <div className="inner screen-enter">
+            <button className="back-btn" onClick={() => { setCurrentScreen(0); setAiText(''); }}>{t('backBtn', lang)}</button>
+            <div className="result-header">
+              <div style={{ fontSize: '48px', marginBottom: '8px' }}>📂</div>
+              <div className="name gradient-text">{lang === 'en' ? 'Saved Result' : '저장된 결과'}</div>
+            </div>
+            <div className="section-divider">{t('aiReading', lang)}</div>
+            <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
+            <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
+              <button className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)', fontSize: '13px' }} onClick={() => { setCurrentScreen(0); setAiText(''); }}>
+                {t('restart', lang)}
+              </button>
+            </div>
+          </div>
+        );
+      }
+      return null;
+    }
     const sj = sajuResult;
     const ds = sj.dStem;
     const profile = PROFILES[ds];
@@ -1954,7 +2007,7 @@ export default function SajuApp() {
                 </div>
                 <div className="input-group">
                   <select value={compatPerson1.day} onChange={e => setCompatPerson1(p => ({ ...p, day: parseInt(e.target.value) }))}>
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
+                    {Array.from({ length: getDaysInMonth(compatPerson1.year, compatPerson1.month) }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
                   </select>
                 </div>
               </div>
@@ -2058,7 +2111,7 @@ export default function SajuApp() {
               </div>
               <div className="input-group">
                 <select value={compatPerson2.day} onChange={e => setCompatPerson2(p => ({ ...p, day: parseInt(e.target.value) }))}>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
+                  {Array.from({ length: getDaysInMonth(compatPerson2.year, compatPerson2.month) }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
                 </select>
               </div>
             </div>
@@ -2664,7 +2717,7 @@ export default function SajuApp() {
               </div>
               <div className="input-group">
                 <select value={pregData.day} onChange={e => setPregData(p => ({ ...p, day: parseInt(e.target.value) }))}>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
+                  {Array.from({ length: getDaysInMonth(pregData.year, pregData.month) }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
                 </select>
               </div>
             </div>
@@ -2684,7 +2737,7 @@ export default function SajuApp() {
               </div>
               <div className="input-group">
                 <select value={pregData.dueDay} onChange={e => setPregData(p => ({ ...p, dueDay: parseInt(e.target.value) }))}>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
+                  {Array.from({ length: getDaysInMonth(pregData.dueYear, pregData.dueMonth) }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
                 </select>
               </div>
             </div>
@@ -2825,7 +2878,30 @@ export default function SajuApp() {
 
   /* ===== SCREEN 7: Yearly Fortune ===== */
   function renderYearlyFortune() {
-    if (!sajuResult) return null;
+    if (!sajuResult) {
+      // Saved result view — no saju calc data, just AI text
+      if (aiText) {
+        return (
+          <div className="inner screen-enter">
+            <button className="back-btn" onClick={() => { setCurrentScreen(0); setAiText(''); }}>{t('backBtn', lang)}</button>
+            <div className="result-header">
+              <div style={{ fontSize: '48px', marginBottom: '8px' }}>📅</div>
+              <div className="name" style={{ background: 'linear-gradient(135deg,#F59E0B,#EF4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                {lang === 'en' ? 'Saved Fortune' : '저장된 운세'}
+              </div>
+            </div>
+            <div className="section-divider">{t('aiReading', lang)}</div>
+            <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
+            <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
+              <button className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)', fontSize: '13px' }} onClick={() => { setCurrentScreen(0); setAiText(''); }}>
+                {t('restart', lang)}
+              </button>
+            </div>
+          </div>
+        );
+      }
+      return null;
+    }
     const sj = sajuResult;
     const ds = sj.dStem;
     const profile = PROFILES[ds];
@@ -3423,7 +3499,7 @@ export default function SajuApp() {
         {currentScreen === 8 && renderTeaser()}
         {currentScreen === 9 && renderChargeScreen()}
       </div>
-      {!storageConsent && (
+      {hasMounted && !storageConsent && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 99999,
           background: 'rgba(10,14,42,0.95)', backdropFilter: 'blur(8px)',
@@ -3451,7 +3527,7 @@ export default function SajuApp() {
                 fontSize: '16px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
                 minHeight: '48px', touchAction: 'manipulation',
               }} onClick={() => {
-                localStorage.setItem('saju-storage-consent', 'yes');
+                try { localStorage.setItem('saju-storage-consent', 'yes'); } catch { /* private browsing or storage full */ }
                 setStorageConsent(true);
               }}>
                 {lang === 'en' ? 'Accept' : '동의'}
