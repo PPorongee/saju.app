@@ -53,8 +53,35 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
     persText = pPairs[0][userData.personality[0]] + ', ' + pPairs[1][userData.personality[1]] + ', ' + pPairs[2][userData.personality[2]];
   }
 
+  const userAge = 2026 - userData.year;
+  let lifeStage = '';
+  let ageGuideline = '';
+  if (userAge <= 12) {
+    lifeStage = '어린이';
+    ageGuideline = '이 사람은 아직 어린아이야. 결혼/연애/부동산/투자/직장 이야기는 "먼 미래에~" 정도로만 가볍게 언급하고, 성격/재능/학업/건강/부모관계/친구관계에 집중해. 어려운 인생 조언 대신 재능 발견과 꿈에 초점을 맞춰. 말투도 아이에게 맞춰서 더 쉽고 재밌게.';
+  } else if (userAge <= 19) {
+    lifeStage = '청소년';
+    ageGuideline = '이 사람은 10대 청소년이야. 학업/시험/진로탐색/교우관계/자아정체성에 비중을 크게 두고, 연애는 가벼운 설렘 정도로, 결혼/부동산/투자는 "나중에 어른이 되면~" 정도로만 언급해. 입시/수능/진로 고민에 실질적 도움이 되게.';
+  } else if (userAge <= 29) {
+    lifeStage = '20대';
+    ageGuideline = '이 사람은 20대야. 취업/커리어 시작/연애/자기계발/독립에 비중을 두고, 결혼은 가능성으로, 자녀/노후는 가볍게만 언급해. 사회 초년생의 고민과 성장에 초점.';
+  } else if (userAge <= 39) {
+    lifeStage = '30대';
+    ageGuideline = '이 사람은 30대야. 커리어 성장/결혼(또는 결혼생활)/재테크/내집마련/자녀계획에 비중을 두고 분석해. 인생의 기반을 다지는 시기에 맞는 조언을 해.';
+  } else if (userAge <= 49) {
+    lifeStage = '40대';
+    ageGuideline = '이 사람은 40대야. 커리어 전성기/자녀교육/부부관계/재산관리/건강관리에 비중을 두고 분석해. 중년의 위기와 기회를 균형있게 다뤄.';
+  } else if (userAge <= 59) {
+    lifeStage = '50대';
+    ageGuideline = '이 사람은 50대야. 인생 2막/건강/은퇴준비/자녀독립/부부관계재정립에 비중을 두고 분석해. 학업/수능/첫 취업 같은 젊은 시절 이야기는 하지 마.';
+  } else {
+    lifeStage = '60대 이상';
+    ageGuideline = '이 사람은 ' + userAge + '세야. 건강관리/노후생활/가족관계/손주/인생정리/취미/여행에 비중을 두고 분석해. 취업/연애시작/수능 같은 이야기는 하지 마. 삶의 지혜와 편안한 노년에 초점.';
+  }
+
   let prompt = '=== 사주 원국 ===\n';
-  prompt += '이름: ' + userData.name + ' / 성별: ' + userData.gender + '\n';
+  prompt += '이름: ' + userData.name + ' / 성별: ' + userData.gender + ' / 나이: 만 ' + userAge + '세 (' + lifeStage + ')\n';
+  prompt += '\n⚠️ 나이 맞춤 해석 규칙 (매우 중요!): ' + ageGuideline + '\n모든 섹션에서 이 사람의 나이(' + userAge + '세, ' + lifeStage + ')에 맞는 현실적인 이야기를 해. 나이와 동떨어진 조언은 절대 금지!\n\n';
   prompt += '생년월일: ' + userData.year + '년 ' + userData.month + '월 ' + userData.day + '일 (' + (userData.isLunar ? '음력 입력 -> 양력 변환됨' : '양력') + ')\n';
   if (userData.useExactTime && userData.exactHour != null && userData.exactHour >= 0) {
     const SIJU_NAMES = ['자시', '축시', '인시', '묘시', '진시', '사시', '오시', '미시', '신시', '유시', '술시', '해시'];
@@ -190,7 +217,7 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
   prompt1 += '##' + n++ + '.건강 리포트## 오행 균형과 조후(사주 온도)로 취약 장기(' + (dayOh==='목'?'간/눈':dayOh==='화'?'심장/혈관':dayOh==='토'?'위/소화기':dayOh==='금'?'폐/호흡기':'신장/방광') + ') 분석 + 관리법 + 맞는 취미/운동 3가지(오행 근거). 건강이 흔들리는 시기 예측(대운/세운 기반). 사고수(事故數) 분석: 양인살/백호살/겁살 등 신살과 충(冲)이 있는 시기에 사고 위험 경고. 다치기 쉬운 시기: 대운/세운에서 충/형이 오는 구체적 년도 예측. 조심해야 할 상황: 오행별 취약 부위와 관련된 구체적 상황(예: 금(金) 약하면 교통사고 주의, 수(水) 약하면 신장/요로계 주의).\n';
   prompt1 += '##' + n++ + '.가정 & 가족관계## 년주(조상궁) → 월주(부모궁/형제궁) → 일지(배우자궁) → 시주(자녀궁)으로 가정 전체를 분석. 부모와의 관계(월주-일주 충/형 여부), 형제 관계(비겁 구조), 가족 갈등 해소법, 가족 여행 좋은 방위/계절.\n';
   prompt1 += '##' + n++ + '.자녀운 & 부모 스타일## 시주와 식상/관성 근거로: 자녀복(시주 12운성), 자녀가 들어오기 좋은 시기(년도/나이, 통변으로 식상운이 오는 해), 아이 예상 성향(시주 오행), 어떤 부모 스타일이 맞는지.\n';
-  prompt1 += '##' + n++ + '.지금 나의 인생 챕터## 현재 나이(' + (2026 - userData.year) + '세) 대운 분석. 12운성으로 지금 에너지 상태, 이 대운이 인생에서 어떤 의미인지. 현재 대운의 천간/지지가 원국과 어떻게 작용하는지 분석하고, 지금 시기에 집중해야 할 것과 내려놓아야 할 것을 알려줘.\n\n';
+  prompt1 += '##' + n++ + '.지금 나의 인생 챕터## 현재 나이(' + userAge + '세, ' + lifeStage + ') 대운 분석. 12운성으로 지금 에너지 상태, 이 대운이 인생에서 어떤 의미인지. 현재 대운의 천간/지지가 원국과 어떻게 작용하는지 분석하고, 지금 시기에 집중해야 할 것과 내려놓아야 할 것을 알려줘.\n\n';
   prompt1 += getRelevantRefs({ dayMaster: ds, topics: ['personality', 'wealth', 'career', 'love', 'health', 'general'] });
   prompt1 += rules;
 
