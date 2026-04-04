@@ -3601,9 +3601,9 @@ export default function SajuApp() {
             <div>{businessInfo.address}</div>
             <div>{lang === 'ko' ? '고객센터' : 'Support'}: {businessInfo.phone} | {businessInfo.email}</div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-              <span style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '이용약관' : 'Terms'}</span>
-              <span style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '개인정보처리방침' : 'Privacy'}</span>
-              <span style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '환불정책' : 'Refund'}</span>
+              <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '이용약관' : 'Terms'}</a>
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '개인정보처리방침' : 'Privacy'}</a>
+              <a href="/refund" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '환불정책' : 'Refund'}</a>
             </div>
           </div>
         </div>

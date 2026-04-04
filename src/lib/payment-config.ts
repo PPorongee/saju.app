@@ -1,12 +1,12 @@
-// Business info - values from env vars with placeholder defaults
+// Business info - values from env vars with sensible defaults
 export const BUSINESS_INFO = {
-  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || '상호명을 입력하세요',
-  ceoName: process.env.NEXT_PUBLIC_CEO_NAME || '대표자명',
-  businessNumber: process.env.NEXT_PUBLIC_BUSINESS_NUMBER || '000-00-00000',
-  salesNumber: process.env.NEXT_PUBLIC_SALES_NUMBER || '제0000-서울XX-0000호',
-  address: process.env.NEXT_PUBLIC_ADDRESS || '사업장 주소를 입력하세요',
-  phone: process.env.NEXT_PUBLIC_CS_PHONE || '000-0000-0000',
-  email: process.env.NEXT_PUBLIC_CS_EMAIL || 'support@example.com',
+  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || '햄찌사랑',
+  ceoName: process.env.NEXT_PUBLIC_CEO_NAME || '이서은',
+  businessNumber: process.env.NEXT_PUBLIC_BUSINESS_NUMBER || '197-56-00903',
+  salesNumber: process.env.NEXT_PUBLIC_SALES_NUMBER || '[통신판매업 신고번호]',
+  address: process.env.NEXT_PUBLIC_ADDRESS || '대전광역시 유성구 어은로 57',
+  phone: process.env.NEXT_PUBLIC_CS_PHONE || '010-5622-7817',
+  email: process.env.NEXT_PUBLIC_CS_EMAIL || 'xkqmffh60@naver.com',
   termsUrl: '/terms',
   privacyUrl: '/privacy',
   refundUrl: '/refund',
