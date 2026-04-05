@@ -141,14 +141,14 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 253,
-      "lastAccessed": 1775379505013,
+      "accessCount": 268,
+      "lastAccessed": 1775402198342,
       "type": "file"
     },
     {
       "path": "src\\app\\globals.css",
-      "accessCount": 25,
-      "lastAccessed": 1775379478143,
+      "accessCount": 34,
+      "lastAccessed": 1775379718640,
       "type": "file"
     },
     {
@@ -171,8 +171,20 @@
     },
     {
       "path": "src\\lib\\i18n.ts",
-      "accessCount": 11,
-      "lastAccessed": 1775322798983,
+      "accessCount": 13,
+      "lastAccessed": 1775401971951,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 13,
+      "lastAccessed": 1775402182756,
+      "type": "directory"
+    },
+    {
+      "path": "src\\app\\AGENTS.md",
+      "accessCount": 10,
+      "lastAccessed": 1775379753141,
       "type": "file"
     },
     {
@@ -182,27 +194,21 @@
       "type": "file"
     },
     {
-      "path": "src\\app\\AGENTS.md",
-      "accessCount": 9,
-      "lastAccessed": 1775361803120,
-      "type": "file"
-    },
-    {
       "path": "src\\lib\\saju-calc.ts",
       "accessCount": 8,
       "lastAccessed": 1775363266188,
       "type": "file"
     },
     {
-      "path": "src",
-      "accessCount": 8,
-      "lastAccessed": 1775379262077,
-      "type": "directory"
-    },
-    {
       "path": "src\\components\\AGENTS.md",
       "accessCount": 7,
       "lastAccessed": 1775362312271,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\layout.tsx",
+      "accessCount": 7,
+      "lastAccessed": 1775402213624,
       "type": "file"
     },
     {
@@ -245,12 +251,6 @@
       "path": ".env.example",
       "accessCount": 6,
       "lastAccessed": 1775362322202,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\layout.tsx",
-      "accessCount": 5,
-      "lastAccessed": 1775361266621,
       "type": "file"
     },
     {

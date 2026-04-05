@@ -1,7 +1,7 @@
 {
   "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"C:\\\\Users\\\\jshim\\\\Desktop\\\\saju-app\\\\src\\\\app\\\\globals.css\"}",
-  "error": "File content (11586 tokens) exceeds maximum allowed tokens (10000). Use offset and limit parameters to read specific portions of the file, or search for specific content instead of reading the whole file.",
-  "timestamp": "2026-04-05T08:54:14.250Z",
+  "tool_input_preview": "{\"file_path\":\"C:\\\\Users\\\\jshim\\\\Desktop\\\\saju-app\\\\src\\\\components\\\\SajuApp.tsx\"}",
+  "error": "File content (85923 tokens) exceeds maximum allowed tokens (10000). Use offset and limit parameters to read specific portions of the file, or search for specific content instead of reading the whole file.",
+  "timestamp": "2026-04-05T09:00:33.428Z",
   "retry_count": 1
 }

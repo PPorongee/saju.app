@@ -3,12 +3,12 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: '별빛 사주 | Starlight Saju',
-  description: '생년월일로 알아보는 정확한 사주 풀이 | AI-powered Korean Saju fortune-telling',
+  description: '네 생일에 우주가 살짝 남겨둔 이야기 | AI-powered Korean Saju fortune-telling',
   icons: { icon: '/favicon.svg' },
   manifest: '/manifest.json',
   openGraph: {
     title: '별빛 사주 | Starlight Saju',
-    description: '생년월일로 알아보는 정확한 사주 풀이 | AI-powered Korean Saju fortune-telling',
+    description: '네 생일에 우주가 살짝 남겨둔 이야기 | AI-powered Korean Saju fortune-telling',
     type: 'website',
   },
 };

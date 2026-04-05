@@ -182,28 +182,6 @@ const StarsBackground = React.memo(function StarsBackground() {
   );
 });
 
-/* ===== Countdown Timer — isolated to prevent 1s re-renders of parent ===== */
-const CountdownTimer = React.memo(function CountdownTimer() {
-  const [text, setText] = useState('23:59:59');
-  useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      const end = new Date();
-      end.setHours(23, 59, 59, 999);
-      const diff = end.getTime() - now.getTime();
-      if (diff <= 0) return;
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setText(String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'));
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, []);
-  return <>{text}</>;
-});
-
 /* ===== Helper Data ===== */
 const TIMES = [
   { h: 0, hanja: '子시', hangul: '(자시)', range: '23:00~01:00' },
@@ -394,7 +372,6 @@ export default function SajuApp() {
     safeSetItem('saju-stars', String(newBalance));
   }
 
-  /* Paywall countdown timer — moved to <CountdownTimer /> component to avoid 1s re-renders */
 
   /* Compat state */
   const [compatPerson1, setCompatPerson1] = useState({ name: '', year: 1995, month: 1, day: 1, hour: -1, isLunar: false });
@@ -3434,10 +3411,7 @@ export default function SajuApp() {
             </div>
           )}
 
-          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-            <div style={{ fontSize: '13px', color: '#F59E0B', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>&#9200;</span> {t('specialEnds', lang)} <CountdownTimer />
-            </div>
+          <div style={{ marginTop: '16px', textAlign: 'center' }}>
             <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
               {t('todayVisitor', lang)} {visitorCount.toLocaleString()} {t('alreadyChecked', lang)}
             </div>

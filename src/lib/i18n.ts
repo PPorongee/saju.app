@@ -3,7 +3,7 @@ export type Lang = 'ko' | 'en';
 export const T: Record<string, Record<Lang, string>> = {
   // Intro
   appTitle: { ko: '별빛 사주', en: 'Starlight Saju' },
-  appSubtitle: { ko: '생년월일로 알아보는 나의 이야기', en: 'Discover your story through your birth date' },
+  appSubtitle: { ko: '네 생일에 우주가 살짝 남겨둔 이야기가 있어, 한번 들어볼래?', en: 'The universe left a little story on your birthday — want to hear it?' },
   visitorCount: { ko: '명이 운명을 확인했어요', en: 'people checked their destiny today' },
 
   // Feature cards
