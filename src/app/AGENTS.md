@@ -39,7 +39,7 @@ Next.js App Router directory containing the root layout, home page, global style
 - Check responsive behavior at `max-width: 380px` breakpoint
 
 ### Common Patterns
-- CSS uses glassmorphism: `backdrop-filter: blur()`, semi-transparent backgrounds
+- CSS uses dark semi-transparent backgrounds (backdrop-filter removed for Safari performance)
 - Element-specific color classes: `.elem-wood`, `.elem-fire`, `.elem-earth`, `.elem-metal`, `.elem-water`
 - Animations: `twinkle`, `fadeIn`, `heartBeat`, `spin`, `pulse`
 

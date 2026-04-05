@@ -3684,7 +3684,7 @@ export default function SajuApp() {
           style={{
             background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: '20px', padding: '10px 14px', fontSize: '13px', fontWeight: 700,
-            color: 'var(--text)', cursor: 'pointer', backdropFilter: 'blur(8px)', minHeight: '44px'
+            color: 'var(--text)', cursor: 'pointer', minHeight: '44px'
           }}
         >
           {t('langToggle', lang)}
