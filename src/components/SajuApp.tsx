@@ -12,6 +12,7 @@ import type { UserData } from '@/lib/saju-prompt';
 import { getRelevantRefs } from '@/lib/saju-ref-selector';
 import { lunarToSolar } from '@/lib/lunar-solar';
 import { t, Lang } from '@/lib/i18n';
+import { BUSINESS_INFO } from '@/lib/payment-config';
 
 /* ===== Stars Background - SVG Star Illustrations ===== */
 const STAR_COLORS = ['#F0C75E', '#FFD080', '#FF6B9D', '#7DD3FC', '#C4B5FD', '#6EE7B7', '#FF8A8A', '#FFF0C8'];
@@ -3321,23 +3322,12 @@ export default function SajuApp() {
                     fontSize: '13px',
                     color: 'var(--text)',
                     lineHeight: 1.5,
-                    opacity: 0.7,
-                    filter: 'blur(3px)',
-                    userSelect: 'none'
+                    opacity: 0.6
                   }}>
                     {sp.blurred}
                   </div>
                 </div>
               </div>
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '24px',
-                background: 'linear-gradient(to bottom, transparent, rgba(20,20,30,0.6))',
-                pointerEvents: 'none'
-              }} />
             </div>
           ));
         })()}
@@ -3675,6 +3665,26 @@ export default function SajuApp() {
         {currentScreen === 7 && renderYearlyFortune()}
         {currentScreen === 8 && renderTeaser()}
         {currentScreen === 9 && renderChargeScreen()}
+        {/* 사업자 정보 푸터 */}
+        <div style={{
+          padding: '24px 16px 40px',
+          textAlign: 'center',
+          fontSize: '11px',
+          lineHeight: 1.8,
+          color: 'rgba(245,240,232,0.25)',
+          borderTop: '1px solid rgba(255,255,255,0.04)',
+          marginTop: '32px'
+        }}>
+          <div>{BUSINESS_INFO.companyName} | 대표 {BUSINESS_INFO.ceoName}</div>
+          <div>사업자등록번호 {BUSINESS_INFO.businessNumber}</div>
+          <div>{BUSINESS_INFO.address}</div>
+          <div>{BUSINESS_INFO.phone} | {BUSINESS_INFO.email}</div>
+          <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
+            <a href={BUSINESS_INFO.termsUrl} style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'none' }}>이용약관</a>
+            <a href={BUSINESS_INFO.privacyUrl} style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'none' }}>개인정보처리방침</a>
+            <a href={BUSINESS_INFO.refundUrl} style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'none' }}>환불정책</a>
+          </div>
+        </div>
       </div>
       {hasMounted && !storageConsent && (
         <div style={{
