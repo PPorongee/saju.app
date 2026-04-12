@@ -106,7 +106,7 @@ h2 { font-size: 30px; font-weight: 800; margin-bottom: 14px; }
 h3 { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
 p  { font-size: 17px; line-height: 1.75; color: var(--text-dim); }
 h1, h2, h3, .gradient-text, .feature-title, .feature-desc, .card h3, .compat-score, .payment-price, .section-divider {
-  font-family: 'Gamja Flower', 'Gowun Dodum', cursive;
+  font-family: 'Gamja Flower', 'Gowun Dodum', sans-serif;
 }
 
 /* Gradient text */

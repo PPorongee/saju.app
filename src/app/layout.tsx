@@ -31,8 +31,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="별빛 사주" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&family=Gamja+Flower&family=Gowun+Dodum&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
