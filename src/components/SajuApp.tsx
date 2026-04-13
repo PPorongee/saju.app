@@ -2452,7 +2452,7 @@ export default function SajuApp() {
               </div>
             </div>
 
-            {/* Pricing CTA */}
+            {/* Pricing CTA — Star-based */}
             <div className="card" style={{
               marginTop: '12px', textAlign: 'center', padding: '28px 20px',
               background: 'linear-gradient(135deg, rgba(246,135,179,0.12), rgba(159,122,234,0.08))',
@@ -2462,19 +2462,31 @@ export default function SajuApp() {
                 {lang === 'en' ? 'Unlock the full compatibility reading\nand discover your connection' : '두 사람의 인연을 깊이 들여다보고\n궁합의 비밀을 확인해볼래?'}
               </div>
               <div style={{ marginBottom: '16px' }}>
-                <span style={{ fontSize: '28px', fontWeight: 800, color: '#F687B3' }}>₩990</span>
-                <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>{lang === 'en' ? 'One-time payment' : '한번 결제, 영구 열람'}</div>
+                <span style={{ fontSize: '28px', fontWeight: 800, color: '#F687B3' }}>⭐ 5 {lang === 'en' ? 'Stars' : '별빛'}</span>
+                <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>
+                  {lang === 'en' ? 'Your balance: ' : '보유 별빛: '}⭐ {starBalance}{lang === 'en' ? '' : '개'}
+                </div>
               </div>
-              <a href="/payment" className="paywall-cta" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', background: 'linear-gradient(135deg, #F687B3, #9F7AEA)' }}>
-                {lang === 'en' ? 'Unlock Full Reading — ₩990' : '전체 결과 보기 — ₩990'}
-              </a>
-              {process.env.NEXT_PUBLIC_ENABLE_FREE_PREVIEW === 'true' && (
-                <p style={{ marginTop: '12px', fontSize: '11px', opacity: 0.4, cursor: 'pointer' }} onClick={() => {
-                  setCompatPaywall(false);
-                  runCompatAnalysis();
-                }}>
-                  {t('freePreview', lang)}
-                </p>
+              {starBalance >= 5 ? (
+                <button
+                  className="paywall-cta"
+                  style={{ display: 'block', width: '100%', textAlign: 'center', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '16px', background: 'linear-gradient(135deg, #F687B3, #9F7AEA)' }}
+                  onClick={() => {
+                    updateStarBalance(starBalance - 5);
+                    setCompatPaywall(false);
+                    runCompatAnalysis();
+                  }}
+                >
+                  {lang === 'en' ? 'Unlock with 5 Stars ⭐' : '별빛 5개로 열기 ⭐'}
+                </button>
+              ) : (
+                <button
+                  className="paywall-cta"
+                  style={{ display: 'block', width: '100%', textAlign: 'center', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '16px', background: 'linear-gradient(135deg, #F59E0B, #EF4444)' }}
+                  onClick={() => setCurrentScreen(9)}
+                >
+                  {lang === 'en' ? 'Not enough stars! Go charge ⭐' : '별빛이 부족해요! 충전하러 가기 ⭐'}
+                </button>
               )}
             </div>
           </div>
@@ -3503,7 +3515,7 @@ export default function SajuApp() {
           </div>
         </div>
 
-        {/* Section E: Pricing CTA */}
+        {/* Section E: Star-based Unlock CTA */}
         <div className="card" style={{
           background: 'linear-gradient(135deg, rgba(246,196,67,0.12), rgba(245,158,11,0.08))',
           border: '1px solid rgba(246,196,67,0.3)',
@@ -3521,8 +3533,10 @@ export default function SajuApp() {
           </div>
 
           <div style={{ marginBottom: '20px' }}>
-            <span style={{ fontSize: '28px', fontWeight: 800, color: '#F6C443' }}>₩990</span>
-            <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>{lang === 'en' ? 'One-time payment' : '한번 결제, 영구 열람'}</div>
+            <span style={{ fontSize: '28px', fontWeight: 800, color: '#F6C443' }}>⭐ 10 {lang === 'en' ? 'Stars' : '별빛'}</span>
+            <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>
+              {lang === 'en' ? 'Your balance: ' : '보유 별빛: '}⭐ {starBalance}{lang === 'en' ? '' : '개'}
+            </div>
             {isYearly && (
               <div style={{ fontSize: '12px', color: '#F59E0B', marginTop: '4px', fontWeight: 600 }}>
                 {t('currentMonthNoteLabel', lang)}
@@ -3530,298 +3544,121 @@ export default function SajuApp() {
             )}
           </div>
 
-          <a
-            href="/payment"
-            className="paywall-cta"
-            style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
-            onClick={async (e) => {
-              e.preventDefault();
-              if (isGenerating) return; // Prevent payment with partial AI text
-              const pendingOrderId = generateOrderId();
-              saveReadingToSession({ aiText, sajuResult, userData, appMode, timestamp: Date.now() });
-              fetch('/api/readings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                keepalive: true,
-                body: JSON.stringify({ orderId: pendingOrderId, type: appMode === 'yearly' ? 'yearly' : 'saju', inputData: userData ?? null, chartData: sajuResult ?? null, resultText: aiText, lang: 'ko', pending: true }),
-              }).catch(() => {/* fire-and-forget */});
-              window.location.href = '/payment?pendingOrderId=' + pendingOrderId;
-            }}
-          >
-            {lang === 'en'
-              ? (isYearly ? 'Unlock Full Yearly Reading — ₩990' : 'Unlock Full Reading — ₩990')
-              : (isYearly ? '연간 운세 전체 보기 — ₩990' : '전체 결과 보기 — ₩990')}
-          </a>
-
-        </div>
-
-        {/* Section F: Free unlock (testing) */}
-        {process.env.NEXT_PUBLIC_ENABLE_FREE_PREVIEW === 'true' && (
-          <div style={{ textAlign: 'center', marginTop: '16px', marginBottom: '40px' }}>
-            <span
-              style={{ fontSize: '13px', color: 'var(--text-dim)', cursor: 'pointer', textDecoration: 'underline', opacity: 0.5 }}
-              onClick={() => { setTeaserUnlocked(true); setCurrentScreen(isYearly ? 7 : 4); }}
+          {starBalance >= 10 ? (
+            <button
+              className="paywall-cta"
+              style={{ display: 'block', width: '100%', textAlign: 'center', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '16px' }}
+              onClick={() => {
+                updateStarBalance(starBalance - 10);
+                setTeaserUnlocked(true);
+                setCurrentScreen(isYearly ? 7 : 4);
+              }}
             >
-              {t('freePreview', lang)}
-            </span>
-          </div>
-        )}
+              {lang === 'en'
+                ? (isYearly ? 'Unlock with 10 Stars ⭐' : 'Unlock with 10 Stars ⭐')
+                : (isYearly ? '별빛 10개로 열기 ⭐' : '별빛 10개로 열기 ⭐')}
+            </button>
+          ) : (
+            <button
+              className="paywall-cta"
+              style={{ display: 'block', width: '100%', textAlign: 'center', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '16px', background: 'linear-gradient(135deg, #F59E0B, #EF4444)' }}
+              onClick={() => setCurrentScreen(9)}
+            >
+              {lang === 'en' ? 'Not enough stars! Go charge ⭐' : '별빛이 부족해요! 충전하러 가기 ⭐'}
+            </button>
+          )}
+        </div>
 
         <p style={{ textAlign: 'center', fontSize: '11px', marginTop: '8px', opacity: 0.3 }}>
           {t('disclaimer', lang)}
         </p>
-
-        {/* Spacer for sticky CTA bar on mobile */}
-        <div style={{ height: 80 }} />
-
-        {/* Sticky CTA bar (mobile only) */}
-        <div className="sticky-cta-bar">
-          <span style={{ fontSize: '13px', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>₩990 · 한번 결제</span>
-          <a
-            href="/payment"
-            className="paywall-cta"
-            style={{ flex: 1, maxWidth: '240px', display: 'block', textAlign: 'center', textDecoration: 'none', fontSize: '15px', padding: '12px 16px' }}
-            onClick={async (e) => {
-              e.preventDefault();
-              if (isGenerating) return; // Prevent payment with partial AI text
-              const pendingOrderId = generateOrderId();
-              saveReadingToSession({ aiText, sajuResult, userData, appMode, timestamp: Date.now() });
-              fetch('/api/readings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                keepalive: true,
-                body: JSON.stringify({ orderId: pendingOrderId, type: appMode === 'yearly' ? 'yearly' : 'saju', inputData: userData ?? null, chartData: sajuResult ?? null, resultText: aiText, lang: 'ko', pending: true }),
-              }).catch(() => {/* fire-and-forget */});
-              window.location.href = '/payment?pendingOrderId=' + pendingOrderId;
-            }}
-          >
-            전체 사주 해석 보기
-          </a>
-        </div>
       </div>
     );
   }
 
   /* ===== SCREEN 9: Star Charging ===== */
-  const [chargeStep, setChargeStep] = useState<'select' | 'confirm'>('select');
-  const [selectedCharge, setSelectedCharge] = useState<{ name: string; price: string; priceNum: number; stars: number; bonus: number } | null>(null);
-  const [payChecks, setPayChecks] = useState([false, false, false]);
-  const allChecked = payChecks.every(Boolean);
-
   function renderChargeScreen() {
-    // Star charging is coming soon — redirect users to direct payment
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '60px', paddingBottom: '40px', textAlign: 'center' }}>
+      <div className="inner screen-enter" style={{ paddingTop: '40px', paddingBottom: '40px' }}>
         <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
-        <div style={{ fontSize: '56px', marginBottom: '16px' }}>⭐</div>
-        <h2 className="gradient-text" style={{ marginBottom: '12px' }}>
-          {lang === 'en' ? 'Star Shop — Coming Soon' : '별빛 충전소 — 준비 중'}
-        </h2>
-        <p style={{ fontSize: '15px', color: 'var(--text-dim)', lineHeight: 1.7, marginBottom: '32px' }}>
-          {lang === 'en'
-            ? 'The star-based system is currently being updated.\nUse direct payment to unlock your full reading now.'
-            : '별빛 충전 시스템은 현재 업데이트 중입니다.\n지금은 직접 결제로 전체 결과를 확인해 보세요.'}
-        </p>
-        <a
-          href="/payment"
-          className="btn btn-primary btn-full"
-          style={{ display: 'block', textAlign: 'center', textDecoration: 'none', maxWidth: '320px', margin: '0 auto' }}
-        >
-          {lang === 'en' ? 'Go to Payment — ₩990' : '결제하기 — ₩990'}
-        </a>
-      </div>
-    );
 
-    /* eslint-disable no-unreachable */
-    const chargeOpts = [
-      { name: t('chargeLabelLight', lang), price: lang === 'en' ? '$1' : '1,000원', priceNum: 1000, stars: 10, bonus: 0, note: t('chargeDescSaju1', lang), popular: false, best: false },
-      { name: t('chargeLabelPopular', lang), price: lang === 'en' ? '$2' : '2,000원', priceNum: 2000, stars: 25, bonus: 5, note: t('chargeDescBestValue', lang), popular: true, best: true },
-    ];
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ fontSize: '56px', marginBottom: '8px', animation: 'float 3s ease-in-out infinite' }}>⭐</div>
+          <h2 className="gradient-text" style={{ marginBottom: '8px' }}>
+            {lang === 'en' ? 'Star Shop' : '별빛 충전소'}
+          </h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-dim)' }}>
+            {lang === 'en' ? 'Charge stars to unlock your readings' : '별빛을 충전하고 사주 해석을 열어보세요'}
+          </p>
+        </div>
 
-    const businessInfo = {
-      companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || '상호명을 입력하세요',
-      ceoName: process.env.NEXT_PUBLIC_CEO_NAME || '대표자명',
-      businessNumber: process.env.NEXT_PUBLIC_BUSINESS_NUMBER || '000-00-00000',
-      salesNumber: process.env.NEXT_PUBLIC_SALES_NUMBER || '제0000-서울XX-0000호',
-      address: process.env.NEXT_PUBLIC_ADDRESS || '사업장 주소를 입력하세요',
-      phone: process.env.NEXT_PUBLIC_CS_PHONE || '000-0000-0000',
-      email: process.env.NEXT_PUBLIC_CS_EMAIL || 'support@example.com',
-    };
+        {/* Current balance */}
+        <div className="card card-glow" style={{ textAlign: 'center', marginBottom: '20px', padding: '20px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '4px' }}>
+            {lang === 'en' ? 'My Stars' : '보유 별빛'}
+          </p>
+          <div style={{ fontSize: '36px', fontWeight: 900, color: '#F6C443' }}>⭐ {starBalance}{lang === 'en' ? '' : '개'}</div>
+        </div>
 
-    /* ----- Confirm step (결제 확인) ----- */
-    if (chargeStep === 'confirm' && selectedCharge) {
-      const totalStars = selectedCharge.stars + selectedCharge.bonus;
-      return (
-        <div className="inner screen-enter" style={{ paddingTop: '40px', paddingBottom: '40px' }}>
-          <button className="back-btn" onClick={() => { setChargeStep('select'); setPayChecks([false, false, false]); }}>{t('payBack', lang)}</button>
-
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <div style={{ fontSize: '40px', marginBottom: '8px' }}>💳</div>
-            <h2 className="gradient-text" style={{ marginBottom: '4px' }}>{t('payConfirmTitle', lang)}</h2>
-          </div>
-
-          {/* Product card */}
-          <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>⭐ {selectedCharge.name}</h3>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)' }}>
-                {selectedCharge.price}
+        {/* Charge option card */}
+        <div className="card" style={{
+          padding: '24px', marginBottom: '16px',
+          border: '2px solid rgba(240,199,94,0.5)',
+          background: 'linear-gradient(135deg, rgba(240,199,94,0.1), rgba(255,208,128,0.05))',
+          position: 'relative'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', marginBottom: '4px' }}>⭐ {lang === 'en' ? '10 Stars' : '별빛 10개'}</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-dim)' }}>
+                {lang === 'en' ? 'Unlock 1 full saju or yearly reading' : '사주/운세 전체 해석 1회 열람'}
               </div>
             </div>
-
-            <div style={{ fontSize: '13px', lineHeight: 2 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '4px 0' }}>
-                <span style={{ color: 'rgba(245,240,232,0.5)' }}>{t('payProductName', lang)}</span>
-                <span style={{ color: 'var(--text)' }}>별빛 ⭐{selectedCharge.stars}{selectedCharge.bonus > 0 ? '+' + selectedCharge.bonus : ''}{t('starUnit', lang)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '4px 0' }}>
-                <span style={{ color: 'rgba(245,240,232,0.5)' }}>{t('payPrice', lang)}</span>
-                <span style={{ color: 'var(--text)' }}>{selectedCharge.price}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '4px 0' }}>
-                <span style={{ color: 'rgba(245,240,232,0.5)' }}>{t('payDelivery', lang)}</span>
-                <span style={{ color: 'var(--text)' }}>{t('payDeliveryValue', lang)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                <span style={{ color: 'rgba(245,240,232,0.5)' }}>{t('payTiming', lang)}</span>
-                <span style={{ color: 'var(--text)' }}>{t('payTimingValue', lang)}</span>
-              </div>
-            </div>
-
-            <div style={{ fontSize: '12px', lineHeight: 1.7, color: 'rgba(245,240,232,0.45)', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-              {t('payServiceDesc', lang)}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '24px', fontWeight: 900, color: '#F6C443' }}>₩990</div>
             </div>
           </div>
+          <a
+            href="/payment"
+            className="btn btn-primary"
+            style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '14px', fontSize: '16px', fontWeight: 700, width: '100%', boxSizing: 'border-box' }}
+          >
+            {lang === 'en' ? 'Buy 10 Stars — ₩990' : '별빛 10개 구매 — ₩990'}
+          </a>
+        </div>
 
-          {/* Refund policy */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', padding: '16px', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', margin: '0 0 8px 0' }}>{t('payRefundTitle', lang)}</h4>
-            <ul style={{ margin: 0, paddingLeft: '16px' }}>
-              {['payRefund1', 'payRefund2', 'payRefund3', 'payRefund4'].map(k => (
-                <li key={k} style={{ fontSize: '11.5px', lineHeight: 1.7, color: 'rgba(245,240,232,0.5)', marginBottom: '2px' }}>{t(k, lang)}</li>
-              ))}
-            </ul>
-          </div>
+        {/* Pricing info */}
+        <div className="card" style={{ padding: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.8, marginBottom: '20px' }}>
+          <p style={{ marginBottom: '8px', fontWeight: 700, color: 'var(--text)' }}>
+            {lang === 'en' ? 'How stars work' : '별빛 사용 안내'}
+          </p>
+          <p style={{ marginBottom: '4px' }}>
+            {lang === 'en' ? '⭐ 10 stars = Full saju or yearly reading' : '⭐ 10개 = 개인 사주 또는 올해 운세 전체 해석'}
+          </p>
+          <p style={{ marginBottom: '4px' }}>
+            {lang === 'en' ? '⭐ 5 stars = Compatibility reading' : '⭐ 5개 = 궁합 전체 해석'}
+          </p>
+          <p>
+            {lang === 'en' ? '🤰 Pregnancy reading = Free' : '🤰 임산부 사주 = 무료'}
+          </p>
+        </div>
 
-          {/* Checkboxes */}
-          <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-            {/* Select all */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
-              onClick={() => { const next = !allChecked; setPayChecks([next, next, next]); }}>
-              <div style={{ width: '22px', height: '22px', minWidth: '22px', borderRadius: '5px', border: allChecked ? '2px solid var(--primary)' : '2px solid rgba(255,255,255,0.25)', background: allChecked ? 'var(--primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
-                {allChecked && <span style={{ color: '#0A0E2A', fontSize: '14px', fontWeight: 900, lineHeight: 1 }}>✓</span>}
-              </div>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{t('payCheckAll', lang)}</span>
-            </div>
-            {['payCheck1', 'payCheck2', 'payCheck3'].map((k, i) => (
-              <div key={k} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 0', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
-                onClick={() => { const next = [...payChecks]; next[i] = !next[i]; setPayChecks(next); }}>
-                <div style={{ width: '22px', height: '22px', minWidth: '22px', borderRadius: '5px', border: payChecks[i] ? '2px solid var(--primary)' : '2px solid rgba(255,255,255,0.25)', background: payChecks[i] ? 'var(--primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', marginTop: '1px' }}>
-                  {payChecks[i] && <span style={{ color: '#0A0E2A', fontSize: '14px', fontWeight: 900, lineHeight: 1 }}>✓</span>}
-                </div>
-                <span style={{ fontSize: '12.5px', lineHeight: 1.5, color: 'rgba(245,240,232,0.75)' }}>{t(k, lang)}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Pay button */}
+        {/* Free charge button for testing */}
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
           <button
-            disabled={!allChecked}
             onClick={() => {
-              saveReadingToSession({ aiText, sajuResult, userData, appMode, timestamp: Date.now() });
-              // TODO: 토스페이먼츠 연동 시 여기서 requestPayment 호출
-              // 현재는 테스트 모드로 바로 별 충전
-              updateStarBalance(starBalance + totalStars);
-              setChargeStep('select');
-              setPayChecks([false, false, false]);
-              setSelectedCharge(null);
-              alert(t('paySuccess', lang) + ' ⭐' + totalStars + t('payStarsAdded', lang));
+              updateStarBalance(starBalance + 10);
+              alert(lang === 'en' ? 'Added 10 free stars! ⭐' : '무료 별빛 10개가 충전되었어요! ⭐');
             }}
             style={{
-              width: '100%', padding: '16px', border: 'none', borderRadius: 'var(--radius-sm)',
-              fontSize: '17px', fontWeight: 700, cursor: allChecked ? 'pointer' : 'not-allowed',
-              background: allChecked ? 'linear-gradient(135deg, var(--primary), var(--primary-light))' : 'rgba(255,255,255,0.08)',
-              color: allChecked ? '#0A0E2A' : 'rgba(245,240,232,0.3)',
-              transition: 'all 0.2s', fontFamily: 'inherit', minHeight: '52px',
+              background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+              padding: '10px 20px', fontSize: '13px', color: 'var(--text-dim)', cursor: 'pointer',
+              opacity: 0.6, fontFamily: 'inherit', transition: 'opacity 0.2s'
             }}
           >
-            {selectedCharge.price + ' ' + t('payTestBtn', lang)}
+            {lang === 'en' ? '🎁 Add 10 Free Stars (Testing)' : '🎁 무료 별빛 10개 충전 (테스트용)'}
           </button>
-
-          <p style={{ textAlign: 'center', fontSize: '11.5px', color: 'rgba(245,240,232,0.4)', marginTop: '12px', lineHeight: 1.5 }}>
-            {t('payNotice', lang)}
-          </p>
-
-          {/* Business info footer */}
-          <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '11px', lineHeight: 1.8, color: 'rgba(245,240,232,0.25)' }}>
-            <div style={{ fontWeight: 700, color: 'rgba(245,240,232,0.4)', marginBottom: '4px' }}>{t('payBusinessInfo', lang)}</div>
-            <div>{businessInfo.companyName} | {lang === 'ko' ? '대표' : 'CEO'}: {businessInfo.ceoName}</div>
-            <div>{lang === 'ko' ? '사업자등록번호' : 'Business No'}: {businessInfo.businessNumber}</div>
-            <div>{lang === 'ko' ? '통신판매업' : 'Sales No'}: {businessInfo.salesNumber}</div>
-            <div>{businessInfo.address}</div>
-            <div>{lang === 'ko' ? '고객센터' : 'Support'}: {businessInfo.phone} | {businessInfo.email}</div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-              <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '이용약관' : 'Terms'}</a>
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '개인정보처리방침' : 'Privacy'}</a>
-              <a href="/refund" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'underline', cursor: 'pointer' }}>{lang === 'ko' ? '환불정책' : 'Refund'}</a>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    /* ----- Select step (충전 옵션 선택) ----- */
-    return (
-      <div className="inner screen-enter" style={{ paddingTop: '40px' }}>
-        <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '8px', animation: 'float 3s ease-in-out infinite' }}>⭐</div>
-          <h2 className="gradient-text" style={{ marginBottom: '8px' }}>{t('starShopTitle', lang)}</h2>
-          <p style={{ fontSize: '14px', color: 'var(--text-dim)' }}>{t('starShopSubtitle', lang)}</p>
-        </div>
-        <div className="card card-glow" style={{ textAlign: 'center', marginBottom: '16px', padding: '20px' }}>
-          <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '4px' }}>{t('currentStarsLabel', lang)}</p>
-          <div style={{ fontSize: '36px', fontWeight: 900, color: '#F6C443' }}>⭐ {starBalance}{t('starUnit', lang)}</div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-          {chargeOpts.map((opt, i) => (
-            <div key={i} className="card" style={{
-              padding: '20px', position: 'relative',
-              border: opt.popular ? '2px solid rgba(240,199,94,0.5)' : opt.best ? '2px solid rgba(159,122,234,0.5)' : '1px solid rgba(255,255,255,0.08)',
-              background: opt.popular ? 'linear-gradient(135deg, rgba(240,199,94,0.1), rgba(255,208,128,0.05))' : opt.best ? 'linear-gradient(135deg, rgba(159,122,234,0.1), rgba(196,181,253,0.05))' : undefined,
-            }}>
-              {opt.popular && (
-                <div style={{ position: 'absolute', top: '-10px', right: '16px', background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A', fontSize: '11px', fontWeight: 800, padding: '3px 12px', borderRadius: '10px' }}>BEST</div>
-              )}
-              {opt.best && (
-                <div style={{ position: 'absolute', top: '-10px', right: '16px', background: 'linear-gradient(135deg, #9F7AEA, #7C3AED)', color: '#fff', fontSize: '11px', fontWeight: 800, padding: '3px 12px', borderRadius: '10px' }}>PREMIUM</div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', marginBottom: '2px' }}>{opt.name}</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-dim)' }}>{opt.note}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '22px', fontWeight: 900, color: '#F6C443' }}>⭐ {opt.stars}{t('starUnit', lang)}</div>
-                  {opt.bonus > 0 && <div style={{ fontSize: '12px', color: '#2ED573', fontWeight: 700 }}>+{opt.bonus} {t('bonusLabel', lang)}</div>}
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>{opt.price}</span>
-                <button className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '15px' }} onClick={() => {
-                  setSelectedCharge(opt);
-                  setPayChecks([false, false, false]);
-                  setChargeStep('confirm');
-                }}>{t('chargeBtn', lang)}</button>
-              </div>
-              <div style={{ textAlign: 'right', marginTop: '4px', fontSize: '11px', color: 'var(--text-dim)' }}>{t('starPrice', lang)}</div>
-            </div>
-          ))}
-        </div>
-        <div className="card" style={{ padding: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.8 }}>
-          <p style={{ marginBottom: '8px', fontWeight: 700, color: 'var(--text)' }}>{t('starShopInfo1', lang)}</p>
-          <p style={{ marginBottom: '8px' }}>{t('starShopInfo2', lang)}</p>
-          <p style={{ fontSize: '11px', opacity: 0.5 }}>{t('testVersionNotice', lang)}</p>
         </div>
       </div>
     );
@@ -3832,7 +3669,17 @@ export default function SajuApp() {
     <>
       <StarsBackground />
       <div style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 100, display: 'flex', gap: '8px', alignItems: 'center' }}>
-        {/* Star charge nav hidden — coming soon */}
+        <button
+          onClick={() => setCurrentScreen(9)}
+          aria-label={lang === 'ko' ? '별빛 충전소' : 'Star Shop'}
+          style={{
+            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(246,196,67,0.3)',
+            borderRadius: '20px', padding: '10px 14px', fontSize: '13px', fontWeight: 700,
+            color: '#F6C443', cursor: 'pointer', minHeight: '44px', display: 'flex', alignItems: 'center', gap: '4px'
+          }}
+        >
+          ⭐ {starBalance}
+        </button>
         <button
           onClick={() => setLang(lang === 'ko' ? 'en' : 'ko')}
           aria-label={lang === 'ko' ? 'Switch to English' : '한국어로 전환'}

@@ -145,6 +145,12 @@
   },
   "hotPaths": [
     {
+      "path": "src\\components\\SajuApp.tsx",
+      "accessCount": 28,
+      "lastAccessed": 1776041695066,
+      "type": "file"
+    },
+    {
       "path": "src\\app\\globals.css",
       "accessCount": 7,
       "lastAccessed": 1776038517890,
@@ -173,12 +179,6 @@
       "accessCount": 1,
       "lastAccessed": 1776038546462,
       "type": "directory"
-    },
-    {
-      "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776038557299,
-      "type": "file"
     }
   ],
   "userDirectives": []
