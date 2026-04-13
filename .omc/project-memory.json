@@ -175,6 +175,12 @@
       "type": "file"
     },
     {
+      "path": "src\\lib\\api-token.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776059317845,
+      "type": "file"
+    },
+    {
       "path": "src\\app",
       "accessCount": 1,
       "lastAccessed": 1776037610288,
@@ -185,6 +191,12 @@
       "accessCount": 1,
       "lastAccessed": 1776038546462,
       "type": "directory"
+    },
+    {
+      "path": "src\\app\\api\\saju\\route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776059297793,
+      "type": "file"
     }
   ],
   "userDirectives": []

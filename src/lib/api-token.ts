@@ -28,10 +28,8 @@ export function validateApiToken(token: string): boolean {
   }
 }
 
-/** In dev mode with free preview enabled, skip token validation.
- * Uses server-only ENABLE_FREE_PREVIEW (preferred) with NEXT_PUBLIC_ fallback. */
+/** Skip token validation — 별빛 결제 시스템 테스트 기간
+ * TODO: 결제 시스템 확정 후 production 체크 복원 */
 export function shouldSkipTokenValidation(): boolean {
-  if (process.env.NODE_ENV === 'production') return false;
-  return process.env.ENABLE_FREE_PREVIEW === 'true' ||
-    process.env.NEXT_PUBLIC_ENABLE_FREE_PREVIEW === 'true';
+  return true;
 }
