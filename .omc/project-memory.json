@@ -146,8 +146,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 37,
-      "lastAccessed": 1776069079997,
+      "accessCount": 42,
+      "lastAccessed": 1776069668783,
       "type": "file"
     },
     {
@@ -163,6 +163,12 @@
       "type": "file"
     },
     {
+      "path": "src\\app\\api\\saju\\route.ts",
+      "accessCount": 5,
+      "lastAccessed": 1776069703541,
+      "type": "file"
+    },
+    {
       "path": "public\\sw.js",
       "accessCount": 4,
       "lastAccessed": 1776042032423,
@@ -170,8 +176,8 @@
     },
     {
       "path": "src",
-      "accessCount": 3,
-      "lastAccessed": 1776069087358,
+      "accessCount": 4,
+      "lastAccessed": 1776069646778,
       "type": "directory"
     },
     {
@@ -184,12 +190,6 @@
       "path": "src\\lib\\api-token.ts",
       "accessCount": 2,
       "lastAccessed": 1776059317845,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\api\\saju\\route.ts",
-      "accessCount": 2,
-      "lastAccessed": 1776068922412,
       "type": "file"
     },
     {
