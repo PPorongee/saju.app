@@ -5,6 +5,33 @@ export const JJ_HANJA = ['子','丑','寅','卯','辰','巳','午','未','申','
 export const OH_CG = ['목','목','화','화','토','토','금','금','수','수'];
 export const OH_JJ = ['수','토','목','목','토','화','화','토','금','금','토','수'];
 export const OH_HANJA: Record<string, string> = {'목':'木','화':'火','토':'土','금':'金','수':'水'};
+
+/**
+ * 지장간 (Hidden Stems / 藏干) — authoritative fixed table
+ * Each 지지 contains 1-3 hidden stems: [여기, 중기, 본기] or fewer.
+ * Reference: 연해자평, 삼명통회 — universally agreed across all schools.
+ * Stem indices: 갑=0, 을=1, 병=2, 정=3, 무=4, 기=5, 경=6, 신=7, 임=8, 계=9
+ */
+/**
+ * Ground-truth verified 지장간 table.
+ * Source: verified against 사주아이/만세력 reference (image 12 golden case).
+ * Convention: Full 3-stem (여기, 중기, 본기) for all branches that have them.
+ * Order: [여기, 중기, 본기] — 본기 is the primary/strongest hidden stem.
+ */
+export const JIJANGGAN: number[][] = [
+  /* 자(子) */ [8, 9],        // 임(壬/수), 계(癸/수)             — 본기=계  [FIXED: was [9] only — missing 壬]
+  /* 축(丑) */ [9, 7, 5],     // 계(癸/수), 신(辛/금), 기(己/토)  — 본기=기
+  /* 인(寅) */ [4, 2, 0],     // 무(戊/토), 병(丙/화), 갑(甲/목)  — 본기=갑
+  /* 묘(卯) */ [1],           // 을(乙/목)                        — 본기=을
+  /* 진(辰) */ [1, 9, 4],     // 을(乙/목), 계(癸/수), 무(戊/토)  — 본기=무
+  /* 사(巳) */ [4, 6, 2],     // 무(戊/토), 경(庚/금), 병(丙/화)  — 본기=병
+  /* 오(午) */ [5, 3],        // 기(己/토), 정(丁/화)             — 본기=정
+  /* 미(未) */ [3, 1, 5],     // 정(丁/화), 을(乙/목), 기(己/토)  — 본기=기
+  /* 신(申) */ [4, 8, 6],     // 무(戊/토), 임(壬/수), 경(庚/금)  — 본기=경
+  /* 유(酉) */ [7],           // 신(辛/금)                        — 본기=신
+  /* 술(戌) */ [7, 3, 4],     // 신(辛/금), 정(丁/화), 무(戊/토)  — 본기=무
+  /* 해(亥) */ [4, 0, 8],     // 무(戊/토), 갑(甲/목), 임(壬/수)  — 본기=임  [FIXED: was [0,8] — missing 戊]
+];
 export const OH_EN: Record<string, string> = {'목':'wood','화':'fire','토':'earth','금':'metal','수':'water'};
 export const OH_ICON: Record<string, string> = {'목':'🌿','화':'🔥','토':'⛰️','금':'🔩','수':'💧'};
 
@@ -40,8 +67,48 @@ export function getSajuMonth(solarMonth: number, solarDay: number): number {
   return 10;
 }
 
-export function isBeforeIpchun(month: number, day: number): boolean {
-  return month < 2 || (month === 2 && day < 4);
+// Ipchun (입춘) dates by year — the exact date when the solar year begins in saju
+// Source: Korean astronomical almanac (만세력)
+const IPCHUN_DATES: Record<number, { month: number; day: number }> = {
+  2000: { month: 2, day: 4 },
+  2001: { month: 2, day: 4 },
+  2002: { month: 2, day: 4 },
+  2003: { month: 2, day: 4 },
+  2004: { month: 2, day: 4 },
+  2005: { month: 2, day: 4 },
+  2006: { month: 2, day: 4 },
+  2007: { month: 2, day: 4 },
+  2008: { month: 2, day: 4 },
+  2009: { month: 2, day: 4 },
+  2010: { month: 2, day: 4 },
+  2011: { month: 2, day: 4 },
+  2012: { month: 2, day: 4 },
+  2013: { month: 2, day: 4 },
+  2014: { month: 2, day: 4 },
+  2015: { month: 2, day: 4 },
+  2016: { month: 2, day: 4 },
+  2017: { month: 2, day: 3 },  // Feb 3
+  2018: { month: 2, day: 4 },
+  2019: { month: 2, day: 4 },
+  2020: { month: 2, day: 4 },
+  2021: { month: 2, day: 3 },  // Feb 3
+  2022: { month: 2, day: 4 },
+  2023: { month: 2, day: 4 },
+  2024: { month: 2, day: 4 },
+  2025: { month: 2, day: 3 },  // Feb 3
+  2026: { month: 2, day: 4 },
+  2027: { month: 2, day: 4 },
+  2028: { month: 2, day: 4 },
+  2029: { month: 2, day: 3 },  // Feb 3
+  2030: { month: 2, day: 4 },
+};
+
+// When year is omitted (or outside the lookup table), falls back to Feb 4 approximation.
+export function isBeforeIpchun(month: number, day: number, year?: number): boolean {
+  const ipchun = year !== undefined && IPCHUN_DATES[year]
+    ? IPCHUN_DATES[year]
+    : { month: 2, day: 4 }; // approximation for years outside lookup table
+  return month < ipchun.month || (month === ipchun.month && day < ipchun.day);
 }
 
 export interface SajuResult {
@@ -58,7 +125,7 @@ export interface SajuResult {
 }
 
 export function calcSaju(y: number, m: number, d: number, hour: number): SajuResult {
-  const sajuYear = isBeforeIpchun(m, d) ? y - 1 : y;
+  const sajuYear = isBeforeIpchun(m, d, y) ? y - 1 : y;
   let yStem = (sajuYear - 4) % 10;
   if (yStem < 0) yStem += 10;
   let yBranch = (sajuYear - 4) % 12;
@@ -97,19 +164,64 @@ export function calcSaju(y: number, m: number, d: number, hour: number): SajuRes
   };
 }
 
+/**
+ * 오행 count — SURFACE count (visible 8 characters).
+ * Convention: 4 천간 (OH_CG) + 4 지지 surface 오행 (OH_JJ).
+ * This matches the standard display convention used by major Korean saju apps
+ * (사주아이, 점신, etc.) and the user-provided golden fixtures.
+ * Total count is always 8 (or 6 without hour pillar).
+ */
 export function getOhCount(saju: SajuResult): Record<string, number> {
   const counts: Record<string, number> = {'목':0,'화':0,'토':0,'금':0,'수':0};
+
+  // 4 천간 (heavenly stems) — OH_CG maps stem index to 오행
   counts[OH_CG[saju.yStem]]++;
-  counts[OH_JJ[saju.yBranch]]++;
   counts[OH_CG[saju.mStem]]++;
-  counts[OH_JJ[saju.mBranch]]++;
   counts[OH_CG[saju.dStem]]++;
+  if (saju.hStem >= 0) counts[OH_CG[saju.hStem]]++;
+
+  // 4 지지 surface 오행 — OH_JJ maps branch index to 오행
+  counts[OH_JJ[saju.yBranch]]++;
+  counts[OH_JJ[saju.mBranch]]++;
   counts[OH_JJ[saju.dBranch]]++;
-  if (saju.hStem >= 0) {
-    counts[OH_CG[saju.hStem]]++;
-    counts[OH_JJ[saju.hBranch]]++;
-  }
+  if (saju.hBranch >= 0) counts[OH_JJ[saju.hBranch]]++;
+
   return counts;
+}
+
+/**
+ * 오행 count — FULL count including all 지장간 (hidden stems).
+ * Convention: 4 천간 + all 지장간 from 4 지지.
+ * Used for deeper doctrinal analysis (연해자평, 자평진전).
+ * Total count varies: typically 12-16 with hour, 9-12 without.
+ */
+export function getOhCountFull(saju: SajuResult): Record<string, number> {
+  const counts: Record<string, number> = {'목':0,'화':0,'토':0,'금':0,'수':0};
+
+  // 4 천간 (heavenly stems)
+  counts[OH_CG[saju.yStem]]++;
+  counts[OH_CG[saju.mStem]]++;
+  counts[OH_CG[saju.dStem]]++;
+  if (saju.hStem >= 0) counts[OH_CG[saju.hStem]]++;
+
+  // 지장간 from each 지지
+  const branches = [saju.yBranch, saju.mBranch, saju.dBranch];
+  if (saju.hBranch >= 0) branches.push(saju.hBranch);
+
+  for (const branch of branches) {
+    const hiddenStems = JIJANGGAN[branch];
+    for (const stemIdx of hiddenStems) {
+      counts[OH_CG[stemIdx]]++;
+    }
+  }
+
+  return counts;
+}
+
+/** Get the 지장간 for a given branch */
+export function getJijanggan(branch: number): number[] {
+  if (branch < 0 || branch > 11) return [];
+  return JIJANGGAN[branch];
 }
 
 export function calcSipsung(dayStem: number, targetStem: number): string {
@@ -147,38 +259,51 @@ export function getSipsung(sj: SajuResult): Record<string, string> {
 export function calcShinsal(sj: SajuResult): string[] {
   const sals: string[] = [];
   const db = sj.dBranch;
-  const branches = [sj.yBranch, sj.mBranch, sj.hBranch >= 0 ? sj.hBranch : -1];
+  const hb = sj.hBranch >= 0 ? sj.hBranch : -1;
+  // All four branch positions for search
+  const allFourBranches = [sj.yBranch, sj.mBranch, db, hb];
+
+  /** Build search pool excluding the base branch position itself */
+  function poolExcluding(base: number): number[] {
+    // When base is 일지, search [년지, 월지, 시지]
+    // When base is 년지, search [월지, 일지, 시지]
+    if (base === db) return [sj.yBranch, sj.mBranch, hb];
+    return [sj.mBranch, db, hb]; // base is 년지
+  }
 
   // 삼합 기반 도화살: 인오술->묘(3), 사유축->오(6), 신자진->유(9), 해묘미->자(0)
+  // 삼명통회: lookup base = 년지 AND 일지 (both checked)
   const dohwaMap: Record<number, number> = {0:9,1:6,2:3,3:0,4:9,5:6,6:3,7:0,8:9,9:6,10:3,11:0};
-  const dohwaTarget = dohwaMap[db];
-  for (let i = 0; i < branches.length; i++) {
-    if (branches[i] === dohwaTarget) { sals.push('도화살'); break; }
+  for (const base of [db, sj.yBranch]) {
+    const target = dohwaMap[base];
+    if (poolExcluding(base).includes(target)) { sals.push('도화살'); break; }
   }
 
   // 삼합 기반 역마살: 인오술->신(8), 사유축->해(11), 신자진->인(2), 해묘미->사(5)
+  // 삼명통회: lookup base = 년지 AND 일지
   const yukmaMap: Record<number, number> = {0:2,1:11,2:8,3:5,4:2,5:11,6:8,7:5,8:2,9:11,10:8,11:5};
-  const yukmaTarget = yukmaMap[db];
-  for (let j = 0; j < branches.length; j++) {
-    if (branches[j] === yukmaTarget) { sals.push('역마살'); break; }
+  for (const base of [db, sj.yBranch]) {
+    const target = yukmaMap[base];
+    if (poolExcluding(base).includes(target)) { sals.push('역마살'); break; }
   }
 
+  // 화개살: lookup base = 년지 AND 일지
   const hwagaeMap: Record<number, number> = {0:4,1:1,2:10,3:7,4:4,5:1,6:10,7:7,8:4,9:1,10:10,11:7};
-  const hwagaeTarget = hwagaeMap[db];
-  for (let k = 0; k < branches.length; k++) {
-    if (branches[k] === hwagaeTarget) { sals.push('화개살'); break; }
+  for (const base of [db, sj.yBranch]) {
+    const target = hwagaeMap[base];
+    if (poolExcluding(base).includes(target)) { sals.push('화개살'); break; }
   }
 
   // 홍염살 (일간 기준): 갑->오(6), 을->신(8), 병->인(2), 정->미(7), 무->진(4), 기->진(4), 경->술(10), 신->유(9), 임->자(0), 계->신(8)
   const hongMap: Record<number, number> = {0:6,1:8,2:2,3:7,4:4,5:4,6:10,7:9,8:0,9:8};
   const hongTarget = hongMap[sj.dStem];
-  for (let l = 0; l < branches.length; l++) {
-    if (branches[l] === hongTarget) { sals.push('홍염살'); break; }
+  for (const b of allFourBranches) {
+    if (b === hongTarget) { sals.push('홍염살'); break; }
   }
 
-  /* 괴강살: 경진/경술/임진/무술 일주만 해당 */
+  /* 괴강살: 경진(庚辰)/경술(庚戌)/임진(壬辰)/임술(壬戌) — 삼명통회 */
   if ((sj.dStem === 6 && sj.dBranch === 4) || (sj.dStem === 6 && sj.dBranch === 10) ||
-      (sj.dStem === 8 && sj.dBranch === 4) || (sj.dStem === 4 && sj.dBranch === 10)) {
+      (sj.dStem === 8 && sj.dBranch === 4) || (sj.dStem === 8 && sj.dBranch === 10)) {
     sals.push('괴강살');
   }
 
@@ -234,7 +359,7 @@ export function calcShinsal(sj: SajuResult): string[] {
   /* 장성살: 년지/일지 기준 */
   const jangMap: Record<number, number> = {0:9,1:10,2:11,3:0,4:1,5:2,6:3,7:4,8:5,9:6,10:7,11:8};
   const jangTarget = jangMap[sj.dBranch];
-  for (const b of branches) { if (b === jangTarget) { sals.push('장성살'); break; } }
+  for (const b of poolExcluding(db)) { if (b === jangTarget) { sals.push('장성살'); break; } }
 
   return sals;
 }
@@ -346,3 +471,49 @@ export const PROFILES: Record<number, {
     weakness: '감정 기복이 심해서 에너지 소모가 클 수 있어'
   }
 };
+
+/**
+ * Canonical hour-branch mapping from exact birth time.
+ * Standard Korean 만세력: each 시 is exactly 2 hours.
+ * 자시 23:00-00:59, 축시 01:00-02:59, ... 해시 21:00-22:59
+ */
+export function exactTimeToHourBranch(hour: number, minute: number): number {
+  const total = hour * 60 + minute;
+  if (total >= 1380 || total < 60) return 0;   // 자 23:00-00:59
+  if (total < 180) return 1;                     // 축 01:00-02:59
+  if (total < 300) return 2;                     // 인 03:00-04:59
+  if (total < 420) return 3;                     // 묘 05:00-06:59
+  if (total < 540) return 4;                     // 진 07:00-08:59
+  if (total < 660) return 5;                     // 사 09:00-10:59
+  if (total < 780) return 6;                     // 오 11:00-12:59
+  if (total < 900) return 7;                     // 미 13:00-14:59
+  if (total < 1020) return 8;                    // 신 15:00-16:59
+  if (total < 1140) return 9;                    // 유 17:00-18:59
+  if (total < 1260) return 10;                   // 술 19:00-20:59
+  return 11;                                      // 해 21:00-22:59
+}
+
+/** Validate that a saju result is internally consistent */
+export function validateSajuResult(saju: ReturnType<typeof calcSaju>): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  // Stem must be 0-9
+  if (saju.yStem < 0 || saju.yStem > 9) errors.push(`Invalid year stem: ${saju.yStem}`);
+  if (saju.mStem < 0 || saju.mStem > 9) errors.push(`Invalid month stem: ${saju.mStem}`);
+  if (saju.dStem < 0 || saju.dStem > 9) errors.push(`Invalid day stem: ${saju.dStem}`);
+  // Branch must be 0-11
+  if (saju.yBranch < 0 || saju.yBranch > 11) errors.push(`Invalid year branch: ${saju.yBranch}`);
+  if (saju.mBranch < 0 || saju.mBranch > 11) errors.push(`Invalid month branch: ${saju.mBranch}`);
+  if (saju.dBranch < 0 || saju.dBranch > 11) errors.push(`Invalid day branch: ${saju.dBranch}`);
+  // Hour pillar: either -1 (unknown) or valid range
+  if (saju.hStem !== -1 && (saju.hStem < 0 || saju.hStem > 9)) errors.push(`Invalid hour stem: ${saju.hStem}`);
+  if (saju.hBranch !== -1 && (saju.hBranch < 0 || saju.hBranch > 11)) errors.push(`Invalid hour branch: ${saju.hBranch}`);
+  // Stem-branch parity: stem%2 must equal branch%2 (both odd or both even)
+  if (saju.yStem % 2 !== saju.yBranch % 2) errors.push('Year stem/branch parity mismatch');
+  if (saju.mStem % 2 !== saju.mBranch % 2) errors.push('Month stem/branch parity mismatch');
+  if (saju.dStem % 2 !== saju.dBranch % 2) errors.push('Day stem/branch parity mismatch');
+  if (saju.hStem >= 0 && saju.hStem % 2 !== saju.hBranch % 2) errors.push('Hour stem/branch parity mismatch');
+  return { valid: errors.length === 0, errors };
+}
+
+/** Engine version for audit trail */
+export const SAJU_ENGINE_VERSION = '1.2.0';

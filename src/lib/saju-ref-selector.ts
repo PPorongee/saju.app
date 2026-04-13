@@ -44,7 +44,9 @@ export function getRelevantRefs(options: {
 
   if (selected.length === 0) return '';
 
-  let result = '=== 참고 명리학 지식 (자연스럽게 녹여서 해석해. 원문 인용 최소화!) ===\n';
+  let result = '=== 참고 명리학 지식 (반드시 각 섹션에서 2-4회 인용!) ===\n' +
+    '인용법: "적천수에 이르길 \'원문 내용\'이라 했는데, 이걸 너한테 적용하면~" 형식으로.\n' +
+    '주의: 원문을 정확히 인용해. 없는 구절을 지어내면 안 돼! 아래 참고문헌에서 골라서 써.\n';
   for (let i = 0; i < selected.length; i++) {
     result += (i + 1) + '. ' + selected[i] + '\n';
   }

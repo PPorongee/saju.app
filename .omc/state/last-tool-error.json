@@ -1,7 +1,7 @@
 {
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"C:\\\\Users\\\\jshim\\\\Desktop\\\\saju-app\\\\src\\\\components\\\\SajuApp.tsx\"}",
-  "error": "File content (85923 tokens) exceeds maximum allowed tokens (10000). Use offset and limit parameters to read specific portions of the file, or search for specific content instead of reading the whole file.",
-  "timestamp": "2026-04-05T09:00:33.428Z",
-  "retry_count": 1
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"git apply --3way /tmp/pr-patch.diff 2>&1\",\"timeout\":30000,\"description\":\"Apply patch with 3-way merge\"}",
+  "error": "Exit code 1\nC:/Users/jshim/AppData/Local/Temp/pr-patch.diff:8621: trailing whitespace.\n          \nApplied patch to 'next-env.d.ts' cleanly.\nApplied patch to 'next.config.ts' cleanly.\nApplied patch to 'package-lock.json' cleanly.\nApplied patch to 'package.json' cleanly.\nApplied patch to 'public/sw.js' cleanly.\nFalling back to direct application...\nFalling back to direct application...\nApplied patch to 'src/__tests__/helpers/vitest-setup.ts' cleanly.\nFalling back to direct application...\nApplied p...",
+  "timestamp": "2026-04-13T00:01:38.372Z",
+  "retry_count": 3
 }

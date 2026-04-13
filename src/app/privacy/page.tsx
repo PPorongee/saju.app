@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       </div>
 
       <h1 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>개인정보처리방침</h1>
-      <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', marginBottom: '32px' }}>시행일: [시행일자]</p>
+      <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', marginBottom: '32px' }}>시행일: 2026년 4월 9일</p>
 
       <div style={{ fontSize: '14px', lineHeight: 2, color: 'rgba(245,240,232,0.85)' }}>
 
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
           <p style={{ paddingLeft: '12px' }}>- 출생시간 (선택)</p>
           <p style={{ marginTop: '12px' }}><strong>결제 시 (PG사를 통해 처리)</strong></p>
           <p style={{ paddingLeft: '12px' }}>- 결제 정보는 PG사(토스페이먼츠 등)가 직접 처리하며, 회사는 카드번호 등 민감 결제정보를 직접 수집·저장하지 않습니다.</p>
-          <p style={{ paddingLeft: '12px' }}>- 주문번호, 결제금액, 결제일시, 결제상태 등 거래 기��</p>
+          <p style={{ paddingLeft: '12px' }}>- 주문번호, 결제금액, 결제일시, 결제상태 등 거래 기록</p>
           <p style={{ marginTop: '12px' }}><strong>서비스 이용 과정에서 자동 수집되는 정보</strong></p>
           <p style={{ paddingLeft: '12px' }}>- 접속 IP 주소, 브라우저 종류, 접속 일시, 서비스 이용 기록</p>
         </div>
@@ -57,7 +57,7 @@ export default function PrivacyPage() {
           <p style={{ paddingLeft: '12px' }}>- 소비자의 불만 또는 분쟁처리에 관한 기록: 3년 (전자상거래법)</p>
           <p style={{ paddingLeft: '12px' }}>- 웹사이트 방문 기록: 3개월 (통신비밀보호법)</p>
           <p style={{ marginTop: '12px' }}><strong>서비스 자체 보유기간</strong></p>
-          <p style={{ paddingLeft: '12px' }}>- 사주 해석을 위해 입력한 개인정보 (이름, 생년월일 등): [개인정보 보유기간]</p>
+          <p style={{ paddingLeft: '12px' }}>- 사주 해석을 위해 입력한 개인정보 (이름, 생년월일 등): 결제일로부터 1년</p>
           <p style={{ paddingLeft: '12px' }}>- 결제/거래 기록: 결제일로부터 5년</p>
         </div>
 
@@ -70,22 +70,22 @@ export default function PrivacyPage() {
         <p>회사는 원활한 서비스 제공을 위해 다음과 같이 개인정보 처리를 위탁하고 있습니다.</p>
         <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px', margin: '8px 0', fontSize: '13px' }}>
           <p><strong>결제 처리</strong></p>
-          <p style={{ paddingLeft: '12px' }}>- 수탁업체: [위탁업체명] (토스페이먼츠 등)</p>
+          <p style={{ paddingLeft: '12px' }}>- 수탁업체: 토스페이먼츠㈜</p>
           <p style={{ paddingLeft: '12px' }}>- 위탁 업무: 결제 처리 및 정산</p>
           <p style={{ marginTop: '12px' }}><strong>AI 해석 서비스</strong></p>
           <p style={{ paddingLeft: '12px' }}>- 수탁업체: OpenAI</p>
           <p style={{ paddingLeft: '12px' }}>- 위탁 업무: 사주 해석 결과 생성을 위한 AI 처리</p>
-          <p style={{ paddingLeft: '12px' }}>- 전달 정보: 생년월일, 성별, 출생시간 (이름은 닉네임 사용 가능)</p>
+          <p style={{ paddingLeft: '12px' }}>- 전달 정보: 이름(닉네임 가능), 생년월일, 성별, 출생시간</p>
         </div>
 
         <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>8. 개인정보의 국외이전</h2>
         <p>회사는 AI 기반 사주 해석 결과 생성을 위해 이용자의 일부 정보를 해외 서비스 제공자에게 전달할 수 있습니다.</p>
         <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px', margin: '8px 0', fontSize: '13px' }}>
           <p>- 이전받는 자: OpenAI (미국)</p>
-          <p>- 이전 항목: 생년월일, 성별, 출생시간</p>
+          <p>- 이전 항목: 이름(닉네임 가능), 생년월일, 성별, 출생시간</p>
           <p>- 이전 목적: AI 기반 사주 해석 결과 생성</p>
           <p>- 이전 방법: 네트워크를 통한 전송</p>
-          <p>- 보유 및 이용기간: [국외이전 관련 정보]</p>
+          <p>- 보유 및 이용기간: AI 처리 완료 즉시 삭제 (OpenAI 데이터 보존 정책에 따라 최대 30일)</p>
         </div>
 
         <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>9. 개인정보의 파기 절차 및 방법</h2>
@@ -93,7 +93,7 @@ export default function PrivacyPage() {
         <p>② 파기 방법:</p>
         <p style={{ paddingLeft: '12px' }}>- 전자적 파일: 기록을 재생할 수 없는 기술적 방법을 사용하여 삭제</p>
         <p style={{ paddingLeft: '12px' }}>- 종이 문서: 분쇄기로 분쇄하거나 소각</p>
-        <p>③ 본 서비스는 비회원 기반으로, 이용자가 입력한 사주 정보는 브라우저의 로컬 저장소(localStorage)에 저장되며 서버에 별도로 보관하지 않습니다. 이용자는 브라우저 데이터 삭제를 통해 직접 파기할 수 있습니다.</p>
+        <p>③ 본 서비스는 비회원 기반입니다. 결제 완료 후 사주 해석 결과는 재열람을 위해 서버 데이터베이스에 저장됩니다. 보유기간은 결제일로부터 1년이며, 기간 경과 후 자동 파기됩니다. 브라우저 로컬 저장소에도 편의를 위해 일부 정보가 저장되며, 이용자는 브라우저 데이터 삭제를 통해 직접 파기할 수 있습니다.</p>
 
         <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>10. 정보주체의 권리와 행사 방법</h2>
         <p>이용자(정보주체)는 다음과 같은 권리를 행사할 수 있습니다.</p>
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
 
         <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>12. 개인정보 보호책임자</h2>
         <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px', margin: '8px 0', fontSize: '13px' }}>
-          <p>개인정보 보호책임자: [개인정보 보호책임자/담당부서]</p>
+          <p>개인정보 보호책임자: {B.ceoName} (대표)</p>
           <p>이메일: {B.email}</p>
           <p>전화: {B.phone}</p>
         </div>

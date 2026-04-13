@@ -1,0 +1,136 @@
+{
+  "inputs": [
+    {
+      "year": 1990,
+      "month": 5,
+      "day": 15,
+      "hour": 6
+    },
+    {
+      "year": 1985,
+      "month": 12,
+      "day": 31,
+      "hour": 3
+    },
+    {
+      "year": 2000,
+      "month": 1,
+      "day": 15,
+      "hour": -1
+    }
+  ],
+  "expectedOutputs": [
+    {
+      "saju": {
+        "yStem": 6,
+        "yBranch": 6,
+        "mStem": 7,
+        "mBranch": 5,
+        "dStem": 6,
+        "dBranch": 4,
+        "hStem": 8,
+        "hBranch": 6,
+        "sajuYear": 1990,
+        "sajuMonthIdx": 3
+      },
+      "sipsung": {
+        "년간": "비견",
+        "월간": "겁재",
+        "시간": "식신"
+      },
+      "ohCount": {
+        "목": 0,
+        "화": 3,
+        "토": 1,
+        "금": 3,
+        "수": 1
+      },
+      "shinsal": [
+        "괴강살",
+        "천을귀인",
+        "과숙살"
+      ],
+      "unsung": {
+        "년지": "목욕",
+        "월지": "장생",
+        "일지": "양",
+        "시지": "목욕"
+      }
+    },
+    {
+      "saju": {
+        "yStem": 1,
+        "yBranch": 1,
+        "mStem": 4,
+        "mBranch": 0,
+        "dStem": 0,
+        "dBranch": 4,
+        "hStem": 3,
+        "hBranch": 3,
+        "sajuYear": 1985,
+        "sajuMonthIdx": 10
+      },
+      "sipsung": {
+        "년간": "겁재",
+        "월간": "편재",
+        "시간": "상관"
+      },
+      "ohCount": {
+        "목": 3,
+        "화": 1,
+        "토": 3,
+        "금": 0,
+        "수": 1
+      },
+      "shinsal": [
+        "천을귀인",
+        "양인살",
+        "귀문관살",
+        "장성살"
+      ],
+      "unsung": {
+        "년지": "관대",
+        "월지": "목욕",
+        "일지": "쇠",
+        "시지": "제왕"
+      }
+    },
+    {
+      "saju": {
+        "yStem": 5,
+        "yBranch": 3,
+        "mStem": 3,
+        "mBranch": 1,
+        "dStem": 8,
+        "dBranch": 8,
+        "hStem": -1,
+        "hBranch": -1,
+        "sajuYear": 1999,
+        "sajuMonthIdx": 11
+      },
+      "sipsung": {
+        "년간": "정관",
+        "월간": "정재"
+      },
+      "ohCount": {
+        "목": 1,
+        "화": 1,
+        "토": 2,
+        "금": 1,
+        "수": 1
+      },
+      "shinsal": [
+        "천을귀인",
+        "과숙살"
+      ],
+      "unsung": {
+        "년지": "사",
+        "월지": "쇠",
+        "일지": "장생",
+        "시지": ""
+      }
+    }
+  ],
+  "_description": "Regression fixtures",
+  "_generated": "2026-04-08"
+}

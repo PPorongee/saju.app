@@ -9,7 +9,67 @@ interface ConfirmResult {
   amount?: number;
   method?: string;
   approvedAt?: string;
+  readingCode?: string;
   error?: string;
+  warning?: string;
+}
+
+function ReadingCodeBox({ readingCode }: { readingCode: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(readingCode).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div style={{
+      width: '100%',
+      maxWidth: 320,
+      background: 'rgba(240,199,94,0.08)',
+      border: '1.5px solid rgba(240,199,94,0.3)',
+      borderRadius: 16,
+      padding: '16px 20px',
+      marginBottom: 20,
+      textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 13, color: 'rgba(245,240,232,0.5)', marginBottom: 6 }}>
+        📋 읽기 코드
+      </div>
+      <div style={{
+        fontSize: 20,
+        fontWeight: 800,
+        color: 'var(--primary)',
+        letterSpacing: '0.08em',
+        fontFamily: 'monospace',
+        marginBottom: 8,
+      }}>
+        {readingCode}
+      </div>
+      <div style={{ fontSize: 12, color: 'rgba(245,240,232,0.45)', marginBottom: 12 }}>
+        이 코드를 저장하세요. 나중에 결과를 다시 볼 수 있습니다.
+      </div>
+      <button
+        onClick={handleCopy}
+        style={{
+          background: copied ? 'rgba(80,200,120,0.15)' : 'rgba(240,199,94,0.12)',
+          border: `1px solid ${copied ? 'rgba(80,200,120,0.4)' : 'rgba(240,199,94,0.25)'}`,
+          borderRadius: 20,
+          color: copied ? '#50C878' : 'var(--primary)',
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: 'pointer',
+          padding: '6px 18px',
+          fontFamily: 'inherit',
+          transition: 'all 0.2s',
+        }}
+      >
+        {copied ? '✓ 복사됨' : '코드 복사'}
+      </button>
+    </div>
+  );
 }
 
 function PaymentSuccessContent() {
@@ -125,9 +185,31 @@ function PaymentSuccessContent() {
         )}
       </div>
 
+      {result?.warning && (
+        <div style={{
+          width: '100%',
+          maxWidth: 320,
+          background: 'rgba(234,179,8,0.08)',
+          border: '1.5px solid rgba(234,179,8,0.3)',
+          borderRadius: 12,
+          padding: '12px 16px',
+          marginBottom: 16,
+          fontSize: 13,
+          color: 'rgba(245,240,232,0.7)',
+          textAlign: 'left',
+        }}>
+          <span style={{ color: '#EAB308', fontWeight: 700, marginRight: 6 }}>주의</span>
+          {result.warning}
+        </div>
+      )}
+
+      {result?.readingCode && (
+        <ReadingCodeBox readingCode={result.readingCode} />
+      )}
+
       <button
         className="btn btn-primary btn-full"
-        onClick={() => router.push('/')}
+        onClick={() => router.push('/?returnOrderId=' + (result?.orderId || orderId) + (result?.readingCode ? '&readingCode=' + result.readingCode : ''))}
         style={{ maxWidth: 320, marginBottom: 12 }}
       >
         사주 결과 보기

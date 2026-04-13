@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { PRODUCTS, BUSINESS_INFO, REFUND_POLICY, TOSS_CLIENT_KEY, generateOrderId } from '@/lib/payment-config';
 import { TossPaymentProvider } from '@/lib/payment-provider';
 
 const product = PRODUCTS[0];
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [checks, setChecks] = useState({ c1: false, c2: false, c3: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +30,7 @@ export default function PaymentPage() {
     setLoading(true);
     setError('');
     try {
-      const orderId = generateOrderId();
+      const orderId = searchParams.get('pendingOrderId') || generateOrderId();
       const provider = new TossPaymentProvider(TOSS_CLIENT_KEY);
       await provider.requestPayment({
         orderId,
@@ -46,20 +48,30 @@ export default function PaymentPage() {
 
   const priceFormatted = product.price.toLocaleString('ko-KR');
 
+  // Read user context from sessionStorage for personalization
+  let userName = '';
+  try {
+    const raw = typeof window !== 'undefined' ? sessionStorage.getItem('saju-pending-reading') : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      userName = parsed?.userData?.name || '';
+    }
+  } catch { /* graceful fallback */ }
+
   return (
     <div style={{ position: 'relative', zIndex: 1 }}>
       <div className="payment-page screen-enter">
         {/* Header */}
         <div className="payment-header">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/')}
             style={{
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: '50%',
-              width: 40,
-              height: 40,
-              minWidth: 40,
+              width: 44,
+              height: 44,
+              minWidth: 44,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -74,6 +86,13 @@ export default function PaymentPage() {
           </button>
           <h1>결제하기</h1>
         </div>
+
+        {/* Personalized context */}
+        {userName && (
+          <div style={{ textAlign: 'center', padding: '12px 16px 0', color: 'var(--gold)', fontSize: '15px' }}>
+            {userName}님의 사주 해석을 준비했어요
+          </div>
+        )}
 
         {/* Product card */}
         <div className="payment-card">
@@ -199,6 +218,30 @@ export default function PaymentPage() {
           {loading ? '처리 중...' : `${priceFormatted}원 결제하기`}
         </button>
 
+        {/* Dev bypass - only visible when NEXT_PUBLIC_ENABLE_FREE_PREVIEW is set */}
+        {process.env.NEXT_PUBLIC_ENABLE_FREE_PREVIEW === 'true' && (
+          <button
+            onClick={() => {
+              const orderId = searchParams.get('pendingOrderId') || generateOrderId();
+              router.push(`/payment/success?orderId=${orderId}&paymentKey=dev-bypass&amount=${product.price}`);
+            }}
+            style={{
+              width: '100%',
+              padding: '14px',
+              marginTop: '12px',
+              background: 'rgba(255,107,107,0.15)',
+              border: '1px dashed rgba(255,107,107,0.5)',
+              borderRadius: '12px',
+              color: '#FC8181',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            🔧 개발자 결제 우회 (Dev Bypass)
+          </button>
+        )}
+
         <p className="payment-notice">
           결제 완료 시 주문이 확정되며, 상품에 따라 서비스가 즉시 제공될 수 있습니다.
         </p>
@@ -217,5 +260,13 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div style={{ color: 'var(--text)', padding: '40px', textAlign: 'center' }}>로딩 중...</div>}>
+      <PaymentPageContent />
+    </Suspense>
   );
 }

@@ -146,14 +146,14 @@
   "hotPaths": [
     {
       "path": "src\\app\\globals.css",
-      "accessCount": 5,
-      "lastAccessed": 1776038269192,
+      "accessCount": 7,
+      "lastAccessed": 1776038517890,
       "type": "file"
     },
     {
       "path": "src\\app\\layout.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1776038291021,
+      "accessCount": 5,
+      "lastAccessed": 1776038535867,
       "type": "file"
     },
     {
@@ -167,6 +167,18 @@
       "accessCount": 1,
       "lastAccessed": 1776037610288,
       "type": "directory"
+    },
+    {
+      "path": "src",
+      "accessCount": 1,
+      "lastAccessed": 1776038546462,
+      "type": "directory"
+    },
+    {
+      "path": "src\\components\\SajuApp.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1776038557299,
+      "type": "file"
     }
   ],
   "userDirectives": []

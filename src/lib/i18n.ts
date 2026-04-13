@@ -89,6 +89,10 @@ export const T: Record<string, Record<Lang, string>> = {
   sajuMyeongsik: { ko: '사주 명식', en: 'Birth Chart' },
   ohBalance: { ko: '오행 밸런스', en: 'Five Elements Balance' },
   resultSaved: { ko: '저장되었어!', en: 'Saved!' },
+  savingStatus: { ko: '저장 중...', en: 'Saving...' },
+  savedStatus: { ko: '결과가 저장되었습니다', en: 'Result saved successfully' },
+  saveFailedStatus: { ko: '결과 저장에 실패했습니다', en: 'Failed to save result' },
+  retryBtn: { ko: '다시 시도', en: 'Retry' },
 
   // Generating
   genStep0: { ko: '사주의 별을 읽고 있어요...', en: 'Reading the stars of your chart...' },
@@ -291,7 +295,7 @@ export const T: Record<string, Record<Lang, string>> = {
   notEnoughStarsDesc: { ko: '별이 부족해요 — 충전하고 나의 사주 열어보기', en: 'Not enough stars — charge and unlock your reading' },
   paywallMsgYearly: { ko: '나의 올해 운세가 말해주는 이야기,\n계속 읽어볼래?', en: 'Want to continue reading\nwhat your 2026 fortune reveals?' },
   paywallMsgSaju: { ko: '나의 사주가 말해주는 이야기,\n계속 읽어볼래?', en: 'Want to continue reading\nwhat your Saju reveals?' },
-  currentMonthNote: { ko: '현재 시점(3월~) 기준 남은 운세를 중점 분석해드려요', en: 'Focused analysis on remaining months from current date' },
+  currentMonthNote: { ko: `현재 시점(${new Date().getMonth() + 1}월~) 기준 남은 운세를 중점 분석해드려요`, en: 'Focused analysis on remaining months from current date' },
 
   // Spoiler teaser
   spoilerIdentity: { ko: '의 진짜 정체', en: "'s True Identity" },
@@ -587,7 +591,7 @@ export const T: Record<string, Record<Lang, string>> = {
   hint_bigyup: { ko: '비겁격', en: 'Independence Star' },
 
   // Current month note
-  currentMonthNoteLabel: { ko: '현재 시점(3월~) 기준 남은 운세를 중점 분석해드려요', en: 'Focused analysis on remaining months from current date' },
+  currentMonthNoteLabel: { ko: `현재 시점(${new Date().getMonth() + 1}월~) 기준 남은 운세를 중점 분석해드려요`, en: 'Focused analysis on remaining months from current date' },
 
   // Compat paywall star balance
   starUnit: { ko: '개', en: '' },

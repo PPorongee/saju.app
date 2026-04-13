@@ -1,12 +1,17 @@
-// Business info - values from env vars with sensible defaults
+// Business info - use env.ts centralized defaults (no PII hardcoded here)
+import {
+  NEXT_PUBLIC_COMPANY_NAME, NEXT_PUBLIC_CEO_NAME, NEXT_PUBLIC_BUSINESS_NUMBER,
+  NEXT_PUBLIC_SALES_NUMBER, NEXT_PUBLIC_ADDRESS, NEXT_PUBLIC_CS_PHONE, NEXT_PUBLIC_CS_EMAIL
+} from '@/lib/env';
+
 export const BUSINESS_INFO = {
-  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || '햄찌사랑',
-  ceoName: process.env.NEXT_PUBLIC_CEO_NAME || '이서은',
-  businessNumber: process.env.NEXT_PUBLIC_BUSINESS_NUMBER || '197-56-00903',
-  salesNumber: process.env.NEXT_PUBLIC_SALES_NUMBER || '[통신판매업 신고번호]',
-  address: process.env.NEXT_PUBLIC_ADDRESS || '대전광역시 유성구 어은로 57',
-  phone: process.env.NEXT_PUBLIC_CS_PHONE || '010-5622-7817',
-  email: process.env.NEXT_PUBLIC_CS_EMAIL || 'xkqmffh60@naver.com',
+  companyName: NEXT_PUBLIC_COMPANY_NAME,
+  ceoName: NEXT_PUBLIC_CEO_NAME,
+  businessNumber: NEXT_PUBLIC_BUSINESS_NUMBER,
+  salesNumber: NEXT_PUBLIC_SALES_NUMBER,
+  address: NEXT_PUBLIC_ADDRESS,
+  phone: NEXT_PUBLIC_CS_PHONE,
+  email: NEXT_PUBLIC_CS_EMAIL,
   termsUrl: '/terms',
   privacyUrl: '/privacy',
   refundUrl: '/refund',
@@ -28,7 +33,7 @@ export const PRODUCTS: Product[] = [
     name: 'AI 사주 해석 1회 이용권',
     description:
       '본 서비스는 이용자가 입력한 정보를 바탕으로 사주 해석 결과를 제공하는 온라인 디지털 서비스입니다. 제공되는 해석 결과는 참고용 정보이며, 특정 결과나 효과를 보장하지 않습니다.',
-    price: 9900,
+    price: 990,
     deliveryMethod: '결제 완료 후 웹페이지에서 즉시 결과 확인',
     deliveryTime: '즉시 제공 (일부 상품은 24시간 이내)',
   },
@@ -36,7 +41,6 @@ export const PRODUCTS: Product[] = [
 
 // Toss Payments config
 export const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || '';
-export const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY || ''; // server-only
 
 // Payment provider type for future extension
 export type PaymentProvider = 'toss' | 'kakaopay';

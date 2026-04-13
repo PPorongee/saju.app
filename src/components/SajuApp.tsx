@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   calcSaju, getOhCount, CG, JJ, CG_HANJA, JJ_HANJA,
   OH_CG, OH_JJ, OH_EN, OH_ICON, PROFILES,
@@ -12,7 +12,14 @@ import type { UserData } from '@/lib/saju-prompt';
 import { getRelevantRefs } from '@/lib/saju-ref-selector';
 import { lunarToSolar } from '@/lib/lunar-solar';
 import { t, Lang } from '@/lib/i18n';
-import { BUSINESS_INFO } from '@/lib/payment-config';
+import { saveReadingToSession, loadReadingFromSession, clearReadingFromSession } from '@/lib/reading-storage';
+import { generateOrderId } from '@/lib/payment-config';
+import { formatLLMText } from '@/lib/format-llm';
+import Footer from '@/components/ui/Footer';
+import { SectionExplainer, getShinsalExplanation, getSingangExplanation, getOhInterpretation, UNSUNG_EXPLAIN } from '@/components/ui/TermExplainer';
+import ConsentModal from '@/components/ui/ConsentModal';
+import OhaengChart from '@/components/ui/OhaengChart';
+import PillarDisplay, { type Pillar } from '@/components/ui/PillarDisplay';
 
 /* ===== Stars Background - SVG Star Illustrations ===== */
 const STAR_COLORS = ['#F0C75E', '#FFD080', '#FF6B9D', '#7DD3FC', '#C4B5FD', '#6EE7B7', '#FF8A8A', '#FFF0C8'];
@@ -140,7 +147,7 @@ const StarsBackground = React.memo(function StarsBackground() {
   }, []);
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+    <div aria-hidden="true" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
       {elements.map((el, i) => {
         if (el.type === 'dot') {
           return (
@@ -212,69 +219,6 @@ function getElemClass(oh: string): string {
 
 const OH_EN_CAP: Record<string, string> = {'목':'Wood','화':'Fire','토':'Earth','금':'Metal','수':'Water'};
 
-/* ===== Format LLM Text ===== */
-function formatLLMText(text: string, lang: Lang = 'ko'): string {
-  if (!text || !text.trim()) return '<div class="llm-section llm-hero">Loading...</div>';
-
-  const icons = ['🎯', '🧠', '💰', '💼', '💕', '👥', '🏥', '👨‍👩‍👧', '👶', '🛤', '🔭', '🗺', '💍', '🏠', '🍀', '✨', '💌'];
-  const clss = ['s-purple', 's-blue', 's-yellow', 's-teal', 's-pink', 's-green', 's-red', 's-orange', 's-orange', 's-blue', 's-purple', 's-teal', 's-pink', 's-yellow', 's-green', 's-purple', 's-pink'];
-  const defaultTitles = lang === 'en'
-    ? ['', 'This is who you are', 'Personality & Mental Strength', 'Money & Wealth', 'Career Calling & Roadmap', 'Love & Destiny Map', 'Good People & People to Avoid', 'Health Report', 'Family & Relationships', 'Children & Parenting', 'Current Life Chapter', '2027 Preview', '10-Year Future Scenario', 'Best Marriage Timing', 'Home & Real Estate', 'Lucky Routines & Tips', 'Brightest Age of Your Life', 'A Letter to Myself']
-    : ['', '너는 이런 사람이야', '타고난 성격 & 멘탈 체력', '돈과 나의 관계', '천직 & 커리어 로드맵', '연애 & 인연의 지도', '나에게 좋은 사람 & 주의할 사람', '건강 리포트', '가정 & 가족관계', '자녀운 & 부모 스타일', '지금 나의 인생 챕터', '2027년 미리보기', '향후 10년 미래 시나리오', '결혼 최적 타이밍', '내 집 마련 & 부동산', '행운 루틴 & 개운법', '인생에서 가장 빛나는 나이', '나에게 보내는 편지'];
-
-  const colorMap: Record<string, string> = {
-    's-purple': '#9F7AEA,#6B46C1', 's-green': '#48BB78,#2F855A', 's-orange': '#ED8936,#DD6B20',
-    's-blue': '#4299E1,#2B6CB0', 's-yellow': '#ECC94B,#D69E2E', 's-teal': '#38B2AC,#2C7A7B',
-    's-red': '#FC8181,#E53E3E', 's-pink': '#F687B3,#D53F8C'
-  };
-
-  // Sanitize: escape HTML tags from LLM output before formatting
-  let html = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  try {
-    for (let si = 30; si >= 1; si--) {
-      const regex = new RegExp('##' + si + '\\.([^#]+)##', 'g');
-      const match = html.match(regex);
-      let titleText = defaultTitles[si] || '';
-      if (match) {
-        titleText = match[0].replace('##' + si + '.', '').replace('##', '').trim() || defaultTitles[si];
-        html = html.replace(match[0], '|||SECTION_' + si + '|||');
-      }
-      const shortPat = '##' + si + '.';
-      if (!match && html.indexOf(shortPat) >= 0) {
-        const idx = html.indexOf(shortPat);
-        let endIdx = html.indexOf('\n', idx);
-        if (endIdx < 0) endIdx = idx + 50;
-        titleText = html.substring(idx + shortPat.length, endIdx).replace(/##/g, '').trim() || defaultTitles[si];
-        html = html.substring(0, idx) + '|||SECTION_' + si + '|||' + html.substring(endIdx);
-      }
-      const icon = icons[si - 1] || '🔥';
-      const cls = clss[si - 1] || 's-purple';
-      const colors = colorMap[cls] || '#9F7AEA,#6B46C1';
-      const numBadge = '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;font-size:11px;font-weight:800;color:#fff;margin-right:6px" class="' + cls + '">' + si + '</span>';
-      const cardStart = '</div><div class="llm-section" style="border-left:3px solid;border-image:linear-gradient(135deg,' + colors + ') 1"><h3>' + numBadge + '<span class="s-icon ' + cls + '">' + icon + '</span><span class="s-title">' + titleText + '</span></h3>';
-      html = html.split('|||SECTION_' + si + '|||').join(cardStart);
-    }
-
-    html = html.replace(/\[([^\]]{1,20})\]/g, '<span class="s-keyword kw-tag">$1</span>');
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    // Convert remaining ##title## patterns to inline sub-headers (not new section cards)
-    html = html.replace(/##([^#]{1,60})##/g, '<div style="font-size:17px;font-weight:800;color:var(--primary-light);margin:14px 0 8px;padding:6px 0;border-bottom:1px solid rgba(240,199,94,0.1)">$1</div>');
-    // Remove stray # symbols (markdown headers like ### Title, ## Title, # Title)
-    html = html.replace(/^#{1,4}\s*/gm, '');
-    html = html.replace(/\n#{1,4}\s*/g, '\n');
-    // Clean any remaining lone # characters
-    html = html.replace(/#{1,4}/g, '');
-    html = html.replace(/\n/g, '<br>');
-    html = '<div class="llm-section llm-hero">' + html + '</div>';
-    html = html.replace(/<div class="llm-section[^"]*"><\/div>/g, '');
-  } catch {
-    html = '<div class="llm-section llm-hero">' + text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') + '</div>';
-  }
-
-  return html;
-}
-
 /* ===== Saved Profile System ===== */
 interface SavedProfile {
   name: string;
@@ -298,8 +242,6 @@ function getDaysInMonth(year: number, month: number): number {
 export default function SajuApp() {
   const [lang, setLang] = useState<Lang>('ko');
   const [currentScreen, setCurrentScreen] = useState(0);
-  const [visitorCount, setVisitorCount] = useState(2847);
-  useEffect(() => { setVisitorCount(Math.floor(Math.random() * 2001) + 2000); }, []);
 
   /* PWA service worker registration */
   useEffect(() => {
@@ -313,9 +255,11 @@ export default function SajuApp() {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     setHasMounted(true);
-    if (localStorage.getItem('saju-storage-consent') === 'yes') {
-      setStorageConsent(true);
-    }
+    try {
+      if (localStorage.getItem('saju-storage-consent') === 'yes') {
+        setStorageConsent(true);
+      }
+    } catch { /* Private browsing or restricted WebView */ }
   }, []);
   const [appMode, setAppMode] = useState<'saju' | 'compat' | 'pregnancy' | 'yearly'>('saju');
   const [userData, setUserData] = useState<UserData>({
@@ -329,30 +273,140 @@ export default function SajuApp() {
   const [sajuResult, setSajuResult] = useState<SajuResult | null>(null);
   const [aiText, setAiText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [readingSaveStatus, setReadingSaveStatus] = useState<'saving' | 'saved' | 'failed' | null>(null);
+  const [pendingPersist, setPendingPersist] = useState<{ readingCode: string; orderId: string; body: object } | null>(null);
   const [questionStep, setQuestionStep] = useState(0);
   const [teaserUnlocked, setTeaserUnlocked] = useState(false);
   const [compatUnlocked, setCompatUnlocked] = useState(false);
   const [isLunar, setIsLunar] = useState(false);
+
+  /* Refs for cleanup on navigation */
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  /* Restore reading after payment return */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const returnOrderId = params.get('returnOrderId');
+    const readingCode = params.get('readingCode');
+    if (!returnOrderId) return;
+
+    function restoreFromData(saved: { userData?: unknown; sajuResult?: unknown; aiText?: string; appMode?: string }) {
+      if (saved.userData) setUserData(saved.userData as UserData);
+      if (saved.sajuResult) setSajuResult(saved.sajuResult as SajuResult);
+      if (saved.aiText) setAiText(saved.aiText);
+      if (saved.appMode) setAppMode(saved.appMode as 'saju' | 'compat' | 'pregnancy' | 'yearly');
+      setTeaserUnlocked(true);
+      if (saved.appMode === 'compat') setCompatUnlocked(true);
+      setCurrentScreen(saved.appMode === 'yearly' ? 7 : saved.appMode === 'compat' ? 5 : 4);
+      clearReadingFromSession();
+      // Persist reading to DB for permanent retrieval via reading code
+      if (readingCode && saved.aiText) {
+        const body = {
+          readingCode,
+          orderId: returnOrderId,
+          type: saved.appMode === 'yearly' ? 'yearly' : 'saju',
+          inputData: saved.userData ?? null,
+          chartData: saved.sajuResult ?? null,
+          resultText: saved.aiText,
+          lang: 'ko',
+        };
+        setPendingPersist({ readingCode, orderId: returnOrderId, body });
+      }
+      window.history.replaceState({}, '', '/');
+    }
+
+    // Fast path: sessionStorage (works on most browsers)
+    const saved = loadReadingFromSession();
+    if (saved) {
+      restoreFromData(saved);
+      return;
+    }
+
+    // Fallback: server-side pending reading (Safari ITP / cross-origin redirect)
+    fetch('/api/readings?orderId=' + encodeURIComponent(returnOrderId))
+      .then(res => res.json())
+      .then((data: { success: boolean; reading?: { inputData?: unknown; chartData?: unknown; resultText?: string; type?: string } }) => {
+        if (data.success && data.reading) {
+          const r = data.reading;
+          restoreFromData({
+            userData: r.inputData,
+            sajuResult: r.chartData,
+            aiText: r.resultText,
+            appMode: r.type,
+          });
+        } else {
+          // Both paths failed — return to intro screen
+          setCurrentScreen(0);
+          window.history.replaceState({}, '', '/');
+        }
+      })
+      .catch(() => {
+        setCurrentScreen(0);
+        window.history.replaceState({}, '', '/');
+      });
+  }, []);
+
+  /* Persist reading with retry logic */
+  useEffect(() => {
+    if (!pendingPersist) return;
+    let cancelled = false;
+
+    async function persistReading() {
+      setReadingSaveStatus('saving');
+      const delays = [1000, 2000, 4000];
+      for (let attempt = 0; attempt <= delays.length; attempt++) {
+        try {
+          const res = await fetch('/api/readings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pendingPersist!.body),
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!cancelled) {
+            setReadingSaveStatus('saved');
+            setTimeout(() => setReadingSaveStatus(null), 3000);
+          }
+          return;
+        } catch (err) {
+          console.error(`[SajuApp] persist attempt ${attempt + 1} failed:`, err);
+          if (attempt < delays.length) {
+            await new Promise(r => setTimeout(r, delays[attempt]));
+          }
+        }
+      }
+      if (!cancelled) setReadingSaveStatus('failed');
+    }
+
+    persistReading();
+    return () => { cancelled = true; };
+  }, [pendingPersist]);
 
   /* Exact birth time */
   const [useExactTime, setUseExactTime] = useState(false);
   const [exactHour, setExactHour] = useState(-1);
   const [exactMinute, setExactMinute] = useState(0);
 
+  /**
+   * Maps exact birth time to 시주 branch index (0-11).
+   * Standard Korean 만세력 convention: each 시 is exactly 2 hours.
+   * 자시 23:00-00:59, 축시 01:00-02:59, 인시 03:00-04:59, ...
+   * 해시 21:00-22:59.
+   */
   function exactTimeToSiju(h: number, m: number): number {
     const total = h * 60 + m;
-    if (total >= 1410 || total < 90) return 0;
-    if (total < 210) return 1;
-    if (total < 330) return 2;
-    if (total < 450) return 3;
-    if (total < 570) return 4;
-    if (total < 690) return 5;
-    if (total < 810) return 6;
-    if (total < 930) return 7;
-    if (total < 1050) return 8;
-    if (total < 1170) return 9;
-    if (total < 1290) return 10;
-    return 11;
+    if (total >= 1380 || total < 60) return 0;   // 자시 23:00-00:59
+    if (total < 180) return 1;                     // 축시 01:00-02:59
+    if (total < 300) return 2;                     // 인시 03:00-04:59
+    if (total < 420) return 3;                     // 묘시 05:00-06:59
+    if (total < 540) return 4;                     // 진시 07:00-08:59
+    if (total < 660) return 5;                     // 사시 09:00-10:59
+    if (total < 780) return 6;                     // 오시 11:00-12:59
+    if (total < 900) return 7;                     // 미시 13:00-14:59
+    if (total < 1020) return 8;                    // 신시 15:00-16:59
+    if (total < 1140) return 9;                    // 유시 17:00-18:59
+    if (total < 1260) return 10;                   // 술시 19:00-20:59
+    return 11;                                      // 해시 21:00-22:59
   }
 
   /* Star balance system - free 10 stars on first visit */
@@ -360,13 +414,15 @@ export default function SajuApp() {
   const [compatPaywall, setCompatPaywall] = useState(false);
   useEffect(() => {
     if (!storageConsent) return;
-    const saved = localStorage.getItem('saju-stars');
-    if (saved !== null) {
-      try { setStarBalance(parseInt(saved) || 0); } catch { /* ignore */ }
-    } else {
-      setStarBalance(10);
-      localStorage.setItem('saju-stars', '10');
-    }
+    try {
+      const saved = localStorage.getItem('saju-stars');
+      if (saved !== null) {
+        setStarBalance(parseInt(saved) || 0);
+      } else {
+        setStarBalance(10);
+        localStorage.setItem('saju-stars', '10');
+      }
+    } catch { /* private browsing / storage restricted */ }
   }, [storageConsent]);
   function updateStarBalance(newBalance: number) {
     setStarBalance(newBalance);
@@ -388,8 +444,10 @@ export default function SajuApp() {
   const [showSavedResults, setShowSavedResults] = useState(false);
   useEffect(() => {
     if (!storageConsent) return;
-    const saved = localStorage.getItem('saju-profiles');
-    if (saved) { try { setProfiles(JSON.parse(saved)); } catch(e) { /* ignore */ } }
+    try {
+      const saved = localStorage.getItem('saju-profiles');
+      if (saved) { setProfiles(JSON.parse(saved)); }
+    } catch { /* private browsing / corrupted data */ }
   }, [storageConsent]);
 
   const updateUser = useCallback((field: string, value: unknown) => {
@@ -445,6 +503,16 @@ export default function SajuApp() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [currentScreen]);
 
+  /* Accessibility: scroll to top and move focus on screen transitions */
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const heading = document.querySelector('h1, h2, [role="heading"]') as HTMLElement | null;
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  }, [currentScreen]);
+
   /* Compat analysis state */
   const [compatResult, setCompatResult] = useState<{ html: string } | null>(null);
   const [compatAiText, setCompatAiText] = useState('');
@@ -460,8 +528,8 @@ export default function SajuApp() {
     }
   }
   // Auto-reset when person info or relationship type changes (useEffect to avoid render-time setState)
-  const compatKey = compatPerson1.name + compatPerson1.year + compatPerson1.month + compatPerson1.day + compatPerson1.hour + compatPerson1.isLunar +
-    compatPerson2.name + compatPerson2.year + compatPerson2.month + compatPerson2.day + compatPerson2.hour + compatPerson2.isLunar + compatRelType;
+  const compatKey = [compatPerson1.name, compatPerson1.year, compatPerson1.month, compatPerson1.day, compatPerson1.hour, compatPerson1.isLunar,
+    compatPerson2.name, compatPerson2.year, compatPerson2.month, compatPerson2.day, compatPerson2.hour, compatPerson2.isLunar, compatRelType].join('|');
   useEffect(() => {
     resetCompatResult();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -601,7 +669,7 @@ export default function SajuApp() {
   }
 
   /* ===== AI Streaming ===== */
-  async function fetchSajuReading(prompts: string[]) {
+  async function fetchSajuReading(prompts: string[], signal?: AbortSignal) {
     setIsLoading(true);
     setIsGenerating(true);
     setGeneratingProgress(0);
@@ -611,12 +679,14 @@ export default function SajuApp() {
 
     try {
       for (let pi = 0; pi < prompts.length; pi++) {
+        if (signal?.aborted) return;
         setGeneratingProgress(pi);
         setLoadingProgress(t('genAnalyzing', lang) + ' (' + (pi + 1) + t('genOf', lang) + prompts.length + ')');
         const res = await fetch('/api/saju', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: prompts[pi], lang })
+          body: JSON.stringify({ prompt: prompts[pi], lang }),
+          signal,
         });
         if (!res.ok) throw new Error('API error: ' + res.status);
         if (!res.body) throw new Error('No response body');
@@ -628,9 +698,16 @@ export default function SajuApp() {
           fullText += decoder.decode(value, { stream: true });
         }
       }
-      setAiText(fullText);
+      // Detect stream error sentinel from server
+      const STREAM_ERROR_SENTINEL = '[응답이 중단되었습니다. 다시 시도해 주세요.]';
+      if (fullText.endsWith(STREAM_ERROR_SENTINEL)) {
+        fullText = fullText.slice(0, -STREAM_ERROR_SENTINEL.length).trimEnd();
+        if (!fullText) { setAiText(t('aiError', lang)); } else { setAiText(fullText + '\n\n⚠️ ' + (lang === 'en' ? 'Response was interrupted. Some content may be missing.' : '응답이 중단되었습니다. 일부 내용이 누락되었을 수 있습니다.')); }
+      } else {
+        setAiText(fullText);
+      }
     } catch (err) {
-      console.error('AI streaming error:', err);
+      if (signal?.aborted) return;
       if (!fullText) {
         setAiText(t('aiError', lang));
       } else {
@@ -643,7 +720,7 @@ export default function SajuApp() {
   }
 
   /* ===== Yearly Fortune Fetch ===== */
-  async function fetchYearlyReading(sj: SajuResult) {
+  async function fetchYearlyReading(sj: SajuResult, signal?: AbortSignal) {
     setIsLoading(true);
     setIsGenerating(true);
     setGeneratingProgress(0);
@@ -678,7 +755,10 @@ export default function SajuApp() {
     const yongsinOhY = ysPrompt.yongsin;
 
     const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section title, EVERY explanation — ALL in English.\nDo NOT write Korean sentences. Translate Korean section titles to English.\nExample: Write ##1.What does 2026 mean for my life?## NOT ##1.2026 병오년, 내 인생에서 어떤 해인가?##\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nUse warm, casual, friendly tone. IF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
-      '너는 적천수와 자평진전을 섭렵한 40년 경력의 명리학 대가야. 반말만 써. 존댓말 금지.\n\n' +
+      '너는 적천수(滴天髓)와 자평진전(子平眞詮)을 달달 외우고, 궁통보감(窮通寶鑑)으로 조후를 잡는 40년 경력의 명리학 대가야. 반말만 써. 존댓말 금지.\n' +
+      '고전 인용 필수: 각 섹션마다 적천수/자평진전/궁통보감 중 1-2회 인용. "적천수에 이르길 \'...\'라 했는데, 너한테 적용하면~" 형식으로.\n' +
+      '"너 혹시 이런 경험 있지?" "이런 적 없어?" 같은 찔림 질문을 섹션마다 넣어.\n' +
+      '"결론적으로" "정리하면" 패턴 절대 금지!\n\n' +
       '【분석 대상 - 전체 사주 원국】\n' +
       '이름: ' + (userData.name || '익명') + ' / 성별: ' + (userData.gender === 'm' ? '남' : '여') + ' / 나이: 만 ' + (2026 - userData.year) + '세\n' +
       '⚠️ 나이 맞춤 해석: ' +
@@ -792,7 +872,7 @@ export default function SajuApp() {
 
       '중요: 각 섹션 번호를 ##숫자.제목## 형식으로 반드시 써줘.\n' +
       '비유적 표현을 적극 사용해! 일상적인 것(음식/영화/게임/카페/날씨/SNS)에 빗대면 읽는 사람이 재밌어해.\n' +
-      '고전 명리 지식을 자연스럽게 녹여서 설명해. 원문 한자 인용은 최소화하고 현대적 해설 중심으로.\n' +
+      '각 섹션마다 고전 명리학 원문을 2-4회 인용해서 권위를 높여. 형식: "적천수에 이런 말이 있어: \"갑목이 하늘까지 뻗으려면 화의 도움이 필요하다(甲木參天, 脫胎要火).\" 네 사주가 딱 이 경우야." 인용 후 반드시 사용자 사주에 어떻게 적용되는지 연결해. 섹션 끝에 [근거: 출전명] 표시.\n' +
       '해석의 여지가 있을 때는 긍정적으로. 흥미 유발 포인트를 매 섹션 1개 이상 넣어.\n' +
       '개인사주 해설과 동등한 퀄리티로! 격국/용신/조후/통변/12운성을 적극 활용해. 피상적 해석 금지!\n\n' +
       (lang === 'en' ? '🚨 FINAL REMINDER — MOST IMPORTANT INSTRUCTION 🚨\nWrite EVERYTHING in English. EVERY section title must be in English.\nExample: ##1.What does 2026 mean for my life?## NOT ##1.2026 병오년, 내 인생에서 어떤 해인가?##\nExample: ##2.2026 Monthly Fortune## NOT ##2.2026 월별 상세 운세##\nALL text in English. Korean ONLY for Saju terms in parentheses.\nIF ANY KOREAN SENTENCE APPEARS, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
@@ -803,7 +883,8 @@ export default function SajuApp() {
       const res = await fetch('/api/saju', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, maxTokens: 4096, lang })
+        body: JSON.stringify({ prompt, maxTokens: 4096, lang }),
+        signal,
       });
       if (!res.ok) throw new Error('API error: ' + res.status);
       if (!res.body) throw new Error('No response body');
@@ -814,9 +895,16 @@ export default function SajuApp() {
         if (done) break;
         fullText += decoder.decode(value, { stream: true });
       }
-      setAiText(fullText);
+      // Detect stream error sentinel from server
+      const STREAM_ERR = '[응답이 중단되었습니다. 다시 시도해 주세요.]';
+      if (fullText.endsWith(STREAM_ERR)) {
+        fullText = fullText.slice(0, -STREAM_ERR.length).trimEnd();
+        if (!fullText) { setAiText(t('aiError', lang)); } else { setAiText(fullText + '\n\n⚠️ ' + (lang === 'en' ? 'Response was interrupted. Some content may be missing.' : '응답이 중단되었습니다. 일부 내용이 누락되었을 수 있습니다.')); }
+      } else {
+        setAiText(fullText);
+      }
     } catch (err) {
-      console.error('Yearly reading error:', err);
+      if (signal?.aborted) return;
       if (!fullText) {
         setAiText(t('aiError', lang));
       } else {
@@ -829,6 +917,18 @@ export default function SajuApp() {
   }
 
   /* ===== Calculation + Loading ===== */
+  /** Cancel any in-flight loading timeout + API fetch */
+  function cancelLoading() {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }
+
   function doCalculation() {
     let calcYear = userData.year;
     let calcMonth = userData.month;
@@ -845,16 +945,22 @@ export default function SajuApp() {
     setSajuResult(sj);
     setCurrentScreen(3);
 
-    setTimeout(() => {
+    // Cancel any previous in-flight request
+    cancelLoading();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    loadingTimeoutRef.current = setTimeout(() => {
+      loadingTimeoutRef.current = null;
+      if (controller.signal.aborted) return;
       if (appMode === 'yearly') {
         setCurrentScreen(8); // Go to teaser/paywall first
-        fetchYearlyReading(sj);
+        fetchYearlyReading(sj, controller.signal);
       } else {
         setCurrentScreen(8); // Go to teaser/paywall first
-        // Start fetching in background so it's ready when unlocked
         const ohCount = getOhCount(sj);
         const prompts = buildSajuPrompts(sj, ohCount, { ...userData, isLunar, lang, useExactTime, exactHour, exactMinute });
-        fetchSajuReading(prompts);
+        fetchSajuReading(prompts, controller.signal);
       }
     }, 4500);
   }
@@ -894,7 +1000,8 @@ export default function SajuApp() {
                   </div>
                 ))}
                 <button style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,100,100,0.2)', background: 'rgba(255,100,100,0.08)', color: '#FF8A8A', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginTop: '4px', fontFamily: 'inherit', minHeight: '44px' }} onClick={() => {
-                  localStorage.removeItem('saju-saved-results');
+                  try { localStorage.removeItem('saju-saved-results'); } catch { /* private browsing */ }
+                  setSavedResults([]);
                   setShowSavedResults(false);
                 }}>{t('deleteAll', lang)}</button>
               </div>
@@ -904,8 +1011,11 @@ export default function SajuApp() {
         <div className="feature-grid">
           <div
             className="feature-card"
+            role="button"
+            tabIndex={0}
             style={{ background: 'linear-gradient(135deg, #1E1060, #4C2889, #7C3AED)', boxShadow: '0 8px 30px rgba(124,58,237,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
             onClick={() => { setAppMode('saju'); setCurrentScreen(1); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAppMode('saju'); setCurrentScreen(1); } }}
           >
             <span style={{ position: 'absolute', top: '8px', right: '10px', fontSize: '10px', opacity: 0.5 }}>✨</span>
             <span className="feature-icon">🔮</span>
@@ -914,8 +1024,11 @@ export default function SajuApp() {
           </div>
           <div
             className="feature-card"
+            role="button"
+            tabIndex={0}
             style={{ background: 'linear-gradient(135deg, #7A1F40, #FF6B9D, #FF8A8A)', boxShadow: '0 8px 30px rgba(255,107,157,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
             onClick={() => { setAppMode('compat'); setCurrentScreen(5); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAppMode('compat'); setCurrentScreen(5); } }}
           >
             <span style={{ position: 'absolute', top: '8px', right: '10px', fontSize: '10px', opacity: 0.5 }}>💫</span>
             <span className="feature-icon">💑</span>
@@ -924,8 +1037,11 @@ export default function SajuApp() {
           </div>
           <div
             className="feature-card"
+            role="button"
+            tabIndex={0}
             style={{ background: 'linear-gradient(135deg, #7A5B1E, #F0C75E, #FFD080)', boxShadow: '0 8px 30px rgba(240,199,94,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
             onClick={() => { setAppMode('yearly'); setCurrentScreen(1); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAppMode('yearly'); setCurrentScreen(1); } }}
           >
             <span style={{ position: 'absolute', top: '8px', right: '10px', fontSize: '10px', opacity: 0.5 }}>⭐</span>
             <span className="feature-icon">📅</span>
@@ -934,8 +1050,11 @@ export default function SajuApp() {
           </div>
           <div
             className="feature-card"
+            role="button"
+            tabIndex={0}
             style={{ background: 'linear-gradient(135deg, #0A4A3A, #14B8A6, #6EE7B7)', boxShadow: '0 8px 30px rgba(20,184,166,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
             onClick={() => { setAppMode('pregnancy'); setCurrentScreen(6); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAppMode('pregnancy'); setCurrentScreen(6); } }}
           >
             <span style={{ position: 'absolute', top: '8px', right: '10px', fontSize: '10px', opacity: 0.5 }}>🌿</span>
             <span className="feature-icon">🤰</span>
@@ -944,9 +1063,6 @@ export default function SajuApp() {
           </div>
         </div>
         {/* 이전 결과 보기 - moved to top */}
-        <p style={{ fontSize: '13px', marginTop: '24px', color: 'var(--text-dim)' }}>
-          {t('todayVisitor', lang)} <strong style={{ color: 'var(--accent)' }}>{visitorCount.toLocaleString()}</strong> {t('checkedToday', lang)}
-        </p>
       </div>
     );
   }
@@ -992,42 +1108,42 @@ export default function SajuApp() {
         )}
         <div className="card card-glow">
           <div className="input-group">
-            <label>{t('name', lang)}</label>
-            <input type="text" placeholder={t('namePlaceholder', lang)} value={userData.name} onChange={e => updateUser('name', e.target.value)} />
+            <label htmlFor="input-name">{t('name', lang)}</label>
+            <input id="input-name" type="text" maxLength={50} placeholder={t('namePlaceholder', lang)} value={userData.name} onChange={e => updateUser('name', e.target.value)} aria-label={t('name', lang)} />
           </div>
           <div className="input-group">
-            <label>{t('gender', lang)}</label>
-            <div className="pill-toggle">
-              <button className={userData.gender === 'm' ? 'active' : ''} onClick={() => updateUser('gender', 'm')}>{t('male', lang)}</button>
-              <button className={userData.gender === 'f' ? 'active' : ''} onClick={() => updateUser('gender', 'f')}>{t('female', lang)}</button>
+            <label id="gender-label">{t('gender', lang)}</label>
+            <div className="pill-toggle" role="group" aria-labelledby="gender-label">
+              <button className={userData.gender === 'm' ? 'active' : ''} onClick={() => updateUser('gender', 'm')} aria-pressed={userData.gender === 'm'}>{t('male', lang)}</button>
+              <button className={userData.gender === 'f' ? 'active' : ''} onClick={() => updateUser('gender', 'f')} aria-pressed={userData.gender === 'f'}>{t('female', lang)}</button>
             </div>
           </div>
           <div className="input-group">
-            <label>{t('calendarType', lang)}</label>
-            <div className="pill-toggle">
-              <button className={!isLunar ? 'active' : ''} onClick={() => setIsLunar(false)}>{t('solar', lang)}</button>
-              <button className={isLunar ? 'active' : ''} onClick={() => setIsLunar(true)}>{t('lunar', lang)}</button>
+            <label id="calendar-label">{t('calendarType', lang)}</label>
+            <div className="pill-toggle" role="group" aria-labelledby="calendar-label">
+              <button className={!isLunar ? 'active' : ''} onClick={() => setIsLunar(false)} aria-pressed={!isLunar}>{t('solar', lang)}</button>
+              <button className={isLunar ? 'active' : ''} onClick={() => setIsLunar(true)} aria-pressed={isLunar}>{t('lunar', lang)}</button>
             </div>
           </div>
           <div className="input-group">
-            <label>{t('birthday', lang)}</label>
-            <div className="select-row">
+            <label id="birthday-label">{t('birthday', lang)}</label>
+            <div className="select-row" role="group" aria-labelledby="birthday-label">
               <div className="input-group">
-                <select value={userData.year} onChange={e => updateUser('year', parseInt(e.target.value))}>
-                  {Array.from({ length: 51 }, (_, i) => 2010 - i).map(y => (
+                <select value={userData.year} onChange={e => updateUser('year', parseInt(e.target.value))} aria-label={lang === 'en' ? 'Birth year' : '출생 연도'} aria-required="true">
+                  {Array.from({ length: 86 }, (_, i) => 2025 - i).map(y => (
                     <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>
                   ))}
                 </select>
               </div>
               <div className="input-group">
-                <select value={userData.month} onChange={e => updateUser('month', parseInt(e.target.value))}>
+                <select value={userData.month} onChange={e => updateUser('month', parseInt(e.target.value))} aria-label={lang === 'en' ? 'Birth month' : '출생 월'} aria-required="true">
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                     <option key={m} value={m}>{m}{t('monthUnit', lang)}</option>
                   ))}
                 </select>
               </div>
               <div className="input-group">
-                <select value={userData.day} onChange={e => updateUser('day', parseInt(e.target.value))}>
+                <select value={userData.day} onChange={e => updateUser('day', parseInt(e.target.value))} aria-label={lang === 'en' ? 'Birth day' : '출생 일'} aria-required="true">
                   {Array.from({ length: getDaysInMonth(userData.year, userData.month) }, (_, i) => i + 1).map(d => (
                     <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>
                   ))}
@@ -1036,16 +1152,22 @@ export default function SajuApp() {
             </div>
           </div>
           <div className="input-group">
-            <label>{t('birthTime', lang)}</label>
-            <div className="time-grid">
+            <label id="birthtime-label">{t('birthTime', lang)}</label>
+            <div className="time-grid" role="radiogroup" aria-labelledby="birthtime-label">
               {TIMES.map(ti => (
-                <div key={ti.h} className={'time-option' + (userData.hour === ti.h ? ' selected' : '')} onClick={() => updateUser('hour', ti.h)}>
+                <div key={ti.h} role="radio" aria-checked={userData.hour === ti.h} tabIndex={0}
+                  className={'time-option' + (userData.hour === ti.h ? ' selected' : '')}
+                  onClick={() => updateUser('hour', ti.h)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); updateUser('hour', ti.h); } }}>
                   <div className="time-range">{ti.range}</div>
                   <div className="time-hanja">{lang === 'en' ? ti.hanja.replace('시', '') : ti.hanja}</div>
                   <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
                 </div>
               ))}
-              <div className={'time-option unknown-time' + (userData.hour === -1 ? ' selected' : '')} onClick={() => { updateUser('hour', -1); setUseExactTime(false); setExactHour(-1); }}>
+              <div role="radio" aria-checked={userData.hour === -1} tabIndex={0}
+                className={'time-option unknown-time' + (userData.hour === -1 ? ' selected' : '')}
+                onClick={() => { updateUser('hour', -1); setUseExactTime(false); setExactHour(-1); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); updateUser('hour', -1); setUseExactTime(false); setExactHour(-1); } }}>
                 {t('unknownTime', lang)}
               </div>
             </div>
@@ -1054,7 +1176,7 @@ export default function SajuApp() {
                 const next = !useExactTime;
                 setUseExactTime(next);
                 if (!next) { setExactHour(-1); setExactMinute(0); }
-                else if (exactHour < 0) { setExactHour(12); setExactMinute(0); updateUser('hour', exactTimeToSiju(12, 0)); }
+                else if (exactHour < 0) { setExactHour(0); setExactMinute(0); updateUser('hour', exactTimeToSiju(0, 0)); }
               }}>
                 <span className={'exact-time-checkbox' + (useExactTime ? ' checked' : '')}>{useExactTime ? '✓' : ''}</span>
                 {t('knowExactTime', lang)}
@@ -1079,7 +1201,7 @@ export default function SajuApp() {
                       <option key={i} value={i}>{String(i).padStart(2, '0')}{t('minuteUnit', lang)}</option>
                     ))}
                   </select>
-                  <span className="exact-time-siju">{'→ ' + (lang === 'en' ? TIMES[exactTimeToSiju(exactHour < 0 ? 12 : exactHour, exactMinute)].hanja.replace('시', '') : TIMES[exactTimeToSiju(exactHour < 0 ? 12 : exactHour, exactMinute)].hanja)}</span>
+                  <span className="exact-time-siju">{'→ ' + (lang === 'en' ? TIMES[exactTimeToSiju(exactHour < 0 ? 0 : exactHour, exactMinute)].hanja.replace('시', '') : TIMES[exactTimeToSiju(exactHour < 0 ? 0 : exactHour, exactMinute)].hanja)}</span>
                 </div>
               )}
               <p className="exact-time-note">{t('exactTimeNote', lang)}</p>
@@ -1111,12 +1233,15 @@ export default function SajuApp() {
     const localInterestLabels = interestKeys.map(k => t(k, lang));
 
     const renderGrid = (labels: string[], field: string, currentVal: number, cols?: string) => (
-      <div className="option-grid" style={cols ? { gridTemplateColumns: cols } : undefined}>
+      <div className="option-grid" role="radiogroup" style={cols ? { gridTemplateColumns: cols } : undefined}>
         {labels.map((label, i) => {
           const parts = label.split(' ');
           const hasIcon = parts[0].length <= 2;
           return (
-            <div key={i} className={'option-card' + (currentVal === i ? ' selected' : '')} onClick={() => updateUser(field, i)}>
+            <div key={i} role="radio" aria-checked={currentVal === i} tabIndex={0}
+              className={'option-card' + (currentVal === i ? ' selected' : '')}
+              onClick={() => updateUser(field, i)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); updateUser(field, i); } }}>
               {hasIcon && <span className="icon">{parts[0]}</span>}
               {hasIcon ? parts.slice(1).join(' ') : label}
             </div>
@@ -1150,18 +1275,16 @@ export default function SajuApp() {
             <>
               <h3>{t('q3Title', lang)}<br /><span style={{ fontSize: '13px', color: 'var(--text-dim)', fontWeight: 400 }}>{t('q3Sub', lang)}</span></h3>
               {persKeys.map((pairKeys, pi) => [t(pairKeys[0], lang), t(pairKeys[1], lang)]).map((pair, pi) => (
-                <div key={pi} className="pair-toggle">
-                  <div className={'pair-btn' + (userData.personality[pi] === 0 ? ' active' : '')} onClick={() => {
-                    const newP = [...userData.personality];
-                    newP[pi] = 0;
-                    updateUser('personality', newP);
-                  }}>{pair[0]}</div>
-                  <div className="vs">↔</div>
-                  <div className={'pair-btn' + (userData.personality[pi] === 1 ? ' active' : '')} onClick={() => {
-                    const newP = [...userData.personality];
-                    newP[pi] = 1;
-                    updateUser('personality', newP);
-                  }}>{pair[1]}</div>
+                <div key={pi} className="pair-toggle" role="group">
+                  <div role="radio" aria-checked={userData.personality[pi] === 0} tabIndex={0}
+                    className={'pair-btn' + (userData.personality[pi] === 0 ? ' active' : '')}
+                    onClick={() => { const newP = [...userData.personality]; newP[pi] = 0; updateUser('personality', newP); }}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const newP = [...userData.personality]; newP[pi] = 0; updateUser('personality', newP); } }}>{pair[0]}</div>
+                  <div className="vs" aria-hidden="true">↔</div>
+                  <div role="radio" aria-checked={userData.personality[pi] === 1} tabIndex={0}
+                    className={'pair-btn' + (userData.personality[pi] === 1 ? ' active' : '')}
+                    onClick={() => { const newP = [...userData.personality]; newP[pi] = 1; updateUser('personality', newP); }}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const newP = [...userData.personality]; newP[pi] = 1; updateUser('personality', newP); } }}>{pair[1]}</div>
                 </div>
               ))}
             </>
@@ -1215,7 +1338,7 @@ export default function SajuApp() {
     const steps = [t('loading1', lang), t('loading2', lang), t('loading3', lang)];
     return (
       <div className="inner screen-enter" style={{ paddingTop: '120px', textAlign: 'center' }}>
-        <button className="back-btn" onClick={() => setCurrentScreen(2)}>{t('backBtn', lang)}</button>
+        <button className="back-btn" onClick={() => { cancelLoading(); setIsLoading(false); setIsGenerating(false); setCurrentScreen(2); }}>{t('backBtn', lang)}</button>
         <div style={{ fontSize: '48px', animation: 'float 2s ease-in-out infinite', marginBottom: '32px' }}>🔮</div>
         {steps.map((step, i) => (
           <div key={i} className={'loading-step' + (i <= loadingStep ? (i < loadingStep ? ' done' : ' active') : '')}>
@@ -1280,15 +1403,39 @@ export default function SajuApp() {
     const unsungMap: Record<string, string> = { '시주': unsung['시지'] || '', '일주': unsung['일지'] || '', '월주': unsung['월지'] || '', '년주': unsung['년지'] || '' };
     const shinsal = calcShinsal(sj);
 
-    const gilShin = ['천을귀인', '문창귀인', '장성살'];
-    const gwiin = ['천을귀인', '문창귀인'];
+    const gilShin = ['천을귀인', '문창귀인', '학당귀인', '천주귀인', '복성귀인', '장성살', '천의성', '금여록', '암록'];
+    const gwiin = ['천을귀인', '문창귀인', '학당귀인', '천주귀인', '복성귀인'];
     const shinsalDisplay: Record<string, string> = lang === 'en' ? {
       '천을귀인': 'Noble Star', '문창귀인': 'Literary Star', '장성살': 'General Star',
       '역마살': 'Travel Star', '도화살': 'Charm Star', '화개살': 'Artistic Star',
       '백호살': 'White Tiger', '양인살': 'Blade Star', '귀문관살': 'Ghost Gate',
       '천의성': 'Healer Star', '학당귀인': 'Scholar Star', '천주귀인': 'Heavenly Star',
-      '금여록': 'Golden Carriage', '암록': 'Hidden Fortune', '복성귀인': 'Fortune Star'
+      '금여록': 'Golden Carriage', '암록': 'Hidden Fortune', '복성귀인': 'Fortune Star',
+      '홍염살': 'Romance Star', '괴강살': 'Iron Will', '고진살': 'Solitude Star', '과숙살': 'Inner Depth'
     } : {};
+    const shinsalExplain: Record<string, { ko: string; en: string }> = {
+      // 귀인 (Noble Helpers)
+      '천을귀인': { ko: '어려울 때 귀인이 나타나 도와주는 길한 기운이에요. 가장 강력한 귀인으로, 위기 때 누군가의 도움을 자연스럽게 받게 돼요.', en: 'The most powerful noble helper — people naturally come to your aid in times of crisis' },
+      '문창귀인': { ko: '학문, 글쓰기, 시험에 특별한 재능이 있다는 표시예요. 공부, 자격증, 창작 활동에서 빛을 발해요.', en: 'Special talent in studies, writing, and exams — excels in academics and creative work' },
+      '학당귀인': { ko: '배움에 대한 타고난 열정이 있어요. 평생 학습하며 성장하는 타입이에요.', en: 'Natural passion for lifelong learning — grows through continuous study' },
+      '천주귀인': { ko: '하늘의 도움으로 위기를 넘기는 수호 기운이에요. 큰 사고나 어려움을 무사히 넘기는 경우가 많아요.', en: 'Heavenly protection — tends to safely overcome major crises and difficulties' },
+      '복성귀인': { ko: '타고난 복이 많아 자연스럽게 좋은 일이 따르는 기운이에요. 주변에서 부러워하는 복을 가졌어요.', en: 'Born lucky — good fortune naturally follows, envied by others' },
+      // 살 (Star Markers)
+      '장성살': { ko: '리더십과 추진력이 강한 장군의 기운이에요. 조직에서 자연스럽게 리더 역할을 맡게 돼요.', en: 'General energy — naturally assumes leadership roles in organizations' },
+      '역마살': { ko: '활동적이고 변화를 좋아하며, 여행·이동·해외와 인연이 깊어요. 한 곳에 오래 머물기보다 움직일 때 운이 트여요.', en: 'Deep connection with travel and change — fortune opens through movement, not staying still' },
+      '도화살': { ko: '매력이 넘치고 이성에게 인기가 많은 기운이에요. 대인관계가 넓고 첫인상이 좋아요.', en: 'Overflowing charm — popular with others, wide social circle, great first impressions' },
+      '화개살': { ko: '예술적 감각과 영적 감수성이 뛰어나요. 종교, 철학, 예술, 명상 분야에서 재능을 발휘해요.', en: 'Exceptional artistic and spiritual sensitivity — talents in art, philosophy, and meditation' },
+      '백호살': { ko: '강한 결단력과 용기가 있어요. 수술, 사고 등 갑작스러운 변화에 주의하되, 용기를 살리면 큰 성취를 이뤄요.', en: 'Strong decisiveness and courage — watch for sudden changes, but bravery leads to great achievement' },
+      '양인살': { ko: '에너지가 매우 강하고 승부욕이 있어요. 잘 조절하면 큰 힘이 되지만, 성급한 판단은 조심해야 해요.', en: 'Very high energy and competitive — great power when channeled, but watch for impulsive decisions' },
+      '귀문관살': { ko: '직감이 예리하고 영감이 뛰어나요. 심리학, 상담, 명상, 창작 분야에서 남다른 통찰력을 발휘해요.', en: 'Sharp intuition — extraordinary insight in psychology, counseling, meditation, and creative fields' },
+      '홍염살': { ko: '이성에 대한 관심이 많고 감성이 풍부해요. 연애운이 강하지만 감정에 휘둘리지 않도록 주의해요.', en: 'Rich in romance and emotion — strong love fortune, but be careful not to be swayed by feelings' },
+      '괴강살': { ko: '성격이 강하고 자존심이 높아요. 독립심과 결단력이 뛰어나 큰일을 해내는 타입이에요.', en: 'Strong personality with high self-esteem — independence and decisiveness for big achievements' },
+      '고진살': { ko: '혼자만의 시간을 즐기고 독립적인 성향이 있어요. 고독을 성장의 기회로 활용하면 좋아요.', en: 'Enjoys solitude and independence — use alone time as an opportunity for personal growth' },
+      '과숙살': { ko: '감성이 섬세하고 혼자 있는 시간이 많을 수 있어요. 내면의 성숙함이 빛나는 타입이에요.', en: 'Delicate sensibility with much time alone — inner maturity shines through' },
+      '천의성': { ko: '치유와 돌봄에 타고난 재능이 있어요. 의료, 간호, 상담, 복지 분야에서 능력을 발휘해요.', en: 'Natural healing talent — excels in medicine, nursing, counseling, and welfare' },
+      '금여록': { ko: '물질적 풍요와 안정을 누릴 수 있는 기운이에요. 재정적으로 안정된 삶을 살 가능성이 높아요.', en: 'Energy for material abundance — high likelihood of financial stability' },
+      '암록': { ko: '겉으로 안 보이지만 숨겨진 복과 재능이 있어요. 나이 들수록 진가가 드러나는 타입이에요.', en: 'Hidden blessings and talents — true value reveals itself with age' },
+    };
 
     const energyMap: Record<string, number> = {
       '절': 1, '태': 2, '양': 3, '장생': 5, '목욕': 4, '관대': 7,
@@ -1306,6 +1453,30 @@ export default function SajuApp() {
     return (
       <div className="inner screen-enter">
         <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
+        {/* Reading save status indicator */}
+        {readingSaveStatus === 'saving' && (
+          <div role="status" aria-live="polite" style={{ textAlign: 'center', fontSize: 13, color: 'rgba(245,240,232,0.5)', marginBottom: 8 }}>
+            {t('savingStatus', lang)}
+          </div>
+        )}
+        {readingSaveStatus === 'saved' && (
+          <div role="status" aria-live="polite" style={{ textAlign: 'center', fontSize: 13, color: '#50C878', marginBottom: 8 }}>
+            {t('savedStatus', lang)}
+          </div>
+        )}
+        {readingSaveStatus === 'failed' && (
+          <div role="alert" aria-live="assertive" style={{ textAlign: 'center', fontSize: 13, color: '#EF4444', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {t('saveFailedStatus', lang)}
+            {pendingPersist && (
+              <button
+                onClick={() => setPendingPersist({ ...pendingPersist })}
+                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 12, color: '#EF4444', fontSize: 12, cursor: 'pointer', padding: '2px 10px', fontFamily: 'inherit' }}
+              >
+                {t('retryBtn', lang)}
+              </button>
+            )}
+          </div>
+        )}
         {/* Result Header */}
         <div className="result-header">
           <div className="name gradient-text">{userData.name || t('anonymous', lang)}{t('sajuAnalysisOf', lang)}</div>
@@ -1314,60 +1485,19 @@ export default function SajuApp() {
 
         {/* Four Pillars - Enhanced */}
         <div className="section-divider">{t('sajuMyeongsik', lang)}</div>
-        <div className="card">
-          <div className="pillar-grid">
-            {pillars.map((pp, pi) => {
-              const isDay = pp.key === '일주';
-              return (
-              <div key={pi} className="pillar" style={isDay ? { border: '1.5px solid rgba(240,199,94,0.5)', borderRadius: '12px', background: 'rgba(240,199,94,0.06)', padding: '6px 2px' } : { border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '6px 2px' }}>
-                <div className="pillar-label" style={isDay ? { color: '#F0C75E', fontWeight: 700 } : undefined}>{pp.label}{isDay ? ' ★' : ''}</div>
-                <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginBottom: '4px', lineHeight: 1.2 }}>{pp.desc}</div>
-                {pp.stem < 0 ? (
-                  <>
-                    <div className="stem" style={{ color: 'var(--text-dim)' }}>?</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', minHeight: '16px' }}>-</div>
-                    <div className="branch" style={{ color: 'var(--text-dim)' }}>?</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', minHeight: '16px' }}>-</div>
-                    <div className="elem" style={{ opacity: 0.3 }}>?</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="stem" style={{ color: getElemColor(OH_CG[pp.stem]) }}>
-                      <span style={{ fontSize: '28px' }}>{CG_HANJA[pp.stem]}</span><br />
-                      <span style={{ fontSize: '12px', opacity: 0.7 }}>{CG[pp.stem]}({lang === 'en' ? OH_EN_CAP[OH_CG[pp.stem]] : OH_CG[pp.stem]})</span>
-                    </div>
-                    <div style={{ fontSize: '11px', color: isDay ? 'rgba(240,199,94,0.7)' : '#C4B5FD', minHeight: '16px', fontWeight: 600 }}>
-                      {isDay ? t('dayMasterBracket', lang) : (sipsungMap[pp.key] || '')}
-                    </div>
-                    <div className="branch" style={{ color: getElemColor(OH_JJ[pp.branch]) }}>
-                      <span style={{ fontSize: '28px' }}>{JJ_HANJA[pp.branch]}</span><br />
-                      <span style={{ fontSize: '12px', opacity: 0.7 }}>{JJ[pp.branch]}({OH_JJ[pp.branch]})</span>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#7DD3FC', minHeight: '16px', fontWeight: 600 }}>
-                      {unsungMap[pp.key] || ''}
-                    </div>
-                    <span className={'elem elem-' + getElemClass(OH_CG[pp.stem])}>{lang === 'en' ? OH_EN_CAP[OH_CG[pp.stem]] : OH_CG[pp.stem]}</span>{' '}
-                    <span className={'elem elem-' + getElemClass(OH_JJ[pp.branch])}>{OH_JJ[pp.branch]}</span>
-                  </>
-                )}
-              </div>
-              );
-            })}
-          </div>
-          <p style={{ textAlign: 'center', fontSize: '12px', marginTop: '8px' }}>
-            {t('dayMasterLabel', lang)}: <strong style={{ color: getElemColor(OH_CG[ds]) }}>{CG[ds]} {profile.short}</strong>
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', fontSize: '10px', marginTop: '4px', opacity: 0.5 }}>
-            <span style={{ color: '#C4B5FD' }}>{t('sipsungLabel', lang)}</span>
-            <span>|</span>
-            <span style={{ color: '#7DD3FC' }}>{t('unsungLabel', lang)}</span>
-          </div>
-        </div>
+        <PillarDisplay
+          pillars={pillars}
+          sipsungMap={sipsungMap}
+          unsungMap={unsungMap}
+          dayMasterStem={ds}
+          lang={lang}
+        />
 
         {/* 신살 & 귀인 Badges */}
         {shinsal.length > 0 && (
           <div className="card" style={{ padding: '12px 16px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>{t('shinsalTitle', lang)}</div>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px', color: 'var(--text)' }}>{t('shinsalTitle', lang)}</div>
+            <SectionExplainer text={getShinsalExplanation(lang)} />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {shinsal.map((s, i) => {
                 const isGwiin = gwiin.includes(s);
@@ -1388,41 +1518,26 @@ export default function SajuApp() {
                 );
               })}
             </div>
+            {/* 개별 신살 설명 */}
+            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {shinsal.map((s, i) => {
+                const explain = shinsalExplain[s];
+                if (!explain) return null;
+                const isGwiinItem = gwiin.includes(s);
+                return (
+                  <div key={i} style={{ fontSize: '12px', lineHeight: 1.5, color: 'rgba(245,240,232,0.65)', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
+                    <strong style={{ color: isGwiinItem ? '#F0C75E' : '#FBBF24' }}>{shinsalDisplay[s] || s}</strong>
+                    {' — '}{lang === 'en' ? explain.en : explain.ko}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* Ohaeng Bar Chart - Visual */}
         <div className="section-divider">{t('ohBalance', lang)}</div>
-        <div className="card">
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', height: '80px', margin: '8px 0' }}>
-            {ohKeys.map(k => (
-              <div key={k} style={{ flex: 1, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }}>
-                <div style={{ fontSize: '12px', color: ohColors[k], fontWeight: 700, marginBottom: '4px' }}>{ohCount[k]}</div>
-                <div style={{
-                  height: Math.max(8, (ohCount[k] / total) * 60) + 'px',
-                  background: ohColors[k], borderRadius: '4px 4px 0 0',
-                  transition: 'height 0.5s'
-                }} />
-                <div style={{ fontSize: '11px', marginTop: '4px', color: 'var(--text-dim)' }}>{OH_ICON[k]} {lang === 'en' ? OH_EN_CAP[k] : k}</div>
-              </div>
-            ))}
-          </div>
-          <div className="bar-chart" style={{ marginTop: '8px' }}>
-            {ohKeys.map(k => {
-              const pct = Math.round(ohCount[k] / total * 100);
-              return (
-                <div key={k} className="bar-row">
-                  <div className="bar-label">{OH_ICON[k]} {lang === 'en' ? OH_EN_CAP[k] : k}</div>
-                  <div className="bar-track">
-                    <div className={'bar-fill ' + getElemClass(k)} style={{ width: pct + '%' }}>
-                      {ohCount[k]}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <OhaengChart ohCount={ohCount} lang={lang} />
 
         {/* Life Energy Curve */}
         <div className="section-divider">{t('lifeEnergyFlow', lang)}</div>
@@ -1594,6 +1709,7 @@ export default function SajuApp() {
               <>
                 {/* 신강/신약 게이지 */}
                 <div style={{ marginBottom: '16px' }}>
+                  <SectionExplainer text={getSingangExplanation(isStrong, lang)} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('singangSinyak', lang)}</span>
                     <span style={{ fontSize: '13px', fontWeight: 800, color: isStrong ? '#F0C75E' : '#7DD3FC' }}>
@@ -1854,9 +1970,12 @@ export default function SajuApp() {
 
       const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section title, EVERY explanation — ALL in English.\nDo NOT write Korean sentences. Translate Korean section titles to English.\nExample: Write ##1.How to read compatibility## NOT ##1.궁합 읽는 법##\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nUse warm, casual, friendly tone. IF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
         agePairNote +
-        '너는 30년 경력 사주 궁합 전문가야. 반말만 써. 존댓말 금지.\n' +
+        '너는 적천수(滴天髓)와 자평진전(子平眞詮)을 달달 외운 30년 경력 사주 궁합 전문가야. 반말만 써. 존댓말 금지.\n' +
         '궁합 분석 시 반드시 일간 관계(천간합/상생/상극), 일지 관계(육합/삼합/충/형/파/해), 오행 균형 보완성, 용신 궁합, 십성 궁합(재성/관성/식상/인성 구조 비교)을 모두 근거로 활용해.\n' +
-        '모든 주장에는 반드시 구체적 사주 근거를 붙여: 어떤 천간/지지/십성이 어떤 관계이기 때문에 그런 결론이 나오는지 명시해.\n\n' +
+        '모든 주장에는 반드시 구체적 사주 근거를 붙여: 어떤 천간/지지/십성이 어떤 관계이기 때문에 그런 결론이 나오는지 명시해.\n' +
+        '고전 인용 필수: 각 섹션마다 적천수/자평진전/궁통보감/연해자평 중 1-2회 인용해. 형식: "적천수에 이르길 \'...\'라 했는데, 이 커플한테 적용하면~"\n' +
+        '"너희 혹시 이런 경험 있지?" "이런 적 없어?" 같은 찔림 질문을 섹션마다 1-2개씩 넣어.\n' +
+        '"결론적으로" "정리하면" 패턴 절대 금지! 다음 섹션이 궁금해지는 떡밥으로 끝내.\n\n' +
         '=== ' + myName + '의 사주 원국 ===\n' +
         exact1Str +
         '일간: ' + CG[mySaju.dStem] + '(' + OH_CG[mySaju.dStem] + ') 일지: ' + JJ[mySaju.dBranch] + '(' + OH_JJ[mySaju.dBranch] + ')\n' +
@@ -1970,7 +2089,7 @@ export default function SajuApp() {
         '나쁜 예: "두 사람은 잘 맞아" (근거 없음)\n' +
         '좋은 예: "' + myName + '의 일간 ' + CG[myDS] + '(' + OH_CG[myDS] + ')이 ' + cName + '의 일간 ' + CG[theirDS] + '(' + OH_CG[theirDS] + ')을 생(生)해주는 관계야. ' + OH_CG[myDS] + '이 ' + OH_CG[theirDS] + '을 키워주는 구조라서 자연스럽게 ' + myName + '이 돌봐주는 역할을 하게 돼."\n' +
         '이런 식으로 일간/일지/오행/십성/충합 관계를 구체적으로 언급하면서 설명해. 매 문단마다 사주 근거 1개 이상 필수!\n\n' +
-        '고전 명리 지식을 자연스럽게 녹여서 설명해. 원문 한자 인용은 최소화하고 현대적 해설 중심으로.\n' +
+        '각 섹션마다 고전 명리학 원문을 2-4회 인용해서 권위를 높여. 형식: "적천수에 이런 말이 있어: \"갑목이 하늘까지 뻗으려면 화의 도움이 필요하다(甲木參天, 脫胎要火).\" 네 사주가 딱 이 경우야." 인용 후 반드시 사용자 사주에 어떻게 적용되는지 연결해. 섹션 끝에 [근거: 출전명] 표시.\n' +
         '해석의 여지가 있을 때는 반드시 긍정적으로 해석해. 충(冲)도 "정체를 깨는 기회의 문"으로, 기신도 "이겨내면 더 강해지는 시련"으로.\n' +
         '흥미 유발 포인트를 매 섹션 1개 이상: "사실 이 조합은 100쌍 중 5쌍만 가진 희귀한 구조야!" 같은 훅.\n\n' +
         getRelevantRefs({ dayMaster: myDS, topics: ['compatibility', 'love', 'general'] });
@@ -2025,53 +2144,57 @@ export default function SajuApp() {
               </div>
             )}
             <div className="input-group">
-              <label>{t('name', lang)}</label>
-              <input type="text" placeholder={t('name', lang)} value={compatPerson1.name} onChange={e => setCompatPerson1(p => ({ ...p, name: e.target.value }))} />
+              <label htmlFor="compat1-name">{t('name', lang)}</label>
+              <input id="compat1-name" type="text" placeholder={t('name', lang)} value={compatPerson1.name} onChange={e => setCompatPerson1(p => ({ ...p, name: e.target.value }))} aria-label={lang === 'en' ? 'Person 1 name' : '첫 번째 사람 이름'} />
             </div>
             <div className="input-group">
-              <label>{t('birthday', lang)}</label>
-              <div className="select-row">
+              <label id="compat1-birthday-label">{t('birthday', lang)}</label>
+              <div className="select-row" role="group" aria-labelledby="compat1-birthday-label">
                 <div className="input-group">
-                  <select value={compatPerson1.year} onChange={e => setCompatPerson1(p => ({ ...p, year: parseInt(e.target.value) }))}>
-                    {Array.from({ length: 51 }, (_, i) => 2010 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
+                  <select value={compatPerson1.year} onChange={e => setCompatPerson1(p => ({ ...p, year: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 1 birth year' : '첫 번째 사람 출생 연도'}>
+                    {Array.from({ length: 86 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
                   </select>
                 </div>
                 <div className="input-group">
-                  <select value={compatPerson1.month} onChange={e => setCompatPerson1(p => ({ ...p, month: parseInt(e.target.value) }))}>
+                  <select value={compatPerson1.month} onChange={e => setCompatPerson1(p => ({ ...p, month: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 1 birth month' : '첫 번째 사람 출생 월'}>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{m}{t('monthUnit', lang)}</option>)}
                   </select>
                 </div>
                 <div className="input-group">
-                  <select value={compatPerson1.day} onChange={e => setCompatPerson1(p => ({ ...p, day: parseInt(e.target.value) }))}>
+                  <select value={compatPerson1.day} onChange={e => setCompatPerson1(p => ({ ...p, day: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 1 birth day' : '첫 번째 사람 출생 일'}>
                     {Array.from({ length: getDaysInMonth(compatPerson1.year, compatPerson1.month) }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
                   </select>
                 </div>
               </div>
             </div>
             <div className="input-group">
-              <label>{t('calendarLabel', lang)}</label>
-              <div className="pill-toggle">
-                <button className={!compatPerson1.isLunar ? 'active' : ''} onClick={() => setCompatPerson1(p => ({ ...p, isLunar: false }))}>
+              <label id="compat1-calendar-label">{t('calendarLabel', lang)}</label>
+              <div className="pill-toggle" role="group" aria-labelledby="compat1-calendar-label">
+                <button className={!compatPerson1.isLunar ? 'active' : ''} onClick={() => setCompatPerson1(p => ({ ...p, isLunar: false }))} aria-pressed={!compatPerson1.isLunar}>
                   {t('solarCal', lang)}
                 </button>
-                <button className={compatPerson1.isLunar ? 'active' : ''} onClick={() => setCompatPerson1(p => ({ ...p, isLunar: true }))}>
+                <button className={compatPerson1.isLunar ? 'active' : ''} onClick={() => setCompatPerson1(p => ({ ...p, isLunar: true }))} aria-pressed={compatPerson1.isLunar}>
                   {t('lunarCal', lang)}
                 </button>
               </div>
             </div>
             <div className="input-group">
-              <label>{t('birthTimeLabel', lang)}</label>
-              <div className="time-grid">
+              <label id="compat1-birthtime-label">{t('birthTimeLabel', lang)}</label>
+              <div className="time-grid" role="radiogroup" aria-labelledby="compat1-birthtime-label">
                 {TIMES.map(ti => (
-                  <div key={ti.h} className={'time-option' + (compatPerson1.hour === ti.h ? ' selected' : '')}
-                       onClick={() => setCompatPerson1(p => ({ ...p, hour: ti.h }))}>
+                  <div key={ti.h} role="radio" aria-checked={compatPerson1.hour === ti.h} tabIndex={0}
+                       className={'time-option' + (compatPerson1.hour === ti.h ? ' selected' : '')}
+                       onClick={() => setCompatPerson1(p => ({ ...p, hour: ti.h }))}
+                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCompatPerson1(p => ({ ...p, hour: ti.h })); } }}>
                     <div className="time-range">{ti.range}</div>
                     <div className="time-hanja">{lang === 'en' ? ti.hanja.replace('시', '') : ti.hanja}</div>
                     <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
                   </div>
                 ))}
-                <div className={'time-option unknown-time' + (compatPerson1.hour === -1 ? ' selected' : '')}
-                     onClick={() => { setCompatPerson1(p => ({ ...p, hour: -1 })); setCompatExact1({ use: false, hour: -1, min: 0 }); }}>
+                <div role="radio" aria-checked={compatPerson1.hour === -1} tabIndex={0}
+                     className={'time-option unknown-time' + (compatPerson1.hour === -1 ? ' selected' : '')}
+                     onClick={() => { setCompatPerson1(p => ({ ...p, hour: -1 })); setCompatExact1({ use: false, hour: -1, min: 0 }); }}
+                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCompatPerson1(p => ({ ...p, hour: -1 })); setCompatExact1({ use: false, hour: -1, min: 0 }); } }}>
                   {t('dontKnowTime', lang)}
                 </div>
               </div>
@@ -2079,7 +2202,7 @@ export default function SajuApp() {
                 <label className="exact-time-toggle" onClick={() => {
                   const next = !compatExact1.use;
                   if (!next) { setCompatExact1({ use: false, hour: -1, min: 0 }); }
-                  else { const h = compatExact1.hour < 0 ? 12 : compatExact1.hour; setCompatExact1({ use: true, hour: h, min: compatExact1.min }); setCompatPerson1(p => ({ ...p, hour: exactTimeToSiju(h, compatExact1.min) })); }
+                  else { const h = compatExact1.hour < 0 ? 0 : compatExact1.hour; setCompatExact1({ use: true, hour: h, min: compatExact1.min }); setCompatPerson1(p => ({ ...p, hour: exactTimeToSiju(h, compatExact1.min) })); }
                 }}>
                   <span className={'exact-time-checkbox' + (compatExact1.use ? ' checked' : '')}>{compatExact1.use ? '✓' : ''}</span>
                   {t('knowExactTime', lang)}
@@ -2104,7 +2227,7 @@ export default function SajuApp() {
                         <option key={i} value={i}>{String(i).padStart(2, '0')}{t('minuteUnit', lang)}</option>
                       ))}
                     </select>
-                    <span className="exact-time-siju">{'→ ' + (lang === 'en' ? TIMES[exactTimeToSiju(compatExact1.hour < 0 ? 12 : compatExact1.hour, compatExact1.min)].hanja.replace('시', '') : TIMES[exactTimeToSiju(compatExact1.hour < 0 ? 12 : compatExact1.hour, compatExact1.min)].hanja)}</span>
+                    <span className="exact-time-siju">{'→ ' + (lang === 'en' ? TIMES[exactTimeToSiju(compatExact1.hour < 0 ? 0 : compatExact1.hour, compatExact1.min)].hanja.replace('시', '') : TIMES[exactTimeToSiju(compatExact1.hour < 0 ? 0 : compatExact1.hour, compatExact1.min)].hanja)}</span>
                   </div>
                 )}
                 <p className="exact-time-note">{t('exactTimeNote', lang)}</p>
@@ -2129,53 +2252,57 @@ export default function SajuApp() {
             </div>
           )}
           <div className="input-group">
-            <label>{t('name', lang)}</label>
-            <input type="text" placeholder={t('name', lang)} value={compatPerson2.name} onChange={e => setCompatPerson2(p => ({ ...p, name: e.target.value }))} />
+            <label htmlFor="compat2-name">{t('name', lang)}</label>
+            <input id="compat2-name" type="text" placeholder={t('name', lang)} value={compatPerson2.name} onChange={e => setCompatPerson2(p => ({ ...p, name: e.target.value }))} aria-label={lang === 'en' ? 'Person 2 name' : '두 번째 사람 이름'} />
           </div>
           <div className="input-group">
-            <label>{t('birthday', lang)}</label>
-            <div className="select-row">
+            <label id="compat2-birthday-label">{t('birthday', lang)}</label>
+            <div className="select-row" role="group" aria-labelledby="compat2-birthday-label">
               <div className="input-group">
-                <select value={compatPerson2.year} onChange={e => setCompatPerson2(p => ({ ...p, year: parseInt(e.target.value) }))}>
-                  {Array.from({ length: 51 }, (_, i) => 2010 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
+                <select value={compatPerson2.year} onChange={e => setCompatPerson2(p => ({ ...p, year: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 2 birth year' : '두 번째 사람 출생 연도'}>
+                  {Array.from({ length: 86 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
                 </select>
               </div>
               <div className="input-group">
-                <select value={compatPerson2.month} onChange={e => setCompatPerson2(p => ({ ...p, month: parseInt(e.target.value) }))}>
+                <select value={compatPerson2.month} onChange={e => setCompatPerson2(p => ({ ...p, month: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 2 birth month' : '두 번째 사람 출생 월'}>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{m}{t('monthUnit', lang)}</option>)}
                 </select>
               </div>
               <div className="input-group">
-                <select value={compatPerson2.day} onChange={e => setCompatPerson2(p => ({ ...p, day: parseInt(e.target.value) }))}>
+                <select value={compatPerson2.day} onChange={e => setCompatPerson2(p => ({ ...p, day: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 2 birth day' : '두 번째 사람 출생 일'}>
                   {Array.from({ length: getDaysInMonth(compatPerson2.year, compatPerson2.month) }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}{t('dayUnit', lang)}</option>)}
                 </select>
               </div>
             </div>
           </div>
           <div className="input-group">
-            <label>{t('calendarLabel', lang)}</label>
-            <div className="pill-toggle">
-              <button className={!compatPerson2.isLunar ? 'active' : ''} onClick={() => setCompatPerson2(p => ({ ...p, isLunar: false }))}>
+            <label id="compat2-calendar-label">{t('calendarLabel', lang)}</label>
+            <div className="pill-toggle" role="group" aria-labelledby="compat2-calendar-label">
+              <button className={!compatPerson2.isLunar ? 'active' : ''} onClick={() => setCompatPerson2(p => ({ ...p, isLunar: false }))} aria-pressed={!compatPerson2.isLunar}>
                 {t('solarCal', lang)}
               </button>
-              <button className={compatPerson2.isLunar ? 'active' : ''} onClick={() => setCompatPerson2(p => ({ ...p, isLunar: true }))}>
+              <button className={compatPerson2.isLunar ? 'active' : ''} onClick={() => setCompatPerson2(p => ({ ...p, isLunar: true }))} aria-pressed={compatPerson2.isLunar}>
                 {t('lunarCal', lang)}
               </button>
             </div>
           </div>
           <div className="input-group">
-            <label>{t('birthTimeLabel', lang)}</label>
-            <div className="time-grid">
+            <label id="compat2-birthtime-label">{t('birthTimeLabel', lang)}</label>
+            <div className="time-grid" role="radiogroup" aria-labelledby="compat2-birthtime-label">
               {TIMES.map(ti => (
-                <div key={ti.h} className={'time-option' + (compatPerson2.hour === ti.h ? ' selected' : '')}
-                     onClick={() => setCompatPerson2(p => ({ ...p, hour: ti.h }))}>
+                <div key={ti.h} role="radio" aria-checked={compatPerson2.hour === ti.h} tabIndex={0}
+                     className={'time-option' + (compatPerson2.hour === ti.h ? ' selected' : '')}
+                     onClick={() => setCompatPerson2(p => ({ ...p, hour: ti.h }))}
+                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCompatPerson2(p => ({ ...p, hour: ti.h })); } }}>
                   <div className="time-range">{ti.range}</div>
                   <div className="time-hanja">{lang === 'en' ? ti.hanja.replace('시', '') : ti.hanja}</div>
                   <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
                 </div>
               ))}
-              <div className={'time-option unknown-time' + (compatPerson2.hour === -1 ? ' selected' : '')}
-                   onClick={() => { setCompatPerson2(p => ({ ...p, hour: -1 })); setCompatExact2({ use: false, hour: -1, min: 0 }); }}>
+              <div role="radio" aria-checked={compatPerson2.hour === -1} tabIndex={0}
+                   className={'time-option unknown-time' + (compatPerson2.hour === -1 ? ' selected' : '')}
+                   onClick={() => { setCompatPerson2(p => ({ ...p, hour: -1 })); setCompatExact2({ use: false, hour: -1, min: 0 }); }}
+                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCompatPerson2(p => ({ ...p, hour: -1 })); setCompatExact2({ use: false, hour: -1, min: 0 }); } }}>
                 {t('dontKnowTime', lang)}
               </div>
             </div>
@@ -2183,7 +2310,7 @@ export default function SajuApp() {
               <label className="exact-time-toggle" onClick={() => {
                 const next = !compatExact2.use;
                 if (!next) { setCompatExact2({ use: false, hour: -1, min: 0 }); }
-                else { const h = compatExact2.hour < 0 ? 12 : compatExact2.hour; setCompatExact2({ use: true, hour: h, min: compatExact2.min }); setCompatPerson2(p => ({ ...p, hour: exactTimeToSiju(h, compatExact2.min) })); }
+                else { const h = compatExact2.hour < 0 ? 0 : compatExact2.hour; setCompatExact2({ use: true, hour: h, min: compatExact2.min }); setCompatPerson2(p => ({ ...p, hour: exactTimeToSiju(h, compatExact2.min) })); }
               }}>
                 <span className={'exact-time-checkbox' + (compatExact2.use ? ' checked' : '')}>{compatExact2.use ? '✓' : ''}</span>
                 {t('knowExactTime', lang)}
@@ -2208,7 +2335,7 @@ export default function SajuApp() {
                       <option key={i} value={i}>{String(i).padStart(2, '0')}{t('minuteUnit', lang)}</option>
                     ))}
                   </select>
-                  <span className="exact-time-siju">{'→ ' + (lang === 'en' ? TIMES[exactTimeToSiju(compatExact2.hour < 0 ? 12 : compatExact2.hour, compatExact2.min)].hanja.replace('시', '') : TIMES[exactTimeToSiju(compatExact2.hour < 0 ? 12 : compatExact2.hour, compatExact2.min)].hanja)}</span>
+                  <span className="exact-time-siju">{'→ ' + (lang === 'en' ? TIMES[exactTimeToSiju(compatExact2.hour < 0 ? 0 : compatExact2.hour, compatExact2.min)].hanja.replace('시', '') : TIMES[exactTimeToSiju(compatExact2.hour < 0 ? 0 : compatExact2.hour, compatExact2.min)].hanja)}</span>
                 </div>
               )}
               <p className="exact-time-note">{t('exactTimeNote', lang)}</p>
@@ -2335,33 +2462,20 @@ export default function SajuApp() {
                 {lang === 'en' ? 'Unlock the full compatibility reading\nand discover your connection' : '두 사람의 인연을 깊이 들여다보고\n궁합의 비밀을 확인해볼래?'}
               </div>
               <div style={{ marginBottom: '16px' }}>
-                <span style={{ fontSize: '28px', fontWeight: 800, color: '#F687B3' }}>{t('star5', lang)}</span>
-                <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>{t('currentStars', lang)}: ⭐ {starBalance}{t('starUnit', lang)}</div>
+                <span style={{ fontSize: '28px', fontWeight: 800, color: '#F687B3' }}>₩990</span>
+                <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>{lang === 'en' ? 'One-time payment' : '한번 결제, 영구 열람'}</div>
               </div>
-              {starBalance >= 5 ? (
-                <button className="paywall-cta" style={{ background: 'linear-gradient(135deg, #F687B3, #9F7AEA)' }} onClick={() => {
-                  updateStarBalance(starBalance - 5);
+              <a href="/payment" className="paywall-cta" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', background: 'linear-gradient(135deg, #F687B3, #9F7AEA)' }}>
+                {lang === 'en' ? 'Unlock Full Reading — ₩990' : '전체 결과 보기 — ₩990'}
+              </a>
+              {process.env.NEXT_PUBLIC_ENABLE_FREE_PREVIEW === 'true' && (
+                <p style={{ marginTop: '12px', fontSize: '11px', opacity: 0.4, cursor: 'pointer' }} onClick={() => {
                   setCompatPaywall(false);
                   runCompatAnalysis();
                 }}>
-                  {t('star5Unlock', lang)}
-                </button>
-              ) : (
-                <div>
-                  <button className="paywall-cta" style={{ opacity: 0.5, cursor: 'not-allowed', marginBottom: '12px', background: 'linear-gradient(135deg, #F687B3, #9F7AEA)' }} onClick={() => {}}>
-                    {t('notEnoughStars', lang)}
-                  </button>
-                  <button className="btn btn-primary btn-full" onClick={() => setCurrentScreen(9)}>
-                    {t('goCharge', lang)}
-                  </button>
-                </div>
+                  {t('freePreview', lang)}
+                </p>
               )}
-              <p style={{ marginTop: '12px', fontSize: '11px', opacity: 0.4, cursor: 'pointer' }} onClick={() => {
-                setCompatPaywall(false);
-                runCompatAnalysis();
-              }}>
-                {t('freePreview', lang)}
-              </p>
             </div>
           </div>
           );
@@ -2652,7 +2766,8 @@ export default function SajuApp() {
       setCompatAiText('');
       const momName = pregData.name || '산모';
       const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section — ALL in English.\nDo NOT write Korean. Use warm, casual, friendly tone.\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nIF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
-        '너는 사주 명리학 기반 태아 궁합 전문가야. 반말만 써. 부정적 표현 금지 - 모든 내용을 따뜻하고 희망적으로.\n\n' +
+        '너는 적천수(滴天髓)와 궁통보감(窮通寶鑑)을 섭렵한 사주 명리학 기반 태아 궁합 전문가야. 존댓말로 따뜻하게 써줘. 부정적 표현 금지 - 모든 내용을 따뜻하고 희망적으로.\n' +
+        '고전 인용 필수: 2-3번 적천수/궁통보감 구절을 인용해서 권위 있게. "궁통보감에 이르길 \'...\'라 했는데, 이 아기에게 적용하면~" 형식으로.\n\n' +
         '엄마 사주: 일간=' + CG[momSaju.dStem] + '(' + OH_CG[momSaju.dStem] + '), 년주=' + CG[momSaju.yStem] + JJ[momSaju.yBranch] + ', 월주=' + CG[momSaju.mStem] + JJ[momSaju.mBranch] + ', 일주=' + CG[momSaju.dStem] + JJ[momSaju.dBranch] + '\n' +
         '아기 예정일 사주: 일간=' + CG[babySaju.dStem] + '(' + OH_CG[babySaju.dStem] + '), 년주=' + CG[babySaju.yStem] + JJ[babySaju.yBranch] + ', 월주=' + CG[babySaju.mStem] + JJ[babySaju.mBranch] + ', 일주=' + CG[babySaju.dStem] + JJ[babySaju.dBranch] + '\n' +
         '엄마 오행: 목' + momOh['목'] + ' 화' + momOh['화'] + ' 토' + momOh['토'] + ' 금' + momOh['금'] + ' 수' + momOh['수'] + '\n' +
@@ -2682,10 +2797,10 @@ export default function SajuApp() {
         '- 🎯 엄마의 취미 추천 (임신 중 + 출산 후, 용신 오행 보충하는 활동 3가지)\n' +
         '각각 명리학적 근거를 괄호로 설명. 8줄 이상.\n' +
         '##8.아기가 가져올 가정의 변화## 아기의 사주가 가정 전체의 에너지를 어떻게 바꾸는지. 부부 관계에 미치는 영향, 재물운 변화, 가족 분위기 변화를 사주적 근거로. 아기가 태어난 후 가정이 어떻게 달라지는지 구체적으로. 5줄.\n' +
-        '##9.엄마에게 보내는 편지## 사주를 바탕으로 예비 엄마에게 보내는 따뜻한 응원 메시지. "당신의 사주를 보니 이런 엄마가 될 거야"라는 느낌으로 감동적이고 진심 담아서. 비유를 많이 써서 가슴에 와닿게. 5줄.\n\n' +
+        '##9.엄마에게 보내는 편지## 사주를 바탕으로 예비 엄마에게 보내는 따뜻한 응원 편지. 반드시 존댓말(합니다/습니다/세요 체)로 작성하세요. "어머니의 사주를 보니 이런 멋진 엄마가 되실 거예요"라는 느낌으로 감동적이고 진심을 담아서. 비유를 많이 써서 가슴에 와닿게. 절대 반말 금지. 5줄.\n\n' +
         '비유적 표현을 적극 사용해! 매 섹션마다 최소 2개의 재미있고 따뜻한 비유를 넣어줘.\n' +
         '예시: "엄마가 따뜻한 볕이라면 아기는 그 볕을 받아 피어나는 꽃이야", "이 아기는 엄마 인생에 떨어진 행운의 별똥별 같은 존재야", "엄마의 부족한 수(水) 기운을 아기가 촉촉한 빗물처럼 채워주는 구조야"\n' +
-        '고전 명리 지식을 자연스럽게 녹여서 설명해. 원문 한자 인용은 최소화하고 현대적 해설 중심으로.\n' +
+        '각 섹션마다 고전 명리학 원문을 2-4회 인용해서 권위를 높여. 형식: "적천수에 이런 말이 있어: \"갑목이 하늘까지 뻗으려면 화의 도움이 필요하다(甲木參天, 脫胎要火).\" 네 사주가 딱 이 경우야." 인용 후 반드시 사용자 사주에 어떻게 적용되는지 연결해. 섹션 끝에 [근거: 출전명] 표시.\n' +
         '해석의 여지가 있을 때는 반드시 긍정적으로. 흥미 유발 포인트도 매 섹션 1개 이상.\n\n' +
         getRelevantRefs({ dayMaster: momSaju.dStem, topics: ['compatibility', 'health', 'general'] });
 
@@ -2751,7 +2866,7 @@ export default function SajuApp() {
             <div className="select-row">
               <div className="input-group">
                 <select value={pregData.year} onChange={e => setPregData(p => ({ ...p, year: parseInt(e.target.value) }))}>
-                  {Array.from({ length: 51 }, (_, i) => 2010 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
+                  {Array.from({ length: 86 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
                 </select>
               </div>
               <div className="input-group">
@@ -3224,7 +3339,7 @@ export default function SajuApp() {
           const hasJeongjae = sipsungValues.includes('정재');
           const monthNow = new Date().getMonth() + 1;
           const spoilerMonths = [3, 6, 9, 11];
-          const keyMonth = spoilerMonths.find(m => m > monthNow) || spoilerMonths[0];
+          const keyMonth = spoilerMonths.find(m => m > monthNow) || spoilerMonths[0]; // In Dec, wraps to 3 (next year's first key month)
           const quarterMap: Record<number, string> = { 3: t('quarter1', lang), 6: t('quarter2', lang), 9: t('quarter3', lang), 11: t('quarter4', lang) };
           const keyQuarter = quarterMap[keyMonth] || t('secondHalf', lang);
 
@@ -3332,6 +3447,38 @@ export default function SajuApp() {
           ));
         })()}
 
+        {/* Second CTA above locked items */}
+        {(() => {
+          
+          return (
+            <div style={{ textAlign: 'center', margin: '16px 0 8px' }}>
+              <a
+                href="/payment"
+                className="paywall-cta"
+                style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (isGenerating) return; // Prevent payment with partial AI text
+                  const pendingOrderId = generateOrderId();
+                  saveReadingToSession({ aiText, sajuResult, userData, appMode, timestamp: Date.now() });
+                  fetch('/api/readings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    keepalive: true,
+                    body: JSON.stringify({ orderId: pendingOrderId, type: appMode === 'yearly' ? 'yearly' : 'saju', inputData: userData ?? null, chartData: sajuResult ?? null, resultText: aiText, lang: 'ko', pending: true }),
+                  }).catch(() => {/* fire-and-forget */});
+                  window.location.href = '/payment?pendingOrderId=' + pendingOrderId;
+                }}
+              >
+                전체 사주 해석 보기 ₩990
+              </a>
+              <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '8px', opacity: 0.7 }}>
+                적천수 · 자평진전 · 궁통보감 기반 전통 명리학 분석
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Section C: Locked Section List */}
         <div className="section-divider">{isYearly ? t('yearlyItems', lang) : t('allItems', lang)}</div>
         <div className="card" style={{ padding: '16px' }}>
@@ -3363,6 +3510,10 @@ export default function SajuApp() {
           textAlign: 'center',
           padding: '32px 24px'
         }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '12px' }}>
+            <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>전문가 대면 상담 ₩50,000+</span>
+            {' → AI 사주 해석'}
+          </div>
           <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.7, marginBottom: '20px' }}>
             {isYearly
               ? t('paywallMsgYearly', lang)
@@ -3370,8 +3521,8 @@ export default function SajuApp() {
           </div>
 
           <div style={{ marginBottom: '20px' }}>
-            <span style={{ fontSize: '28px', fontWeight: 800, color: '#F6C443' }}>{t('star10', lang)}</span>
-            <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>{t('currentStars', lang)}: ⭐ {starBalance}{t('starUnit', lang)}</div>
+            <span style={{ fontSize: '28px', fontWeight: 800, color: '#F6C443' }}>₩990</span>
+            <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>{lang === 'en' ? 'One-time payment' : '한번 결제, 영구 열람'}</div>
             {isYearly && (
               <div style={{ fontSize: '12px', color: '#F59E0B', marginTop: '4px', fontWeight: 600 }}>
                 {t('currentMonthNoteLabel', lang)}
@@ -3379,48 +3530,74 @@ export default function SajuApp() {
             )}
           </div>
 
-          {starBalance >= 10 ? (
-            <button className="paywall-cta" onClick={() => {
-              updateStarBalance(starBalance - 10);
-              setTeaserUnlocked(true);
-              setCurrentScreen(isYearly ? 7 : 4);
-            }}>
-              {isYearly ? t('star10UnlockYearly', lang) : t('star10UnlockSaju', lang)}
-            </button>
-          ) : (
-            <div>
-              <button className="paywall-cta" style={{ opacity: 0.5, cursor: 'not-allowed', marginBottom: '12px' }} onClick={() => {}}>
-                {t('notEnoughStarsMsg', lang)}
-              </button>
-              <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '12px' }}>
-                {t('notEnoughStarsDesc', lang)}
-              </div>
-              <button className="btn btn-primary btn-full" onClick={() => setCurrentScreen(9)}>
-                {t('goCharge', lang)}
-              </button>
-            </div>
-          )}
+          <a
+            href="/payment"
+            className="paywall-cta"
+            style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
+            onClick={async (e) => {
+              e.preventDefault();
+              if (isGenerating) return; // Prevent payment with partial AI text
+              const pendingOrderId = generateOrderId();
+              saveReadingToSession({ aiText, sajuResult, userData, appMode, timestamp: Date.now() });
+              fetch('/api/readings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                keepalive: true,
+                body: JSON.stringify({ orderId: pendingOrderId, type: appMode === 'yearly' ? 'yearly' : 'saju', inputData: userData ?? null, chartData: sajuResult ?? null, resultText: aiText, lang: 'ko', pending: true }),
+              }).catch(() => {/* fire-and-forget */});
+              window.location.href = '/payment?pendingOrderId=' + pendingOrderId;
+            }}
+          >
+            {lang === 'en'
+              ? (isYearly ? 'Unlock Full Yearly Reading — ₩990' : 'Unlock Full Reading — ₩990')
+              : (isYearly ? '연간 운세 전체 보기 — ₩990' : '전체 결과 보기 — ₩990')}
+          </a>
 
-          <div style={{ marginTop: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-              {t('todayVisitor', lang)} {visitorCount.toLocaleString()} {t('alreadyChecked', lang)}
-            </div>
-          </div>
         </div>
 
         {/* Section F: Free unlock (testing) */}
-        <div style={{ textAlign: 'center', marginTop: '16px', marginBottom: '40px' }}>
-          <span
-            style={{ fontSize: '13px', color: 'var(--text-dim)', cursor: 'pointer', textDecoration: 'underline', opacity: 0.5 }}
-            onClick={() => { setTeaserUnlocked(true); setCurrentScreen(isYearly ? 7 : 4); }}
-          >
-            {t('freePreview', lang)}
-          </span>
-        </div>
+        {process.env.NEXT_PUBLIC_ENABLE_FREE_PREVIEW === 'true' && (
+          <div style={{ textAlign: 'center', marginTop: '16px', marginBottom: '40px' }}>
+            <span
+              style={{ fontSize: '13px', color: 'var(--text-dim)', cursor: 'pointer', textDecoration: 'underline', opacity: 0.5 }}
+              onClick={() => { setTeaserUnlocked(true); setCurrentScreen(isYearly ? 7 : 4); }}
+            >
+              {t('freePreview', lang)}
+            </span>
+          </div>
+        )}
 
         <p style={{ textAlign: 'center', fontSize: '11px', marginTop: '8px', opacity: 0.3 }}>
           {t('disclaimer', lang)}
         </p>
+
+        {/* Spacer for sticky CTA bar on mobile */}
+        <div style={{ height: 80 }} />
+
+        {/* Sticky CTA bar (mobile only) */}
+        <div className="sticky-cta-bar">
+          <span style={{ fontSize: '13px', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>₩990 · 한번 결제</span>
+          <a
+            href="/payment"
+            className="paywall-cta"
+            style={{ flex: 1, maxWidth: '240px', display: 'block', textAlign: 'center', textDecoration: 'none', fontSize: '15px', padding: '12px 16px' }}
+            onClick={async (e) => {
+              e.preventDefault();
+              if (isGenerating) return; // Prevent payment with partial AI text
+              const pendingOrderId = generateOrderId();
+              saveReadingToSession({ aiText, sajuResult, userData, appMode, timestamp: Date.now() });
+              fetch('/api/readings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                keepalive: true,
+                body: JSON.stringify({ orderId: pendingOrderId, type: appMode === 'yearly' ? 'yearly' : 'saju', inputData: userData ?? null, chartData: sajuResult ?? null, resultText: aiText, lang: 'ko', pending: true }),
+              }).catch(() => {/* fire-and-forget */});
+              window.location.href = '/payment?pendingOrderId=' + pendingOrderId;
+            }}
+          >
+            전체 사주 해석 보기
+          </a>
+        </div>
       </div>
     );
   }
@@ -3432,6 +3609,30 @@ export default function SajuApp() {
   const allChecked = payChecks.every(Boolean);
 
   function renderChargeScreen() {
+    // Star charging is coming soon — redirect users to direct payment
+    return (
+      <div className="inner screen-enter" style={{ paddingTop: '60px', paddingBottom: '40px', textAlign: 'center' }}>
+        <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
+        <div style={{ fontSize: '56px', marginBottom: '16px' }}>⭐</div>
+        <h2 className="gradient-text" style={{ marginBottom: '12px' }}>
+          {lang === 'en' ? 'Star Shop — Coming Soon' : '별빛 충전소 — 준비 중'}
+        </h2>
+        <p style={{ fontSize: '15px', color: 'var(--text-dim)', lineHeight: 1.7, marginBottom: '32px' }}>
+          {lang === 'en'
+            ? 'The star-based system is currently being updated.\nUse direct payment to unlock your full reading now.'
+            : '별빛 충전 시스템은 현재 업데이트 중입니다.\n지금은 직접 결제로 전체 결과를 확인해 보세요.'}
+        </p>
+        <a
+          href="/payment"
+          className="btn btn-primary btn-full"
+          style={{ display: 'block', textAlign: 'center', textDecoration: 'none', maxWidth: '320px', margin: '0 auto' }}
+        >
+          {lang === 'en' ? 'Go to Payment — ₩990' : '결제하기 — ₩990'}
+        </a>
+      </div>
+    );
+
+    /* eslint-disable no-unreachable */
     const chargeOpts = [
       { name: t('chargeLabelLight', lang), price: lang === 'en' ? '$1' : '1,000원', priceNum: 1000, stars: 10, bonus: 0, note: t('chargeDescSaju1', lang), popular: false, best: false },
       { name: t('chargeLabelPopular', lang), price: lang === 'en' ? '$2' : '2,000원', priceNum: 2000, stars: 25, bonus: 5, note: t('chargeDescBestValue', lang), popular: true, best: true },
@@ -3527,6 +3728,7 @@ export default function SajuApp() {
           <button
             disabled={!allChecked}
             onClick={() => {
+              saveReadingToSession({ aiText, sajuResult, userData, appMode, timestamp: Date.now() });
               // TODO: 토스페이먼츠 연동 시 여기서 requestPayment 호출
               // 현재는 테스트 모드로 바로 별 충전
               updateStarBalance(starBalance + totalStars);
@@ -3630,21 +3832,10 @@ export default function SajuApp() {
     <>
       <StarsBackground />
       <div style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 100, display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <button
-          onClick={() => setCurrentScreen(9)}
-          style={{
-            background: 'linear-gradient(135deg, rgba(240,199,94,0.25), rgba(255,208,128,0.15))',
-            border: '1px solid rgba(240,199,94,0.4)',
-            borderRadius: '20px', padding: '10px 14px', fontSize: '13px', fontWeight: 700,
-            color: '#F0C75E', cursor: 'pointer',             display: 'flex', alignItems: 'center', gap: '6px', minHeight: '44px'
-          }}
-        >
-          <span>⭐</span>
-          <span>{t('starChargeNav', lang)}</span>
-          <span style={{ background: 'rgba(240,199,94,0.2)', borderRadius: '10px', padding: '1px 8px', fontSize: '12px', fontWeight: 800, color: '#FFD080' }}>{starBalance}</span>
-        </button>
+        {/* Star charge nav hidden — coming soon */}
         <button
           onClick={() => setLang(lang === 'ko' ? 'en' : 'ko')}
+          aria-label={lang === 'ko' ? 'Switch to English' : '한국어로 전환'}
           style={{
             background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: '20px', padding: '10px 14px', fontSize: '13px', fontWeight: 700,
@@ -3666,70 +3857,17 @@ export default function SajuApp() {
         {currentScreen === 8 && renderTeaser()}
         {currentScreen === 9 && renderChargeScreen()}
         {/* 사업자 정보 푸터 */}
-        <div style={{
-          padding: '24px 16px 40px',
-          textAlign: 'center',
-          fontSize: '11px',
-          lineHeight: 1.8,
-          color: 'rgba(245,240,232,0.25)',
-          borderTop: '1px solid rgba(255,255,255,0.04)',
-          marginTop: '32px'
-        }}>
-          <div>{BUSINESS_INFO.companyName} | 대표 {BUSINESS_INFO.ceoName}</div>
-          <div>사업자등록번호 {BUSINESS_INFO.businessNumber}</div>
-          <div>{BUSINESS_INFO.address}</div>
-          <div>{BUSINESS_INFO.phone} | {BUSINESS_INFO.email}</div>
-          <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
-            <a href={BUSINESS_INFO.termsUrl} style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'none' }}>이용약관</a>
-            <a href={BUSINESS_INFO.privacyUrl} style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'none' }}>개인정보처리방침</a>
-            <a href={BUSINESS_INFO.refundUrl} style={{ color: 'rgba(245,240,232,0.35)', textDecoration: 'none' }}>환불정책</a>
-          </div>
-        </div>
+        <Footer />
       </div>
       {hasMounted && !storageConsent && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 99999,
-          background: 'rgba(10,14,42,0.95)',           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '20px',
-        }}>
-          <div style={{
-            background: 'rgba(20,24,80,0.95)', borderRadius: '20px',
-            border: '1px solid rgba(240,199,94,0.3)', padding: '32px 24px',
-            maxWidth: '360px', width: '100%', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔮</div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#F0C75E', marginBottom: '12px' }}>
-              {lang === 'en' ? 'Welcome to Starlight Saju!' : '별빛 사주에 오신 것을 환영합니다!'}
-            </h3>
-            <p style={{ fontSize: '14px', color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: '24px' }}>
-              {lang === 'en'
-                ? 'We use local storage to save your results. No personal data is sent to external servers.'
-                : '결과 저장을 위해 로컬 저장소를 사용합니다. 개인정보는 외부 서버로 전송되지 않습니다.'}
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button type="button" style={{
-                padding: '14px 36px', borderRadius: '50px', border: 'none',
-                background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A',
-                fontSize: '16px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-                minHeight: '48px', touchAction: 'manipulation',
-              }} onClick={() => {
-                try { localStorage.setItem('saju-storage-consent', 'yes'); } catch { /* private browsing or storage full */ }
-                setStorageConsent(true);
-              }}>
-                {lang === 'en' ? 'Accept' : '동의'}
-              </button>
-              <button type="button" style={{
-                padding: '14px 36px', borderRadius: '50px',
-                border: '1px solid rgba(255,255,255,0.3)', background: 'transparent',
-                color: 'var(--text-dim)', fontSize: '16px', fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit',
-                minHeight: '48px', touchAction: 'manipulation',
-              }} onClick={() => setStorageConsent(true)}>
-                {lang === 'en' ? 'Decline' : '거절'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConsentModal
+          lang={lang}
+          onAccept={() => {
+            try { localStorage.setItem('saju-storage-consent', 'yes'); } catch { /* private browsing or storage full */ }
+            setStorageConsent(true);
+          }}
+          onDecline={() => setStorageConsent(true)}
+        />
       )}
     </>
   );

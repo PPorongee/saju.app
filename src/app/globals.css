@@ -23,6 +23,7 @@ html, body {
   background: linear-gradient(170deg, #0A0E2A 0%, #141850 40%, #0D1235 70%, #080B20 100%);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 body { overflow-x: hidden; }
 body::before {
@@ -232,7 +233,8 @@ input, select {
   border-radius: 14px;
   padding: 13px 16px;
   color: var(--text);
-  font-size: 16px;
+  font-size: 16px; /* prevents iOS zoom on focus */
+  min-height: 44px; /* touch target */
   transition: all 0.25s;
   font-family: inherit;
   -webkit-appearance: none;
@@ -273,6 +275,10 @@ input:focus, select:focus {
   font-family: inherit;
   min-height: 44px;
 }
+.pill-toggle button:not(.active):hover {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+}
 .pill-toggle button.active {
   background: linear-gradient(135deg, #F0C75E, #E8B030);
   color: #0A0E2A;
@@ -310,7 +316,7 @@ input:focus, select:focus {
 }
 .time-range { font-size: 12px; font-weight: 800; color: var(--text); display: block; margin-bottom: 1px; white-space: nowrap; }
 .time-hanja { font-size: 12px; font-weight: 600; margin-bottom: 1px; }
-.time-hangul { font-size: 10px; color: var(--text-dim); }
+.time-hangul { font-size: 11px; color: var(--text-dim); }
 .time-option.unknown-time { grid-column: 1 / -1; }
 
 /* Exact time input */
@@ -393,6 +399,11 @@ input:focus, select:focus {
   transition: all 0.2s;
   font-family: inherit;
   min-height: 44px;
+}
+.pair-btn:not(.active):hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(240,199,94,0.25);
+  color: rgba(255,255,255,0.8);
 }
 .pair-btn.active {
   background: linear-gradient(135deg, #F0C75E, #E8B030);
@@ -524,7 +535,7 @@ input:focus, select:focus {
 .bar-fill {
   height: 100%;
   border-radius: 5px;
-  font-size: 10px;
+  font-size: 11px;
   color: white;
   display: flex;
   align-items: center;
@@ -545,10 +556,13 @@ input:focus, select:focus {
 .bar-fill.water { background: linear-gradient(90deg, #63B3ED, #90CDF4); }
 
 /* LLM sections */
-.llm-text { font-size: 17px; line-height: 1.85; color: var(--text); }
+.llm-text { font-size: 16px; line-height: 2; color: var(--text); padding: 0 4px; }
+.llm-text br { display: block; content: ''; margin-top: 4px; }
 .llm-section {
   margin-bottom: 16px;
-  padding: 24px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding: 20px 16px;
   background: rgba(255,255,255,0.04);
   border-radius: var(--radius-sm);
   border: 1px solid rgba(240,199,94,0.06);
@@ -581,15 +595,19 @@ input:focus, select:focus {
 }
 .llm-section h3 .s-title { flex: 1; }
 .llm-section .s-keyword {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 8px;
+  display: inline;
+  padding: 2px 8px;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 700;
-  margin-bottom: 10px;
-  margin-right: 4px;
+  margin-right: 2px;
+  line-height: inherit;
+  vertical-align: baseline;
 }
-.llm-section p, .llm-section span { font-size: 17px; line-height: 1.75; }
+.llm-section p, .llm-section span, .llm-section strong { font-size: 16px; line-height: 2; }
+.llm-section br { display: block; content: ''; margin-top: 4px; }
+.llm-section ul, .llm-section ol { padding-left: 20px; margin: 8px 0; }
+.llm-section li { margin-bottom: 4px; line-height: 2; }
 .llm-section.llm-hero {
   background: linear-gradient(135deg, rgba(240,199,94,0.08), rgba(255,107,157,0.05));
   border: 1px solid rgba(240,199,94,0.12);
@@ -661,8 +679,8 @@ input:focus, select:focus {
 /* Back button */
 .back-btn {
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top: max(20px, env(safe-area-inset-top, 20px));
+  left: max(20px, env(safe-area-inset-left, 20px));
   height: 44px;
   min-height: 44px;
   padding: 0 16px;
@@ -768,9 +786,25 @@ input:focus, select:focus {
   box-shadow: 0 6px 28px rgba(240,199,94,0.5);
 }
 .paywall-cta::after { display: none; }
+.paywall-cta { animation: ctaPulse 2s ease-in-out infinite; }
 @keyframes ctaPulse {
   0%, 100% { box-shadow: 0 4px 20px rgba(240,199,94,0.35); }
   50% { box-shadow: 0 6px 28px rgba(240,199,94,0.45); }
+}
+
+.sticky-cta-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom, 12px));
+  background: linear-gradient(135deg, #1a1040 0%, #0a0e2a 100%);
+  border-top: 1px solid rgba(240, 199, 94, 0.3);
+  z-index: 100;
+}
+@media (max-width: 768px) {
+  .sticky-cta-bar { display: flex; gap: 12px; align-items: center; justify-content: center; }
 }
 
 .locked-item {
@@ -821,15 +855,20 @@ input:focus, select:focus {
 }
 
 /* Responsive */
+@media (max-width: 768px) {
+  /* Tablet: ensure inner container uses full width with comfortable padding */
+  .inner { padding: 20px 16px 40px; }
+  .llm-section:hover { transform: none; } /* disable hover lift on touch devices */
+}
 @media (max-width: 480px) {
   .inner { padding: 16px 16px 32px; }
   .feature-grid { gap: 10px; }
   .pillar-grid { gap: 4px; }
   .card { padding: 16px; }
-  .back-btn { top: 14px; left: 12px; height: 36px; font-size: 12px; padding: 0 12px; }
+  .back-btn { top: 14px; left: 12px; min-height: 44px; height: auto; font-size: 12px; padding: 0 12px; }
   .time-range { font-size: 11px; }
   .time-hanja { font-size: 11px; }
-  .time-hangul { font-size: 9px; }
+  .time-hangul { font-size: 11px; }
   .btn { padding: 12px 20px; font-size: 15px; }
   .llm-section { padding: 16px; }
   .llm-section h3 { font-size: 18px; }
@@ -841,13 +880,30 @@ input:focus, select:focus {
   h1 { font-size: 32px; }
   h2 { font-size: 24px; }
 }
+@media (max-width: 375px) {
+  /* iPhone SE / smallest standard viewport */
+  .inner { padding: 12px 12px 28px; }
+  .card { padding: 12px; }
+  .pillar-grid { gap: 3px; }
+  .pillar .stem { font-size: 22px; }
+  .pillar .branch { font-size: 22px; }
+  .pillar-label { font-size: 11px; }
+  .llm-section { padding: 12px; }
+  .llm-section h3 { font-size: 16px; }
+  .llm-section p, .llm-section span { font-size: 14px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 21px; }
+  .feature-card .feature-title { font-size: 18px; }
+  .feature-card .feature-icon { font-size: 38px; }
+  .compat-score { font-size: 44px; }
+}
 @media (max-width: 340px) {
   .time-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
   .time-option { padding: 6px 2px; }
-  .time-range { font-size: 10px; }
-  .pillar .stem { font-size: 22px; }
-  .pillar .branch { font-size: 22px; }
-  h1 { font-size: 28px; }
+  .time-range { font-size: 11px; }
+  .pillar .stem { font-size: 20px; }
+  .pillar .branch { font-size: 20px; }
+  h1 { font-size: 26px; }
 }
 @media (max-width: 320px) {
   .feature-grid { grid-template-columns: 1fr; gap: 10px; }
@@ -859,6 +915,33 @@ input:focus, select:focus {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Accessibility: minimum touch target size for navigation links */
+a.btn, a.paywall-cta, a[role="button"] {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Accessibility: focus-visible styles for keyboard navigation */
+:focus-visible {
+  outline: 2px solid #F0C75E;
+  outline-offset: 2px;
+}
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #F0C75E;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(240,199,94,0.2);
+}
+/* Remove focus ring for mouse users only */
+:focus:not(:focus-visible) {
+  outline: none;
+}
 .btn:active { transform: scale(0.97); }
 .option-card:active { transform: scale(0.97); }
 .pair-btn:active { transform: scale(0.97); }
@@ -867,7 +950,7 @@ input:focus, select:focus {
 /* === Payment Page Styles === */
 .payment-page {
   min-height: 100vh;
-  padding: 20px 16px 40px;
+  padding: 24px 20px 48px;
   max-width: 480px;
   margin: 0 auto;
 }
@@ -891,8 +974,8 @@ input:focus, select:focus {
   background: rgba(14,18,50,0.88);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius-sm);
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
 }
 
 .payment-card h2 {
@@ -958,36 +1041,72 @@ input:focus, select:focus {
 .payment-checkbox {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 12px 10px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+.payment-checkbox:hover {
+  background: rgba(255,255,255,0.03);
+}
+.payment-checkbox:active {
+  background: rgba(255,255,255,0.06);
 }
 
 .payment-checkbox input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
   margin-top: 1px;
-  accent-color: var(--primary);
   cursor: pointer;
+  border-radius: 6px;
+  border: 2px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.06);
+  position: relative;
+  transition: all 0.2s ease;
+}
+.payment-checkbox input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(240,199,94,0.3);
+}
+.payment-checkbox input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 900;
+  color: #0A0E2A;
+  line-height: 1;
+}
+.payment-checkbox input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .payment-checkbox label {
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.6;
   color: rgba(245,240,232,0.8);
   cursor: pointer;
 }
 
 .payment-checkbox-all {
   border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding-bottom: 12px;
-  margin-bottom: 4px;
+  padding-bottom: 14px;
+  margin-bottom: 6px;
 }
 
 .payment-checkbox-all label {
   font-weight: 700;
+  font-size: 15px;
   color: var(--text);
 }
 
@@ -995,7 +1114,7 @@ input:focus, select:focus {
   width: 100%;
   padding: 16px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 50px;
   font-size: 17px;
   font-weight: 700;
   cursor: pointer;
@@ -1003,6 +1122,11 @@ input:focus, select:focus {
   background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #0A0E2A;
   font-family: inherit;
+}
+
+.payment-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(240,199,94,0.35);
 }
 
 .payment-btn:disabled {
@@ -1025,9 +1149,10 @@ input:focus, select:focus {
 
 .payment-refund {
   background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
   border-radius: var(--radius-sm);
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
 }
 
 .payment-refund h3 {

@@ -10,9 +10,9 @@ const mkUser = (o: Partial<UserData> = {}): UserData => ({
 });
 
 describe('buildSajuPrompts', () => {
-  test('returns 2 prompts', () => {
+  test('returns 3 prompts', () => {
     const r = buildSajuPrompts(sj,oh,mkUser());
-    expect(r).toHaveLength(2);
+    expect(r).toHaveLength(3);
   });
   test('prompts are non-empty strings', () => {
     buildSajuPrompts(sj,oh,mkUser()).forEach(p => {
@@ -29,19 +29,20 @@ describe('buildSajuPrompts', () => {
     expect(r[0]).toContain('CRITICAL LANGUAGE INSTRUCTION');
     expect(r[1]).toContain('FINAL REMINDER');
   });
-  test('prompt1 has ##1-##10 (unmarried)', () => {
+  test('prompt1 has ##1-##4, prompt2 has ##5-##10 (unmarried)', () => {
     const r = buildSajuPrompts(sj,oh,mkUser({relationship:0}));
-    for (let i=1;i<=10;i++) expect(r[0]).toContain('##'+i+'.');
+    for (let i=1;i<=4;i++) expect(r[0]).toContain('##'+i+'.');
+    for (let i=5;i<=10;i++) expect(r[1]).toContain('##'+i+'.');
   });
-  test('prompt2 has ##11 ##12', () => {
+  test('prompt3 has ##11 ##12', () => {
     const r = buildSajuPrompts(sj,oh,mkUser());
-    expect(r[1]).toContain('##11.'); expect(r[1]).toContain('##12.');
+    expect(r[2]).toContain('##11.'); expect(r[2]).toContain('##12.');
   });
   test('married has spouse section, unmarried has love section', () => {
     const m = buildSajuPrompts(sj,oh,mkUser({relationship:3}));
     const u = buildSajuPrompts(sj,oh,mkUser({relationship:0}));
-    expect(m[0]).toContain('부부 관계');
-    expect(u[0]).toContain('연애 & 인연의 지도');
+    expect(m[1]).toContain('부부 관계');
+    expect(u[1]).toContain('연애 & 인연의 지도');
   });
   test('includes user name', () => {
     const r = buildSajuPrompts(sj,oh,mkUser({name:'Alice'}));

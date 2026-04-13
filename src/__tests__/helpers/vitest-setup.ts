@@ -2,6 +2,7 @@
  * Global test setup for vitest + jsdom
  * Stubs browser APIs that jsdom does not implement.
  */
+import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
 // Stub navigator.serviceWorker (SajuApp registers SW on mount)
