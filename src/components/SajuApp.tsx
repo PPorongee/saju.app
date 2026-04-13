@@ -755,8 +755,7 @@ export default function SajuApp() {
     const yongsinOhY = ysPrompt.yongsin;
 
     const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section title, EVERY explanation — ALL in English.\nDo NOT write Korean sentences. Translate Korean section titles to English.\nExample: Write ##1.What does 2026 mean for my life?## NOT ##1.2026 병오년, 내 인생에서 어떤 해인가?##\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nUse warm, casual, friendly tone. IF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
-      '너는 적천수(滴天髓)와 자평진전(子平眞詮)을 달달 외우고, 궁통보감(窮通寶鑑)으로 조후를 잡는 40년 경력의 명리학 대가야. 반말만 써. 존댓말 금지.\n' +
-      '고전 인용 필수: 각 섹션마다 적천수/자평진전/궁통보감 중 1-2회 인용. "적천수에 이르길 \'...\'라 했는데, 너한테 적용하면~" 형식으로.\n' +
+      '너는 사주명리학을 완벽하게 마스터한 트렌디하고 친근한 운세 상담가야. 한자 절대 쓰지 마. 괄호 안에 한자 넣기 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 풀어서 설명해. 반말만 써. 존댓말 금지.\n' +
       '"너 혹시 이런 경험 있지?" "이런 적 없어?" 같은 찔림 질문을 섹션마다 넣어.\n' +
       '"결론적으로" "정리하면" 패턴 절대 금지!\n\n' +
       '【분석 대상 - 전체 사주 원국】\n' +
@@ -872,7 +871,7 @@ export default function SajuApp() {
 
       '중요: 각 섹션 번호를 ##숫자.제목## 형식으로 반드시 써줘.\n' +
       '비유적 표현을 적극 사용해! 일상적인 것(음식/영화/게임/카페/날씨/SNS)에 빗대면 읽는 사람이 재밌어해.\n' +
-      '각 섹션마다 고전 명리학 원문을 2-4회 인용해서 권위를 높여. 형식: "적천수에 이런 말이 있어: \"갑목이 하늘까지 뻗으려면 화의 도움이 필요하다(甲木參天, 脫胎要火).\" 네 사주가 딱 이 경우야." 인용 후 반드시 사용자 사주에 어떻게 적용되는지 연결해. 섹션 끝에 [근거: 출전명] 표시.\n' +
+      '한자 절대 금지! 괄호 안 한자 금지! 고전 문헌 인용 금지! 대신 어려운 개념은 재밌는 비유로 풀어서 친근하게 조언해.\n' +
       '해석의 여지가 있을 때는 긍정적으로. 흥미 유발 포인트를 매 섹션 1개 이상 넣어.\n' +
       '개인사주 해설과 동등한 퀄리티로! 격국/용신/조후/통변/12운성을 적극 활용해. 피상적 해석 금지!\n\n' +
       (lang === 'en' ? '🚨 FINAL REMINDER — MOST IMPORTANT INSTRUCTION 🚨\nWrite EVERYTHING in English. EVERY section title must be in English.\nExample: ##1.What does 2026 mean for my life?## NOT ##1.2026 병오년, 내 인생에서 어떤 해인가?##\nExample: ##2.2026 Monthly Fortune## NOT ##2.2026 월별 상세 운세##\nALL text in English. Korean ONLY for Saju terms in parentheses.\nIF ANY KOREAN SENTENCE APPEARS, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
@@ -1970,10 +1969,10 @@ export default function SajuApp() {
 
       const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section title, EVERY explanation — ALL in English.\nDo NOT write Korean sentences. Translate Korean section titles to English.\nExample: Write ##1.How to read compatibility## NOT ##1.궁합 읽는 법##\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nUse warm, casual, friendly tone. IF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
         agePairNote +
-        '너는 적천수(滴天髓)와 자평진전(子平眞詮)을 달달 외운 30년 경력 사주 궁합 전문가야. 반말만 써. 존댓말 금지.\n' +
+        '너는 사주명리학을 완벽하게 마스터한 트렌디하고 친근한 궁합 상담가야. 한자 절대 쓰지 마. 괄호 안 한자 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 설명해. 반말만 써. 존댓말 금지.\n' +
         '궁합 분석 시 반드시 일간 관계(천간합/상생/상극), 일지 관계(육합/삼합/충/형/파/해), 오행 균형 보완성, 용신 궁합, 십성 궁합(재성/관성/식상/인성 구조 비교)을 모두 근거로 활용해.\n' +
         '모든 주장에는 반드시 구체적 사주 근거를 붙여: 어떤 천간/지지/십성이 어떤 관계이기 때문에 그런 결론이 나오는지 명시해.\n' +
-        '고전 인용 필수: 각 섹션마다 적천수/자평진전/궁통보감/연해자평 중 1-2회 인용해. 형식: "적천수에 이르길 \'...\'라 했는데, 이 커플한테 적용하면~"\n' +
+        '어려운 사주 개념을 재밌는 비유로 풀어서 친근하게 조언해. 일상적인 비유(카페, 영화, 게임, 여행 등)를 많이 써.\n' +
         '"너희 혹시 이런 경험 있지?" "이런 적 없어?" 같은 찔림 질문을 섹션마다 1-2개씩 넣어.\n' +
         '"결론적으로" "정리하면" 패턴 절대 금지! 다음 섹션이 궁금해지는 떡밥으로 끝내.\n\n' +
         '=== ' + myName + '의 사주 원국 ===\n' +
@@ -2089,7 +2088,7 @@ export default function SajuApp() {
         '나쁜 예: "두 사람은 잘 맞아" (근거 없음)\n' +
         '좋은 예: "' + myName + '의 일간 ' + CG[myDS] + '(' + OH_CG[myDS] + ')이 ' + cName + '의 일간 ' + CG[theirDS] + '(' + OH_CG[theirDS] + ')을 생(生)해주는 관계야. ' + OH_CG[myDS] + '이 ' + OH_CG[theirDS] + '을 키워주는 구조라서 자연스럽게 ' + myName + '이 돌봐주는 역할을 하게 돼."\n' +
         '이런 식으로 일간/일지/오행/십성/충합 관계를 구체적으로 언급하면서 설명해. 매 문단마다 사주 근거 1개 이상 필수!\n\n' +
-        '각 섹션마다 고전 명리학 원문을 2-4회 인용해서 권위를 높여. 형식: "적천수에 이런 말이 있어: \"갑목이 하늘까지 뻗으려면 화의 도움이 필요하다(甲木參天, 脫胎要火).\" 네 사주가 딱 이 경우야." 인용 후 반드시 사용자 사주에 어떻게 적용되는지 연결해. 섹션 끝에 [근거: 출전명] 표시.\n' +
+        '한자 절대 금지! 괄호 안 한자 금지! 고전 문헌 인용 금지! 대신 어려운 개념은 재밌는 비유로 풀어서 친근하게 조언해.\n' +
         '해석의 여지가 있을 때는 반드시 긍정적으로 해석해. 충(冲)도 "정체를 깨는 기회의 문"으로, 기신도 "이겨내면 더 강해지는 시련"으로.\n' +
         '흥미 유발 포인트를 매 섹션 1개 이상: "사실 이 조합은 100쌍 중 5쌍만 가진 희귀한 구조야!" 같은 훅.\n\n' +
         getRelevantRefs({ dayMaster: myDS, topics: ['compatibility', 'love', 'general'] });
@@ -2778,8 +2777,8 @@ export default function SajuApp() {
       setCompatAiText('');
       const momName = pregData.name || '산모';
       const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section — ALL in English.\nDo NOT write Korean. Use warm, casual, friendly tone.\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nIF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
-        '너는 적천수(滴天髓)와 궁통보감(窮通寶鑑)을 섭렵한 사주 명리학 기반 태아 궁합 전문가야. 존댓말로 따뜻하게 써줘. 부정적 표현 금지 - 모든 내용을 따뜻하고 희망적으로.\n' +
-        '고전 인용 필수: 2-3번 적천수/궁통보감 구절을 인용해서 권위 있게. "궁통보감에 이르길 \'...\'라 했는데, 이 아기에게 적용하면~" 형식으로.\n\n' +
+        '너는 사주명리학을 완벽하게 마스터한 따뜻하고 친근한 태아 궁합 상담가야. 한자 절대 쓰지 마. 고전 문헌 인용 금지. 존댓말로 따뜻하게 써줘. 부정적 표현 금지 - 모든 내용을 따뜻하고 희망적으로.\n' +
+        '어려운 사주 개념을 쉽고 따뜻한 비유로 풀어서 설명해. 예비 엄마가 읽으면 마음이 따뜻해지게.\n\n' +
         '엄마 사주: 일간=' + CG[momSaju.dStem] + '(' + OH_CG[momSaju.dStem] + '), 년주=' + CG[momSaju.yStem] + JJ[momSaju.yBranch] + ', 월주=' + CG[momSaju.mStem] + JJ[momSaju.mBranch] + ', 일주=' + CG[momSaju.dStem] + JJ[momSaju.dBranch] + '\n' +
         '아기 예정일 사주: 일간=' + CG[babySaju.dStem] + '(' + OH_CG[babySaju.dStem] + '), 년주=' + CG[babySaju.yStem] + JJ[babySaju.yBranch] + ', 월주=' + CG[babySaju.mStem] + JJ[babySaju.mBranch] + ', 일주=' + CG[babySaju.dStem] + JJ[babySaju.dBranch] + '\n' +
         '엄마 오행: 목' + momOh['목'] + ' 화' + momOh['화'] + ' 토' + momOh['토'] + ' 금' + momOh['금'] + ' 수' + momOh['수'] + '\n' +
@@ -2812,7 +2811,7 @@ export default function SajuApp() {
         '##9.엄마에게 보내는 편지## 사주를 바탕으로 예비 엄마에게 보내는 따뜻한 응원 편지. 반드시 존댓말(합니다/습니다/세요 체)로 작성하세요. "어머니의 사주를 보니 이런 멋진 엄마가 되실 거예요"라는 느낌으로 감동적이고 진심을 담아서. 비유를 많이 써서 가슴에 와닿게. 절대 반말 금지. 5줄.\n\n' +
         '비유적 표현을 적극 사용해! 매 섹션마다 최소 2개의 재미있고 따뜻한 비유를 넣어줘.\n' +
         '예시: "엄마가 따뜻한 볕이라면 아기는 그 볕을 받아 피어나는 꽃이야", "이 아기는 엄마 인생에 떨어진 행운의 별똥별 같은 존재야", "엄마의 부족한 수(水) 기운을 아기가 촉촉한 빗물처럼 채워주는 구조야"\n' +
-        '각 섹션마다 고전 명리학 원문을 2-4회 인용해서 권위를 높여. 형식: "적천수에 이런 말이 있어: \"갑목이 하늘까지 뻗으려면 화의 도움이 필요하다(甲木參天, 脫胎要火).\" 네 사주가 딱 이 경우야." 인용 후 반드시 사용자 사주에 어떻게 적용되는지 연결해. 섹션 끝에 [근거: 출전명] 표시.\n' +
+        '한자 절대 금지! 괄호 안 한자 금지! 고전 문헌 인용 금지! 대신 어려운 개념은 재밌는 비유로 풀어서 친근하게 조언해.\n' +
         '해석의 여지가 있을 때는 반드시 긍정적으로. 흥미 유발 포인트도 매 섹션 1개 이상.\n\n' +
         getRelevantRefs({ dayMaster: momSaju.dStem, topics: ['compatibility', 'health', 'general'] });
 
@@ -3485,7 +3484,7 @@ export default function SajuApp() {
                 전체 사주 해석 보기 ₩990
               </a>
               <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '8px', opacity: 0.7 }}>
-                적천수 · 자평진전 · 궁통보감 기반 전통 명리학 분석
+                사주명리학 기반 AI 심층 분석
               </div>
             </div>
           );

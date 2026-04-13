@@ -146,8 +146,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 29,
-      "lastAccessed": 1776041957116,
+      "accessCount": 37,
+      "lastAccessed": 1776069079997,
       "type": "file"
     },
     {
@@ -169,6 +169,12 @@
       "type": "file"
     },
     {
+      "path": "src",
+      "accessCount": 3,
+      "lastAccessed": 1776069087358,
+      "type": "directory"
+    },
+    {
       "path": "next.config.ts",
       "accessCount": 2,
       "lastAccessed": 1776041989172,
@@ -181,22 +187,22 @@
       "type": "file"
     },
     {
+      "path": "src\\app\\api\\saju\\route.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776068922412,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\saju-prompt.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776068958006,
+      "type": "file"
+    },
+    {
       "path": "src\\app",
       "accessCount": 1,
       "lastAccessed": 1776037610288,
       "type": "directory"
-    },
-    {
-      "path": "src",
-      "accessCount": 1,
-      "lastAccessed": 1776038546462,
-      "type": "directory"
-    },
-    {
-      "path": "src\\app\\api\\saju\\route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776059297793,
-      "type": "file"
     }
   ],
   "userDirectives": []
