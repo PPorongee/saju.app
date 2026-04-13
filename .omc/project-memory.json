@@ -146,26 +146,32 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 28,
-      "lastAccessed": 1776041695066,
+      "accessCount": 29,
+      "lastAccessed": 1776041957116,
       "type": "file"
     },
     {
       "path": "src\\app\\globals.css",
-      "accessCount": 7,
-      "lastAccessed": 1776038517890,
+      "accessCount": 9,
+      "lastAccessed": 1776041945041,
       "type": "file"
     },
     {
       "path": "src\\app\\layout.tsx",
-      "accessCount": 5,
-      "lastAccessed": 1776038535867,
+      "accessCount": 7,
+      "lastAccessed": 1776042008905,
       "type": "file"
     },
     {
       "path": "public\\sw.js",
+      "accessCount": 4,
+      "lastAccessed": 1776042032423,
+      "type": "file"
+    },
+    {
+      "path": "next.config.ts",
       "accessCount": 2,
-      "lastAccessed": 1776038288496,
+      "lastAccessed": 1776041989172,
       "type": "file"
     },
     {
