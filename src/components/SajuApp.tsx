@@ -3458,38 +3458,6 @@ export default function SajuApp() {
           ));
         })()}
 
-        {/* Second CTA above locked items */}
-        {(() => {
-          
-          return (
-            <div style={{ textAlign: 'center', margin: '16px 0 8px' }}>
-              <a
-                href="/payment"
-                className="paywall-cta"
-                style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  if (isGenerating) return; // Prevent payment with partial AI text
-                  const pendingOrderId = generateOrderId();
-                  saveReadingToSession({ aiText, sajuResult, userData, appMode, timestamp: Date.now() });
-                  fetch('/api/readings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    keepalive: true,
-                    body: JSON.stringify({ orderId: pendingOrderId, type: appMode === 'yearly' ? 'yearly' : 'saju', inputData: userData ?? null, chartData: sajuResult ?? null, resultText: aiText, lang: 'ko', pending: true }),
-                  }).catch(() => {/* fire-and-forget */});
-                  window.location.href = '/payment?pendingOrderId=' + pendingOrderId;
-                }}
-              >
-                전체 사주 해석 보기 ₩990
-              </a>
-              <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '8px', opacity: 0.7 }}>
-                사주명리학 기반 AI 심층 분석
-              </div>
-            </div>
-          );
-        })()}
-
         {/* Section C: Locked Section List */}
         <div className="section-divider">{isYearly ? t('yearlyItems', lang) : t('allItems', lang)}</div>
         <div className="card" style={{ padding: '16px' }}>
