@@ -101,7 +101,7 @@ export async function checkRateLimit(
 }
 
 export const RATE_LIMITS = {
-  saju: { limit: 5, windowSecs: 60 } satisfies RateLimitConfig,
+  saju: { limit: 30, windowSecs: 60 } satisfies RateLimitConfig,
   paymentConfirm: { limit: 10, windowSecs: 60 } satisfies RateLimitConfig,
   refund: { limit: 3, windowSecs: 3600 } satisfies RateLimitConfig,
   readingsGet: { limit: 10, windowSecs: 60 } satisfies RateLimitConfig,

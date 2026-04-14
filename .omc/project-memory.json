@@ -146,8 +146,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 46,
-      "lastAccessed": 1776136467715,
+      "accessCount": 50,
+      "lastAccessed": 1776210471567,
       "type": "file"
     },
     {
@@ -164,8 +164,8 @@
     },
     {
       "path": "src\\app\\api\\saju\\route.ts",
-      "accessCount": 5,
-      "lastAccessed": 1776069703541,
+      "accessCount": 7,
+      "lastAccessed": 1776210419929,
       "type": "file"
     },
     {
@@ -199,10 +199,22 @@
       "type": "file"
     },
     {
+      "path": "src\\lib\\rate-limit.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776210416547,
+      "type": "file"
+    },
+    {
       "path": "src\\app",
       "accessCount": 1,
       "lastAccessed": 1776037610288,
       "type": "directory"
+    },
+    {
+      "path": "src\\lib\\env.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776210358756,
+      "type": "file"
     }
   ],
   "userDirectives": []

@@ -682,21 +682,35 @@ export default function SajuApp() {
         if (signal?.aborted) return;
         setGeneratingProgress(pi);
         setLoadingProgress(t('genAnalyzing', lang) + ' (' + (pi + 1) + t('genOf', lang) + prompts.length + ')');
-        const res = await fetch('/api/saju', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: prompts[pi], lang }),
-          signal,
-        });
-        if (!res.ok) throw new Error('API error: ' + res.status);
-        if (!res.body) throw new Error('No response body');
-        const reader = res.body.getReader();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          fullText += decoder.decode(value, { stream: true });
+        let partText = '';
+        for (let retry = 0; retry < 3; retry++) {
+          try {
+            if (signal?.aborted) return;
+            const res = await fetch('/api/saju', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: prompts[pi], lang }),
+              signal,
+            });
+            if (!res.ok) {
+              if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
+              throw new Error('API error: ' + res.status);
+            }
+            if (!res.body) throw new Error('No response body');
+            const reader = res.body.getReader();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              partText += decoder.decode(value, { stream: true });
+            }
+            break; // success
+          } catch (retryErr) {
+            if (signal?.aborted) return;
+            if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
+            throw retryErr;
+          }
         }
+        fullText += partText;
       }
       // Detect stream error sentinel from server
       const STREAM_ERROR_SENTINEL = '[응답이 중단되었습니다. 다시 시도해 주세요.]';
@@ -879,20 +893,32 @@ export default function SajuApp() {
 
     try {
       setLoadingProgress(t('yearlyAnalyzingMsg', lang) + ' (1/1)');
-      const res = await fetch('/api/saju', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, lang }),
-        signal,
-      });
-      if (!res.ok) throw new Error('API error: ' + res.status);
-      if (!res.body) throw new Error('No response body');
-      const reader = res.body.getReader();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value, { stream: true });
+      for (let retry = 0; retry < 3; retry++) {
+        try {
+          if (signal?.aborted) return;
+          const res = await fetch('/api/saju', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, lang }),
+            signal,
+          });
+          if (!res.ok) {
+            if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
+            throw new Error('API error: ' + res.status);
+          }
+          if (!res.body) throw new Error('No response body');
+          const reader = res.body.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fullText += decoder.decode(value, { stream: true });
+          }
+          break;
+        } catch (retryErr) {
+          if (signal?.aborted) return;
+          if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
+          throw retryErr;
+        }
       }
       // Detect stream error sentinel from server
       const STREAM_ERR = '[응답이 중단되었습니다. 다시 시도해 주세요.]';
