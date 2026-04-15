@@ -558,34 +558,27 @@ export default function SajuApp() {
     return canvas;
   }
 
+  const [shareLink, setShareLink] = useState('');
+
   async function shareResult(text: string, title: string) {
     if (isCapturing) return;
     setIsCapturing(true);
     try {
-      // 결과를 base64로 인코딩하여 공유 링크 생성
       const encoded = btoa(encodeURIComponent(text)).replace(/\+/g, '-').replace(/\//g, '_');
       const encodedTitle = encodeURIComponent(title);
       const origin = window.location.origin;
       const shareUrl = origin + '/share?t=' + encodedTitle + '&d=' + encoded;
-
-      // URL이 너무 길면 (8000자 초과) 앞부분만 사용
       const maxLen = 8000;
       const finalUrl = shareUrl.length > maxLen
         ? origin + '/share?t=' + encodedTitle + '&d=' + btoa(encodeURIComponent(text.slice(0, 3000))).replace(/\+/g, '-').replace(/\//g, '_')
         : shareUrl;
 
-      // Web Share API 지원 시 링크 공유
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: '별빛 사주 - ' + title, url: finalUrl });
-          setIsCapturing(false);
-          return;
-        } catch { /* 사용자 취소 시 클립보드로 fallback */ }
-      }
+      // 링크를 화면에 표시
+      setShareLink(finalUrl);
 
-      // 클립보드에 링크 복사
-      await navigator.clipboard.writeText(finalUrl);
-      alert(lang === 'en' ? 'Share link copied! 🔗' : '공유 링크가 복사되었어! 🔗\n카톡이나 SNS에 붙여넣기 해봐!');
+      // 클립보드에도 복사 시도
+      try { await navigator.clipboard.writeText(finalUrl); } catch { /* 일부 브라우저에서 실패 가능 */ }
+
       setIsCapturing(false);
     } catch {
       alert(lang === 'en' ? 'Failed to create share link' : '공유 링크 생성에 실패했어. 다시 시도해줘!');
@@ -1402,6 +1395,19 @@ export default function SajuApp() {
             <div className="section-divider">{t('aiReading', lang)}</div>
             <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
             <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
+              <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
+                disabled={isCapturing}
+                onClick={() => shareResult(aiText, lang === 'en' ? 'Saved Result' : '저장된 결과')}>
+                {isCapturing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 공유 링크')}
+              </button>
+              <button className="btn" style={{ flex: 1, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: 'var(--text)', fontSize: '13px' }}
+                disabled={isTranslating}
+                onClick={() => {
+                  const targetLang = aiTextTranslated ? (lang === 'ko' ? 'ko' : 'en') : (lang === 'ko' ? 'en' : 'ko');
+                  translateAiText(aiText, targetLang, (translated) => { setAiText(translated); setAiTextTranslated(!aiTextTranslated); });
+                }}>
+                {isTranslating ? t('translating', lang) : (aiTextTranslated ? (lang === 'ko' ? t('translateToKo', lang) : t('translateToEn', lang)) : (lang === 'ko' ? t('translateToEn', lang) : t('translateToKo', lang)))}
+              </button>
               <button className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)', fontSize: '13px' }} onClick={() => { setCurrentScreen(0); setAiText(''); }}>
                 {t('restart', lang)}
               </button>
@@ -3749,6 +3755,62 @@ export default function SajuApp() {
         {/* 사업자 정보 푸터 */}
         <Footer />
       </div>
+      {/* 공유 링크 모달 */}
+      {shareLink && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99998, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={() => setShareLink('')}>
+          <div style={{ background: 'rgba(20,24,80,0.97)', borderRadius: '20px', border: '1px solid rgba(240,199,94,0.3)', padding: '28px 20px', maxWidth: '400px', width: '100%', textAlign: 'center' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔗</div>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#F0C75E', marginBottom: '8px' }}>
+              {lang === 'en' ? 'Share Link Created!' : '공유 링크가 생성되었어!'}
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '16px' }}>
+              {lang === 'en' ? 'Copy the link below and share it!' : '아래 링크를 복사해서 카톡이나 SNS에 붙여넣기 해봐!'}
+            </p>
+            <input
+              type="text"
+              readOnly
+              value={shareLink}
+              onFocus={e => e.target.select()}
+              style={{
+                width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(240,199,94,0.3)',
+                background: 'rgba(0,0,0,0.3)', color: '#F0C75E', fontSize: '11px', textAlign: 'center',
+                fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(shareLink);
+                    alert(lang === 'en' ? 'Copied!' : '복사 완료! 📋');
+                  } catch {
+                    const input = document.querySelector('input[readonly]') as HTMLInputElement;
+                    if (input) { input.select(); document.execCommand('copy'); alert(lang === 'en' ? 'Copied!' : '복사 완료! 📋'); }
+                  }
+                }}
+                style={{
+                  flex: 1, padding: '14px', borderRadius: '50px', border: 'none',
+                  background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A',
+                  fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit'
+                }}
+              >
+                {lang === 'en' ? '📋 Copy Link' : '📋 링크 복사'}
+              </button>
+              <button
+                onClick={() => setShareLink('')}
+                style={{
+                  padding: '14px 20px', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.2)',
+                  background: 'transparent', color: 'var(--text)', fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit'
+                }}
+              >
+                {lang === 'en' ? 'Close' : '닫기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {hasMounted && !storageConsent && (
         <ConsentModal
           lang={lang}
