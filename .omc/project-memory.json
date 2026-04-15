@@ -146,8 +146,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 74,
-      "lastAccessed": 1776258636862,
+      "accessCount": 75,
+      "lastAccessed": 1776259044755,
       "type": "file"
     },
     {
@@ -179,6 +179,12 @@
       "accessCount": 4,
       "lastAccessed": 1776069646778,
       "type": "directory"
+    },
+    {
+      "path": "src\\app\\share\\page.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1776259078530,
+      "type": "file"
     },
     {
       "path": "next.config.ts",
@@ -244,12 +250,6 @@
       "path": "src\\db\\index.ts",
       "accessCount": 1,
       "lastAccessed": 1776257563091,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\share\\page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776257611699,
       "type": "file"
     }
   ],

@@ -1,21 +1,35 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-
-function decodeResult(encoded: string): string {
-  try {
-    return decodeURIComponent(atob(encoded.replace(/-/g, '+').replace(/_/g, '/')));
-  } catch {
-    return '';
-  }
-}
+import { Suspense, useEffect, useState } from 'react';
 
 function ShareContent() {
   const params = useSearchParams();
-  const data = params.get('d') || '';
-  const title = params.get('t') || '사주 결과';
-  const result = decodeResult(data);
+  const code = params.get('code') || '';
+  const [title, setTitle] = useState('');
+  const [result, setResult] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!code) { setLoading(false); return; }
+    try {
+      const raw = localStorage.getItem('saju-share-' + code);
+      if (raw) {
+        const data = JSON.parse(raw);
+        setTitle(data.title || '사주 결과');
+        setResult(data.text || '');
+      }
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, [code]);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0A0E2A', color: '#F5F0E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p>로딩 중...</p>
+      </div>
+    );
+  }
 
   if (!result) {
     return (
@@ -23,14 +37,14 @@ function ShareContent() {
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔮</div>
           <h1 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '12px' }}>결과를 찾을 수 없어요</h1>
-          <p style={{ fontSize: '14px', opacity: 0.6, marginBottom: '24px' }}>링크가 만료되었거나 올바르지 않아요.</p>
+          <p style={{ fontSize: '14px', opacity: 0.6, marginBottom: '8px' }}>이 링크는 결과를 저장한 기기에서만 열 수 있어요.</p>
+          <p style={{ fontSize: '13px', opacity: 0.4, marginBottom: '24px' }}>다른 기기에서 보려면 결과 화면에서 직접 확인해주세요.</p>
           <a href="/" style={{ color: '#F0C75E', textDecoration: 'none', fontSize: '15px', fontWeight: 700 }}>별빛 사주 홈으로 →</a>
         </div>
       </div>
     );
   }
 
-  // Format result text with section headers
   const formatted = result
     .replace(/##(\d+)\.(.*?)##/g, '<h3 style="color:#F0C75E;margin:24px 0 8px;font-size:18px">$1. $2</h3>')
     .replace(/\[([^\]]+)\]/g, '<strong style="color:#F0C75E">$1</strong>')
@@ -41,7 +55,7 @@ function ShareContent() {
       <div style={{ maxWidth: '640px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '24px', paddingTop: '20px' }}>
           <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔮</div>
-          <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#F0C75E', marginBottom: '4px' }}>{decodeURIComponent(title)}</h1>
+          <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#F0C75E', marginBottom: '4px' }}>{title}</h1>
           <p style={{ fontSize: '12px', opacity: 0.4 }}>별빛 사주 | Starlight Saju</p>
         </div>
         <div style={{

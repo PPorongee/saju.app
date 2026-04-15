@@ -564,21 +564,16 @@ export default function SajuApp() {
     if (isCapturing) return;
     setIsCapturing(true);
     try {
-      const encoded = btoa(encodeURIComponent(text)).replace(/\+/g, '-').replace(/\//g, '_');
-      const encodedTitle = encodeURIComponent(title);
+      // 짧은 코드 생성 후 localStorage에 저장
+      const code = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const shareData = JSON.stringify({ title, text, date: new Date().toISOString() });
+      safeSetItem('saju-share-' + code, shareData);
+
       const origin = window.location.origin;
-      const shareUrl = origin + '/share?t=' + encodedTitle + '&d=' + encoded;
-      const maxLen = 8000;
-      const finalUrl = shareUrl.length > maxLen
-        ? origin + '/share?t=' + encodedTitle + '&d=' + btoa(encodeURIComponent(text.slice(0, 3000))).replace(/\+/g, '-').replace(/\//g, '_')
-        : shareUrl;
+      const finalUrl = origin + '/share?code=' + code;
 
-      // 링크를 화면에 표시
       setShareLink(finalUrl);
-
-      // 클립보드에도 복사 시도
-      try { await navigator.clipboard.writeText(finalUrl); } catch { /* 일부 브라우저에서 실패 가능 */ }
-
+      try { await navigator.clipboard.writeText(finalUrl); } catch { /* fallback */ }
       setIsCapturing(false);
     } catch {
       alert(lang === 'en' ? 'Failed to create share link' : '공유 링크 생성에 실패했어. 다시 시도해줘!');
