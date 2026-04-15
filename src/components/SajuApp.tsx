@@ -558,26 +558,28 @@ export default function SajuApp() {
     return canvas;
   }
 
-  async function shareResult(_text: string, title: string) {
+  async function shareResult(text: string, title: string) {
     if (isCapturing) return;
     setIsCapturing(true);
     try {
-      const canvas = await captureElement();
-      if (!canvas) { setIsCapturing(false); return; }
-      canvas.toBlob(async (blob) => {
-        if (!blob) { setIsCapturing(false); return; }
-        const file = new File([blob], 'saju-result.png', { type: 'image/png' });
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-          try { await navigator.share({ title, files: [file] }); setIsCapturing(false); return; } catch {}
-        }
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'saju-result.png'; a.click();
-        URL.revokeObjectURL(url);
-        alert(lang === 'en' ? 'Image saved!' : '이미지가 저장되었어!');
-        setIsCapturing(false);
-      }, 'image/png');
+      // 결과를 공유 가능한 텍스트로 구성
+      const shareText = '✨ ' + title + '\n\n' + text.replace(/##\d+\./g, '\n📌 ').replace(/##/g, '').slice(0, 2000) + '\n\n🔮 별빛 사주에서 확인하기\nhttps://saju-app-snowy.vercel.app';
+
+      // Web Share API 지원 시 공유
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: '별빛 사주 - ' + title, text: shareText });
+          setIsCapturing(false);
+          return;
+        } catch { /* 사용자가 취소한 경우 클립보드로 fallback */ }
+      }
+
+      // 클립보드에 복사
+      await navigator.clipboard.writeText(shareText);
+      alert(lang === 'en' ? 'Link copied to clipboard! 📋' : '결과가 클립보드에 복사되었어! 📋\n카톡이나 SNS에 붙여넣기 해봐!');
+      setIsCapturing(false);
     } catch {
-      alert(lang === 'en' ? 'Failed to capture image' : '이미지 캡처에 실패했어');
+      alert(lang === 'en' ? 'Failed to share' : '공유에 실패했어. 다시 시도해줘!');
       setIsCapturing(false);
     }
   }
@@ -1871,7 +1873,7 @@ export default function SajuApp() {
             <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
               disabled={isCapturing}
               onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
-              {isCapturing ? (lang === 'en' ? '📸 Capturing...' : '📸 캡처 중...') : (lang === 'en' ? '📸 Share Image' : '📸 이미지 공유')}
+              {isCapturing ? (lang === 'en' ? '📋 Copying...' : '📋 복사 중...') : (lang === 'en' ? '📋 Share Result' : '📋 결과 공유')}
             </button>
           )}
           {aiText && !isGenerating && (
@@ -2722,7 +2724,7 @@ export default function SajuApp() {
                 <button className="btn" style={{ width: '100%', marginTop: '16px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
                   disabled={isCapturing}
                   onClick={() => shareResult(compatAiText, (userData.name || '') + ' & ' + (compatPerson2.name || '') + (lang === 'en' ? "'s Compatibility" : '의 궁합'))}>
-                  {isCapturing ? (lang === 'en' ? '📸 Capturing...' : '📸 캡처 중...') : (lang === 'en' ? '📸 Share Image' : '📸 이미지 공유')}
+                  {isCapturing ? (lang === 'en' ? '📋 Copying...' : '📋 복사 중...') : (lang === 'en' ? '📋 Share Result' : '📋 결과 공유')}
                 </button>
                 <button className="btn" style={{ width: '100%', marginTop: '8px', background: 'rgba(159,122,234,0.15)', border: '1px solid rgba(159,122,234,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }} onClick={() => {
                   try {
@@ -3198,7 +3200,7 @@ export default function SajuApp() {
             <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
               disabled={isCapturing}
               onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
-              {isCapturing ? (lang === 'en' ? '📸 Capturing...' : '📸 캡처 중...') : (lang === 'en' ? '📸 Share Image' : '📸 이미지 공유')}
+              {isCapturing ? (lang === 'en' ? '📋 Copying...' : '📋 복사 중...') : (lang === 'en' ? '📋 Share Result' : '📋 결과 공유')}
             </button>
           )}
           {aiText && !isGenerating && (
@@ -3641,6 +3643,8 @@ export default function SajuApp() {
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           <button
             onClick={() => {
+              const pw = prompt(lang === 'en' ? 'Enter 4-digit code:' : '비밀번호 4자리를 입력해주세요:');
+              if (pw !== '5386') { alert(lang === 'en' ? 'Wrong code!' : '비밀번호가 틀렸어요!'); return; }
               updateStarBalance(starBalance + 10);
               alert(lang === 'en' ? 'Added 10 free stars! ⭐' : '무료 별빛 10개가 충전되었어요! ⭐');
             }}

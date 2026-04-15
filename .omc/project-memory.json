@@ -146,8 +146,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 50,
-      "lastAccessed": 1776210471567,
+      "accessCount": 57,
+      "lastAccessed": 1776256328003,
       "type": "file"
     },
     {
@@ -214,6 +214,12 @@
       "path": "src\\lib\\env.ts",
       "accessCount": 1,
       "lastAccessed": 1776210358756,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\api\\readings\\route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776256184913,
       "type": "file"
     }
   ],
