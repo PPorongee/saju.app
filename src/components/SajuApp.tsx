@@ -558,6 +558,29 @@ export default function SajuApp() {
     return canvas;
   }
 
+  async function saveCanvasAsImage(cvs: HTMLCanvasElement, fileName: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      cvs.toBlob(async (blob) => {
+        if (!blob) { resolve(false); return; }
+        // 모바일: Web Share API로 공유 (Safari/Chrome 모두 지원)
+        const file = new File([blob], fileName, { type: 'image/png' });
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          try { await navigator.share({ files: [file] }); resolve(true); return; } catch { /* 사용자 취소 시 fallback */ }
+        }
+        // PC 또는 Share 실패: 다운로드
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        resolve(true);
+      }, 'image/png');
+    });
+  }
+
   async function shareResult(_text: string, title: string) {
     if (isCapturing) return;
     setIsCapturing(true);
@@ -565,44 +588,26 @@ export default function SajuApp() {
       const canvas = await captureElement();
       if (!canvas) { setIsCapturing(false); return; }
 
-      const imgW = canvas.width;
       const imgH = canvas.height;
-      const maxPageH = 4000; // 한 이미지당 최대 높이 (px)
+      const maxPageH = 4000;
 
       if (imgH <= maxPageH) {
-        // 한 장으로 저장
-        canvas.toBlob((blob) => {
-          if (!blob) { setIsCapturing(false); return; }
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = (title || 'saju-result') + '.png'; a.click();
-          URL.revokeObjectURL(url);
-          setIsCapturing(false);
-        }, 'image/png');
+        await saveCanvasAsImage(canvas, (title || 'saju-result') + '.png');
       } else {
-        // 여러 장으로 분할 저장
         const pages = Math.ceil(imgH / maxPageH);
         for (let i = 0; i < pages; i++) {
           const pageCanvas = document.createElement('canvas');
-          pageCanvas.width = imgW;
+          pageCanvas.width = canvas.width;
           const thisH = Math.min(maxPageH, imgH - i * maxPageH);
           pageCanvas.height = thisH;
           const ctx = pageCanvas.getContext('2d');
           if (!ctx) continue;
           ctx.drawImage(canvas, 0, -i * maxPageH);
-          await new Promise<void>((resolve) => {
-            pageCanvas.toBlob((blob) => {
-              if (!blob) { resolve(); return; }
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a'); a.href = url; a.download = (title || 'saju-result') + '_' + (i + 1) + '.png'; a.click();
-              URL.revokeObjectURL(url);
-              resolve();
-            }, 'image/png');
-          });
-          if (i < pages - 1) await new Promise(r => setTimeout(r, 500)); // 브라우저가 다운로드 처리할 시간
+          await saveCanvasAsImage(pageCanvas, (title || 'saju-result') + '_' + (i + 1) + '.png');
+          if (i < pages - 1) await new Promise(r => setTimeout(r, 500));
         }
-        setIsCapturing(false);
       }
-      alert(lang === 'en' ? 'Image saved!' : '이미지가 저장되었어! 📸');
+      setIsCapturing(false);
     } catch {
       alert(lang === 'en' ? 'Failed to save image' : '이미지 저장에 실패했어. 다시 시도해줘!');
       setIsCapturing(false);
@@ -1039,9 +1044,11 @@ export default function SajuApp() {
             </button>
             {showSavedResults && (
               <div style={{ marginTop: '8px', maxHeight: '240px', overflowY: 'auto', borderRadius: '14px', background: 'rgba(255,255,255,0.06)', padding: '8px', border: '1px solid rgba(240,199,94,0.1)' }}>
-                {savedResults.map((r: { name: string; date: string; type: string; text: string }, i: number) => (
+                {savedResults.map((r: { name: string; date: string; type: string; text: string; saju?: unknown; user?: unknown }, i: number) => (
                   <div key={i} style={{ padding: '12px 14px', borderRadius: '12px', marginBottom: '6px', background: 'rgba(255,255,255,0.06)', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)', transition: 'all 0.2s' }} onClick={() => {
                     setAiText(r.text);
+                    if (r.saju) setSajuResult(r.saju as SajuResult);
+                    if (r.user) setUserData(r.user as typeof userData);
                     setCurrentScreen(r.type === '2026 운세' || r.type === '2026 Fortune' ? 7 : 4);
                     setShowSavedResults(false);
                   }}>
@@ -1918,7 +1925,7 @@ export default function SajuApp() {
             <button className="btn" style={{ flex: 1, background: 'rgba(159,122,234,0.15)', border: '1px solid rgba(159,122,234,0.3)', color: 'var(--text)', fontSize: '13px' }} onClick={() => {
               try {
                 const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
-                const entry = { name: userData.name, date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: currentScreen === 7 ? (lang === 'en' ? '2026 Fortune' : '2026 운세') : (lang === 'en' ? 'Saju Reading' : '사주 해설'), text: aiText };
+                const entry = { name: userData.name, date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: currentScreen === 7 ? (lang === 'en' ? '2026 Fortune' : '2026 운세') : (lang === 'en' ? 'Saju Reading' : '사주 해설'), text: aiText, saju: sajuResult, user: userData };
                 const updated = [entry, ...results].slice(0, 10);
                 safeSetItem('saju-saved-results', JSON.stringify(updated));
                 alert(t('resultSaved', lang));
@@ -3282,7 +3289,7 @@ export default function SajuApp() {
             <button className="btn" style={{ flex: 1, background: 'rgba(159,122,234,0.15)', border: '1px solid rgba(159,122,234,0.3)', color: 'var(--text)', fontSize: '13px' }} onClick={() => {
               try {
                 const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
-                const entry = { name: userData.name, date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: currentScreen === 7 ? (lang === 'en' ? '2026 Fortune' : '2026 운세') : (lang === 'en' ? 'Saju Reading' : '사주 해설'), text: aiText };
+                const entry = { name: userData.name, date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: currentScreen === 7 ? (lang === 'en' ? '2026 Fortune' : '2026 운세') : (lang === 'en' ? 'Saju Reading' : '사주 해설'), text: aiText, saju: sajuResult, user: userData };
                 const updated = [entry, ...results].slice(0, 10);
                 safeSetItem('saju-saved-results', JSON.stringify(updated));
                 alert(t('resultSaved', lang));
