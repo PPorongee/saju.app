@@ -549,11 +549,30 @@ export default function SajuApp() {
     const fixedEls = document.querySelectorAll('.back-btn, [style*="position:fixed"], [style*="position: fixed"]');
     const origDisplay: string[] = [];
     fixedEls.forEach((fe, i) => { origDisplay[i] = (fe as HTMLElement).style.display; (fe as HTMLElement).style.display = 'none'; });
+
+    // 캡처 전 밝기/선명도 향상
+    el.style.setProperty('--capture-mode', '1');
+    const allText = el.querySelectorAll('*');
+    const origColors: string[] = [];
+    allText.forEach((t, i) => {
+      const computed = getComputedStyle(t);
+      origColors[i] = (t as HTMLElement).style.color;
+      const opacity = parseFloat(computed.opacity);
+      if (opacity < 0.7) (t as HTMLElement).style.opacity = '0.85';
+    });
+
     const html2canvas = (await import('html2canvas')).default;
     const canvas = await html2canvas(el, {
-      backgroundColor: '#0A0E2A', scale: 1.5, useCORS: true, logging: false,
+      backgroundColor: '#0C1030', scale: 2, useCORS: true, logging: false,
       scrollY: -window.scrollY, windowHeight: el.scrollHeight, height: el.scrollHeight,
     });
+
+    // 원래 스타일 복원
+    allText.forEach((t, i) => {
+      if (origColors[i] !== undefined) (t as HTMLElement).style.color = origColors[i];
+      (t as HTMLElement).style.removeProperty('opacity');
+    });
+    el.style.removeProperty('--capture-mode');
     fixedEls.forEach((fe, i) => { (fe as HTMLElement).style.display = origDisplay[i]; });
     return canvas;
   }
@@ -589,22 +608,52 @@ export default function SajuApp() {
       if (!canvas) { setIsCapturing(false); return; }
 
       const imgH = canvas.height;
-      const maxPageH = 4000;
+      const scale = 2; // captureElement에서 사용한 scale과 동일
+      const maxPageH = 3000 * scale; // 실제 픽셀 기준
 
       if (imgH <= maxPageH) {
         await saveCanvasAsImage(canvas, (title || 'saju-result') + '.png');
       } else {
-        const pages = Math.ceil(imgH / maxPageH);
-        for (let i = 0; i < pages; i++) {
+        // 섹션 헤더(h3) 위치를 기준으로 안전한 분할점 찾기
+        const el = document.querySelector('.inner.screen-enter') || document.querySelector('.app-container');
+        const headers = el ? el.querySelectorAll('h3, .section-divider') : [];
+        const breakPoints: number[] = [];
+        headers.forEach(h => {
+          const rect = h.getBoundingClientRect();
+          const elRect = el!.getBoundingClientRect();
+          const yPos = (rect.top - elRect.top) * scale;
+          if (yPos > 200) breakPoints.push(yPos);
+        });
+
+        // maxPageH에 가장 가까운 안전한 분할점 찾기
+        const splitPoints: number[] = [0];
+        let lastSplit = 0;
+        for (let target = maxPageH; target < imgH; target += maxPageH) {
+          // target 근처에서 가장 가까운 헤더 위치 찾기 (위쪽으로)
+          let best = target;
+          for (const bp of breakPoints) {
+            if (bp > lastSplit + 500 && bp <= target && bp > best - maxPageH * 0.3) {
+              best = bp;
+            }
+          }
+          if (best !== lastSplit) {
+            splitPoints.push(best);
+            lastSplit = best;
+          }
+        }
+        splitPoints.push(imgH);
+
+        for (let i = 0; i < splitPoints.length - 1; i++) {
+          const startY = splitPoints[i];
+          const thisH = splitPoints[i + 1] - startY;
           const pageCanvas = document.createElement('canvas');
           pageCanvas.width = canvas.width;
-          const thisH = Math.min(maxPageH, imgH - i * maxPageH);
           pageCanvas.height = thisH;
           const ctx = pageCanvas.getContext('2d');
           if (!ctx) continue;
-          ctx.drawImage(canvas, 0, -i * maxPageH);
+          ctx.drawImage(canvas, 0, startY, canvas.width, thisH, 0, 0, canvas.width, thisH);
           await saveCanvasAsImage(pageCanvas, (title || 'saju-result') + '_' + (i + 1) + '.png');
-          if (i < pages - 1) await new Promise(r => setTimeout(r, 500));
+          if (i < splitPoints.length - 2) await new Promise(r => setTimeout(r, 500));
         }
       }
       setIsCapturing(false);
