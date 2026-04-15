@@ -562,24 +562,33 @@ export default function SajuApp() {
     if (isCapturing) return;
     setIsCapturing(true);
     try {
-      // 결과를 공유 가능한 텍스트로 구성
-      const shareText = '✨ ' + title + '\n\n' + text.replace(/##\d+\./g, '\n📌 ').replace(/##/g, '').slice(0, 2000) + '\n\n🔮 별빛 사주에서 확인하기\nhttps://saju-app-snowy.vercel.app';
+      // 결과를 base64로 인코딩하여 공유 링크 생성
+      const encoded = btoa(encodeURIComponent(text)).replace(/\+/g, '-').replace(/\//g, '_');
+      const encodedTitle = encodeURIComponent(title);
+      const origin = window.location.origin;
+      const shareUrl = origin + '/share?t=' + encodedTitle + '&d=' + encoded;
 
-      // Web Share API 지원 시 공유
+      // URL이 너무 길면 (8000자 초과) 앞부분만 사용
+      const maxLen = 8000;
+      const finalUrl = shareUrl.length > maxLen
+        ? origin + '/share?t=' + encodedTitle + '&d=' + btoa(encodeURIComponent(text.slice(0, 3000))).replace(/\+/g, '-').replace(/\//g, '_')
+        : shareUrl;
+
+      // Web Share API 지원 시 링크 공유
       if (navigator.share) {
         try {
-          await navigator.share({ title: '별빛 사주 - ' + title, text: shareText });
+          await navigator.share({ title: '별빛 사주 - ' + title, url: finalUrl });
           setIsCapturing(false);
           return;
-        } catch { /* 사용자가 취소한 경우 클립보드로 fallback */ }
+        } catch { /* 사용자 취소 시 클립보드로 fallback */ }
       }
 
-      // 클립보드에 복사
-      await navigator.clipboard.writeText(shareText);
-      alert(lang === 'en' ? 'Link copied to clipboard! 📋' : '결과가 클립보드에 복사되었어! 📋\n카톡이나 SNS에 붙여넣기 해봐!');
+      // 클립보드에 링크 복사
+      await navigator.clipboard.writeText(finalUrl);
+      alert(lang === 'en' ? 'Share link copied! 🔗' : '공유 링크가 복사되었어! 🔗\n카톡이나 SNS에 붙여넣기 해봐!');
       setIsCapturing(false);
     } catch {
-      alert(lang === 'en' ? 'Failed to share' : '공유에 실패했어. 다시 시도해줘!');
+      alert(lang === 'en' ? 'Failed to create share link' : '공유 링크 생성에 실패했어. 다시 시도해줘!');
       setIsCapturing(false);
     }
   }
@@ -1873,7 +1882,7 @@ export default function SajuApp() {
             <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
               disabled={isCapturing}
               onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
-              {isCapturing ? (lang === 'en' ? '📋 Copying...' : '📋 복사 중...') : (lang === 'en' ? '📋 Share Result' : '📋 결과 공유')}
+              {isCapturing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 공유 링크')}
             </button>
           )}
           {aiText && !isGenerating && (
@@ -2724,7 +2733,7 @@ export default function SajuApp() {
                 <button className="btn" style={{ width: '100%', marginTop: '16px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
                   disabled={isCapturing}
                   onClick={() => shareResult(compatAiText, (userData.name || '') + ' & ' + (compatPerson2.name || '') + (lang === 'en' ? "'s Compatibility" : '의 궁합'))}>
-                  {isCapturing ? (lang === 'en' ? '📋 Copying...' : '📋 복사 중...') : (lang === 'en' ? '📋 Share Result' : '📋 결과 공유')}
+                  {isCapturing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 공유 링크')}
                 </button>
                 <button className="btn" style={{ width: '100%', marginTop: '8px', background: 'rgba(159,122,234,0.15)', border: '1px solid rgba(159,122,234,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }} onClick={() => {
                   try {
@@ -3200,7 +3209,7 @@ export default function SajuApp() {
             <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
               disabled={isCapturing}
               onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
-              {isCapturing ? (lang === 'en' ? '📋 Copying...' : '📋 복사 중...') : (lang === 'en' ? '📋 Share Result' : '📋 결과 공유')}
+              {isCapturing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 공유 링크')}
             </button>
           )}
           {aiText && !isGenerating && (

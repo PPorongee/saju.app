@@ -146,8 +146,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 57,
-      "lastAccessed": 1776256328003,
+      "accessCount": 59,
+      "lastAccessed": 1776257658701,
       "type": "file"
     },
     {
@@ -220,6 +220,36 @@
       "path": "src\\app\\api\\readings\\route.ts",
       "accessCount": 1,
       "lastAccessed": 1776256184913,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\reading-code.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776257506783,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\reading-storage.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776257506924,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\readings\\page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1776257507157,
+      "type": "file"
+    },
+    {
+      "path": "src\\db\\index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776257563091,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\share\\page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1776257611699,
       "type": "file"
     }
   ],
