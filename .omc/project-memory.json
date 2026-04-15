@@ -146,8 +146,8 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 75,
-      "lastAccessed": 1776259044755,
+      "accessCount": 85,
+      "lastAccessed": 1776260167424,
       "type": "file"
     },
     {
@@ -251,6 +251,12 @@
       "accessCount": 1,
       "lastAccessed": 1776257563091,
       "type": "file"
+    },
+    {
+      "path": "src\\lib\\i18n.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776259935245,
+      "type": "directory"
     }
   ],
   "userDirectives": []

@@ -558,25 +558,53 @@ export default function SajuApp() {
     return canvas;
   }
 
-  const [shareLink, setShareLink] = useState('');
-
-  async function shareResult(text: string, title: string) {
+  async function shareResult(_text: string, title: string) {
     if (isCapturing) return;
     setIsCapturing(true);
     try {
-      // 짧은 코드 생성 후 localStorage에 저장
-      const code = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const shareData = JSON.stringify({ title, text, date: new Date().toISOString() });
-      safeSetItem('saju-share-' + code, shareData);
+      const canvas = await captureElement();
+      if (!canvas) { setIsCapturing(false); return; }
 
-      const origin = window.location.origin;
-      const finalUrl = origin + '/share?code=' + code;
+      const imgW = canvas.width;
+      const imgH = canvas.height;
+      const maxPageH = 4000; // 한 이미지당 최대 높이 (px)
 
-      setShareLink(finalUrl);
-      try { await navigator.clipboard.writeText(finalUrl); } catch { /* fallback */ }
-      setIsCapturing(false);
+      if (imgH <= maxPageH) {
+        // 한 장으로 저장
+        canvas.toBlob((blob) => {
+          if (!blob) { setIsCapturing(false); return; }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = (title || 'saju-result') + '.png'; a.click();
+          URL.revokeObjectURL(url);
+          setIsCapturing(false);
+        }, 'image/png');
+      } else {
+        // 여러 장으로 분할 저장
+        const pages = Math.ceil(imgH / maxPageH);
+        for (let i = 0; i < pages; i++) {
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = imgW;
+          const thisH = Math.min(maxPageH, imgH - i * maxPageH);
+          pageCanvas.height = thisH;
+          const ctx = pageCanvas.getContext('2d');
+          if (!ctx) continue;
+          ctx.drawImage(canvas, 0, -i * maxPageH);
+          await new Promise<void>((resolve) => {
+            pageCanvas.toBlob((blob) => {
+              if (!blob) { resolve(); return; }
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a'); a.href = url; a.download = (title || 'saju-result') + '_' + (i + 1) + '.png'; a.click();
+              URL.revokeObjectURL(url);
+              resolve();
+            }, 'image/png');
+          });
+          if (i < pages - 1) await new Promise(r => setTimeout(r, 500)); // 브라우저가 다운로드 처리할 시간
+        }
+        setIsCapturing(false);
+      }
+      alert(lang === 'en' ? 'Image saved!' : '이미지가 저장되었어! 📸');
     } catch {
-      alert(lang === 'en' ? 'Failed to create share link' : '공유 링크 생성에 실패했어. 다시 시도해줘!');
+      alert(lang === 'en' ? 'Failed to save image' : '이미지 저장에 실패했어. 다시 시도해줘!');
       setIsCapturing(false);
     }
   }
@@ -1393,7 +1421,7 @@ export default function SajuApp() {
               <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
                 disabled={isCapturing}
                 onClick={() => shareResult(aiText, lang === 'en' ? 'Saved Result' : '저장된 결과')}>
-                {isCapturing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 공유 링크')}
+                {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
               </button>
               <button className="btn" style={{ flex: 1, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: 'var(--text)', fontSize: '13px' }}
                 disabled={isTranslating}
@@ -1883,7 +1911,7 @@ export default function SajuApp() {
             <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
               disabled={isCapturing}
               onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
-              {isCapturing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 공유 링크')}
+              {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
             </button>
           )}
           {aiText && !isGenerating && (
@@ -2771,7 +2799,7 @@ export default function SajuApp() {
                 <button className="btn" style={{ width: '100%', marginTop: '16px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
                   disabled={isCapturing}
                   onClick={() => shareResult(compatAiText, (userData.name || '') + ' & ' + (compatPerson2.name || '') + (lang === 'en' ? "'s Compatibility" : '의 궁합'))}>
-                  {isCapturing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 공유 링크')}
+                  {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
                 </button>
                 <button className="btn" style={{ width: '100%', marginTop: '8px', background: 'rgba(159,122,234,0.15)', border: '1px solid rgba(159,122,234,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }} onClick={() => {
                   try {
@@ -3247,7 +3275,7 @@ export default function SajuApp() {
             <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
               disabled={isCapturing}
               onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
-              {isCapturing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 공유 링크')}
+              {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
             </button>
           )}
           {aiText && !isGenerating && (
@@ -3328,7 +3356,7 @@ export default function SajuApp() {
     const sectionTitles = isYearly ? yearlySectionTitles : [
       t('secTitle1', lang), t('secTitle2', lang), t('secTitle3', lang), t('secTitle4', lang),
       title5, t('secTitle6', lang), t('secTitle7', lang), t('secTitle8', lang),
-      t('secTitle9', lang), t('secTitle10', lang), t('secTitle11', lang), t('secTitle12', lang),
+      t('secTitle9', lang), t('secTitle10', lang), t('secTitle12', lang),
       title13, t('secTitle14', lang), t('secTitle15', lang), t('secTitle16', lang),
       t('secTitle17', lang)
     ];
@@ -3336,12 +3364,12 @@ export default function SajuApp() {
     const sectionHints = isYearly ? yearlySectionHints : [
       t('secHint1', lang), t('secHint2', lang), t('secHint3', lang), t('secHint4', lang),
       hint5, t('secHint6', lang), t('secHint7', lang), t('secHint8', lang),
-      t('secHint9', lang), t('secHint10', lang), t('secHint11', lang), t('secHint12', lang),
+      t('secHint9', lang), t('secHint10', lang), t('secHint12', lang),
       hint13, t('secHint14', lang), t('secHint15', lang), t('secHint16', lang),
       t('secHint17', lang)
     ];
 
-    const icons = isYearly ? yearlyIcons : ['🎯', '🧠', '💰', '💼', '💕', '👥', '🏥', '👨‍👩‍👧', '👶', '🛤', '🔭', '🗺', '💍', '🏠', '🍀', '✨', '💌'];
+    const icons = isYearly ? yearlyIcons : ['🎯', '🧠', '💰', '💼', '💕', '👥', '🏥', '👨‍👩‍👧', '👶', '🛤', '🗺', '💍', '🏠', '🍀', '✨', '💌'];
 
     return (
       <div className="inner screen-enter">
@@ -3750,62 +3778,6 @@ export default function SajuApp() {
         {/* 사업자 정보 푸터 */}
         <Footer />
       </div>
-      {/* 공유 링크 모달 */}
-      {shareLink && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 99998, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
-          onClick={() => setShareLink('')}>
-          <div style={{ background: 'rgba(20,24,80,0.97)', borderRadius: '20px', border: '1px solid rgba(240,199,94,0.3)', padding: '28px 20px', maxWidth: '400px', width: '100%', textAlign: 'center' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔗</div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#F0C75E', marginBottom: '8px' }}>
-              {lang === 'en' ? 'Share Link Created!' : '공유 링크가 생성되었어!'}
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '16px' }}>
-              {lang === 'en' ? 'Copy the link below and share it!' : '아래 링크를 복사해서 카톡이나 SNS에 붙여넣기 해봐!'}
-            </p>
-            <input
-              type="text"
-              readOnly
-              value={shareLink}
-              onFocus={e => e.target.select()}
-              style={{
-                width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(240,199,94,0.3)',
-                background: 'rgba(0,0,0,0.3)', color: '#F0C75E', fontSize: '11px', textAlign: 'center',
-                fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box'
-              }}
-            />
-            <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(shareLink);
-                    alert(lang === 'en' ? 'Copied!' : '복사 완료! 📋');
-                  } catch {
-                    const input = document.querySelector('input[readonly]') as HTMLInputElement;
-                    if (input) { input.select(); document.execCommand('copy'); alert(lang === 'en' ? 'Copied!' : '복사 완료! 📋'); }
-                  }
-                }}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: '50px', border: 'none',
-                  background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A',
-                  fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit'
-                }}
-              >
-                {lang === 'en' ? '📋 Copy Link' : '📋 링크 복사'}
-              </button>
-              <button
-                onClick={() => setShareLink('')}
-                style={{
-                  padding: '14px 20px', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.2)',
-                  background: 'transparent', color: 'var(--text)', fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit'
-                }}
-              >
-                {lang === 'en' ? 'Close' : '닫기'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {hasMounted && !storageConsent && (
         <ConsentModal
           lang={lang}
