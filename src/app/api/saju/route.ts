@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         { role: 'user', content: prompt }
       ],
       stream: true,
-      temperature: 0.55,
+      temperature: 0.35,
       max_tokens: resolvedMaxTokens,
       seed: Math.abs(seedHash),
     });

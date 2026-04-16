@@ -102,6 +102,27 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
   prompt += '일간: ' + (elemNames[ds] || CG[ds]) + '\n';
   prompt += '오행분포: ' + ohDist + '\n';
   prompt += '십성: ' + sipsungStr + '\n';
+
+  // 사전 판단: 신강/신약 + 용신 (AI 판단 편차 제거)
+  const dayOhPre = OH_CG[ds];
+  const mBranchOh = OH_JJ[sj.mBranch];
+  const sangSaengPre: Record<string, string> = { '목':'수', '화':'목', '토':'화', '금':'토', '수':'금' };
+  const deukryungPre = mBranchOh === dayOhPre || sangSaengPre[dayOhPre] === mBranchOh;
+  const preStems = [sj.yStem, sj.mStem, sj.dStem]; if (sj.hStem >= 0) preStems.push(sj.hStem);
+  const preBranches = [sj.yBranch, sj.mBranch, sj.dBranch]; if (sj.hBranch >= 0) preBranches.push(sj.hBranch);
+  let tonggeun = 0; let bigyup = 0;
+  for (const b of preBranches) { if (OH_JJ[b] === dayOhPre) tonggeun++; }
+  for (const s of preStems) { if (OH_CG[s] === dayOhPre) bigyup++; }
+  bigyup--;
+  const strengthScore = (deukryungPre ? 3 : 0) + tonggeun * 2 + bigyup * 1.5;
+  const isStrongPre = strengthScore >= 4;
+  const ohGeukPre: Record<string, string> = { '목':'금', '화':'수', '토':'목', '금':'화', '수':'토' };
+  const yongsinPre = isStrongPre ? ohGeukPre[dayOhPre] || '토' : sangSaengPre[dayOhPre] || '토';
+  const gisinPre = isStrongPre ? sangSaengPre[dayOhPre] || '토' : ohGeukPre[dayOhPre] || '토';
+  prompt += '\n=== 사전 판단 결과 (이 판단을 따라야 함! AI가 임의로 바꾸지 마!) ===\n';
+  prompt += '신강/신약: ' + (isStrongPre ? '신강' : '신약') + ' (득령:' + (deukryungPre ? 'O' : 'X') + ', 통근:' + tonggeun + '개, 비겁:' + bigyup + '개)\n';
+  prompt += '용신(필요한 오행): ' + yongsinPre + ' / 기신(피할 오행): ' + gisinPre + '\n';
+  prompt += '이 판단은 시스템이 사전 계산한 결과야. 해설 전체에서 이 용신/기신을 기준으로 일관되게 해석해!\n\n';
   const unsung = get12Unsung(sj);
   let unsungStr = '년지:' + unsung['년지'] + ' 월지:' + unsung['월지'] + ' 일지:' + unsung['일지'];
   if (unsung['시지']) unsungStr += ' 시지:' + unsung['시지'];
