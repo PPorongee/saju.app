@@ -705,6 +705,7 @@ export default function SajuApp() {
             throw retryErr;
           }
         }
+        if (fullText && partText && !fullText.endsWith('\n')) fullText += '\n\n';
         fullText += partText;
       }
       // Detect stream error sentinel from server
