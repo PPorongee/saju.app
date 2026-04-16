@@ -541,7 +541,6 @@ export default function SajuApp() {
     if (storageConsent) localStorage.setItem(key, value);
   }
 
-  const [isCapturing, setIsCapturing] = useState(false);
   const [isSharingLink, setIsSharingLink] = useState(false);
 
   async function shareLink(text: string, title: string) {
@@ -576,125 +575,6 @@ export default function SajuApp() {
     setIsSharingLink(false);
   }
 
-  async function captureElement() {
-    const el = (document.querySelector('.inner.screen-enter') || document.querySelector('.app-container')) as HTMLElement;
-    if (!el) return null;
-    const fixedEls = document.querySelectorAll('.back-btn, [style*="position:fixed"], [style*="position: fixed"]');
-    const origDisplay: string[] = [];
-    fixedEls.forEach((fe, i) => { origDisplay[i] = (fe as HTMLElement).style.display; (fe as HTMLElement).style.display = 'none'; });
-
-    // 캡처 전 밝기/선명도 향상
-    el.style.setProperty('--capture-mode', '1');
-    const allText = el.querySelectorAll('*');
-    const origColors: string[] = [];
-    allText.forEach((t, i) => {
-      const computed = getComputedStyle(t);
-      origColors[i] = (t as HTMLElement).style.color;
-      const opacity = parseFloat(computed.opacity);
-      if (opacity < 0.7) (t as HTMLElement).style.opacity = '0.85';
-    });
-
-    const html2canvas = (await import('html2canvas')).default;
-    const canvas = await html2canvas(el, {
-      backgroundColor: '#0C1030', scale: 2, useCORS: true, logging: false,
-      scrollY: -window.scrollY, windowHeight: el.scrollHeight, height: el.scrollHeight,
-    });
-
-    // 원래 스타일 복원
-    allText.forEach((t, i) => {
-      if (origColors[i] !== undefined) (t as HTMLElement).style.color = origColors[i];
-      (t as HTMLElement).style.removeProperty('opacity');
-    });
-    el.style.removeProperty('--capture-mode');
-    fixedEls.forEach((fe, i) => { (fe as HTMLElement).style.display = origDisplay[i]; });
-    return canvas;
-  }
-
-  async function saveCanvasAsImage(cvs: HTMLCanvasElement, fileName: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      cvs.toBlob(async (blob) => {
-        if (!blob) { resolve(false); return; }
-        // 모바일: Web Share API로 공유 (Safari/Chrome 모두 지원)
-        const file = new File([blob], fileName, { type: 'image/png' });
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-          try { await navigator.share({ files: [file] }); resolve(true); return; } catch { /* 사용자 취소 시 fallback */ }
-        }
-        // PC 또는 Share 실패: 다운로드
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        resolve(true);
-      }, 'image/png');
-    });
-  }
-
-  async function shareResult(_text: string, title: string) {
-    if (isCapturing) return;
-    setIsCapturing(true);
-    try {
-      const canvas = await captureElement();
-      if (!canvas) { setIsCapturing(false); return; }
-
-      const imgH = canvas.height;
-      const scale = 2; // captureElement에서 사용한 scale과 동일
-      const maxPageH = 3000 * scale; // 실제 픽셀 기준
-
-      if (imgH <= maxPageH) {
-        await saveCanvasAsImage(canvas, (title || 'saju-result') + '.png');
-      } else {
-        // 섹션 헤더(h3) 위치를 기준으로 안전한 분할점 찾기
-        const el = document.querySelector('.inner.screen-enter') || document.querySelector('.app-container');
-        const headers = el ? el.querySelectorAll('h3, .section-divider') : [];
-        const breakPoints: number[] = [];
-        headers.forEach(h => {
-          const rect = h.getBoundingClientRect();
-          const elRect = el!.getBoundingClientRect();
-          const yPos = (rect.top - elRect.top) * scale;
-          if (yPos > 200) breakPoints.push(yPos);
-        });
-
-        // maxPageH에 가장 가까운 안전한 분할점 찾기
-        const splitPoints: number[] = [0];
-        let lastSplit = 0;
-        for (let target = maxPageH; target < imgH; target += maxPageH) {
-          // target 근처에서 가장 가까운 헤더 위치 찾기 (위쪽으로)
-          let best = target;
-          for (const bp of breakPoints) {
-            if (bp > lastSplit + 500 && bp <= target && bp > best - maxPageH * 0.3) {
-              best = bp;
-            }
-          }
-          if (best !== lastSplit) {
-            splitPoints.push(best);
-            lastSplit = best;
-          }
-        }
-        splitPoints.push(imgH);
-
-        for (let i = 0; i < splitPoints.length - 1; i++) {
-          const startY = splitPoints[i];
-          const thisH = splitPoints[i + 1] - startY;
-          const pageCanvas = document.createElement('canvas');
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = thisH;
-          const ctx = pageCanvas.getContext('2d');
-          if (!ctx) continue;
-          ctx.drawImage(canvas, 0, startY, canvas.width, thisH, 0, 0, canvas.width, thisH);
-          await saveCanvasAsImage(pageCanvas, (title || 'saju-result') + '_' + (i + 1) + '.png');
-          if (i < splitPoints.length - 2) await new Promise(r => setTimeout(r, 500));
-        }
-      }
-      setIsCapturing(false);
-    } catch {
-      alert(lang === 'en' ? 'Failed to save image' : '이미지 저장에 실패했어. 다시 시도해줘!');
-      setIsCapturing(false);
-    }
-  }
 
 
   async function translateAiText(text: string, targetLang: 'en' | 'ko', setter: (t: string) => void) {
@@ -1507,11 +1387,6 @@ export default function SajuApp() {
             <div className="section-divider">{t('aiReading', lang)}</div>
             <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
             <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
-              <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
-                disabled={isCapturing}
-                onClick={() => shareResult(aiText, lang === 'en' ? 'Saved Result' : '저장된 결과')}>
-                {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
-              </button>
               <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
                 disabled={isSharingLink}
                 onClick={() => shareLink(aiText, lang === 'en' ? 'Saved Result' : '저장된 결과')}>
@@ -2001,13 +1876,6 @@ export default function SajuApp() {
 
         {/* Share + Save + Restart */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
-          {aiText && !isGenerating && (
-            <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
-              disabled={isCapturing}
-              onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
-              {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
-            </button>
-          )}
           {aiText && !isGenerating && (
             <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
               disabled={isSharingLink}
@@ -2897,12 +2765,7 @@ export default function SajuApp() {
               <div className="card" style={{ marginTop: '12px' }}>
                 <h3>{t('aiCompatTitle', lang)}</h3>
                 <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(compatAiText, lang) }} />
-                <button className="btn" style={{ width: '100%', marginTop: '16px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
-                  disabled={isCapturing}
-                  onClick={() => shareResult(compatAiText, (userData.name || '') + ' & ' + (compatPerson2.name || '') + (lang === 'en' ? "'s Compatibility" : '의 궁합'))}>
-                  {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
-                </button>
-                <button className="btn" style={{ width: '100%', marginTop: '8px', background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
+                <button className="btn" style={{ width: '100%', marginTop: '16px', background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
                   disabled={isSharingLink}
                   onClick={() => shareLink(compatAiText, (userData.name || '') + ' & ' + (compatPerson2.name || '') + (lang === 'en' ? "'s Compatibility" : '의 궁합'))}>
                   {isSharingLink ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 링크 공유')}
@@ -3377,13 +3240,6 @@ export default function SajuApp() {
 
         {/* Share + Save + Restart */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
-          {aiText && !isGenerating && (
-            <button className="btn" style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--text)', fontSize: '13px' }}
-              disabled={isCapturing}
-              onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
-              {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
-            </button>
-          )}
           {aiText && !isGenerating && (
             <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
               disabled={isSharingLink}
