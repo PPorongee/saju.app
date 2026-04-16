@@ -13,8 +13,8 @@ export function formatLLMText(text: string, lang: Lang = 'ko'): string {
   const icons = ['🎯', '🧠', '💰', '💼', '💕', '👥', '🏥', '👨‍👩‍👧', '👶', '🛤', '🔭', '🗺', '💍', '🏠', '🍀', '✨', '💌'];
   const clss = ['s-purple', 's-blue', 's-yellow', 's-teal', 's-pink', 's-green', 's-red', 's-orange', 's-orange', 's-blue', 's-purple', 's-teal', 's-pink', 's-yellow', 's-green', 's-purple', 's-pink'];
   const defaultTitles = lang === 'en'
-    ? ['', 'This is who you are', 'Personality & Mental Strength', 'Money & Wealth', 'Career Calling & Roadmap', 'Love & Destiny Map', 'Good People & People to Avoid', 'Health Report', 'Family & Relationships', 'Children & Parenting', 'Current Life Chapter', '2027 Preview', '10-Year Future Scenario', 'Marriage & Relationship Future', 'Home & Real Estate', 'Lucky Routines & Tips', 'Brightest Age of Your Life', 'A Letter to Myself']
-    : ['', '너는 이런 사람이야', '타고난 성격 & 멘탈 체력', '돈과 나의 관계', '천직 & 커리어 로드맵', '연애 & 인연의 지도', '나에게 좋은 사람 & 주의할 사람', '건강 리포트', '가정 & 가족관계', '자녀운 & 부모 스타일', '지금 나의 인생 챕터', '2027년 미리보기', '향후 10년 미래 시나리오', '결혼 & 인연 타이밍', '내 집 마련 & 부동산', '행운 루틴 & 개운법', '인생에서 가장 빛나는 나이', '나에게 보내는 편지'];
+    ? ['', 'This is who you are', 'Personality & Mental Strength', 'Money & Wealth', 'Career Calling & Roadmap', 'Your Questions Analyzed', 'Love & Destiny Map', 'Good People & People to Avoid', 'Health Report', 'Family & Relationships', 'Children & Parenting', 'Current Life Chapter', '10-Year Future Scenario', 'Marriage & Relationship Future', 'Home & Real Estate', 'Lucky Routines & Tips', 'Brightest Age of Your Life', 'A Letter to Myself']
+    : ['', '너는 이런 사람이야', '타고난 성격 & 멘탈 체력', '돈과 나의 관계', '천직 & 커리어 로드맵', '질문의 답으로 보는 너의 모습 분석', '연애 & 인연의 지도', '나에게 좋은 사람 & 주의할 사람', '건강 리포트', '가정 & 가족관계', '자녀운 & 부모 스타일', '지금 나의 인생 챕터', '향후 10년 미래 시나리오', '결혼 & 인연 타이밍', '내 집 마련 & 부동산', '행운 루틴 & 개운법', '인생에서 가장 빛나는 나이', '나에게 보내는 편지'];
 
   const colorMap: Record<string, string> = {
     's-purple': '#9F7AEA,#6B46C1', 's-green': '#48BB78,#2F855A', 's-orange': '#ED8936,#DD6B20',
