@@ -169,12 +169,17 @@ function ShareContent() {
         </div>
 
         {/* CTA */}
-        <div style={{ textAlign: 'center', marginTop: '32px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', marginTop: '32px' }}>
           <a href="/" className="btn" style={{
-            display: 'inline-block', padding: '14px 32px', borderRadius: '50px',
+            display: 'inline-block', padding: '14px 32px', borderRadius: '50px', width: '100%', maxWidth: '360px', textAlign: 'center',
             background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A',
             fontSize: '15px', fontWeight: 800, textDecoration: 'none', border: 'none'
-          }}>나도 사주 보러가기 ✨</a>
+          }}>나도 990원에 개인 사주 보러가기 🔮</a>
+          <a href="/" className="btn" style={{
+            display: 'inline-block', padding: '14px 32px', borderRadius: '50px', width: '100%', maxWidth: '360px', textAlign: 'center',
+            background: 'linear-gradient(135deg, #9F7AEA, #6B46C1)', color: '#F5F0E8',
+            fontSize: '15px', fontWeight: 800, textDecoration: 'none', border: 'none'
+          }}>나도 990원에 2026 올해운세 보러가기 📅</a>
         </div>
       </div>
     </div>
