@@ -27,6 +27,16 @@ export const readings = pgTable('readings', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Shares table - public shareable reading links
+export const shares = pgTable('shares', {
+  id: serial('id').primaryKey(),
+  slug: varchar('slug', { length: 24 }).notNull().unique(),
+  title: varchar('title', { length: 200 }),
+  text: text('text').notNull(),
+  lang: varchar('lang', { length: 5 }).default('ko'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // PaymentEvent table - audit trail
 export const paymentEvents = pgTable('payment_events', {
   id: serial('id').primaryKey(),

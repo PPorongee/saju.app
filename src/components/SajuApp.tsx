@@ -542,6 +542,39 @@ export default function SajuApp() {
   }
 
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isSharingLink, setIsSharingLink] = useState(false);
+
+  async function shareLink(text: string, title: string) {
+    if (!text || isSharingLink) return;
+    setIsSharingLink(true);
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, title, lang }),
+      });
+      if (!res.ok) throw new Error('share api failed');
+      const { slug } = await res.json();
+      const url = window.location.origin + '/share?code=' + slug;
+
+      // 모바일: Web Share API
+      if (navigator.share) {
+        try { await navigator.share({ title, url }); setIsSharingLink(false); return; }
+        catch { /* 사용자 취소 시 클립보드 fallback */ }
+      }
+      // 클립보드 복사
+      try {
+        await navigator.clipboard.writeText(url);
+        alert(lang === 'en' ? 'Link copied!\n' + url : '공유 링크가 복사됐어!\n' + url);
+      } catch {
+        prompt(lang === 'en' ? 'Copy this link:' : '이 링크를 복사해줘:', url);
+      }
+    } catch (err) {
+      console.error('[shareLink]', err);
+      alert(lang === 'en' ? 'Failed to create share link.' : '공유 링크 생성에 실패했어.');
+    }
+    setIsSharingLink(false);
+  }
 
   async function captureElement() {
     const el = (document.querySelector('.inner.screen-enter') || document.querySelector('.app-container')) as HTMLElement;
@@ -1479,6 +1512,11 @@ export default function SajuApp() {
                 onClick={() => shareResult(aiText, lang === 'en' ? 'Saved Result' : '저장된 결과')}>
                 {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
               </button>
+              <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
+                disabled={isSharingLink}
+                onClick={() => shareLink(aiText, lang === 'en' ? 'Saved Result' : '저장된 결과')}>
+                {isSharingLink ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 링크 공유')}
+              </button>
               <button className="btn" style={{ flex: 1, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: 'var(--text)', fontSize: '13px' }}
                 disabled={isTranslating}
                 onClick={() => {
@@ -1968,6 +2006,13 @@ export default function SajuApp() {
               disabled={isCapturing}
               onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
               {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
+            </button>
+          )}
+          {aiText && !isGenerating && (
+            <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
+              disabled={isSharingLink}
+              onClick={() => shareLink(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
+              {isSharingLink ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 링크 공유')}
             </button>
           )}
           {aiText && !isGenerating && (
@@ -2857,6 +2902,11 @@ export default function SajuApp() {
                   onClick={() => shareResult(compatAiText, (userData.name || '') + ' & ' + (compatPerson2.name || '') + (lang === 'en' ? "'s Compatibility" : '의 궁합'))}>
                   {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
                 </button>
+                <button className="btn" style={{ width: '100%', marginTop: '8px', background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
+                  disabled={isSharingLink}
+                  onClick={() => shareLink(compatAiText, (userData.name || '') + ' & ' + (compatPerson2.name || '') + (lang === 'en' ? "'s Compatibility" : '의 궁합'))}>
+                  {isSharingLink ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 링크 공유')}
+                </button>
                 <button className="btn" style={{ width: '100%', marginTop: '8px', background: 'rgba(159,122,234,0.15)', border: '1px solid rgba(159,122,234,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }} onClick={() => {
                   try {
                     const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
@@ -3332,6 +3382,13 @@ export default function SajuApp() {
               disabled={isCapturing}
               onClick={() => shareResult(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
               {isCapturing ? (lang === 'en' ? '📸 Saving...' : '📸 저장 중...') : (lang === 'en' ? '📸 Save Image' : '📸 이미지 저장')}
+            </button>
+          )}
+          {aiText && !isGenerating && (
+            <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
+              disabled={isSharingLink}
+              onClick={() => shareLink(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
+              {isSharingLink ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 링크 공유')}
             </button>
           )}
           {aiText && !isGenerating && (

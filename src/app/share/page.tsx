@@ -12,15 +12,33 @@ function ShareContent() {
 
   useEffect(() => {
     if (!code) { setLoading(false); return; }
-    try {
-      const raw = localStorage.getItem('saju-share-' + code);
-      if (raw) {
-        const data = JSON.parse(raw);
-        setTitle(data.title || '사주 결과');
-        setResult(data.text || '');
-      }
-    } catch { /* ignore */ }
-    setLoading(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/share?code=' + encodeURIComponent(code));
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) {
+            setTitle(data.title || '사주 결과');
+            setResult(data.text || '');
+            setLoading(false);
+            return;
+          }
+        }
+      } catch { /* fall through to localStorage */ }
+      try {
+        const raw = localStorage.getItem('saju-share-' + code);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (!cancelled) {
+            setTitle(data.title || '사주 결과');
+            setResult(data.text || '');
+          }
+        }
+      } catch { /* ignore */ }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [code]);
 
   if (loading) {
@@ -37,8 +55,8 @@ function ShareContent() {
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔮</div>
           <h1 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '12px' }}>결과를 찾을 수 없어요</h1>
-          <p style={{ fontSize: '14px', opacity: 0.6, marginBottom: '8px' }}>이 링크는 결과를 저장한 기기에서만 열 수 있어요.</p>
-          <p style={{ fontSize: '13px', opacity: 0.4, marginBottom: '24px' }}>다른 기기에서 보려면 결과 화면에서 직접 확인해주세요.</p>
+          <p style={{ fontSize: '14px', opacity: 0.6, marginBottom: '8px' }}>링크가 만료되었거나 존재하지 않아요.</p>
+          <p style={{ fontSize: '13px', opacity: 0.4, marginBottom: '24px' }}>다시 공유 링크를 생성해주세요.</p>
           <a href="/" style={{ color: '#F0C75E', textDecoration: 'none', fontSize: '15px', fontWeight: 700 }}>별빛 사주 홈으로 →</a>
         </div>
       </div>
