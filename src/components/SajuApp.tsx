@@ -543,14 +543,15 @@ export default function SajuApp() {
 
   const [isSharingLink, setIsSharingLink] = useState(false);
 
-  async function shareLink(text: string, title: string) {
+  async function shareLink(text: string, title: string, chartDataOverride?: unknown) {
     if (!text || isSharingLink) return;
     setIsSharingLink(true);
     try {
+      const chartData = chartDataOverride || (sajuResult ? { saju: sajuResult, user: { name: userData.name, year: userData.year, month: userData.month, day: userData.day, gender: userData.gender, concern: userData.concern, state: userData.state } } : null);
       const res = await fetch('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, title, lang }),
+        body: JSON.stringify({ text, title, lang, chartData }),
       });
       if (!res.ok) throw new Error('share api failed');
       const { slug } = await res.json();

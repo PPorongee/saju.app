@@ -33,6 +33,7 @@ export const shares = pgTable('shares', {
   slug: varchar('slug', { length: 24 }).notNull().unique(),
   title: varchar('title', { length: 200 }),
   text: text('text').notNull(),
+  chartData: jsonb('chart_data'),
   lang: varchar('lang', { length: 5 }).default('ko'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });

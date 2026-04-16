@@ -32,7 +32,8 @@ export async function POST(req: NextRequest) {
     for (let attempt = 0; attempt < 5; attempt++) {
       const slug = genSlug();
       try {
-        await db.insert(shares).values({ slug, title, text, lang });
+        const chartData = body?.chartData && typeof body.chartData === 'object' ? body.chartData : null;
+        await db.insert(shares).values({ slug, title, text, chartData, lang });
         return NextResponse.json({ slug });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'not found' }, { status: 404 });
     }
     const r = rows[0];
-    return NextResponse.json({ title: r.title, text: r.text, lang: r.lang, createdAt: r.createdAt });
+    return NextResponse.json({ title: r.title, text: r.text, chartData: r.chartData, lang: r.lang, createdAt: r.createdAt });
   } catch (err) {
     console.error('[share GET]', err);
     return NextResponse.json({ error: 'internal error' }, { status: 500 });
