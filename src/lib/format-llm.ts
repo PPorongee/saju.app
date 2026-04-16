@@ -27,12 +27,22 @@ export function formatLLMText(text: string, lang: Lang = 'ko'): string {
 
   try {
     for (let si = 30; si >= 1; si--) {
-      const regex = new RegExp('##' + si + '\\.([^#]+)##', 'g');
-      const match = html.match(regex);
+      const patterns = [
+        new RegExp('##\\s*' + si + '\\.\\s*([^#]+)##', 'g'),
+        new RegExp('#{1,3}\\s*' + si + '\\.\\s*([^\\n]+)', 'g'),
+        new RegExp('\\*\\*' + si + '\\.\\s*([^*]+)\\*\\*', 'g'),
+        new RegExp('(?:^|\\n)' + si + '\\.\\s*([^\\n]{2,60})(?=\\n)', 'g'),
+      ];
+      let match: RegExpMatchArray | null = null;
       let titleText = defaultTitles[si] || '';
+      for (const pat of patterns) {
+        match = html.match(pat);
+        if (match) break;
+      }
       if (match) {
-        titleText = match[0].replace('##' + si + '.', '').replace('##', '').trim() || defaultTitles[si];
-        html = html.replace(match[0], '|||SECTION_' + si + '|||');
+        const raw = match[0];
+        titleText = raw.replace(/^[#*\s]*\d+\.\s*/, '').replace(/[#*]+$/g, '').trim() || defaultTitles[si];
+        html = html.replace(raw, '|||SECTION_' + si + '|||');
       }
       const shortPat = '##' + si + '.';
       if (!match && html.indexOf(shortPat) >= 0) {
