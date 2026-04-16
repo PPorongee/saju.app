@@ -103,9 +103,10 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
   if (chungList.length > 0) prompt += '충: ' + chungList.join(', ') + '\n';
   prompt += '\n이 사주의 신강/신약 판단: 일간 ' + CG[ds] + '가 월령에서 득령/실령 여부, 통근 여부를 분석해서 신강인지 신약인지 먼저 판단한 뒤 용신(억부/조후)을 정해.\n';
 
-  prompt += '\n=== 사용자 질문 답변 (참고용 — 섹션 5에서만 집중 분석!) ===\n';
-  prompt += '고민: ' + concernText + ' | 상태: ' + stateText + ' | 성격: ' + (persText || '미입력') + ' | 연애: ' + relText + ' | 관심사: ' + interestText + '\n';
-  prompt += '[중요] 위 질문 답변은 ##5.질문의 답으로 보는 너의 모습 분석## 섹션에서만 집중적으로 다뤄! 다른 섹션에서는 질문 답변을 직접 언급하거나 분석하지 마. 관심사(' + interestText + ')에 해당하는 섹션은 더 자세히 써줘.\n\n';
+  prompt += '\n=== 사용자 질문 답변 ===\n';
+  prompt += '① 고민: ' + concernText + '\n② 상태: ' + stateText + '\n③ 성격: ' + (persText || '미입력') + '\n④ 연애: ' + relText + '\n⑤ 관심사: ' + interestText + '\n';
+  prompt += '[중요] 위 질문 답변의 집중 분석은 ##5.질문의 답으로 보는 너의 모습 분석## 섹션에서 해줘. 다른 섹션에서도 관련 내용이 자연스럽게 연결되면 1-2줄 정도 언급해도 OK (예: 커리어 고민이면 4번 섹션에서 한마디 정도). 단, 같은 분석을 통째로 반복하지 마.\n';
+  prompt += '관심사(' + interestText + ')에 해당하는 섹션은 다른 섹션보다 더 자세히 써줘.\n\n';
 
   const dayOh = OH_CG[ds];
   const ohRel: Record<string, Record<string, string>> = {
