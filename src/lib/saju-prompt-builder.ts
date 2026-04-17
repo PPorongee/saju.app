@@ -229,7 +229,14 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
     '- 직장 스트레스: "관성(官星)이 일간을 누르는 구조라 상사에게 스트레스 받기 쉬워. 퇴근 후 30분은 반드시 나만의 시간을 가져봐. 화(火) 기운 보충을 위해 따뜻한 차 한잔 + 캔들 켜놓고 일기 쓰기가 너한테 딱이야"\n' +
     '- 개운법: "용신이 수(水)니까: 1)검정/파랑 계열 소품(폰케이스, 지갑) 사용 2)북쪽 방향의 카페/식당 자주 가기 3)수영/반신욕 주 1회 4)생수 하루 2L 이상 5)숫자 1, 6을 비밀번호나 중요 날짜에 활용"\n' +
     '이런 식으로 구체적 행동 + 빈도 + 오행 근거를 함께 제시해!\n' +
-    '실천 가능한 조언은 별도 💡 표시 없이 본문 흐름 속에 자연스럽게 녹여서 써. "💡 오늘부터 실천 포인트" 같은 별도 섹션은 만들지 마.\n';
+    '실천 가능한 조언은 별도 💡 표시 없이 본문 흐름 속에 자연스럽게 녹여서 써. "💡 오늘부터 실천 포인트" 같은 별도 섹션은 만들지 마.\n\n' +
+    '=== 조언에 명리학적 근거 포함 규칙 ===\n' +
+    '모든 조언과 해결책에는 반드시 짧은 명리학적 근거를 함께 써줘. 어려운 용어는 쉬운 비유로 풀어서!\n' +
+    '나쁜 예: "동쪽 방향이 좋아"\n' +
+    '좋은 예: "용신이 목(나무 에너지)이라 동쪽이 좋아. 목은 동쪽에서 힘을 받거든, 마치 해가 뜨는 방향에서 나무가 쑥쑥 자라는 것처럼!"\n' +
+    '나쁜 예: "파란색이 행운색이야"\n' +
+    '좋은 예: "용신이 수(물 에너지)라 파란색/검정색이 너한테 보호막 같은 색이야. 수는 생명의 근원이니까, 이 색을 가까이 두면 에너지가 충전되는 느낌이야"\n' +
+    '핵심: 조언 → 왜?(명리 근거) → 비유로 쉽게 설명. 이 3단계를 지켜!\n';
 
   const isEn = userData.lang === 'en';
   const engInstruction = isEn ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section title, EVERY explanation — ALL in English.\nDo NOT write Korean sentences. Do NOT use Korean section titles.\nWhen you see Korean section titles like ##1.너는 이런 사람이야##, translate them to English like ##1.This is who you are##.\nSaju terms like 갑(甲) can appear with English meaning, but ALL text must be English.\nUse warm, casual, friendly tone — like talking to a close friend.\nIF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '';
