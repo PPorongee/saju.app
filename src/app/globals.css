@@ -46,8 +46,8 @@ body::before {
   z-index: 0;
   pointer-events: none;
   opacity: 0.4;
-  -webkit-mask-image: radial-gradient(ellipse 40% 50% at center, transparent 0%, transparent 60%, black 100%);
-  mask-image: radial-gradient(ellipse 40% 50% at center, transparent 0%, transparent 60%, black 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 45% at center, transparent 0%, transparent 50%, black 85%);
+  mask-image: radial-gradient(ellipse 70% 45% at center, transparent 0%, transparent 50%, black 85%);
 }
 .star {
   position: absolute;
