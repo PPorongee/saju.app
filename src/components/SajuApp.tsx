@@ -3847,7 +3847,7 @@ export default function SajuApp() {
           <button
             onClick={() => {
               const pw = prompt(lang === 'en' ? 'Enter code:' : '코드를 입력해주세요:');
-              if (!pw || pw !== process.env.NEXT_PUBLIC_TEST_PIN) return;
+              if (!pw || pw !== '5386') return;
               updateStarBalance(starBalance + 10);
             }}
             style={{
