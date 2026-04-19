@@ -1683,29 +1683,43 @@ export default function SajuApp() {
 
                   {/* 4주별 해설 */}
                   <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>{t('periodEnergyDesc', lang)}</div>
-                  {pillarStages.map((stage, idx) => {
-                    const info = stageEasy[stage];
-                    if (!info) return (
-                      <div key={idx} style={{ padding: '6px 0', fontSize: '12px', color: 'var(--text-dim)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        {pillarNames[idx]}: {t('birthTimeNotEntered', lang)}
-                      </div>
-                    );
-                    return (
-                      <div key={idx} style={{ padding: '8px 0', borderBottom: idx < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: idx === 2 ? '#F0C75E' : 'var(--text)' }}>
-                            {info.emoji} {pillarNames[idx]}
-                          </span>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#7DD3FC' }}>
-                            {info.name} ({energyMap[stage]}/10)
-                          </span>
+                  {(() => {
+                    const pillarMeaning = lang === 'en'
+                      ? ['Year Pillar — your roots, ancestors, and childhood (ages 1-15). Shows inherited fortune and early environment.',
+                         'Month Pillar — parents, social life, and career foundation (ages 15-30). Reflects your social energy and career direction.',
+                         'Day Pillar — your core self, spouse, and inner nature (ages 30-45). The most important pillar representing who you truly are.',
+                         'Hour Pillar — children, later years, and legacy (ages 45+). Shows your achievements, descendants, and twilight energy.']
+                      : ['년주 — 조상과 어린 시절(1~15세)의 기운이야. 타고난 복과 어린 시절 환경을 보여줘.',
+                         '월주 — 부모, 사회생활, 커리어 기반(15~30세)을 나타내. 사회적 에너지와 직업 방향을 알 수 있어.',
+                         '일주 — 바로 너 자신과 배우자(30~45세)를 대표하는 가장 핵심적인 기둥이야. 진짜 너의 본질이 여기에 있어.',
+                         '시주 — 자녀, 말년, 인생의 결실(45세~)을 보여줘. 노후의 에너지와 자녀복을 알 수 있어.'];
+                    return pillarStages.map((stage, idx) => {
+                      const info = stageEasy[stage];
+                      if (!info) return (
+                        <div key={idx} style={{ padding: '6px 0', fontSize: '12px', color: 'var(--text-dim)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          {pillarNames[idx]}: {t('birthTimeNotEntered', lang)}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
-                          {info.analogy} — {info.desc.split('.')[0]}.
+                      );
+                      return (
+                        <div key={idx} style={{ padding: '10px 0', borderBottom: idx < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: idx === 2 ? '#F0C75E' : 'var(--text)' }}>
+                              {info.emoji} {pillarNames[idx]}
+                            </span>
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#7DD3FC' }}>
+                              {info.name} ({energyMap[stage]}/10)
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'rgba(125,211,252,0.7)', lineHeight: '1.5', marginBottom: '4px', fontStyle: 'italic' }}>
+                            {pillarMeaning[idx]}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
+                            {lang === 'en' ? 'Energy level' : '에너지'} {energyMap[stage]}/10: {info.analogy} — {info.desc.split('.')[0]}.
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               );
             })()}
@@ -3327,7 +3341,7 @@ export default function SajuApp() {
     const sectionTitles = isYearly ? yearlySectionTitles : [
       t('secTitle1', lang), t('secTitle2', lang), t('secTitle3', lang), t('secTitle4', lang),
       title5, t('secTitle6', lang), t('secTitle7', lang), t('secTitle8', lang),
-      t('secTitle9', lang), t('secTitle10', lang), t('secTitle12', lang),
+      t('secTitle9', lang), t('secTitle10', lang), t('secTitle11', lang), t('secTitle12', lang),
       title13, t('secTitle14', lang), t('secTitle15', lang), t('secTitle16', lang),
       t('secTitle17', lang)
     ];
@@ -3335,7 +3349,7 @@ export default function SajuApp() {
     const sectionHints = isYearly ? yearlySectionHints : [
       t('secHint1', lang), t('secHint2', lang), t('secHint3', lang), t('secHint4', lang),
       hint5, t('secHint6', lang), t('secHint7', lang), t('secHint8', lang),
-      t('secHint9', lang), t('secHint10', lang), t('secHint12', lang),
+      t('secHint9', lang), t('secHint10', lang), t('secHint11', lang), t('secHint12', lang),
       hint13, t('secHint14', lang), t('secHint15', lang), t('secHint16', lang),
       t('secHint17', lang)
     ];
@@ -3642,32 +3656,33 @@ export default function SajuApp() {
           <div style={{ fontSize: '36px', fontWeight: 900, color: '#F6C443' }}>⭐ {starBalance}{lang === 'en' ? '' : '개'}</div>
         </div>
 
-        {/* Charge option card */}
-        <div className="card" style={{
-          padding: '24px', marginBottom: '16px',
-          border: '2px solid rgba(240,199,94,0.5)',
-          background: 'linear-gradient(135deg, rgba(240,199,94,0.1), rgba(255,208,128,0.05))',
-          position: 'relative'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', marginBottom: '4px' }}>⭐ {lang === 'en' ? '10 Stars' : '별빛 10개'}</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-dim)' }}>
-                {lang === 'en' ? 'Unlock 1 full saju or yearly reading' : '사주/운세 전체 해석 1회 열람'}
+        {/* Charge option cards */}
+        {[
+          { stars: 10, price: 990, desc: lang === 'en' ? 'Unlock 1 full reading' : '전체 해석 1회', highlight: false },
+          { stars: 20, price: 1900, desc: lang === 'en' ? '2 readings (save ₩80)' : '2회 이용 (80원 절약)', highlight: true },
+          { stars: 30, price: 2700, desc: lang === 'en' ? '3 readings (save ₩270)' : '3회 이용 (270원 절약)', highlight: false },
+        ].map((pkg, i) => (
+          <div key={i} className="card" style={{
+            padding: '24px', marginBottom: '12px',
+            border: pkg.highlight ? '2px solid rgba(240,199,94,0.6)' : '1px solid rgba(240,199,94,0.15)',
+            background: pkg.highlight ? 'linear-gradient(135deg, rgba(240,199,94,0.12), rgba(255,208,128,0.06))' : undefined,
+            position: 'relative'
+          }}>
+            {pkg.highlight && <div style={{ position: 'absolute', top: '-10px', right: '16px', background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A', fontSize: '11px', fontWeight: 800, padding: '3px 12px', borderRadius: '10px' }}>{lang === 'en' ? 'BEST' : '인기'}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', marginBottom: '4px' }}>⭐ {lang === 'en' ? pkg.stars + ' Stars' : '별빛 ' + pkg.stars + '개'}</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-dim)' }}>{pkg.desc}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: '#F6C443' }}>₩{pkg.price.toLocaleString()}</div>
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '24px', fontWeight: 900, color: '#F6C443' }}>₩990</div>
-            </div>
+            <a href="/payment" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '14px', fontSize: '16px', fontWeight: 700, width: '100%', boxSizing: 'border-box' }}>
+              {lang === 'en' ? 'Buy ' + pkg.stars + ' Stars — ₩' + pkg.price.toLocaleString() : '별빛 ' + pkg.stars + '개 구매 — ₩' + pkg.price.toLocaleString()}
+            </a>
           </div>
-          <a
-            href="/payment"
-            className="btn btn-primary"
-            style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '14px', fontSize: '16px', fontWeight: 700, width: '100%', boxSizing: 'border-box' }}
-          >
-            {lang === 'en' ? 'Buy 10 Stars — ₩990' : '별빛 10개 구매 — ₩990'}
-          </a>
-        </div>
+        ))}
 
         {/* Pricing info */}
         <div className="card" style={{ padding: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.8, marginBottom: '20px' }}>

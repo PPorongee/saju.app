@@ -48,7 +48,7 @@ export const NEXT_PUBLIC_TOSS_CLIENT_KEY = optionalEnv('NEXT_PUBLIC_TOSS_CLIENT_
 
 // --- Optional vars with defaults (used in payment-config.ts / business info) ---
 
-export const NEXT_PUBLIC_COMPANY_NAME = optionalEnv('NEXT_PUBLIC_COMPANY_NAME', '햄찌사랑');
+export const NEXT_PUBLIC_COMPANY_NAME = optionalEnv('NEXT_PUBLIC_COMPANY_NAME', '포춘빈');
 export const NEXT_PUBLIC_CEO_NAME = optionalEnv('NEXT_PUBLIC_CEO_NAME', '이서은');
 export const NEXT_PUBLIC_BUSINESS_NUMBER = optionalEnv('NEXT_PUBLIC_BUSINESS_NUMBER', '197-56-00903');
 export const NEXT_PUBLIC_SALES_NUMBER = optionalEnv('NEXT_PUBLIC_SALES_NUMBER', '');

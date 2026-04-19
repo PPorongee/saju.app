@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { formatLLMText } from '@/lib/format-llm';
 import { CG, JJ, OH_CG, OH_JJ, getOhCount, getSipsung, get12Unsung, calcShinsal } from '@/lib/saju-calc';
+// OH_CG and OH_JJ needed for yongsin calculation in share page
 import type { SajuResult } from '@/lib/saju-calc';
 import PillarDisplay from '@/components/ui/PillarDisplay';
 import OhaengChart from '@/components/ui/OhaengChart';
@@ -161,6 +162,69 @@ function ShareContent() {
             <OhaengChart ohCount={ohCount} lang={lang} />
           </>
         )}
+
+        {/* 인생 에너지 흐름 */}
+        {sj && unsung && (() => {
+          const energyMap: Record<string, number> = {
+            '절': 1, '태': 2, '양': 3, '장생': 5, '목욕': 4, '관대': 7,
+            '건록': 9, '제왕': 10, '쇠': 6, '병': 4, '사': 2, '묘': 3
+          };
+          const stages = [unsung['년지'], unsung['월지'], unsung['일지'], unsung['시지'] || '?'];
+          const labels = ['년주(초년)', '월주(청년)', '일주(중년)', '시주(말년)'];
+          return (
+            <>
+              <div className="section-divider">{t('lifeEnergyFlow', lang)}</div>
+              <div className="card" style={{ padding: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', textAlign: 'center' }}>
+                  {stages.map((s, i) => (
+                    <div key={i} style={{ padding: '10px 4px', borderRadius: '12px', background: i === 2 ? 'rgba(240,199,94,0.1)' : 'rgba(255,255,255,0.03)' }}>
+                      <div style={{ fontSize: '11px', color: i === 2 ? '#F0C75E' : 'var(--text-dim)', fontWeight: 700, marginBottom: '4px' }}>{labels[i]}</div>
+                      <div style={{ fontSize: '20px', fontWeight: 800, color: '#7DD3FC' }}>{s === '?' ? '-' : energyMap[s] || 5}</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>/10</div>
+                      <div style={{ fontSize: '11px', color: '#7DD3FC', marginTop: '2px' }}>{s === '?' ? '미상' : s}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          );
+        })()}
+
+        {/* 사주 체질 (용신/기신) */}
+        {sj && ohCount && (() => {
+          const dayOhS = OH_CG[sj.dStem];
+          const mBrOh = OH_JJ[sj.mBranch];
+          const sang: Record<string, string> = { '목':'수', '화':'목', '토':'화', '금':'토', '수':'금' };
+          const geuk: Record<string, string> = { '목':'금', '화':'수', '토':'목', '금':'화', '수':'토' };
+          const dk = mBrOh === dayOhS || sang[dayOhS] === mBrOh;
+          let tg = 0; [sj.yBranch, sj.mBranch, sj.dBranch, ...(sj.hBranch >= 0 ? [sj.hBranch] : [])].forEach(b => { if (OH_JJ[b] === dayOhS) tg++; });
+          const strong = (dk ? 3 : 0) + tg * 2 >= 4;
+          const ys = strong ? geuk[dayOhS] || '토' : sang[dayOhS] || '토';
+          const gs = strong ? sang[dayOhS] || '토' : geuk[dayOhS] || '토';
+          const ohIcon: Record<string, string> = { '목': '🌳', '화': '🔥', '토': '⛰️', '금': '⚔️', '수': '💧' };
+          return (
+            <>
+              <div className="section-divider">{t('sajuConstitution', lang)}</div>
+              <div className="card" style={{ padding: '16px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: strong ? '#F0C75E' : '#7DD3FC' }}>
+                    {strong ? '신강 (에너지 강한 타입)' : '신약 (에너지 부드러운 타입)'}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ background: 'rgba(110,231,183,0.08)', border: '1px solid rgba(110,231,183,0.2)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#6EE7B7', fontWeight: 700, marginBottom: '4px' }}>용신 (필요한 기운)</div>
+                    <div style={{ fontSize: '24px', fontWeight: 800 }}>{ohIcon[ys]} {ys}</div>
+                  </div>
+                  <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#F87171', fontWeight: 700, marginBottom: '4px' }}>기신 (피할 기운)</div>
+                    <div style={{ fontSize: '24px', fontWeight: 800 }}>{ohIcon[gs]} {gs}</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {/* AI 해설 */}
         <div className="section-divider">{t('aiReading', lang)}</div>
