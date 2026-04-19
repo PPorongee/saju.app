@@ -3842,11 +3842,12 @@ export default function SajuApp() {
           </p>
         </div>
 
-        {/* Free charge button for testing - only in development */}
-        {process.env.NODE_ENV !== 'production' && (
+        {/* Free charge button for testing */}
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           <button
             onClick={() => {
+              const pw = prompt(lang === 'en' ? 'Enter code:' : '코드를 입력해주세요:');
+              if (!pw || pw !== process.env.NEXT_PUBLIC_TEST_PIN) return;
               updateStarBalance(starBalance + 10);
             }}
             style={{
@@ -3855,10 +3856,9 @@ export default function SajuApp() {
               opacity: 0.6, fontFamily: 'inherit', transition: 'opacity 0.2s'
             }}
           >
-            {lang === 'en' ? '🎁 Add 10 Free Stars (Dev)' : '🎁 무료 별빛 10개 충전 (개발용)'}
+            {lang === 'en' ? '🎁 Add 10 Free Stars (Testing)' : '🎁 무료 별빛 10개 충전 (테스트용)'}
           </button>
         </div>
-        )}
       </div>
     );
   }
