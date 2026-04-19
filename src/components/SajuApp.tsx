@@ -764,9 +764,14 @@ export default function SajuApp() {
     const isStrongY = ysPrompt.isStrong;
     const yongsinOhY = ysPrompt.yongsin;
 
-    const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section title, EVERY explanation — ALL in English.\nDo NOT write Korean sentences. Translate Korean section titles to English.\nExample: Write ##1.What does 2026 mean for my life?## NOT ##1.2026 병오년, 내 인생에서 어떤 해인가?##\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nUse warm, casual, friendly tone. IF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
-      '너는 사주명리학을 완벽하게 마스터한 트렌디하고 친근한 운세 상담가야. 한자 절대 쓰지 마. 괄호 안에 한자 넣기 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 풀어서 설명해. 반말만 써. 존댓말 금지.\n' +
-      '"너 혹시 이런 경험 있지?" "이런 적 없어?" 같은 찔림 질문을 섹션마다 넣어.\n' +
+    const engReminderYearly = lang === 'en' ? '🚨 FINAL REMINDER — MOST IMPORTANT INSTRUCTION 🚨\nWrite EVERYTHING in English. EVERY section title must be in English.\nALL text in English. Korean ONLY for Saju terms in parentheses.\nIF ANY KOREAN SENTENCE APPEARS, THE RESPONSE WILL BE REJECTED.\n\n' : '';
+    const yearlyRules = '중요: 각 섹션 번호를 ##숫자.제목## 형식으로 반드시 써줘.\n' +
+      '비유적 표현을 적극 사용해! 한자 절대 금지! 고전 문헌 인용 금지!\n' +
+      '개인사주 해설과 동등한 퀄리티로! 격국/용신/조후/통변/12운성을 적극 활용해.\n' +
+      '섹션 끝에 의문문으로 끝내지 마. 단정적이고 자신감 있는 문장으로 마무리.\n\n';
+
+    const promptBase = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. Translate Korean section titles to English.\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nIF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
+      '너는 20년 경력의 사주명리학 전문가이자 트렌디하고 친근한 운세 상담가야. 한자 절대 쓰지 마. 괄호 안에 한자 넣기 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 풀어서 설명해. 반말만 써. 존댓말 금지.\n' +
       '"결론적으로" "정리하면" 패턴 절대 금지!\n\n' +
       '【분석 대상 - 전체 사주 원국】\n' +
       '이름: ' + (userData.name || '익명') + ' / 성별: ' + (userData.gender === 'm' ? '남' : '여') + ' / 나이: 만 ' + (2026 - userData.year) + '세\n' +
@@ -868,53 +873,94 @@ export default function SajuApp() {
       '- 대신 어떻게 하면 좋은지 개운법 포함\n\n' +
 
       '##7.올해 나의 행운 아이템##\n' +
-      '[중복 금지: 앞 섹션에서 이미 언급한 색상/방향/행동을 여기서 똑같이 반복하지 마! 여기서만 다루는 새로운 구체적 아이템 위주로!]\n' +
+      '[중복 금지: 앞 섹션에서 이미 언급한 색상/방향/행동을 여기서 똑같이 반복하지 마!]\n' +
       '이 사주의 오행 균형과 2026 병오년 기운을 고려해서:\n' +
       '- 🎨 행운의 색 2가지 (오행 근거)\n' +
-      '- 🔢 행운의 숫자 2가지 (오행-숫자 대응 근거)\n' +
-      '- 📍 행운의 방향 1가지 (오행-방위 근거)\n' +
-      '- 💎 럭키 아이템 2가지 (일상에서 쓸 수 있는 것)\n' +
-      '- ✨ 행운의 행동: 매일 하면 좋은 습관 2가지\n' +
-      '- 🍀 행운의 요일 1가지\n' +
-      '- 🌸 행운의 계절 1가지\n' +
-      '각각 오행 근거를 괄호로 설명. 5줄 이상.\n\n' +
+      '- 🔢 행운의 숫자 2가지\n' +
+      '- 📍 행운의 방향 1가지\n' +
+      '- 💎 럭키 아이템 2가지\n' +
+      '- 🍀 행운의 요일/계절\n' +
+      '각각 오행 근거를 괄호로 설명.\n\n' +
 
-      '중요: 각 섹션 번호를 ##숫자.제목## 형식으로 반드시 써줘.\n' +
-      '비유적 표현을 적극 사용해! 일상적인 것(음식/영화/게임/카페/날씨/SNS)에 빗대면 읽는 사람이 재밌어해.\n' +
-      '한자 절대 금지! 괄호 안 한자 금지! 고전 문헌 인용 금지! 대신 어려운 개념은 재밌는 비유로 풀어서 친근하게 조언해.\n' +
-      '해석의 여지가 있을 때는 긍정적으로. 흥미 유발 포인트를 매 섹션 1개 이상 넣어.\n' +
-      '개인사주 해설과 동등한 퀄리티로! 격국/용신/조후/통변/12운성을 적극 활용해. 피상적 해석 금지!\n\n' +
-      (lang === 'en' ? '🚨 FINAL REMINDER — MOST IMPORTANT INSTRUCTION 🚨\nWrite EVERYTHING in English. EVERY section title must be in English.\nExample: ##1.What does 2026 mean for my life?## NOT ##1.2026 병오년, 내 인생에서 어떤 해인가?##\nExample: ##2.2026 Monthly Fortune## NOT ##2.2026 월별 상세 운세##\nALL text in English. Korean ONLY for Saju terms in parentheses.\nIF ANY KOREAN SENTENCE APPEARS, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
+      '##8.올해 재물운 & 투자 타이밍##\n' +
+      '올해 재성(정재/편재)의 힘과 흐름을 분석. 월별 재물 에너지가 강한 달/약한 달, 투자 OK 시기 vs NG 시기, 사주 체질에 맞는 재테크 방식(저축형/투자형/사업형). 구체적 금액 예측은 하지 말고 흐름과 타이밍만.\n\n' +
+
+      '##9.올해 연애운 & 인연 캘린더##\n' +
+      '올해 도화살/홍염살 활성화 여부, 배우자성(정재/정관)이 강해지는 달. 솔로면 인연 들어오는 시기와 어떤 타입인지, 커플이면 관계 변화 포인트. 이별 주의 시기도 부드럽게.\n\n' +
+
+      yearlyRules +
+      (lang === 'en' ? engReminderYearly : '') +
+      getRelevantRefs({ dayMaster: sj.dStem, topics: ['timing', 'wealth', 'general'] });
+
+    const prompt2Yearly = promptBase +
+      '=== 아래 8개 항목을 써줘 (10~17번). 반드시 8개 모두 빠짐없이! ===\n' +
+      '[출력형식 필수] 반드시 ##번호.제목## 형태로 각 섹션을 시작해!\n\n' +
+
+      '##10.올해 건강 주의보##\n' +
+      '병오년 화(火) 기운이 내 오행 균형에 미치는 건강 영향. 월별 컨디션 변화, 취약 장기 관리법, 맞는 운동/음식. [의학적 진단 금지. 끝에 "※ 명리학적 관점의 건강 경향성이며 의학적 조언이 아닙니다" 포함]\n\n' +
+
+      '##11.올해 유리한 방위 & 여행지##\n' +
+      '용신 오행 기반 올해 유리한 방위, 여행 가면 좋은 방향과 계절, 이사/출장 길한 방위. 구체적 도시/지역 추천도 OK.\n\n' +
+
+      '##12.올해 직장 & 사업 전환점##\n' +
+      '관성/식상/재성의 올해 흐름으로 승진/이직/사업 시작 적기 분석. 직장인이면 상사/동료 관계 변화, 사업자면 확장/축소 타이밍.\n\n' +
+
+      '##13.올해 대인관계 & 귀인 캘린더##\n' +
+      '올해 귀인이 나타나는 달, 어떤 띠/성격의 사람이 귀인인지. 갈등 조심할 달, 새로운 인연 들어오는 시기. 관계 에너지가 강한 달 vs 혼자 충전할 달.\n\n' +
+
+      '##14.올해 분기별 에너지 리듬##\n' +
+      '1분기(1~3월), 2분기(4~6월), 3분기(7~9월), 4분기(10~12월)의 에너지 수준을 각각 10점 만점으로 점수를 매겨줘. 반드시 다음 형식으로 시작해: [에너지점수: Q1=X, Q2=X, Q3=X, Q4=X]\n' +
+      '각 분기별 에너지 특성, 집중해야 할 영역, 쉬어야 할 시기를 분석.\n\n' +
+
+      '##15.올해 나만의 행운 루틴##\n' +
+      '용신 오행에 맞는 아침/저녁 습관, 요일별 운세 팁, 매일 실천할 개운 루틴 5가지. 구체적 시간/빈도 포함.\n\n' +
+
+      '##16.올해 중요한 결정 타이밍 TOP 3##\n' +
+      '계약/이직/결혼/이사 등 큰 결정을 하기 좋은 달 TOP 3. 각각 왜 그 달이 좋은지 세운+월운 합충형 근거로. 피해야 할 달도 1개.\n\n' +
+
+      '##17.올해 하반기 반전 포인트##\n' +
+      '상반기와 하반기 운세 흐름 차이, 하반기에 찾아오는 반전 계기. 하반기 집중 전략과 연말까지의 마무리 조언. 2027년으로 이어지는 흐름 한마디.\n\n' +
+
+      yearlyRules +
+      (lang === 'en' ? engReminderYearly : '') +
       getRelevantRefs({ dayMaster: sj.dStem, topics: ['timing', 'health', 'wealth', 'general'] });
 
+    const yearlyPrompts = [promptBase, prompt2Yearly];
+
     try {
-      setLoadingProgress(t('yearlyAnalyzingMsg', lang) + ' (1/1)');
-      for (let retry = 0; retry < 3; retry++) {
-        try {
-          if (signal?.aborted) return;
-          const res = await fetch('/api/saju', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, lang }),
-            signal,
-          });
-          if (!res.ok) {
+      for (let pi = 0; pi < yearlyPrompts.length; pi++) {
+        if (signal?.aborted) return;
+        setLoadingProgress(t('yearlyAnalyzingMsg', lang) + ' (' + (pi + 1) + '/2)');
+        let partText = '';
+        for (let retry = 0; retry < 3; retry++) {
+          try {
+            if (signal?.aborted) return;
+            const res = await fetch('/api/saju', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: yearlyPrompts[pi], lang }),
+              signal,
+            });
+            if (!res.ok) {
+              if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
+              throw new Error('API error: ' + res.status);
+            }
+            if (!res.body) throw new Error('No response body');
+            const reader = res.body.getReader();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              partText += decoder.decode(value, { stream: true });
+            }
+            break;
+          } catch (retryErr) {
+            if (signal?.aborted) return;
             if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
-            throw new Error('API error: ' + res.status);
+            throw retryErr;
           }
-          if (!res.body) throw new Error('No response body');
-          const reader = res.body.getReader();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            fullText += decoder.decode(value, { stream: true });
-          }
-          break;
-        } catch (retryErr) {
-          if (signal?.aborted) return;
-          if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
-          throw retryErr;
         }
+        if (fullText && partText && !fullText.endsWith('\n')) fullText += '\n\n';
+        fullText += partText;
       }
       // Detect stream error sentinel from server
       const STREAM_ERR = '[응답이 중단되었습니다. 다시 시도해 주세요.]';
@@ -3324,13 +3370,19 @@ export default function SajuApp() {
 
     const yearlySectionTitles = [
       t('yrSecTitle1', lang), t('yrSecTitle2', lang), t('yrSecTitle3', lang),
-      t('yrSecTitle4', lang), t('yrSecTitle5', lang), t('yrSecTitle6', lang), t('yrSecTitle7', lang)
+      t('yrSecTitle4', lang), t('yrSecTitle5', lang), t('yrSecTitle6', lang), t('yrSecTitle7', lang),
+      t('yrSecTitle8', lang), t('yrSecTitle9', lang), t('yrSecTitle10', lang),
+      t('yrSecTitle11', lang), t('yrSecTitle12', lang), t('yrSecTitle13', lang), t('yrSecTitle14', lang),
+      t('yrSecTitle15', lang), t('yrSecTitle16', lang), t('yrSecTitle17', lang)
     ];
     const yearlySectionHints = [
       t('yrSecHint1', lang), t('yrSecHint2', lang), t('yrSecHint3', lang),
-      t('yrSecHint4', lang), t('yrSecHint5', lang), t('yrSecHint6', lang), t('yrSecHint7', lang)
+      t('yrSecHint4', lang), t('yrSecHint5', lang), t('yrSecHint6', lang), t('yrSecHint7', lang),
+      t('yrSecHint8', lang), t('yrSecHint9', lang), t('yrSecHint10', lang),
+      t('yrSecHint11', lang), t('yrSecHint12', lang), t('yrSecHint13', lang), t('yrSecHint14', lang),
+      t('yrSecHint15', lang), t('yrSecHint16', lang), t('yrSecHint17', lang)
     ];
-    const yearlyIcons = ['🔮', '📅', '📊', '🎯', '📋', '🛡', '🍀'];
+    const yearlyIcons = ['🔮', '📅', '📊', '🎯', '📋', '🛡', '🍀', '💰', '💕', '🏥', '🧭', '💼', '👥', '⚡', '✨', '🎲', '🌅'];
 
     const isMarriedUser = userData.relationship === 3;
     const title5 = isMarriedUser ? (lang === 'en' ? 'Marriage & Spouse Analysis' : '부부 관계 & 배우자 분석') : t('secTitle5', lang);
