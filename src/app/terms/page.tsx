@@ -7,11 +7,11 @@ export default function TermsPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg1)', color: 'var(--text)', padding: '20px 16px 60px', maxWidth: '640px', margin: '0 auto' }}>
       <div style={{ marginBottom: '24px' }}>
-        <button onClick={() => window.history.back()} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '14px', cursor: 'pointer', padding: '8px 0', fontFamily: 'inherit' }}>← 돌아가기</button>
+        <button onClick={() => { try { window.history.back(); } catch { window.location.href = '/'; } }} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '14px', cursor: 'pointer', padding: '8px 0', minHeight: '44px', minWidth: '44px', fontFamily: 'inherit' }}>← 돌아가기</button>
       </div>
 
       <h1 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>이용약관</h1>
-      <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', marginBottom: '32px' }}>시행일: [시행일자]</p>
+      <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', marginBottom: '32px' }}>시행일: 2026년 4월 9일</p>
 
       <div style={{ fontSize: '14px', lineHeight: 2, color: 'rgba(245,240,232,0.85)' }}>
 

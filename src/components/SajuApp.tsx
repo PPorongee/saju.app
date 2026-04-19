@@ -774,13 +774,13 @@ export default function SajuApp() {
       '너는 20년 경력의 사주명리학 전문가이자 트렌디하고 친근한 운세 상담가야. 한자 절대 쓰지 마. 괄호 안에 한자 넣기 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 풀어서 설명해. 반말만 써. 존댓말 금지.\n' +
       '"결론적으로" "정리하면" 패턴 절대 금지!\n\n' +
       '【분석 대상 - 전체 사주 원국】\n' +
-      '이름: ' + (userData.name || '익명') + ' / 성별: ' + (userData.gender === 'm' ? '남' : '여') + ' / 나이: 만 ' + (2026 - userData.year) + '세\n' +
+      '이름: ' + (userData.name || '익명') + ' / 성별: ' + (userData.gender === 'm' ? '남' : '여') + ' / 나이: 만 ' + (new Date().getFullYear() - userData.year) + '세\n' +
       '⚠️ 나이 맞춤 해석: ' +
-      ((2026 - userData.year) <= 19 ? '10대이므로 학업/시험/진로/교우관계에 비중을 크게 두고, 결혼/부동산/투자는 "먼 미래에~" 정도로만.' :
-       (2026 - userData.year) <= 29 ? '20대이므로 취업/커리어/연애/자기계발에 비중을 두고, 결혼은 가능성으로, 자녀/노후는 가볍게만.' :
-       (2026 - userData.year) <= 39 ? '30대이므로 커리어 성장/결혼생활/재테크/내집마련/자녀계획에 맞는 현실적 조언을.' :
-       (2026 - userData.year) <= 49 ? '40대이므로 커리어 전성기/자녀교육/건강관리/재산관리에 비중을 둬.' :
-       (2026 - userData.year) <= 59 ? '50대이므로 인생 2막/건강/은퇴준비/자녀독립에 초점.' :
+      ((new Date().getFullYear() - userData.year) <= 19 ? '10대이므로 학업/시험/진로/교우관계에 비중을 크게 두고, 결혼/부동산/투자는 "먼 미래에~" 정도로만.' :
+       (new Date().getFullYear() - userData.year) <= 29 ? '20대이므로 취업/커리어/연애/자기계발에 비중을 두고, 결혼은 가능성으로, 자녀/노후는 가볍게만.' :
+       (new Date().getFullYear() - userData.year) <= 39 ? '30대이므로 커리어 성장/결혼생활/재테크/내집마련/자녀계획에 맞는 현실적 조언을.' :
+       (new Date().getFullYear() - userData.year) <= 49 ? '40대이므로 커리어 전성기/자녀교육/건강관리/재산관리에 비중을 둬.' :
+       (new Date().getFullYear() - userData.year) <= 59 ? '50대이므로 인생 2막/건강/은퇴준비/자녀독립에 초점.' :
        '60대 이상이므로 건강/노후생활/가족관계/취미에 초점. 취업/수능 등 젊은 시절 이야기는 안 해.') +
       ' 나이와 동떨어진 조언은 절대 금지!\n\n' +
       '생년월일: ' + userData.year + '년 ' + userData.month + '월 ' + userData.day + '일 (' + (isLunar ? '음력 입력 -> 양력 변환됨' : '양력') + ')\n' +
@@ -823,8 +823,9 @@ export default function SajuApp() {
       '모든 해석에 반드시 사주 근거를 함께 써줘. 근거 없는 뜬구름 해석 금지!\n' +
       '- 조언 → 왜?(명리 근거) → 쉬운 비유 3단계를 지켜\n' +
       '- 예: "4월에 투자하면 좋아" (X) → "4월 월운 경진(금토)이 네 재성을 강화시켜서, 마치 봄비가 밭에 내리는 것처럼 재물이 자라나는 달이야" (O)\n' +
-      '- 어려운 용어는 반드시 괄호 안에 비유로 풀어: 편재(큰돈의 별), 정관(직장 안정의 별), 식신(표현력의 별)\n\n' +
+      '- 어려운 용어는 반드시 괄호 안에 비유로 풀어: 편재(큰돈의 별), 정관(직장 안정의 별), 식신(표현력의 별)\n\n';
 
+    const sectionsP1 =
       '##1.2026 병오년, 내 인생에서 어떤 해인가?##\n' +
       '병오년(丙午)이 이 사주의 큰 흐름에서 어떤 의미를 가지는지 깊이 있게 분석해줘:\n' +
       '- 현재 대운(大運): 지금 몇 번째 대운을 지나고 있는지, 대운 천간지지가 뭔지, 이 대운이 내 원국에 어떤 영향을 주는지. 대운 전환이 가까우면 그것도 알려줘.\n' +
@@ -911,6 +912,8 @@ export default function SajuApp() {
       (lang === 'en' ? engReminderYearly : '') +
       getRelevantRefs({ dayMaster: sj.dStem, topics: ['timing', 'wealth', 'general'] });
 
+    const promptPart1 = promptBase + sectionsP1;
+
     const prompt2Yearly = promptBase +
       '=== 아래 8개 항목을 써줘 (10~17번). 반드시 8개 모두 빠짐없이! ===\n' +
       '[중복 금지] 이전 파트(1~9번)에서 이미 다룬 내용을 절대 반복하지 마! 특히 월별 운세/재물운/연애운에서 한 이야기를 다시 쓰면 탈락.\n' +
@@ -952,7 +955,7 @@ export default function SajuApp() {
       (lang === 'en' ? engReminderYearly : '') +
       getRelevantRefs({ dayMaster: sj.dStem, topics: ['timing', 'health', 'wealth', 'general'] });
 
-    const yearlyPrompts = [promptBase, prompt2Yearly];
+    const yearlyPrompts = [promptPart1, prompt2Yearly];
 
     try {
       for (let pi = 0; pi < yearlyPrompts.length; pi++) {
@@ -1226,7 +1229,7 @@ export default function SajuApp() {
             <div className="select-row" role="group" aria-labelledby="birthday-label">
               <div className="input-group">
                 <select value={userData.year} onChange={e => updateUser('year', parseInt(e.target.value))} aria-label={lang === 'en' ? 'Birth year' : '출생 연도'} aria-required="true">
-                  {Array.from({ length: 86 }, (_, i) => 2025 - i).map(y => (
+                  {Array.from({ length: 86 }, (_, i) => new Date().getFullYear() - i).map(y => (
                     <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>
                   ))}
                 </select>
@@ -2278,7 +2281,7 @@ export default function SajuApp() {
               <div className="select-row" role="group" aria-labelledby="compat1-birthday-label">
                 <div className="input-group">
                   <select value={compatPerson1.year} onChange={e => setCompatPerson1(p => ({ ...p, year: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 1 birth year' : '첫 번째 사람 출생 연도'}>
-                    {Array.from({ length: 86 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
+                    {Array.from({ length: 86 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
                   </select>
                 </div>
                 <div className="input-group">
@@ -2386,7 +2389,7 @@ export default function SajuApp() {
             <div className="select-row" role="group" aria-labelledby="compat2-birthday-label">
               <div className="input-group">
                 <select value={compatPerson2.year} onChange={e => setCompatPerson2(p => ({ ...p, year: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 2 birth year' : '두 번째 사람 출생 연도'}>
-                  {Array.from({ length: 86 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
+                  {Array.from({ length: 86 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
                 </select>
               </div>
               <div className="input-group">
@@ -3038,7 +3041,7 @@ export default function SajuApp() {
             <div className="select-row">
               <div className="input-group">
                 <select value={pregData.year} onChange={e => setPregData(p => ({ ...p, year: parseInt(e.target.value) }))}>
-                  {Array.from({ length: 86 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
+                  {Array.from({ length: 86 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}{t('yearUnit', lang)}</option>)}
                 </select>
               </div>
               <div className="input-group">
@@ -3324,7 +3327,7 @@ export default function SajuApp() {
           </div>
         )}
 
-        {/* 분기별 에너지 그래프 */}
+        {/* AI 해설 + 분기별 에너지 그래프 (섹션3 뒤에 삽입) */}
         {!isGenerating && aiText && (() => {
           const qMatch = aiText.match(/\[에너지점수:\s*Q1=(\d+),\s*Q2=(\d+),\s*Q3=(\d+),\s*Q4=(\d+)\]/);
           const qScores = qMatch
@@ -3333,7 +3336,13 @@ export default function SajuApp() {
           const qLabels = lang === 'en' ? ['Q1\nJan-Mar', 'Q2\nApr-Jun', 'Q3\nJul-Sep', 'Q4\nOct-Dec'] : ['1분기\n1~3월', '2분기\n4~6월', '3분기\n7~9월', '4분기\n10~12월'];
           const qColors = ['#7DD3FC', '#6EE7B7', '#F0C75E', '#F687B3'];
           const maxQ = Math.max(...qScores);
-          return (
+
+          const sec4Marker = aiText.match(/##\s*4[\.\s]/);
+          const splitIdx = sec4Marker ? aiText.indexOf(sec4Marker[0]) : -1;
+          const beforeSec4 = splitIdx > 0 ? aiText.slice(0, splitIdx) : aiText;
+          const afterSec4 = splitIdx > 0 ? aiText.slice(splitIdx) : '';
+
+          const energyGraph = (
             <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
               <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
                 ⚡ {lang === 'en' ? '2026 Quarterly Energy Rhythm' : '2026 분기별 에너지 리듬'}
@@ -3371,11 +3380,15 @@ export default function SajuApp() {
               </div>
             </div>
           );
-        })()}
 
-        {!isGenerating && aiText && (
-          <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
-        )}
+          return (
+            <>
+              <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(beforeSec4, lang) }} />
+              {energyGraph}
+              {afterSec4 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(afterSec4, lang) }} />}
+            </>
+          );
+        })()}
 
         {/* Share + Save + Restart */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
@@ -3829,14 +3842,12 @@ export default function SajuApp() {
           </p>
         </div>
 
-        {/* Free charge button for testing */}
+        {/* Free charge button for testing - only in development */}
+        {process.env.NODE_ENV !== 'production' && (
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           <button
             onClick={() => {
-              const pw = prompt(lang === 'en' ? 'Enter 4-digit code:' : '비밀번호 4자리를 입력해주세요:');
-              if (pw !== '5386') { alert(lang === 'en' ? 'Wrong code!' : '비밀번호가 틀렸어요!'); return; }
               updateStarBalance(starBalance + 10);
-              alert(lang === 'en' ? 'Added 10 free stars! ⭐' : '무료 별빛 10개가 충전되었어요! ⭐');
             }}
             style={{
               background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
@@ -3844,9 +3855,10 @@ export default function SajuApp() {
               opacity: 0.6, fontFamily: 'inherit', transition: 'opacity 0.2s'
             }}
           >
-            {lang === 'en' ? '🎁 Add 10 Free Stars (Testing)' : '🎁 무료 별빛 10개 충전 (테스트용)'}
+            {lang === 'en' ? '🎁 Add 10 Free Stars (Dev)' : '🎁 무료 별빛 10개 충전 (개발용)'}
           </button>
         </div>
+        )}
       </div>
     );
   }

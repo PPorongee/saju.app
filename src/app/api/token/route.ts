@@ -40,9 +40,16 @@ export async function GET(req: NextRequest) {
   // Origin check: only allow same-origin requests
   const origin = req.headers.get('origin') || req.headers.get('referer') || '';
   const host = req.headers.get('host') || '';
-  if (origin && !origin.includes(host) && process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (origin && process.env.NODE_ENV === 'production') {
+    try {
+      const originHost = new URL(origin).hostname;
+      const expectedHost = host.split(':')[0];
+      if (originHost !== expectedHost) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
   }
-
   return NextResponse.json({ token: generateApiToken() });
 }

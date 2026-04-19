@@ -14,7 +14,7 @@ interface ConsentModalProps {
  */
 export default function ConsentModal({ lang, onAccept, onDecline }: ConsentModalProps) {
   return (
-    <div style={{
+    <div role="dialog" aria-modal="true" aria-labelledby="consent-title" style={{
       position: 'fixed', inset: 0, zIndex: 99999,
       background: 'rgba(10,14,42,0.95)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -26,7 +26,7 @@ export default function ConsentModal({ lang, onAccept, onDecline }: ConsentModal
         maxWidth: '360px', width: '100%', textAlign: 'center',
       }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔮</div>
-        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#F0C75E', marginBottom: '12px' }}>
+        <h3 id="consent-title" style={{ fontSize: '18px', fontWeight: 800, color: '#F0C75E', marginBottom: '12px' }}>
           {lang === 'en' ? 'Welcome to Starlight Saju!' : '별빛 사주에 오신 것을 환영합니다!'}
         </h3>
         <p style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.7, marginBottom: '16px' }}>

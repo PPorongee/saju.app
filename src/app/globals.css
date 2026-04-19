@@ -15,6 +15,7 @@
   --glow: rgba(240,199,94,0.25);
   --radius: 24px;
   --radius-sm: 16px;
+  --mint: #6EE7B7;
 }
 
 html, body {
@@ -849,13 +850,13 @@ input:focus, select:focus {
   50% { transform: scale(1); }
   75% { transform: scale(1.1); }
 }
-@keyframes shimmer {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-@keyframes sparkle {
-  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Responsive */

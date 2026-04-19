@@ -21,10 +21,10 @@ export default function Footer() {
       <div>{BUSINESS_INFO.address}</div>
       <div>{BUSINESS_INFO.phone} | {BUSINESS_INFO.email}</div>
       <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
-        <a href={BUSINESS_INFO.termsUrl} style={{ color: 'rgba(245,240,232,0.65)', textDecoration: 'none' }}>이용약관</a>
-        <a href={BUSINESS_INFO.privacyUrl} style={{ color: 'rgba(245,240,232,0.65)', textDecoration: 'none' }}>개인정보처리방침</a>
-        <a href={BUSINESS_INFO.refundUrl} style={{ color: 'rgba(245,240,232,0.65)', textDecoration: 'none' }}>환불정책</a>
-        <a href="/readings" style={{ color: 'rgba(245,240,232,0.65)', textDecoration: 'none' }}>이전 결과</a>
+        <a href={BUSINESS_INFO.termsUrl} style={{ color: 'rgba(245,240,232,0.65)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>이용약관</a>
+        <a href={BUSINESS_INFO.privacyUrl} style={{ color: 'rgba(245,240,232,0.65)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>개인정보처리방침</a>
+        <a href={BUSINESS_INFO.refundUrl} style={{ color: 'rgba(245,240,232,0.65)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>환불정책</a>
+        <a href="/readings" style={{ color: 'rgba(245,240,232,0.65)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>이전 결과</a>
       </div>
     </div>
   );

@@ -65,6 +65,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (!db && process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: '서비스 점검 중입니다. 잠시 후 다시 시도해 주세요.' },
+        { status: 503 }
+      );
+    }
+
     // Confirm with Toss API
     const response = await fetch('https://api.tosspayments.com/v1/payments/confirm', {
       method: 'POST',
