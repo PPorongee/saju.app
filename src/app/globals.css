@@ -568,11 +568,13 @@ input:focus, select:focus {
   margin-left: -4px;
   margin-right: -4px;
   padding: 20px 16px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(20,24,80,0.85);
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(240,199,94,0.06);
+  border: 1px solid rgba(240,199,94,0.1);
   box-shadow: 0 1px 8px var(--card-shadow);
   transition: all 0.3s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .llm-section::after { display: none; }
 .llm-section:hover {

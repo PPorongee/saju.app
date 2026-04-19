@@ -3337,10 +3337,13 @@ export default function SajuApp() {
           const qColors = ['#7DD3FC', '#6EE7B7', '#F0C75E', '#F687B3'];
           const maxQ = Math.max(...qScores);
 
+          const sec3Marker = aiText.match(/##\s*3[\.\s]/);
           const sec4Marker = aiText.match(/##\s*4[\.\s]/);
-          const splitIdx = sec4Marker ? aiText.indexOf(sec4Marker[0]) : -1;
-          const beforeSec4 = splitIdx > 0 ? aiText.slice(0, splitIdx) : aiText;
-          const afterSec4 = splitIdx > 0 ? aiText.slice(splitIdx) : '';
+          const splitIdxBefore = sec3Marker ? aiText.indexOf(sec3Marker[0]) : -1;
+          const splitIdxAfter = sec4Marker ? aiText.indexOf(sec4Marker[0]) : -1;
+          const beforeSec3 = splitIdxBefore > 0 ? aiText.slice(0, splitIdxBefore) : '';
+          const sec3Text = splitIdxBefore > 0 && splitIdxAfter > 0 ? aiText.slice(splitIdxBefore, splitIdxAfter) : '';
+          const afterSec3 = splitIdxAfter > 0 ? aiText.slice(splitIdxAfter) : (splitIdxBefore > 0 ? '' : aiText);
 
           const energyGraph = (
             <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
@@ -3383,9 +3386,10 @@ export default function SajuApp() {
 
           return (
             <>
-              <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(beforeSec4, lang) }} />
+              {beforeSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(beforeSec3, lang) }} />}
               {energyGraph}
-              {afterSec4 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(afterSec4, lang) }} />}
+              {sec3Text && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(sec3Text, lang) }} />}
+              {afterSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(afterSec3, lang) }} />}
             </>
           );
         })()}
