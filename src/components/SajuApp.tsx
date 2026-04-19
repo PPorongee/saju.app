@@ -3836,12 +3836,18 @@ export default function SajuApp() {
           onClick={() => setCurrentScreen(9)}
           aria-label={lang === 'ko' ? '별빛 충전소' : 'Star Shop'}
           style={{
-            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(246,196,67,0.3)',
-            borderRadius: '20px', padding: '10px 14px', fontSize: '13px', fontWeight: 700,
-            color: '#F6C443', cursor: 'pointer', minHeight: '44px', display: 'flex', alignItems: 'center', gap: '4px'
+            background: 'linear-gradient(135deg, rgba(240,199,94,0.25), rgba(255,208,128,0.15))',
+            border: '1.5px solid rgba(246,196,67,0.5)',
+            borderRadius: '24px', padding: '8px 16px', fontSize: '14px', fontWeight: 800,
+            color: '#F6C443', cursor: 'pointer', minHeight: '44px', display: 'flex', alignItems: 'center', gap: '6px',
+            boxShadow: '0 2px 12px rgba(240,199,94,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            animation: starBalance === 0 ? 'pulse 2s ease-in-out infinite' : 'none'
           }}
         >
-          ⭐ {starBalance}
+          <span style={{ fontSize: '16px' }}>⭐</span>
+          <span>{starBalance}</span>
+          <span style={{ fontSize: '10px', opacity: 0.7, marginLeft: '2px' }}>{lang === 'en' ? 'CHARGE' : '충전'}</span>
         </button>
         <button
           onClick={() => setLang(lang === 'ko' ? 'en' : 'ko')}
