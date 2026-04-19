@@ -1,7 +1,7 @@
 {
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"C:\\\\Users\\\\jshim\\\\Desktop\\\\saju-app\\\\src\\\\lib\\\\saju-advanced-prompt.ts\"}",
-  "error": "File content (32310 tokens) exceeds maximum allowed tokens (25000). Use offset and limit parameters to read specific portions of the file, or search for specific content instead of reading the whole file.",
-  "timestamp": "2026-04-19T08:34:37.918Z",
-  "retry_count": 2
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd C:/Users/jshim/Desktop/saju-app && git checkout main && git merge qa/quality-assessment --no-edit && git push origin main\",\"description\":\"Merge QA branch to main and push\"}",
+  "error": "Exit code 1\nerror: Your local changes to the following files would be overwritten by checkout:\n\t.omc/state/hud-stdin-cache.json\nPlease commit your changes or stash them before you switch branches.\nAborting",
+  "timestamp": "2026-04-19T11:45:09.154Z",
+  "retry_count": 1
 }
