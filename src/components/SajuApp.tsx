@@ -806,11 +806,22 @@ export default function SajuApp() {
       '2026년 월별 간지:\n' + monthlyGanji.join('\n') + '\n\n' +
       '아래 섹션을 순서대로 작성해줘. 다른 섹션은 절대 쓰지 마.\n\n' +
       '=== 중복 금지 규칙 (매우 중요!) ===\n' +
-      '각 섹션은 고유한 역할이 있어. 이전 섹션에서 이미 말한 내용을 다른 섹션에서 반복하지 마!\n' +
-      '- 섹션1(올해 큰 그림)에서 한 분석을 섹션3(총평)에서 다시 하지 마\n' +
-      '- 섹션2(월별 운세)에서 말한 개운법/조심할 점을 섹션5(TO-DO)/섹션6(조심할 것)에서 똑같이 반복하지 마\n' +
-      '- 섹션2(월별 운세)에서 언급한 색상/방향/아이템을 섹션7(행운 아이템)에서 그대로 반복하지 마\n' +
+      '17개 섹션 각각 고유한 역할이 있어. 이전 섹션에서 이미 말한 내용을 다른 섹션에서 반복하지 마!\n' +
+      '- 섹션1(큰 그림)과 섹션3(총평)은 각도가 달라야 해. 1은 사주적 의미, 3은 실생활 종합\n' +
+      '- 섹션2(월별)의 내용을 섹션5(TO-DO)/6(조심)/8(재물)/9(연애)에서 똑같이 반복 금지\n' +
+      '- 섹션7(행운 아이템)과 섹션15(행운 루틴)은 아이템 vs 습관으로 구분\n' +
+      '- 섹션8(재물)과 섹션12(직장)은 돈 vs 커리어로 구분\n' +
       '같은 사주 근거를 다뤄도 반드시 다른 각도/다른 깊이로 써야 해. 문장을 베껴쓰듯 반복하면 절대 안 돼!\n\n' +
+      '=== 서사적 흐름 규칙 ===\n' +
+      '읽는 사람이 마치 한 편의 이야기를 읽는 것처럼 느끼게 해줘:\n' +
+      '- 섹션1에서 올해의 큰 그림을 펼치고 → 섹션2~3에서 구체화 → 섹션4~7에서 영역별 분석\n' +
+      '- 섹션8~9에서 돈과 사랑 → 섹션10~13에서 건강/방위/직장/관계 → 섹션14~17에서 실천과 마무리\n' +
+      '- 각 섹션 시작할 때 이전 섹션과 자연스럽게 연결하는 한 문장을 넣어 (예: "재물운을 봤으니 이제 연애운을 볼게!")\n\n' +
+      '=== 명리학적 근거 규칙 (신뢰성 필수!) ===\n' +
+      '모든 해석에 반드시 사주 근거를 함께 써줘. 근거 없는 뜬구름 해석 금지!\n' +
+      '- 조언 → 왜?(명리 근거) → 쉬운 비유 3단계를 지켜\n' +
+      '- 예: "4월에 투자하면 좋아" (X) → "4월 월운 경진(금토)이 네 재성을 강화시켜서, 마치 봄비가 밭에 내리는 것처럼 재물이 자라나는 달이야" (O)\n' +
+      '- 어려운 용어는 반드시 괄호 안에 비유로 풀어: 편재(큰돈의 별), 정관(직장 안정의 별), 식신(표현력의 별)\n\n' +
 
       '##1.2026 병오년, 내 인생에서 어떤 해인가?##\n' +
       '병오년(丙午)이 이 사주의 큰 흐름에서 어떤 의미를 가지는지 깊이 있게 분석해줘:\n' +
@@ -3296,6 +3307,48 @@ export default function SajuApp() {
             <p style={{ fontSize: '12px', opacity: 0.4 }}>{t('yearlyTime', lang)}</p>
           </div>
         )}
+
+        {/* 분기별 에너지 그래프 */}
+        {!isGenerating && aiText && (() => {
+          const qMatch = aiText.match(/\[에너지점수:\s*Q1=(\d+),\s*Q2=(\d+),\s*Q3=(\d+),\s*Q4=(\d+)\]/);
+          const qScores = qMatch
+            ? [parseInt(qMatch[1]), parseInt(qMatch[2]), parseInt(qMatch[3]), parseInt(qMatch[4])]
+            : [6, 7, 5, 8];
+          const qLabels = lang === 'en' ? ['Q1\nJan-Mar', 'Q2\nApr-Jun', 'Q3\nJul-Sep', 'Q4\nOct-Dec'] : ['1분기\n1~3월', '2분기\n4~6월', '3분기\n7~9월', '4분기\n10~12월'];
+          const qColors = ['#7DD3FC', '#6EE7B7', '#F0C75E', '#F687B3'];
+          const maxQ = Math.max(...qScores);
+          return (
+            <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
+                ⚡ {lang === 'en' ? '2026 Quarterly Energy Rhythm' : '2026 분기별 에너지 리듬'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '12px', height: '140px', marginBottom: '8px', padding: '0 8px' }}>
+                {qScores.map((score, i) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                    <div style={{ fontSize: '18px', fontWeight: 900, color: qColors[i], marginBottom: '6px' }}>{score}<span style={{ fontSize: '11px', opacity: 0.5 }}>/10</span></div>
+                    <div style={{
+                      width: '100%', maxWidth: '52px',
+                      height: Math.max(12, (score / 10) * 110) + 'px',
+                      background: `linear-gradient(180deg, ${qColors[i]}, ${qColors[i]}33)`,
+                      borderRadius: '10px 10px 4px 4px',
+                      boxShadow: score === maxQ ? `0 0 16px ${qColors[i]}55` : 'none',
+                      border: score === maxQ ? `2px solid ${qColors[i]}` : '1px solid rgba(255,255,255,0.08)'
+                    }} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', padding: '0 8px' }}>
+                {qLabels.map((label, i) => (
+                  <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: qColors[i], fontWeight: 600, whiteSpace: 'pre-line', lineHeight: '1.3' }}>{label}</div>
+                ))}
+              </div>
+              <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '11px', color: 'var(--text-dim)' }}>
+                {lang === 'en' ? 'Highest energy: ' : '에너지 최고 분기: '}<strong style={{ color: qColors[qScores.indexOf(maxQ)] }}>{qLabels[qScores.indexOf(maxQ)].split('\n')[0]}</strong>
+              </div>
+            </div>
+          );
+        })()}
+
         {!isGenerating && aiText && (
           <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
         )}

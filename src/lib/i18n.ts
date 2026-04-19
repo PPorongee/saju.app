@@ -120,7 +120,7 @@ export const T: Record<string, Record<Lang, string>> = {
   items6: { ko: '6개 항목 심층 분석', en: '6 Items Deep Analysis' },
   items30: { ko: '17개 항목 심층 분석', en: '17 Items Deep Analysis' },
   aiPreview: { ko: 'AI 사주 해설 미리보기', en: 'AI Reading Preview' },
-  yearlyItems: { ko: '2026 운세 분석 항목 (6개)', en: '2026 Fortune Items (6)' },
+  yearlyItems: { ko: '2026 운세 분석 항목 (17개)', en: '2026 Fortune Items (17)' },
   allItems: { ko: '전체 분석 항목 (17개)', en: 'Full Analysis Items (17)' },
 
   // Previous results
