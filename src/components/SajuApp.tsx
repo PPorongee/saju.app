@@ -1244,7 +1244,7 @@ export default function SajuApp() {
               <div className="input-group">
                 <select value={userData.month} onChange={e => updateUser('month', parseInt(e.target.value))} aria-label={lang === 'en' ? 'Birth month' : '출생 월'} aria-required="true">
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                    <option key={m} value={m}>{m}{t('monthUnit', lang)}</option>
+                    <option key={m} value={m}>{t('monthName' + m as any, lang)}</option>
                   ))}
                 </select>
               </div>
@@ -2293,7 +2293,7 @@ export default function SajuApp() {
                 </div>
                 <div className="input-group">
                   <select value={compatPerson1.month} onChange={e => setCompatPerson1(p => ({ ...p, month: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 1 birth month' : '첫 번째 사람 출생 월'}>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{m}{t('monthUnit', lang)}</option>)}
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{t('monthName' + m as any, lang)}</option>)}
                   </select>
                 </div>
                 <div className="input-group">
@@ -2401,7 +2401,7 @@ export default function SajuApp() {
               </div>
               <div className="input-group">
                 <select value={compatPerson2.month} onChange={e => setCompatPerson2(p => ({ ...p, month: parseInt(e.target.value) }))} aria-label={lang === 'en' ? 'Person 2 birth month' : '두 번째 사람 출생 월'}>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{m}{t('monthUnit', lang)}</option>)}
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{t('monthName' + m as any, lang)}</option>)}
                 </select>
               </div>
               <div className="input-group">
@@ -3053,7 +3053,7 @@ export default function SajuApp() {
               </div>
               <div className="input-group">
                 <select value={pregData.month} onChange={e => setPregData(p => ({ ...p, month: parseInt(e.target.value) }))}>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{m}{t('monthUnit', lang)}</option>)}
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{t('monthName' + m as any, lang)}</option>)}
                 </select>
               </div>
               <div className="input-group">
@@ -3073,7 +3073,7 @@ export default function SajuApp() {
               </div>
               <div className="input-group">
                 <select value={pregData.dueMonth} onChange={e => setPregData(p => ({ ...p, dueMonth: parseInt(e.target.value) }))}>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{m}{t('monthUnit', lang)}</option>)}
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{t('monthName' + m as any, lang)}</option>)}
                 </select>
               </div>
               <div className="input-group">
@@ -3986,7 +3986,7 @@ export default function SajuApp() {
         {currentScreen === 8 && renderTeaser()}
         {currentScreen === 9 && renderChargeScreen()}
         {/* 사업자 정보 푸터 */}
-        <Footer />
+        <Footer lang={lang} />
       </div>
       {hasMounted && !storageConsent && (
         <ConsentModal

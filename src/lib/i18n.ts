@@ -196,6 +196,10 @@ export const T: Record<string, Record<Lang, string>> = {
   yearUnit: { ko: '년', en: '' },
   monthUnit: { ko: '월', en: '' },
   dayUnit: { ko: '일', en: '' },
+  monthName1: { ko: '1월', en: 'Jan' }, monthName2: { ko: '2월', en: 'Feb' }, monthName3: { ko: '3월', en: 'Mar' },
+  monthName4: { ko: '4월', en: 'Apr' }, monthName5: { ko: '5월', en: 'May' }, monthName6: { ko: '6월', en: 'Jun' },
+  monthName7: { ko: '7월', en: 'Jul' }, monthName8: { ko: '8월', en: 'Aug' }, monthName9: { ko: '9월', en: 'Sep' },
+  monthName10: { ko: '10월', en: 'Oct' }, monthName11: { ko: '11월', en: 'Nov' }, monthName12: { ko: '12월', en: 'Dec' },
   hourUnit: { ko: '시', en: 'h' },
   minuteUnit: { ko: '분', en: 'm' },
 
