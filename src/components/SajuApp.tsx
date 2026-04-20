@@ -3346,9 +3346,9 @@ export default function SajuApp() {
           const afterSec3 = splitIdxAfter > 0 ? aiText.slice(splitIdxAfter) : (splitIdxBefore > 0 ? '' : aiText);
 
           const energyGraph = (
-            <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
-              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
-                ⚡ {lang === 'en' ? '2026 Quarterly Energy Rhythm' : '2026 분기별 에너지 리듬'}
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-dim)', marginBottom: '12px', textAlign: 'center' }}>
+                ⚡ {lang === 'en' ? 'Quarterly Energy Graph' : '분기별 에너지 그래프'}
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '12px', height: '140px', marginBottom: '8px', padding: '0 8px' }}>
                 {qScores.map((score, i) => (
@@ -3373,22 +3373,24 @@ export default function SajuApp() {
               <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '11px', color: 'var(--text-dim)' }}>
                 {lang === 'en' ? 'Highest energy: ' : '에너지 최고 분기: '}<strong style={{ color: qColors[qScores.indexOf(maxQ)] }}>{qLabels[qScores.indexOf(maxQ)].split('\n')[0]}</strong>
               </div>
-              <div style={{ marginTop: '14px', padding: '12px', background: 'rgba(240,199,94,0.05)', borderRadius: '10px', border: '1px solid rgba(240,199,94,0.1)', fontSize: '12px', lineHeight: '1.7', color: 'var(--text-dim)' }}>
-                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontSize: '13px' }}>
-                  {lang === 'en' ? '📖 How to read this graph' : '📖 이 그래프 읽는 법'}
-                </div>
-                {lang === 'en'
-                  ? 'Each bar represents the energy level of that quarter based on how the monthly heavenly stems and earthly branches interact with your day master. Higher = more active energy (good for action/decisions). Lower = quieter energy (good for planning/rest). The scores are calculated from the Five Elements (Ohaeng) interaction between your birth chart and 2026\'s quarterly energy flow.'
-                  : '각 막대는 해당 분기의 월운 천간지지가 너의 일간(나를 대표하는 기운)과 어떻게 작용하는지를 점수로 나타낸 거야. 높을수록 활발한 에너지(행동/결정에 유리), 낮을수록 차분한 에너지(계획/충전에 유리)야. 점수는 너의 사주 원국과 2026년 각 분기의 오행 상생·상극 관계를 분석해서 산출한 거야.'}
-              </div>
             </div>
           );
+
+          const sec3Html = sec3Text ? formatLLMText(sec3Text, lang) : '';
+          const headEndIdx = sec3Html.indexOf('</h3>');
+          const sec3Header = headEndIdx > 0 ? sec3Html.slice(0, headEndIdx + 5) : '';
+          const sec3Body = headEndIdx > 0 ? sec3Html.slice(headEndIdx + 5) : sec3Html;
 
           return (
             <>
               {beforeSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(beforeSec3, lang) }} />}
-              {energyGraph}
-              {sec3Text && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(sec3Text, lang) }} />}
+              {sec3Text && (
+                <div className="llm-text">
+                  <div dangerouslySetInnerHTML={{ __html: sec3Header }} />
+                  {energyGraph}
+                  <div dangerouslySetInnerHTML={{ __html: sec3Body }} />
+                </div>
+              )}
               {afterSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(afterSec3, lang) }} />}
             </>
           );
