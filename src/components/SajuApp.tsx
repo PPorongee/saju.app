@@ -857,7 +857,15 @@ export default function SajuApp() {
       '- 월운이 세운(병오)과 겹쳐서 만드는 복합 작용 분석 (예: 이번 달 월운+세운이 합쳐져서 화 기운이 극대화된다 등)\n' +
       '- 재물/직장/건강 흐름을 하나의 이야기로 자연스럽게 엮어서 (⚠️ 연애/인연 이야기는 섹션9에서 전담하니까 여기서 쓰지 마!)\n' +
       '- 그 달에 특히 좋은 날짜대/시기가 있다면 언급 (상순/중순/하순 구분)\n' +
-      '각 월 최소 6줄 이상 풍성하게! 비유를 반드시 넣어서 읽는 재미를 줘.\n' +
+      '- 상생 관계를 설명할 때는 왜 그런지 원리를 재미있게 풀어줘 (예: "을목이 병화를 만나면 마른 장작에 불이 붙는 것처럼 에너지가 폭발해")\n' +
+      '각 월 최소 10줄 이상 풍성하게! 비유를 매 2~3문장마다 반드시 넣어서 읽는 재미를 줘.\n' +
+      '\n=== 월별 운세 품질 규칙 (필수!) ===\n' +
+      '- 문장 시작 패턴 다양하게: "이 달은", "이번 달은" 으로 시작하는 문장 2번 이상 반복 금지. 다양한 시작어 사용 (시간 표현, 비유, 감정, 사건 묘사 등)\n' +
+      '- 단어 반복 금지: 같은 형용사/부사를 2개월 연속 사용하지 마. "풍요로운", "안정적인" 등을 계속 쓰면 탈락\n' +
+      '- 비유 다양성: 자연(계절/날씨/식물), 일상(요리/운동/여행), 게임/모험 등 다양한 영역에서 비유를 가져와. 같은 비유 패턴 반복 금지\n' +
+      '- 구체적 장면 묘사: "좋은 달이야" (X) → "회의실에서 네 아이디어가 빛을 발하는 순간이 올 거야" (O)\n' +
+      '- 각 월마다 그 달만의 고유한 사건/테마를 하나씩 제시: 예) 5월엔 예상치 못한 소식, 8월엔 과거 인연 재등장 등\n' +
+      '- 오행 상생/상극 원리 설명을 스토리텔링으로: "수생목(물이 나무를 키움)" → "마치 봄비가 내린 뒤 새싹이 돋는 것처럼, 이 달의 수 기운이 네 목 기운을 살려서..."\n' +
       '⚠️ 말투 금지: "X월은 ~~달이야!" "X월은 ~~하는 달이야!" 식의 한줄 정리/마무리 문장을 쓰지 마. 그냥 자연스러운 이야기 흐름으로 마무리해.\n' +
       '[이 섹션의 역할: 월별 운세 흐름과 사건 예측에만 집중. 개운법/TO-DO/조심할 것/행운 아이템은 뒤 섹션에서 다루니까 여기서는 쓰지 마!]\n\n' +
 
@@ -1599,7 +1607,7 @@ export default function SajuApp() {
         {/* Result Header */}
         <div className="result-header">
           <div className="name gradient-text">{userData.name || t('anonymous', lang)}{t('sajuAnalysisOf', lang)}</div>
-          <div className="sub">{userData.year}{t('yearUnit', lang)} {userData.month}{t('monthUnit', lang)} {userData.day}{t('dayUnit', lang)} {t('born', lang)}</div>
+          <div className="sub">{lang === 'en' ? `${t('monthName' + userData.month as any, lang)} ${userData.day}, ${userData.year}` : `${userData.year}${t('yearUnit', lang)} ${userData.month}${t('monthUnit', lang)} ${userData.day}${t('dayUnit', lang)}`} {t('born', lang)}</div>
         </div>
 
         {/* Four Pillars - Enhanced */}
@@ -3269,7 +3277,7 @@ export default function SajuApp() {
           <div className="name" style={{ background: 'linear-gradient(135deg,#F59E0B,#EF4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
             {userData.name || t('anonymous', lang)}{t('yearlyFortuneOf', lang)}
           </div>
-          <div className="sub">{userData.year}{t('yearUnit', lang)} {userData.month}{t('monthUnit', lang)} {userData.day}{t('dayUnit', lang)} {t('born', lang)}</div>
+          <div className="sub">{lang === 'en' ? `${t('monthName' + userData.month as any, lang)} ${userData.day}, ${userData.year}` : `${userData.year}${t('yearUnit', lang)} ${userData.month}${t('monthUnit', lang)} ${userData.day}${t('dayUnit', lang)}`} {t('born', lang)}</div>
           <div style={{ marginTop: '8px', display: 'inline-block', padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#F59E0B' }}>
             {t('yearlyBadgeLabel', lang)}
           </div>
@@ -3585,7 +3593,7 @@ export default function SajuApp() {
           <div className="name gradient-text" style={isYearly ? { background: 'linear-gradient(135deg,#F59E0B,#EF4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' } : undefined}>
             {isYearly ? (userData.name || t('anonymous', lang)) + t('yearlyFortuneOf', lang) : (userData.name || t('anonymous', lang)) + t('sajuAnalysisOf', lang)}
           </div>
-          <div className="sub">{userData.year}{t('yearUnit', lang)} {userData.month}{t('monthUnit', lang)} {userData.day}{t('dayUnit', lang)} {t('born', lang)}</div>
+          <div className="sub">{lang === 'en' ? `${t('monthName' + userData.month as any, lang)} ${userData.day}, ${userData.year}` : `${userData.year}${t('yearUnit', lang)} ${userData.month}${t('monthUnit', lang)} ${userData.day}${t('dayUnit', lang)}`} {t('born', lang)}</div>
           {isYearly && (
             <div style={{ marginTop: '8px', display: 'inline-block', padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#F59E0B' }}>
               {t('yearlyBadge', lang)}

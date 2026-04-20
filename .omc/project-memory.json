@@ -166,14 +166,26 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 56,
-      "lastAccessed": 1776599902158,
+      "accessCount": 88,
+      "lastAccessed": 1776690533862,
       "type": "directory"
     },
     {
       "path": "src\\app\\globals.css",
-      "accessCount": 9,
-      "lastAccessed": 1776587981501,
+      "accessCount": 14,
+      "lastAccessed": 1776648880290,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\i18n.ts",
+      "accessCount": 8,
+      "lastAccessed": 1776689216597,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\format-llm.ts",
+      "accessCount": 7,
+      "lastAccessed": 1776688707015,
       "type": "file"
     },
     {
@@ -184,20 +196,26 @@
     },
     {
       "path": "src",
-      "accessCount": 5,
-      "lastAccessed": 1776587902754,
+      "accessCount": 6,
+      "lastAccessed": 1776688978800,
       "type": "directory"
+    },
+    {
+      "path": "src\\app\\terms\\page.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1776690293098,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\privacy\\page.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1776690413654,
+      "type": "file"
     },
     {
       "path": "src\\app\\api\\token\\route.ts",
       "accessCount": 5,
       "lastAccessed": 1776587997476,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\terms\\page.tsx",
-      "accessCount": 4,
-      "lastAccessed": 1776587944794,
       "type": "file"
     },
     {
@@ -207,21 +225,15 @@
       "type": "file"
     },
     {
-      "path": "src\\lib\\format-llm.ts",
-      "accessCount": 3,
-      "lastAccessed": 1776587672703,
+      "path": "src\\components\\ui\\Footer.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1776688972438,
       "type": "file"
     },
     {
       "path": "src\\components\\ui\\ConsentModal.tsx",
       "accessCount": 3,
       "lastAccessed": 1776587942531,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\privacy\\page.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1776587946761,
       "type": "file"
     },
     {
@@ -237,12 +249,6 @@
       "type": "file"
     },
     {
-      "path": "src\\components\\ui\\Footer.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1776587967087,
-      "type": "file"
-    },
-    {
       "path": "src\\app\\share\\page.tsx",
       "accessCount": 3,
       "lastAccessed": 1776587979664,
@@ -250,9 +256,21 @@
     },
     {
       "path": "src\\app",
-      "accessCount": 2,
-      "lastAccessed": 1776587680801,
+      "accessCount": 3,
+      "lastAccessed": 1776689280835,
       "type": "directory"
+    },
+    {
+      "path": "src\\app\\refund\\page.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1776689358828,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\payment-config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776688896627,
+      "type": "file"
     },
     {
       "path": "src\\app\\page.tsx",
@@ -351,21 +369,9 @@
       "type": "file"
     },
     {
-      "path": "src\\lib\\i18n.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587664381,
-      "type": "file"
-    },
-    {
       "path": "src\\lib\\saju-calc.ts",
       "accessCount": 1,
       "lastAccessed": 1776587664478,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\payment-config.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587665008,
       "type": "file"
     },
     {
