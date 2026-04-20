@@ -829,6 +829,10 @@ export default function SajuApp() {
       '- 어려운 용어는 반드시 괄호 안에 비유로 풀어: 편재(큰돈의 별), 정관(직장 안정의 별), 식신(표현력의 별)\n\n';
 
     const sectionsP1 =
+      '=== 올해 운 에너지 점수 (반드시 첫 줄에!) ===\n' +
+      '아래 5가지 영역을 10점 만점으로 평가해서 반드시 첫 줄에 이 형식으로 써줘:\n' +
+      '[운세점수: 재물=X, 연애=X, 직장=X, 건강=X, 대인=X]\n' +
+      '점수 기준: 병오년 세운이 각 영역의 십성/오행에 얼마나 유리한지 기반. 용신 활성화=높은 점수, 기신 강화=낮은 점수.\n\n' +
       '##1.2026 병오년, 내 인생에서 어떤 해인가?##\n' +
       '병오년(丙午)이 이 사주의 큰 흐름에서 어떤 의미를 가지는지 깊이 있게 분석해줘:\n' +
       '- 현재 대운(大運): 지금 몇 번째 대운을 지나고 있는지, 대운 천간지지가 뭔지, 이 대운이 내 원국에 어떤 영향을 주는지. 대운 전환이 가까우면 그것도 알려줘.\n' +
@@ -3329,6 +3333,61 @@ export default function SajuApp() {
             <p style={{ fontSize: '12px', opacity: 0.4 }}>{t('yearlyTime', lang)}</p>
           </div>
         )}
+
+        {/* 올해 운 에너지 레이더 차트 */}
+        {!isGenerating && aiText && (() => {
+          const fMatch = aiText.match(/\[운세점수:\s*재물=(\d+),\s*연애=(\d+),\s*직장=(\d+),\s*건강=(\d+),\s*대인=(\d+)\]/);
+          const fScores = fMatch ? [parseInt(fMatch[1]), parseInt(fMatch[2]), parseInt(fMatch[3]), parseInt(fMatch[4]), parseInt(fMatch[5])] : [7, 6, 7, 5, 8];
+          const fLabels = lang === 'en' ? ['Wealth', 'Love', 'Career', 'Health', 'Social'] : ['재물운', '연애운', '직장운', '건강운', '대인운'];
+          const fIcons = ['💰', '💕', '💼', '🏥', '👥'];
+          const fColors = ['#F0C75E', '#F687B3', '#7DD3FC', '#6EE7B7', '#9F7AEA'];
+          const cx = 120, cy = 120, r = 90;
+          const angles = fScores.map((_: number, i: number) => (Math.PI * 2 * i / 5) - Math.PI / 2);
+          const toXY = (angle: number, val: number) => ({ x: cx + Math.cos(angle) * (val / 10) * r, y: cy + Math.sin(angle) * (val / 10) * r });
+          const pts = fScores.map((s: number, i: number) => toXY(angles[i], s));
+          const polyPoints = pts.map((p: {x: number; y: number}) => `${p.x},${p.y}`).join(' ');
+          const gridLevels = [2, 4, 6, 8, 10];
+
+          return (
+            <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)', marginBottom: '12px', textAlign: 'center' }}>
+                {lang === 'en' ? '2026 Fortune Energy' : '2026 올해 운 에너지'}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <svg viewBox="0 0 240 240" width="240" height="240">
+                  {gridLevels.map(lv => (
+                    <polygon key={lv} points={angles.map((a: number) => { const p = toXY(a, lv); return `${p.x},${p.y}`; }).join(' ')}
+                      fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                  ))}
+                  {angles.map((a: number, i: number) => {
+                    const end = toXY(a, 10);
+                    return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
+                  })}
+                  <polygon points={polyPoints} fill="rgba(240,199,94,0.15)" stroke="#F0C75E" strokeWidth="2" />
+                  {pts.map((p: {x: number; y: number}, i: number) => (
+                    <circle key={i} cx={p.x} cy={p.y} r="4" fill={fColors[i]} stroke="#fff" strokeWidth="1" />
+                  ))}
+                  {angles.map((a: number, i: number) => {
+                    const lp = toXY(a, 12.5);
+                    return (
+                      <text key={i} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill={fColors[i]} fontSize="11" fontWeight="700">
+                        {fIcons[i]} {fLabels[i]}
+                      </text>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+                {fScores.map((s: number, i: number) => (
+                  <div key={i} style={{ textAlign: 'center', minWidth: '50px' }}>
+                    <div style={{ fontSize: '11px', color: fColors[i], fontWeight: 700 }}>{fIcons[i]} {fLabels[i]}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 900, color: fColors[i] }}>{s}<span style={{ fontSize: '10px', opacity: 0.5 }}>/10</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* AI 해설 + 분기별 에너지 그래프 (섹션3 뒤에 삽입) */}
         {!isGenerating && aiText && (() => {

@@ -22,8 +22,9 @@ export function formatLLMText(text: string, lang: Lang = 'ko'): string {
     's-red': '#FC8181,#E53E3E', 's-pink': '#F687B3,#D53F8C'
   };
 
-  // Remove energy score metadata line before rendering
+  // Remove score metadata lines before rendering
   text = text.replace(/\[에너지점수:\s*Q1=\d+,\s*Q2=\d+,\s*Q3=\d+,\s*Q4=\d+\]\s*/g, '');
+  text = text.replace(/\[운세점수:\s*재물=\d+,\s*연애=\d+,\s*직장=\d+,\s*건강=\d+,\s*대인=\d+\]\s*/g, '');
 
   // Sanitize: escape HTML tags from LLM output before formatting
   let html = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
