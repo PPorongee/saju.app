@@ -3376,26 +3376,30 @@ export default function SajuApp() {
             </div>
           );
 
-          const GRAPH_PLACEHOLDER = '<!--ENERGY_GRAPH-->';
+          const graphHtml = `<div style="margin:16px 0 20px;text-align:center">
+            <div style="font-size:14px;font-weight:700;color:var(--text-dim);margin-bottom:12px">⚡ ${lang === 'en' ? 'Quarterly Energy Graph' : '분기별 에너지 그래프'}</div>
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:12px;height:140px;margin-bottom:8px;padding:0 8px">
+              ${qScores.map((score: number, i: number) => `<div style="display:flex;flex-direction:column;align-items:center;flex:1">
+                <div style="font-size:18px;font-weight:900;color:${qColors[i]};margin-bottom:6px">${score}<span style="font-size:11px;opacity:0.5">/10</span></div>
+                <div style="width:100%;max-width:52px;height:${Math.max(12, (score / 10) * 110)}px;background:linear-gradient(180deg,${qColors[i]},${qColors[i]}33);border-radius:10px 10px 4px 4px;${score === maxQ ? `box-shadow:0 0 16px ${qColors[i]}55;border:2px solid ${qColors[i]}` : 'border:1px solid rgba(255,255,255,0.08)'}"></div>
+              </div>`).join('')}
+            </div>
+            <div style="display:flex;justify-content:center;gap:12px;padding:0 8px">
+              ${qLabels.map((label: string, i: number) => `<div style="flex:1;text-align:center;font-size:10px;color:${qColors[i]};font-weight:600;white-space:pre-line;line-height:1.3">${label}</div>`).join('')}
+            </div>
+            <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--text-dim)">${lang === 'en' ? 'Highest energy: ' : '에너지 최고 분기: '}<strong style="color:${qColors[qScores.indexOf(maxQ)]}">${qLabels[qScores.indexOf(maxQ)].split('\n')[0]}</strong></div>
+          </div>`;
+
           const sec3Html = sec3Text ? formatLLMText(sec3Text, lang) : '';
           const insertIdx = sec3Html.indexOf('</h3>');
-          const sec3WithGraph = insertIdx > 0
-            ? sec3Html.slice(0, insertIdx + 5) + GRAPH_PLACEHOLDER + sec3Html.slice(insertIdx + 5)
+          const sec3Combined = insertIdx > 0
+            ? sec3Html.slice(0, insertIdx + 5) + graphHtml + sec3Html.slice(insertIdx + 5)
             : sec3Html;
-          const parts = sec3WithGraph.split(GRAPH_PLACEHOLDER);
 
           return (
             <>
               {beforeSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(beforeSec3, lang) }} />}
-              {sec3Text && parts.length === 2 ? (
-                <div className="llm-text">
-                  <div dangerouslySetInnerHTML={{ __html: parts[0] }} />
-                  {energyGraph}
-                  <div dangerouslySetInnerHTML={{ __html: parts[1] }} />
-                </div>
-              ) : sec3Text ? (
-                <div className="llm-text" dangerouslySetInnerHTML={{ __html: sec3Html }} />
-              ) : null}
+              {sec3Text && <div className="llm-text" dangerouslySetInnerHTML={{ __html: sec3Combined }} />}
               {afterSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(afterSec3, lang) }} />}
             </>
           );
