@@ -3376,21 +3376,26 @@ export default function SajuApp() {
             </div>
           );
 
+          const GRAPH_PLACEHOLDER = '<!--ENERGY_GRAPH-->';
           const sec3Html = sec3Text ? formatLLMText(sec3Text, lang) : '';
-          const headEndIdx = sec3Html.indexOf('</h3>');
-          const sec3Header = headEndIdx > 0 ? sec3Html.slice(0, headEndIdx + 5) : '';
-          const sec3Body = headEndIdx > 0 ? sec3Html.slice(headEndIdx + 5) : sec3Html;
+          const insertIdx = sec3Html.indexOf('</h3>');
+          const sec3WithGraph = insertIdx > 0
+            ? sec3Html.slice(0, insertIdx + 5) + GRAPH_PLACEHOLDER + sec3Html.slice(insertIdx + 5)
+            : sec3Html;
+          const parts = sec3WithGraph.split(GRAPH_PLACEHOLDER);
 
           return (
             <>
               {beforeSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(beforeSec3, lang) }} />}
-              {sec3Text && (
+              {sec3Text && parts.length === 2 ? (
                 <div className="llm-text">
-                  <div dangerouslySetInnerHTML={{ __html: sec3Header }} />
+                  <div dangerouslySetInnerHTML={{ __html: parts[0] }} />
                   {energyGraph}
-                  <div dangerouslySetInnerHTML={{ __html: sec3Body }} />
+                  <div dangerouslySetInnerHTML={{ __html: parts[1] }} />
                 </div>
-              )}
+              ) : sec3Text ? (
+                <div className="llm-text" dangerouslySetInnerHTML={{ __html: sec3Html }} />
+              ) : null}
               {afterSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(afterSec3, lang) }} />}
             </>
           );
