@@ -782,7 +782,10 @@ export default function SajuApp() {
        (new Date().getFullYear() - userData.year) <= 49 ? '40대이므로 커리어 전성기/자녀교육/건강관리/재산관리에 비중을 둬.' :
        (new Date().getFullYear() - userData.year) <= 59 ? '50대이므로 인생 2막/건강/은퇴준비/자녀독립에 초점.' :
        '60대 이상이므로 건강/노후생활/가족관계/취미에 초점. 취업/수능 등 젊은 시절 이야기는 안 해.') +
-      ' 나이와 동떨어진 조언은 절대 금지!\n\n' +
+      ' 나이와 동떨어진 조언은 절대 금지!\n' +
+      '현재 상태: ' + (['안정적이고 평화로움', '변화의 흐름 속', '스트레스가 많음', '도전 중', '잘 모르겠음'][userData.state] || '미선택') + '\n' +
+      '주요 관심사: ' + (['연애/관계', '커리어/진로', '돈/재정', '인간관계', '건강', '학업/시험'][userData.concern] || '미선택') + '\n' +
+      '⚠️ 위 현재 상태와 관심사를 올해 운세 전체에 반영해줘. 특히 섹션9(연애운)에서는 현재 상태를 고려해서 솔로/커플 맞춤 조언을 해줘.\n\n' +
       '생년월일: ' + userData.year + '년 ' + userData.month + '월 ' + userData.day + '일 (' + (isLunar ? '음력 입력 -> 양력 변환됨' : '양력') + ')\n' +
       (useExactTime && exactHour >= 0 ? '정확한 출생시간: ' + String(exactHour).padStart(2, '0') + '시 ' + String(exactMinute).padStart(2, '0') + '분 (' + TIMES[exactTimeToSiju(exactHour, exactMinute)].hangul.replace(/[()]/g, '') + ' 해당)\n' : '') +
       '일간(Day Master): ' + CG[ds] + ' ' + CG_HANJA[ds] + ' (' + OH_CG[ds] + ') - ' + profile.short + '\n' +
