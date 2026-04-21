@@ -3984,7 +3984,7 @@ export default function SajuApp() {
           <span style={{ fontSize: '10px', opacity: 0.7, marginLeft: '2px' }}>{lang === 'en' ? 'CHARGE' : '충전'}</span>
         </button>
         <button
-          onClick={() => setLang(lang === 'ko' ? 'en' : 'ko')}
+          onClick={() => { const next = lang === 'ko' ? 'en' : 'ko'; setLang(next); try { localStorage.setItem('saju-lang', next); } catch {} }}
           aria-label={lang === 'ko' ? 'Switch to English' : '한국어로 전환'}
           style={{
             background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
