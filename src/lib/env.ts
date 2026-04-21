@@ -53,5 +53,5 @@ export const NEXT_PUBLIC_CEO_NAME = optionalEnv('NEXT_PUBLIC_CEO_NAME', '이서�
 export const NEXT_PUBLIC_BUSINESS_NUMBER = optionalEnv('NEXT_PUBLIC_BUSINESS_NUMBER', '197-56-00903');
 export const NEXT_PUBLIC_SALES_NUMBER = optionalEnv('NEXT_PUBLIC_SALES_NUMBER', '');
 export const NEXT_PUBLIC_ADDRESS = optionalEnv('NEXT_PUBLIC_ADDRESS', '대전광역시 유성구 어은로 57');
-export const NEXT_PUBLIC_CS_PHONE = optionalEnv('NEXT_PUBLIC_CS_PHONE', '');
-export const NEXT_PUBLIC_CS_EMAIL = optionalEnv('NEXT_PUBLIC_CS_EMAIL', '');
+export const NEXT_PUBLIC_CS_PHONE = optionalEnv('NEXT_PUBLIC_CS_PHONE', '010-5622-7817');
+export const NEXT_PUBLIC_CS_EMAIL = optionalEnv('NEXT_PUBLIC_CS_EMAIL', 'dltjdms95@gmail.com');
