@@ -108,6 +108,8 @@ export default function RefundPage() {
               <p><strong>Refund Request Channels</strong></p>
               <p style={{ paddingLeft: '12px' }}>- Email: {B.email}</p>
               <p style={{ paddingLeft: '12px' }}>- Phone: {B.phone}</p>
+              <p style={{ marginTop: '12px' }}><strong>Refund Account</strong></p>
+              <p style={{ paddingLeft: '12px' }}>- KakaoBank 3333-37-2436331 (FortuneBin)</p>
               <p style={{ marginTop: '12px' }}><strong>Information Required for Refund Request</strong></p>
               <p style={{ paddingLeft: '12px' }}>- Payment date and time</p>
               <p style={{ paddingLeft: '12px' }}>- Payment amount</p>
@@ -191,6 +193,8 @@ export default function RefundPage() {
               <p><strong>환불 요청 채널</strong></p>
               <p style={{ paddingLeft: '12px' }}>- 이메일: {B.email}</p>
               <p style={{ paddingLeft: '12px' }}>- 전화: {B.phone}</p>
+              <p style={{ marginTop: '12px' }}><strong>환불 계좌</strong></p>
+              <p style={{ paddingLeft: '12px' }}>- 카카오뱅크 3333-37-2436331 (포춘빈)</p>
               <p style={{ marginTop: '12px' }}><strong>환불 요청 시 필요한 정보</strong></p>
               <p style={{ paddingLeft: '12px' }}>- 결제일시</p>
               <p style={{ paddingLeft: '12px' }}>- 결제금액</p>
