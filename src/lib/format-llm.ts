@@ -35,7 +35,6 @@ export function formatLLMText(text: string, lang: Lang = 'ko'): string {
         new RegExp('##\\s*' + si + '\\.\\s*([^#]+)##', 'g'),
         new RegExp('#{1,3}\\s*' + si + '\\.\\s*([^\\n]+)', 'g'),
         new RegExp('\\*\\*' + si + '\\.\\s*([^*]+)\\*\\*', 'g'),
-        new RegExp('(?:^|\\n)' + si + '\\.\\s*([^\\n]{2,60})(?=\\n)', 'g'),
       ];
       let match: RegExpMatchArray | null = null;
       let titleText = defaultTitles[si] || '';
