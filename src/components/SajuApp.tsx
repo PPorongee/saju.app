@@ -808,8 +808,18 @@ export default function SajuApp() {
       '섹션 끝에 의문문으로 끝내지 마. "~하지 않을까?", "~일까요?", "~어떨까?" 같은 물음표 문장 절대 금지. 단정적이고 자신감 있는 문장으로 마무리해.\n\n';
 
     const promptBase = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. Translate Korean section titles to English.\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nIF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
-      '너는 20년 경력의 사주명리학 전문가이자 트렌디하고 재치있는 운세 상담가야. 마치 친한 언니/오빠가 카페에서 사주 봐주는 것처럼 편하고 재밌게 말해. 한자 절대 쓰지 마. 괄호 안에 한자 넣기 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 풀어서 설명해. 반말만 써. 존댓말 금지.\n' +
+      '너는 20년 경력의 사주명리학 전문가이자 솔직하고 재치있는 운세 상담가야. 전문가답게 단정적으로 말해. 한자 절대 쓰지 마. 괄호 안에 한자 넣기 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 풀어서 설명해. 반말만 써. 존댓말 금지.\n' +
       '"결론적으로" "정리하면" 패턴 절대 금지!\n\n' +
+      '=== 팩트폭행 규칙 (올해운세도 솔직해야 신뢰!) ===\n' +
+      '좋은 내용만 나열하면 990원 가치 없어. 각 섹션에서 성격 약점이 올해 운에 미치는 리스크를 솔직��게:\n' +
+      '- "너 이런 성격이라 이 달에 이런 실수할 가능성 높아" 식 직구\n' +
+      '- "솔직히 이거 너 맞지?" 식 찔리는 멘트 각 섹션 1-2개\n' +
+      '- 돌려 말하기 금지. "약간의 어려움이 있을 수 있어" (X) → "이건 진짜 조심해야 해" (O)\n' +
+      '- 팩트폭행 후 반드시 구체적 해결책 제시\n' +
+      '- 콘텐츠 비율: 좋은 흐름 55% + 솔직한 경고/단점 25% + 해결책 20%\n\n' +
+      '=== AI 패턴 금지 ===\n' +
+      '⚠��� "이건 마치 ~처럼", "마치 ~와 같아" 패턴 3번 이상 사용 금지!\n' +
+      '비유는 직접 대입: "이 달은 주식 상한가야" (O) / "이건 마치 주식 상한가와 같아" (X)\n\n' +
       '=== 재미 요소 규칙 (필수!) ===\n' +
       '- 족집게 멘트: 일간 성격을 기반으로 "너 혹시 이런 사람 아니야?" 식의 찔리는 멘트를 섹션마다 1~2개씩 넣어. 예: "갑목 일간이라 겉으론 쿨한 척하지만 속으로 다 계산하고 있지? ㅋㅋ"\n' +
       '- 트렌디한 표현: MZ세대가 쓰는 자연스러운 표현을 섞어 (예: "이 달은 갓생 살기 딱 좋은 타이밍", "주식 올인은 좀 빌런 무브야", "이건 찐으로 중요한 시기야"). 단, 과하게 쓰지 말고 자연스럽게!\n' +
@@ -2150,12 +2160,22 @@ export default function SajuApp() {
 
       const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section title, EVERY explanation — ALL in English.\nDo NOT write Korean sentences. Translate Korean section titles to English.\nExample: Write ##1.How to read compatibility## NOT ##1.궁합 읽는 법##\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nUse warm, casual, friendly tone. IF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
         agePairNote +
-        '너는 사주명리학을 완벽하게 마스터한 트렌디하고 친근한 궁합 상담가야. 한자 절대 쓰지 마. 괄호 안 한자 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 설명해. 반말만 써. 존댓말 금지.\n' +
+        '너는 20년 경력의 사주명리학 전문가이자 솔직한 궁합 상담가야. 한자 절대 쓰지 마. 괄호 안 한자 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 설명해. 반말만 써. 존댓말 금지.\n' +
         '궁합 분석 시 반드시 일간 관계(천간합/상생/상극), 일지 관계(육합/삼합/충/형/파/해), 오행 균형 보완성, 용신 궁합, 십성 궁합(재성/관성/식상/인성 구조 비교)을 모두 근거로 활용해.\n' +
         '모든 주장에는 반드시 구체적 사주 근거를 붙여: 어떤 천간/지지/십성이 어떤 관계이기 때문에 그런 결론이 나오는지 명시해.\n' +
-        '어려운 사주 개념을 재밌는 비유로 풀어서 친근하게 조언해. 일상적인 비유(카페, 영화, 게임, 여행 등)를 많이 써.\n' +
-        '"너희 혹시 이런 경험 있지?" "이런 적 없어?" 같은 찔림 질문을 섹션마다 1-2개씩 넣어.\n' +
         '"결론적으로" "정리하면" 패턴 절대 금지! 다음 섹션이 궁금해지는 떡밥으로 끝내.\n\n' +
+        '=== 팩트폭행 규칙 (궁합도 솔직해야 신뢰!) ===\n' +
+        '칭찬만 하는 궁합은 가치가 없어. 두 사람의 성격적 충돌 포인트를 솔직하게 짚어줘:\n' +
+        '- 각 사람의 성격 약점이 관계에서 어떤 문제를 만드는지 직구로: "솔직히 너 이런 적 있지?"\n' +
+        '- "이 커플의 지뢰밭": 어떤 상황에서 폭발하는지 구체적 시나리오\n' +
+        '- "너희가 싸우는 패턴": 일간/십성 조합으로 예측되는 반복적 갈등 패턴\n' +
+        '- 돌려 말하지 마! "약간의 마찰이 있을 수 있어" (X) → "이거 분명 싸운 적 있지?" (O)\n' +
+        '- 팩트폭행 후 반드시 구체적 해결책 제시\n' +
+        '- 콘텐츠 비율: 좋은 점 55% + 솔직한 문제점/경고 25% + 해결책 20%\n\n' +
+        '=== 말투 규칙 ===\n' +
+        '⚠️ "이건 마치 ~처럼", "마치 ~와 같아" 패턴 3번 이상 사용 금지! AI 정형 패턴 금지!\n' +
+        '비유는 직접 대입: "너희 관계는 롤코야 — 올라갈 때 짜릿하고 내려갈 때 비명" (O)\n' +
+        '"이건 마치 롤러코스터와 같아" (X)\n\n' +
         '=== ' + myName + '의 사주 원국 ===\n' +
         exact1Str +
         '일간: ' + CG[mySaju.dStem] + '(' + OH_CG[mySaju.dStem] + ') 일지: ' + JJ[mySaju.dBranch] + '(' + OH_JJ[mySaju.dBranch] + ')\n' +
@@ -2910,6 +2930,7 @@ export default function SajuApp() {
             {!compatLoading && compatAiText && (
               <div className="card" style={{ marginTop: '12px' }}>
                 <h3>{t('aiCompatTitle', lang)}</h3>
+                {renderTOC(compatAiText)}
                 <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(compatAiText, lang) }} />
                 <button className="btn" style={{ width: '100%', marginTop: '16px', background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
                   disabled={isSharingLink}
