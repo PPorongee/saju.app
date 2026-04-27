@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1776587194495,
+  "lastScanned": 1777259325760,
   "projectRoot": "C:\\Users\\jshim\\Desktop\\saju-app",
   "techStack": {
     "languages": [
@@ -93,7 +93,7 @@
       "path": "public",
       "purpose": "Public files",
       "fileCount": 4,
-      "lastAccessed": 1776587194431,
+      "lastAccessed": 1777259325689,
       "keyFiles": [
         "AGENTS.md",
         "favicon.svg",
@@ -105,7 +105,7 @@
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 1,
-      "lastAccessed": 1776587194446,
+      "lastAccessed": 1777259325690,
       "keyFiles": [
         "quality-test.ts"
       ]
@@ -114,7 +114,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 1,
-      "lastAccessed": 1776587194447,
+      "lastAccessed": 1777259325705,
       "keyFiles": [
         "AGENTS.md"
       ]
@@ -123,7 +123,7 @@
       "path": "src\\app",
       "purpose": "Application code",
       "fileCount": 6,
-      "lastAccessed": 1776587194449,
+      "lastAccessed": 1777259325708,
       "keyFiles": [
         "AGENTS.md",
         "error.tsx",
@@ -134,7 +134,7 @@
       "path": "src\\components",
       "purpose": "UI components",
       "fileCount": 3,
-      "lastAccessed": 1776587194450,
+      "lastAccessed": 1777259325709,
       "keyFiles": [
         "AGENTS.md",
         "ErrorBoundary.tsx",
@@ -145,7 +145,7 @@
       "path": "src\\lib",
       "purpose": "Library code",
       "fileCount": 20,
-      "lastAccessed": 1776587194451,
+      "lastAccessed": 1777259325710,
       "keyFiles": [
         "AGENTS.md",
         "api-cache.ts",
@@ -156,7 +156,7 @@
       "path": "src\\__tests__",
       "purpose": "Test files",
       "fileCount": 2,
-      "lastAccessed": 1776587194452,
+      "lastAccessed": 1777259325711,
       "keyFiles": [
         "AGENTS.md",
         "sanity.test.ts"
@@ -166,279 +166,15 @@
   "hotPaths": [
     {
       "path": "src\\components\\SajuApp.tsx",
-      "accessCount": 136,
-      "lastAccessed": 1777256229950,
-      "type": "directory"
-    },
-    {
-      "path": "src\\lib\\i18n.ts",
-      "accessCount": 18,
-      "lastAccessed": 1777256213111,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\globals.css",
-      "accessCount": 14,
-      "lastAccessed": 1776648880290,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\refund\\page.tsx",
-      "accessCount": 9,
-      "lastAccessed": 1777247458824,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\terms\\page.tsx",
-      "accessCount": 8,
-      "lastAccessed": 1776775732670,
+      "accessCount": 20,
+      "lastAccessed": 1777273831433,
       "type": "file"
     },
     {
       "path": "src",
-      "accessCount": 8,
-      "lastAccessed": 1777256649043,
+      "accessCount": 1,
+      "lastAccessed": 1777259919501,
       "type": "directory"
-    },
-    {
-      "path": "src\\lib\\format-llm.ts",
-      "accessCount": 7,
-      "lastAccessed": 1776688707015,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\privacy\\page.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1776775690177,
-      "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 6,
-      "lastAccessed": 1776587632352,
-      "type": "directory"
-    },
-    {
-      "path": "src\\app\\api\\token\\route.ts",
-      "accessCount": 5,
-      "lastAccessed": 1776587997476,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\api\\payment\\confirm\\route.ts",
-      "accessCount": 4,
-      "lastAccessed": 1776587957013,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\ui\\Footer.tsx",
-      "accessCount": 4,
-      "lastAccessed": 1776688972438,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\ui\\ConsentModal.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1776587942531,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\api\\readings\\route.ts",
-      "accessCount": 3,
-      "lastAccessed": 1776587948315,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\layout.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1776587961679,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\share\\page.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1776587979664,
-      "type": "file"
-    },
-    {
-      "path": "src\\app",
-      "accessCount": 3,
-      "lastAccessed": 1776689280835,
-      "type": "directory"
-    },
-    {
-      "path": "src\\lib\\env.ts",
-      "accessCount": 3,
-      "lastAccessed": 1776775639625,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\api\\saju\\route.ts",
-      "accessCount": 3,
-      "lastAccessed": 1776775980884,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\payment-config.ts",
-      "accessCount": 2,
-      "lastAccessed": 1776688896627,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587641426,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\readings\\page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587642220,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\error.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587644312,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\global-error.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587644417,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\api\\share\\route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587648828,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\ui\\OhaengChart.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587653047,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\ui\\PillarDisplay.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587653644,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\ui\\TermExplainer.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587654459,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\payment\\page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587660068,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\rate-limit.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587661074,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\payment\\success\\page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587662077,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\api-token.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587662173,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\payment\\fail\\page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1776587662607,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\api-cache.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587663028,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\saju-calc.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587664478,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\payment-provider.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587665091,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib",
-      "accessCount": 1,
-      "lastAccessed": 1776587666422,
-      "type": "directory"
-    },
-    {
-      "path": "src\\lib\\reading-code.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587667654,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\reading-storage.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587667729,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\api\\payment\\refund\\route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587674554,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\lunar-solar.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587675365,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\daily-fortune.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587675868,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\saju-ref-selector.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587677813,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\saju-references.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587678543,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\saju-terminology.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587678752,
-      "type": "file"
-    },
-    {
-      "path": "src\\db\\index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1776587685816,
-      "type": "file"
     }
   ],
   "userDirectives": []
