@@ -60,7 +60,7 @@ export function formatLLMText(text: string, lang: Lang = 'ko'): string {
       const cls = clss[si - 1] || 's-purple';
       const colors = colorMap[cls] || '#9F7AEA,#6B46C1';
       const numBadge = '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;font-size:11px;font-weight:800;color:#fff;margin-right:6px" class="' + cls + '">' + si + '</span>';
-      const cardStart = '</div><div class="llm-section" style="border-left:3px solid;border-image:linear-gradient(135deg,' + colors + ') 1"><h3>' + numBadge + '<span class="s-icon ' + cls + '">' + icon + '</span><span class="s-title">' + titleText + '</span></h3>';
+      const cardStart = '</div><div class="llm-section" id="saju-sec-' + si + '" style="border-left:3px solid;border-image:linear-gradient(135deg,' + colors + ') 1"><h3>' + numBadge + '<span class="s-icon ' + cls + '">' + icon + '</span><span class="s-title">' + titleText + '</span></h3>';
       html = html.split('|||SECTION_' + si + '|||').join(cardStart);
     }
 
@@ -83,6 +83,6 @@ export function formatLLMText(text: string, lang: Lang = 'ko'): string {
   // Defense-in-depth: sanitize final HTML to prevent XSS
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4'],
-    ALLOWED_ATTR: ['class', 'style'],
+    ALLOWED_ATTR: ['class', 'style', 'id'],
   });
 }

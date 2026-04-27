@@ -577,6 +577,42 @@ export default function SajuApp() {
     setIsSharingLink(false);
   }
 
+  function renderTOC(text: string) {
+    const sections: { num: number; title: string }[] = [];
+    const regex = /##\s*(\d+)\.\s*([^#\n]+)/g;
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+      sections.push({ num: parseInt(m[1]), title: m[2].trim() });
+    }
+    if (sections.length < 2) return null;
+    const tocIcons: Record<number, string> = { 1:'🪞',2:'🗺️',3:'💰',4:'💕',5:'🎯',6:'👥',7:'👨‍👩‍👧',8:'🏥',9:'📍',10:'🔮',11:'🍀',12:'💌' };
+    return (
+      <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
+        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '12px' }}>
+          {lang === 'en' ? '📋 Table of Contents' : '📋 목차'}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {sections.map(s => (
+            <button key={s.num} onClick={() => {
+              const el = document.getElementById('saju-sec-' + s.num);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }} style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(240,199,94,0.08)',
+              borderRadius: '10px', padding: '10px 12px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left',
+              fontFamily: 'inherit', transition: 'background 0.2s'
+            }}>
+              <span style={{ fontSize: '16px' }}>{tocIcons[s.num] || '📌'}</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary)', minWidth: '20px' }}>{s.num}</span>
+              <span style={{ fontSize: '13px', color: 'var(--text)', flex: 1 }}>{s.title}</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>→</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
 
 
   async function translateAiText(text: string, targetLang: 'en' | 'ko', setter: (t: string) => void) {
@@ -1479,6 +1515,7 @@ export default function SajuApp() {
               <div className="name gradient-text">{lang === 'en' ? 'Saved Result' : '저장된 결과'}</div>
             </div>
             <div className="section-divider">{t('aiReading', lang)}</div>
+            {renderTOC(aiText)}
             <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
             <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
               <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
@@ -1978,6 +2015,7 @@ export default function SajuApp() {
             </p>
           </div>
         )}
+        {!isGenerating && aiText && renderTOC(aiText)}
         {!isGenerating && aiText && (
           <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
         )}
@@ -3385,6 +3423,9 @@ export default function SajuApp() {
             <p style={{ fontSize: '12px', opacity: 0.4 }}>{t('yearlyTime', lang)}</p>
           </div>
         )}
+
+        {/* 목차 */}
+        {!isGenerating && aiText && renderTOC(aiText)}
 
         {/* 올해 운 에너지 레이더 차트 */}
         {!isGenerating && aiText && (() => {
