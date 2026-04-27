@@ -492,6 +492,7 @@ export default function SajuApp() {
   const [generatingProgress, setGeneratingProgress] = useState(0);
   const [aiTextTranslated, setAiTextTranslated] = useState(false);
   const [compatAiTranslated, setCompatAiTranslated] = useState(false);
+  const [pregAiTranslated, setPregAiTranslated] = useState(false);
 
   /* Loading screen state */
   const [loadingStep, setLoadingStep] = useState(0);
@@ -3222,15 +3223,23 @@ export default function SajuApp() {
               <div className="card" style={{ marginTop: '16px', background: 'rgba(255,240,245,0.06)', border: '1px solid rgba(233,30,140,0.15)', borderRadius: '20px', padding: '24px' }}>
                 <h3 style={{ textAlign: 'center', marginBottom: '16px' }}>{t('momBabyReading', lang)}</h3>
                 <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(compatAiText, lang) }} />
-                <button className="btn" style={{ width: '100%', marginTop: '16px', background: 'rgba(233,30,140,0.12)', border: '1px solid rgba(233,30,140,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }} onClick={() => {
-                  try {
-                    const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
-                    const entry = { name: (pregData.name || (lang === 'en' ? 'Mom' : '산모')) + (lang === 'en' ? ' & Baby' : ' & 아기'), date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: lang === 'en' ? 'Pregnancy Compatibility' : '임산부 궁합', text: compatAiText };
-                    const updated = [entry, ...results].slice(0, 10);
-                    safeSetItem('saju-saved-results', JSON.stringify(updated));
-                    alert(t('pregSaved', lang));
-                  } catch { /* ignore corrupted storage */ }
-                }}>{t('pregSaveResult', lang)}</button>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                  <button className="btn" style={{ flex: 1, background: 'rgba(233,30,140,0.12)', border: '1px solid rgba(233,30,140,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }} disabled={isTranslating} onClick={() => {
+                    const targetLang = pregAiTranslated ? (lang === 'ko' ? 'ko' : 'en') : (lang === 'ko' ? 'en' : 'ko');
+                    translateAiText(compatAiText, targetLang, (val) => { setCompatAiText(val); setPregAiTranslated(!pregAiTranslated); });
+                  }}>
+                    {isTranslating ? t('translating', lang) : (pregAiTranslated ? (lang === 'ko' ? t('translateToKo', lang) : t('translateToEn', lang)) : (lang === 'ko' ? t('translateToEn', lang) : t('translateToKo', lang)))}
+                  </button>
+                  <button className="btn" style={{ flex: 1, background: 'rgba(233,30,140,0.12)', border: '1px solid rgba(233,30,140,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }} onClick={() => {
+                    try {
+                      const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
+                      const entry = { name: (pregData.name || (lang === 'en' ? 'Mom' : '산모')) + (lang === 'en' ? ' & Baby' : ' & 아기'), date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: lang === 'en' ? 'Pregnancy Compatibility' : '임산부 궁합', text: compatAiText };
+                      const updated = [entry, ...results].slice(0, 10);
+                      safeSetItem('saju-saved-results', JSON.stringify(updated));
+                      alert(t('pregSaved', lang));
+                    } catch { /* ignore corrupted storage */ }
+                  }}>{t('pregSaveResult', lang)}</button>
+                </div>
               </div>
             )}
           </>
