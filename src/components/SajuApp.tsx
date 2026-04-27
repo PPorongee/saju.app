@@ -1051,62 +1051,120 @@ export default function SajuApp() {
 
     const yearlyPrompts = [promptPart1, promptPart2, prompt3Yearly];
 
-    // Expected section markers per part for validation
-    const expectedSections = [
-      ['##1.', '##2.'],       // Part 1: sections 1-2
-      ['##3.', '##4.', '##5.', '##6.'], // Part 2: sections 3-6
-      ['##7.', '##8.', '##9.', '##10.'], // Part 3: sections 7-10
+    // Expected section numbers per part for validation
+    const expectedSectionNums = [
+      [1, 2],       // Part 1: sections 1-2
+      [3, 4, 5, 6], // Part 2: sections 3-6
+      [7, 8, 9, 10], // Part 3: sections 7-10
     ];
 
+    // Flexible section marker check: ##N. or **N. or ###N. or ## N. etc
+    const hasSectionMarker = (text: string, num: number): boolean => {
+      const patterns = [
+        '##' + num + '.', '## ' + num + '.', '###' + num + '.', '### ' + num + '.',
+        '**' + num + '.', '## ' + num + ' ', '##' + num + ' ',
+      ];
+      return patterns.some(p => text.includes(p));
+    };
+
+    // Fetch a single part with retry logic
+    const fetchPart = async (prompt: string, partIdx: number, maxRetries: number): Promise<string> => {
+      for (let retry = 0; retry < maxRetries; retry++) {
+        try {
+          if (signal?.aborted) return '';
+          const res = await fetch('/api/saju', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, lang }),
+            signal,
+          });
+          if (!res.ok) {
+            if (retry < maxRetries - 1) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
+            throw new Error('API error: ' + res.status);
+          }
+          if (!res.body) throw new Error('No response body');
+          const reader = res.body.getReader();
+          let text = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            text += decoder.decode(value, { stream: true });
+          }
+          // Validate section markers
+          const expected = expectedSectionNums[partIdx] || [];
+          const missing = expected.filter(n => !hasSectionMarker(text, n));
+          if (missing.length > 0 && retry < maxRetries - 1) {
+            console.warn('[Yearly Part ' + (partIdx + 1) + '] Missing sections: ' + missing.join(', ') + ' (attempt ' + (retry + 1) + '). Retrying...');
+            await new Promise(r => setTimeout(r, 2000 * (retry + 1)));
+            continue;
+          }
+          if (missing.length > 0) {
+            console.error('[Yearly Part ' + (partIdx + 1) + '] Still missing after ' + maxRetries + ' attempts: ' + missing.join(', '));
+          }
+          return text;
+        } catch (retryErr) {
+          if (signal?.aborted) return '';
+          if (retry < maxRetries - 1) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
+          throw retryErr;
+        }
+      }
+      return '';
+    };
+
     try {
+      const partTexts: string[] = [];
       for (let pi = 0; pi < yearlyPrompts.length; pi++) {
         if (signal?.aborted) return;
         setLoadingProgress(t('yearlyAnalyzingMsg', lang) + ' (' + (pi + 1) + '/3)');
-        let partText = '';
-        for (let retry = 0; retry < 3; retry++) {
-          try {
+        const text = await fetchPart(yearlyPrompts[pi], pi, 3);
+        partTexts.push(text);
+        // Update display progressively
+        fullText = partTexts.filter(Boolean).join('\n\n');
+        if (fullText) setAiText(fullText);
+      }
+
+      // Final validation: check all 10 sections exist
+      const allMissing: number[] = [];
+      for (let n = 1; n <= 10; n++) {
+        if (!hasSectionMarker(fullText, n)) allMissing.push(n);
+      }
+
+      // If sections are missing, retry only the failed parts (up to 2 more attempts)
+      if (allMissing.length > 0) {
+        console.warn('[Yearly] Final check: missing sections ' + allMissing.join(', ') + '. Retrying failed parts...');
+        for (let pi = 0; pi < yearlyPrompts.length; pi++) {
+          const expected = expectedSectionNums[pi] || [];
+          const stillMissing = expected.filter(n => allMissing.includes(n));
+          if (stillMissing.length > 0) {
             if (signal?.aborted) return;
-            partText = '';
-            const res = await fetch('/api/saju', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt: yearlyPrompts[pi], lang }),
-              signal,
-            });
-            if (!res.ok) {
-              if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
-              throw new Error('API error: ' + res.status);
+            setLoadingProgress((lang === 'en' ? 'Regenerating missing sections...' : '누락된 섹션 재생성 중...'));
+            const retryText = await fetchPart(yearlyPrompts[pi], pi, 2);
+            if (retryText) {
+              partTexts[pi] = retryText;
+              fullText = partTexts.filter(Boolean).join('\n\n');
             }
-            if (!res.body) throw new Error('No response body');
-            const reader = res.body.getReader();
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              partText += decoder.decode(value, { stream: true });
-            }
-            // Validate: check that expected section markers are present
-            const expected = expectedSections[pi] || [];
-            const missing = expected.filter(sec => !partText.includes(sec));
-            if (missing.length > 0 && retry < 2) {
-              console.warn('[Yearly Part ' + (pi + 1) + '] Missing sections: ' + missing.join(', ') + '. Retrying...');
-              await new Promise(r => setTimeout(r, 2000 * (retry + 1)));
-              continue;
-            }
-            break;
-          } catch (retryErr) {
-            if (signal?.aborted) return;
-            if (retry < 2) { await new Promise(r => setTimeout(r, 2000 * (retry + 1))); continue; }
-            throw retryErr;
           }
         }
-        if (fullText && partText && !fullText.endsWith('\n')) fullText += '\n\n';
-        fullText += partText;
       }
+
+      // Final missing check and user notification
+      const finalMissing: number[] = [];
+      for (let n = 1; n <= 10; n++) {
+        if (!hasSectionMarker(fullText, n)) finalMissing.push(n);
+      }
+
       // Detect stream error sentinel from server
       const STREAM_ERR = '[응답이 중단되었습니다. 다시 시도해 주세요.]';
       if (fullText.endsWith(STREAM_ERR)) {
         fullText = fullText.slice(0, -STREAM_ERR.length).trimEnd();
-        if (!fullText) { setAiText(t('aiError', lang)); } else { setAiText(fullText + '\n\n⚠️ ' + (lang === 'en' ? 'Response was interrupted. Some content may be missing.' : '응답이 중단되었습니다. 일부 내용이 누락되었을 수 있습니다.')); }
+      }
+
+      if (finalMissing.length > 0 && fullText) {
+        setAiText(fullText + '\n\n⚠️ ' + (lang === 'en'
+          ? 'Sections ' + finalMissing.join(', ') + ' could not be generated. Please try again.'
+          : '섹션 ' + finalMissing.join(', ') + '번이 생성되지 않았습니다. 다시 시도해 주세요.'));
+      } else if (!fullText) {
+        setAiText(t('aiError', lang));
       } else {
         setAiText(fullText);
       }
