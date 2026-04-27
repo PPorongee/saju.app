@@ -3600,28 +3600,22 @@ export default function SajuApp() {
     const yearlyIcons = ['🔮', '📅', '⚡', '💰', '💕', '💼', '👥', '🛡', '🍀', '📊'];
 
     const isMarriedUser = userData.relationship === 3;
-    const title5 = isMarriedUser ? (lang === 'en' ? 'Marriage & Spouse Analysis' : '부부 관계 & 배우자 분석') : t('secTitle5', lang);
-    const hint5 = isMarriedUser ? (lang === 'en' ? 'Spouse compatibility & relationship dynamics...' : '배우자 궁합과 부부 관계 역학...') : t('secHint5', lang);
-    const title13 = isMarriedUser ? (lang === 'en' ? 'Marriage Future & Crisis Management' : '부부의 미래 & 위기 관리') : t('secTitle13', lang);
-    const hint13 = isMarriedUser ? (lang === 'en' ? 'Couple timeline & crisis recovery...' : '부부 관계 타임라인과 위기 극복법...') : t('secHint13', lang);
+    const title4 = isMarriedUser ? (lang === 'en' ? 'Marriage & Spouse Analysis' : '부부 관계 & 배우자 분석') : t('secTitle4', lang);
+    const hint4 = isMarriedUser ? (lang === 'en' ? 'Spouse compatibility & relationship dynamics...' : '배우자 궁합과 부부 관계 역학...') : t('secHint4', lang);
 
     const sectionTitles = isYearly ? yearlySectionTitles : [
-      t('secTitle1', lang), t('secTitle2', lang), t('secTitle3', lang), t('secTitle4', lang),
-      title5, t('secTitle6', lang), t('secTitle7', lang), t('secTitle8', lang),
-      t('secTitle9', lang), t('secTitle10', lang), t('secTitle11', lang), t('secTitle12', lang),
-      title13, t('secTitle14', lang), t('secTitle15', lang), t('secTitle16', lang),
-      t('secTitle17', lang)
+      t('secTitle1', lang), t('secTitle2', lang), t('secTitle3', lang), title4,
+      t('secTitle5', lang), t('secTitle6', lang), t('secTitle7', lang), t('secTitle8', lang),
+      t('secTitle9', lang), t('secTitle10', lang), t('secTitle11', lang), t('secTitle12', lang)
     ];
 
     const sectionHints = isYearly ? yearlySectionHints : [
-      t('secHint1', lang), t('secHint2', lang), t('secHint3', lang), t('secHint4', lang),
-      hint5, t('secHint6', lang), t('secHint7', lang), t('secHint8', lang),
-      t('secHint9', lang), t('secHint10', lang), t('secHint11', lang), t('secHint12', lang),
-      hint13, t('secHint14', lang), t('secHint15', lang), t('secHint16', lang),
-      t('secHint17', lang)
+      t('secHint1', lang), t('secHint2', lang), t('secHint3', lang), hint4,
+      t('secHint5', lang), t('secHint6', lang), t('secHint7', lang), t('secHint8', lang),
+      t('secHint9', lang), t('secHint10', lang), t('secHint11', lang), t('secHint12', lang)
     ];
 
-    const icons = isYearly ? yearlyIcons : ['🎯', '🧠', '💰', '💼', '💕', '👥', '🏥', '👨‍👩‍👧', '👶', '🛤', '🗺', '💍', '🏠', '🍀', '✨', '💌'];
+    const icons = isYearly ? yearlyIcons : ['🎯', '🗺', '💰', '💕', '🔍', '👥', '👨‍👩‍👧', '🏥', '🛤', '📅', '🍀', '💌'];
 
     return (
       <div className="inner screen-enter">
