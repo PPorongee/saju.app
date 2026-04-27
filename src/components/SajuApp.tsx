@@ -915,14 +915,20 @@ export default function SajuApp() {
       '- ⚠️ 긍정:주의 = 6:4 비율. 조심할 것, 힘든 부분도 반드시 포함!\n' +
       '- 일간 성격 특성 고려한 맞춤 경고\n' +
       '- 충/형/파 달은 갈등/손실/건강 문제 솔직하게 알려줘\n' +
-      '각 월 최소 20줄 이상! 월별 운세는 이 서비스의 핵심이야. 각 달마다 하나의 짧은 에세이처럼 풍성하게 써줘. 사건 예측, 감정 흐름, 현실적 대처법까지 구체적으로 다뤄!\n' +
-      '\n=== 월별 운세 품질 규칙 (필수!) ===\n' +
+      '각 월 최소 15줄 이상! 월별 운세는 이 서비스의 핵심이야. 각 달마다 하나의 짧은 에세이처럼 풍성하게 써줘.\n' +
+      '\n=== 월별 운세 필수 구성 (매 달마다 이 구조를 따라!) ===\n' +
+      '① 그 달의 한 줄 키워드/테마 (예: "변화의 바람이 부는 달")\n' +
+      '② 명리학적 분석: 월운 천간지지 + 일간/세운과의 관계 (3~4줄)\n' +
+      '③ 예상 사건/기회: 구체적 상황 묘사 (3~4줄)\n' +
+      '④ ⚠️ 주의할 점/팩트폭행: 성격 때문에 이 달에 저지를 실수, 조심할 것 (2~3줄)\n' +
+      '⑤ 실천 팁: 이 달에 해야 할 것 1가지, 하지 말아야 할 것 1가지 (2줄)\n' +
+      '이 5단계 구조를 12개월 모두 지켜! 특히 ④번 주의점을 빼먹으면 탈락!\n\n' +
+      '=== 월별 운세 품질 규칙 (필수!) ===\n' +
       '- 문장 시작 패턴 다양하게. "이 달은" 반복 금지\n' +
       '- 단어 반복 금지: 같은 형용사 2개월 연속 사용 금지\n' +
       '- 비유 퀄리티: 식상한 비유 금지! 게임/주식/드라마/SNS 등 현대적 비유\n' +
       '- 구체적 장면 묘사: "좋은 달이야" (X) → 구체적 상황 (O)\n' +
       '- 운의 강도 표현: 소소~대박예감🔥까지, 찝찝~빨간불🚨까지 강도 차이 분명히\n' +
-      '- 각 월마다 고유한 사건/테마 하나씩\n' +
       '- 오행 원리 스토리텔링으로 설명\n' +
       '⚠️ "X월은 ~~달이야!" 식 마무리 문장 금지.\n' +
       '[이 섹션의 역할: 월별 운세 흐름과 사건 예측에만 집중. 개운법/행운 아이템은 뒤에서!]\n\n' +
@@ -1045,6 +1051,13 @@ export default function SajuApp() {
 
     const yearlyPrompts = [promptPart1, promptPart2, prompt3Yearly];
 
+    // Expected section markers per part for validation
+    const expectedSections = [
+      ['##1.', '##2.'],       // Part 1: sections 1-2
+      ['##3.', '##4.', '##5.', '##6.'], // Part 2: sections 3-6
+      ['##7.', '##8.', '##9.', '##10.'], // Part 3: sections 7-10
+    ];
+
     try {
       for (let pi = 0; pi < yearlyPrompts.length; pi++) {
         if (signal?.aborted) return;
@@ -1053,6 +1066,7 @@ export default function SajuApp() {
         for (let retry = 0; retry < 3; retry++) {
           try {
             if (signal?.aborted) return;
+            partText = '';
             const res = await fetch('/api/saju', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1069,6 +1083,14 @@ export default function SajuApp() {
               const { done, value } = await reader.read();
               if (done) break;
               partText += decoder.decode(value, { stream: true });
+            }
+            // Validate: check that expected section markers are present
+            const expected = expectedSections[pi] || [];
+            const missing = expected.filter(sec => !partText.includes(sec));
+            if (missing.length > 0 && retry < 2) {
+              console.warn('[Yearly Part ' + (pi + 1) + '] Missing sections: ' + missing.join(', ') + '. Retrying...');
+              await new Promise(r => setTimeout(r, 2000 * (retry + 1)));
+              continue;
             }
             break;
           } catch (retryErr) {
