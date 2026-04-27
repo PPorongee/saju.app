@@ -56,10 +56,8 @@ export async function POST(req: NextRequest) {
     const tokenLimit = TOKEN_LIMITS[type as string] || TOKEN_LIMITS.default;
     const resolvedMaxTokens = Math.min(maxTokens || tokenLimit, tokenLimit);
 
-    // Cache check — use prompt hash as key
-    // Use hash of full prompt to avoid collisions between Part 1/Part 2
-    const promptHash = Array.from(prompt).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0).toString(36);
-    const cacheKey = getCacheKey({ promptHash, lang, type: type || 'default', model: 'gpt-4o-mini' });
+    // Cache check — use full prompt in key to prevent collisions between Part 1/2/3
+    const cacheKey = getCacheKey({ prompt, lang, type: type || 'default', model: 'gpt-4o-mini' });
     const cached = getFromCache(cacheKey);
     if (cached) {
       return new Response(cached, {

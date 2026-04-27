@@ -1112,15 +1112,25 @@ export default function SajuApp() {
     };
 
     try {
-      const partTexts: string[] = [];
+      const partTexts: string[] = ['', '', ''];
       for (let pi = 0; pi < yearlyPrompts.length; pi++) {
         if (signal?.aborted) return;
         setLoadingProgress(t('yearlyAnalyzingMsg', lang) + ' (' + (pi + 1) + '/3)');
-        const text = await fetchPart(yearlyPrompts[pi], pi, 3);
-        partTexts.push(text);
+        // Each part is independent — one failure must not block others
+        try {
+          const text = await fetchPart(yearlyPrompts[pi], pi, 3);
+          partTexts[pi] = text;
+        } catch (partErr) {
+          console.error('[Yearly Part ' + (pi + 1) + '] Failed after all retries:', partErr);
+          partTexts[pi] = '';
+        }
         // Update display progressively
         fullText = partTexts.filter(Boolean).join('\n\n');
         if (fullText) setAiText(fullText);
+        // Small delay between parts to avoid rate limiting
+        if (pi < yearlyPrompts.length - 1) {
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
 
       // Final validation: check all 10 sections exist
@@ -1129,7 +1139,7 @@ export default function SajuApp() {
         if (!hasSectionMarker(fullText, n)) allMissing.push(n);
       }
 
-      // If sections are missing, retry only the failed parts (up to 2 more attempts)
+      // If sections are missing, retry only the failed parts (up to 2 more attempts each)
       if (allMissing.length > 0) {
         console.warn('[Yearly] Final check: missing sections ' + allMissing.join(', ') + '. Retrying failed parts...');
         for (let pi = 0; pi < yearlyPrompts.length; pi++) {
@@ -1138,10 +1148,15 @@ export default function SajuApp() {
           if (stillMissing.length > 0) {
             if (signal?.aborted) return;
             setLoadingProgress((lang === 'en' ? 'Regenerating missing sections...' : '누락된 섹션 재생성 중...'));
-            const retryText = await fetchPart(yearlyPrompts[pi], pi, 2);
-            if (retryText) {
-              partTexts[pi] = retryText;
-              fullText = partTexts.filter(Boolean).join('\n\n');
+            try {
+              const retryText = await fetchPart(yearlyPrompts[pi], pi, 2);
+              if (retryText) {
+                partTexts[pi] = retryText;
+                fullText = partTexts.filter(Boolean).join('\n\n');
+                if (fullText) setAiText(fullText);
+              }
+            } catch (retryErr) {
+              console.error('[Yearly Part ' + (pi + 1) + '] Retry also failed:', retryErr);
             }
           }
         }
