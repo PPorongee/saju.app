@@ -3511,6 +3511,67 @@ export default function SajuApp() {
           </p>
         </div>
 
+        {/* 신살 & 귀인 Badges */}
+        {(() => {
+          const yShinsal = calcShinsal(sj);
+          if (yShinsal.length === 0) return null;
+          const yGilShin = ['천을귀인', '문창귀인', '학당귀인', '천주귀인', '복성귀인', '장성살', '천의성', '금여록', '암록'];
+          const yGwiin = ['천을귀인', '문창귀인', '학당귀인', '천주귀인', '복성귀인'];
+          return (
+            <div className="card" style={{ padding: '12px 16px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>{t('shinsalTitle', lang)}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {yShinsal.map((s, i) => {
+                  const isGw = yGwiin.includes(s);
+                  const isGl = yGilShin.includes(s);
+                  return (
+                    <span key={i} style={{
+                      display: 'inline-block', padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
+                      background: isGw ? 'rgba(240,199,94,0.15)' : isGl ? 'rgba(110,231,183,0.12)' : 'rgba(251,191,36,0.10)',
+                      border: isGw ? '1px solid rgba(240,199,94,0.4)' : isGl ? '1px solid rgba(110,231,183,0.3)' : '1px solid rgba(251,191,36,0.25)',
+                      color: isGw ? '#F0C75E' : isGl ? '#6EE7B7' : '#FBBF24'
+                    }}>
+                      {isGw ? '⭐ ' : ''}{s}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 오행 밸런스 */}
+        <div className="section-divider">{t('ohBalance', lang)}</div>
+        <OhaengChart ohCount={ohCount} lang={lang} />
+
+        {/* 사주 체질 (용신/기신) */}
+        {(() => {
+          const ys = calcYongsin(sj);
+          const ohIcon: Record<string, string> = { '목': '🌳', '화': '🔥', '토': '⛰️', '금': '⚔️', '수': '💧' };
+          return (
+            <>
+              <div className="section-divider">{t('sajuConstitution', lang)}</div>
+              <div className="card" style={{ padding: '16px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: ys.isStrong ? '#F0C75E' : '#7DD3FC' }}>
+                    {ys.isStrong ? (lang === 'en' ? 'Strong Type' : '신강 (에너지 강한 타입)') : (lang === 'en' ? 'Gentle Type' : '신약 (에너지 부드러운 타입)')}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ background: 'rgba(110,231,183,0.08)', border: '1px solid rgba(110,231,183,0.2)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#6EE7B7', fontWeight: 700, marginBottom: '4px' }}>{lang === 'en' ? 'Yongsin (Needed)' : '용신 (필요한 기운)'}</div>
+                    <div style={{ fontSize: '24px', fontWeight: 800 }}>{ohIcon[ys.yongsin]} {ys.yongsin}</div>
+                  </div>
+                  <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#F87171', fontWeight: 700, marginBottom: '4px' }}>{lang === 'en' ? 'Gisin (Avoid)' : '기신 (피할 기운)'}</div>
+                    <div style={{ fontSize: '24px', fontWeight: 800 }}>{ohIcon[ys.gisin]} {ys.gisin}</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          );
+        })()}
+
         {/* AI Yearly Reading */}
         <div className="section-divider">{t('yearlyFortuneTitle', lang)}</div>
         {isGenerating && (

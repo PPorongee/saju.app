@@ -163,33 +163,6 @@ function ShareContent() {
           </>
         )}
 
-        {/* 인생 에너지 흐름 */}
-        {sj && unsung && (() => {
-          const energyMap: Record<string, number> = {
-            '절': 1, '태': 2, '양': 3, '장생': 5, '목욕': 4, '관대': 7,
-            '건록': 9, '제왕': 10, '쇠': 6, '병': 4, '사': 2, '묘': 3
-          };
-          const stages = [unsung['년지'], unsung['월지'], unsung['일지'], unsung['시지'] || '?'];
-          const labels = ['년주(초년)', '월주(청년)', '일주(중년)', '시주(말년)'];
-          return (
-            <>
-              <div className="section-divider">{t('lifeEnergyFlow', lang)}</div>
-              <div className="card" style={{ padding: '16px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', textAlign: 'center' }}>
-                  {stages.map((s, i) => (
-                    <div key={i} style={{ padding: '10px 4px', borderRadius: '12px', background: i === 2 ? 'rgba(240,199,94,0.1)' : 'rgba(255,255,255,0.03)' }}>
-                      <div style={{ fontSize: '11px', color: i === 2 ? '#F0C75E' : 'var(--text-dim)', fontWeight: 700, marginBottom: '4px' }}>{labels[i]}</div>
-                      <div style={{ fontSize: '20px', fontWeight: 800, color: '#7DD3FC' }}>{s === '?' ? '-' : energyMap[s] || 5}</div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>/10</div>
-                      <div style={{ fontSize: '11px', color: '#7DD3FC', marginTop: '2px' }}>{s === '?' ? '미상' : s}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          );
-        })()}
-
         {/* 사주 체질 (용신/기신) */}
         {sj && ohCount && (() => {
           const dayOhS = OH_CG[sj.dStem];
