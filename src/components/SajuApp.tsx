@@ -1117,21 +1117,20 @@ export default function SajuApp() {
         }
       }
 
-      // Final validation: check all 10 sections exist
-      const allMissing: number[] = [];
-      for (let n = 1; n <= 10; n++) {
-        if (!hasSectionMarker(fullText, n)) allMissing.push(n);
-      }
-
-      // If sections are missing, retry only the failed parts (up to 2 more attempts each)
-      if (allMissing.length > 0) {
-        console.warn('[Yearly] Final check: missing sections ' + allMissing.join(', ') + '. Retrying failed parts...');
+      // Keep retrying missing parts until all 10 sections exist (max 5 rounds)
+      for (let round = 0; round < 5; round++) {
+        if (signal?.aborted) return;
+        const missing: number[] = [];
+        for (let n = 1; n <= 10; n++) {
+          if (!hasSectionMarker(fullText, n)) missing.push(n);
+        }
+        if (missing.length === 0) break; // All sections present!
+        console.warn('[Yearly] Round ' + (round + 1) + ': missing sections ' + missing.join(', '));
+        setLoadingProgress((lang === 'en' ? 'Checking & regenerating...' : '검토 및 재생성 중...') + ' (' + (round + 1) + ')');
         for (let pi = 0; pi < yearlyPrompts.length; pi++) {
           const expected = expectedSectionNums[pi] || [];
-          const stillMissing = expected.filter(n => allMissing.includes(n));
+          const stillMissing = expected.filter(n => missing.includes(n));
           if (stillMissing.length > 0) {
-            if (signal?.aborted) return;
-            setLoadingProgress((lang === 'en' ? 'Regenerating missing sections...' : '누락된 섹션 재생성 중...'));
             try {
               const retryText = await fetchPart(yearlyPrompts[pi], pi, 2);
               if (retryText) {
@@ -1139,30 +1138,18 @@ export default function SajuApp() {
                 fullText = partTexts.filter(Boolean).join('\n\n');
                 if (fullText) setAiText(fullText);
               }
-            } catch (retryErr) {
-              console.error('[Yearly Part ' + (pi + 1) + '] Retry also failed:', retryErr);
-            }
+            } catch { /* continue to next round */ }
           }
         }
       }
 
-      // Final missing check and user notification
-      const finalMissing: number[] = [];
-      for (let n = 1; n <= 10; n++) {
-        if (!hasSectionMarker(fullText, n)) finalMissing.push(n);
-      }
-
-      // Detect stream error sentinel from server
+      // Clean up stream error sentinel
       const STREAM_ERR = '[응답이 중단되었습니다. 다시 시도해 주세요.]';
       if (fullText.endsWith(STREAM_ERR)) {
         fullText = fullText.slice(0, -STREAM_ERR.length).trimEnd();
       }
 
-      if (finalMissing.length > 0 && fullText) {
-        setAiText(fullText + '\n\n⚠️ ' + (lang === 'en'
-          ? 'Sections ' + finalMissing.join(', ') + ' could not be generated. Please try again.'
-          : '섹션 ' + finalMissing.join(', ') + '번이 생성되지 않았습니다. 다시 시도해 주세요.'));
-      } else if (!fullText) {
+      if (!fullText) {
         setAiText(t('aiError', lang));
       } else {
         setAiText(fullText);
