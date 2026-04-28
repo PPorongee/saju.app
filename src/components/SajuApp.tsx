@@ -3848,61 +3848,6 @@ export default function SajuApp() {
           )}
         </div>
 
-        {/* Section A: Four Pillars (free preview) */}
-        <div className="section-divider">{t('sajuMyeongsik', lang)}</div>
-        <div className="card">
-          <div className="pillar-grid">
-            {pillars.map((pp, pi) => (
-              <div key={pi} className="pillar">
-                <div className="pillar-label">{pp.label}</div>
-                {pp.stem < 0 ? (
-                  <>
-                    <div className="stem" style={{ color: 'var(--text-dim)' }}>?</div>
-                    <div className="branch" style={{ color: 'var(--text-dim)' }}>?</div>
-                    <div className="elem" style={{ opacity: 0.3 }}>{t('unknown', lang)}</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="stem" style={{ color: getElemColor(OH_CG[pp.stem]) }}>
-                      <span style={{ fontSize: '28px' }}>{CG_HANJA[pp.stem]}</span><br />
-                      <span style={{ fontSize: '12px', opacity: 0.7 }}>{CG[pp.stem]}({lang === 'en' ? OH_EN_CAP[OH_CG[pp.stem]] : OH_CG[pp.stem]})</span>
-                    </div>
-                    <div className="branch" style={{ color: getElemColor(OH_JJ[pp.branch]) }}>
-                      <span style={{ fontSize: '28px' }}>{JJ_HANJA[pp.branch]}</span><br />
-                      <span style={{ fontSize: '12px', opacity: 0.7 }}>{JJ[pp.branch]}({OH_JJ[pp.branch]})</span>
-                    </div>
-                    <span className={'elem elem-' + getElemClass(OH_CG[pp.stem])}>{lang === 'en' ? OH_EN_CAP[OH_CG[pp.stem]] : OH_CG[pp.stem]}</span>{' '}
-                    <span className={'elem elem-' + getElemClass(OH_JJ[pp.branch])}>{OH_JJ[pp.branch]}</span>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-          <p style={{ textAlign: 'center', fontSize: '12px', marginTop: '8px' }}>
-            {t('dayMasterLabel', lang)}: <strong style={{ color: getElemColor(OH_CG[ds]) }}>{CG[ds]} {profile.short}</strong>
-          </p>
-        </div>
-
-        {/* Ohaeng Bar Chart (free preview) */}
-        <div className="section-divider">{t('ohBalance', lang)}</div>
-        <div className="card">
-          <div className="bar-chart">
-            {ohKeys.map(k => {
-              const pct = Math.round(ohCount[k] / total * 100);
-              return (
-                <div key={k} className="bar-row">
-                  <div className="bar-label">{OH_ICON[k]} {lang === 'en' ? OH_EN_CAP[k] : k}</div>
-                  <div className="bar-track">
-                    <div className={'bar-fill ' + getElemClass(k)} style={{ width: pct + '%' }}>
-                      {ohCount[k]}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Section B: Spoiler Cards - personalized teasers */}
         <div className="section-divider">{isYearly ? t('teaserFortune', lang) : t('teaserSaju', lang)}</div>
         {(() => {
