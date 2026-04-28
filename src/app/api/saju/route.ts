@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   try {
     const apiKey = getOpenAIApiKey();
     const openai = new OpenAI({ apiKey });
-    const { prompt, maxTokens, lang, type } = await req.json();
+    const { prompt, maxTokens, lang, type, noCache } = await req.json();
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
       const msg = lang === 'en'
@@ -56,17 +56,19 @@ export async function POST(req: NextRequest) {
     const tokenLimit = TOKEN_LIMITS[type as string] || TOKEN_LIMITS.default;
     const resolvedMaxTokens = Math.min(maxTokens || tokenLimit, tokenLimit);
 
-    // Cache check — use full prompt in key to prevent collisions between Part 1/2/3
+    // Cache check — skip on retry (noCache flag)
     const cacheKey = getCacheKey({ prompt, lang, type: type || 'default', model: 'gpt-4o-mini' });
-    const cached = getFromCache(cacheKey);
-    if (cached) {
-      return new Response(cached, {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Cache': 'HIT' },
-      });
+    if (!noCache) {
+      const cached = getFromCache(cacheKey);
+      if (cached) {
+        return new Response(cached, {
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Cache': 'HIT' },
+        });
+      }
     }
 
-    // Deterministic seed from prompt content for same-input consistency
-    const seedHash = Array.from(prompt.slice(0, 200)).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    // Deterministic seed — skip on retry to get different output
+    const seedHash = noCache ? undefined : Math.abs(Array.from(prompt.slice(0, 200)).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0));
 
     const stream = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -75,9 +77,9 @@ export async function POST(req: NextRequest) {
         { role: 'user', content: prompt }
       ],
       stream: true,
-      temperature: 0.35,
+      temperature: noCache ? 0.5 : 0.35,
       max_tokens: resolvedMaxTokens,
-      seed: Math.abs(seedHash),
+      ...(seedHash !== undefined ? { seed: seedHash } : {}),
     });
 
     // Accumulate for caching while streaming

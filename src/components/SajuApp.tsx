@@ -1057,7 +1057,7 @@ export default function SajuApp() {
           const res = await fetch('/api/saju', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, lang }),
+            body: JSON.stringify({ prompt, lang, noCache: retry > 0 }),
             signal,
           });
           if (!res.ok) {
