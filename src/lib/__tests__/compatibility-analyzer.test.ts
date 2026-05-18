@@ -74,16 +74,18 @@ describe('compatibility-analyzer', () => {
     expect(result.promptBlock).toContain('용신 매칭');
   });
 
-  it('summaryCards are populated from main + spicy', () => {
+  it('summaryCards is main only (max 1) with emoji', () => {
     const p1 = buildPersonProfile('이서은', 'f', 30, eseo);
     const p2 = buildPersonProfile('파트너', 'm', 33, calcSaju(1990, 5, 5, 6));
     const result = analyzeCompatibility(p1, p2, 'love');
-    expect(result.summaryCards.length).toBe(
-      result.mainRelationships.length + result.spicyRelationships.length,
-    );
-    // 매콤 카드는 isSpicy: true
-    const spicyCards = result.summaryCards.filter(c => c.isSpicy);
-    expect(spicyCards.length).toBe(result.spicyRelationships.length);
+    // 메인 1개만 UI 카드. 매콤은 본문 프롬프트에서만 활용.
+    expect(result.summaryCards.length).toBeLessThanOrEqual(1);
+    expect(result.summaryCards.every(c => !c.isSpicy)).toBe(true);
+    // 이모지 필드 존재
+    for (const card of result.summaryCards) {
+      expect(typeof card.emoji).toBe('string');
+      expect(card.emoji.length).toBeGreaterThan(0);
+    }
   });
 
   it('계산이 결정론적 — 같은 입력 → 같은 출력', () => {

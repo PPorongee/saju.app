@@ -161,7 +161,12 @@ function commonRules(
 
     '=== 명리학적 근거 필수 규칙 ===\n' +
     '시스템이 사전 계산한 다음 값을 반드시 본문에 명시적으로 활용:\n' +
-    `  - 메인 관계 정의(${mainTitles})를 ##1번 "관계의 정의" 섹션의 핵심 비유로 반드시 사용\n` +
+    `  - ★★ 메인 관계 정의(${mainTitles})는 ##1번 "관계의 정의" 섹션의 핵심 비유일 뿐 아니라,\n` +
+    '       모든 섹션에서 변주(메아리)되어야 함. 예를 들어 메인이 "못 내리는 롤코"라면:\n' +
+    '       - 케미 섹션: "롤코의 첫 오르막이 너희 만남이야"\n' +
+    '       - 권태기 섹션: "롤코가 평탄해질 때 = 권태기 신호"\n' +
+    '       - 마지막: "롤코 같이 탄 둘만의 시그니처"\n' +
+    '       하나의 메타포로 전체 분석을 끌고 가서 사용자가 이 관계 정의 한 줄을 기억하게 만들 것.\n' +
     (spicyTitles ? `  - 매콤 관계 정의(${spicyTitles})를 매콤 섹션의 핵심 비유로 사용\n` : '') +
     `  - ${p1.name} 격국(${p1.advanced.gyeokguk.primary}) / ${p2.name} 격국(${p2.advanced.gyeokguk.primary})은 최소 1회 본문 노출\n` +
     `  - ${p1.name} 조후(${p1.advanced.johoo.type}) / ${p2.name} 조후(${p2.advanced.johoo.type})는 관련 섹션에서 인용\n` +
@@ -226,6 +231,31 @@ function titleRule(n: number, theme: string, hint?: string): string {
     (hint ? `   힌트: ${hint}\n` : '');
 }
 
+/**
+ * 마지막 섹션 — "사랑의 편지" 대체.
+ * 시그니처 명함 + 운명 키워드 3개 + 짧은 한 마디.
+ * 오글거리는 편지/응원 메시지 절대 금지.
+ */
+function signatureCardSection(n: number, p1Name: string, p2Name: string, joiner: string): string {
+  return `##${n}.우리 관계의 시그니처##\n` +
+    '   주제: 명함 + 운명 키워드 3 + 한 마디. 편지·응원 메시지 절대 금지!\n' +
+    '   ⚠ 절대 금지: "사랑해줘" "응원할게" "행복하길 바라" 같은 오글 직설 / 길게 늘어지는 편지 톤\n\n' +
+    '형식: 정확히 아래 3블록 순서로 (4단 강제 X, 짧고 임팩트):\n\n' +
+    '[블록 1] 🎴 시그니처 명함 (3~4줄)\n' +
+    '   · 메인 관계 정의의 이모지를 첫 줄에 큼직하게\n' +
+    '   · 메인 관계 정의 제목을 큰 헤더로\n' +
+    `   · "${p1Name} ${joiner} ${p2Name}" 한 줄\n` +
+    '   · 메인 관계 정의의 한 줄 카피(tagline)\n\n' +
+    '[블록 2] 🔑 운명의 키워드 3개\n' +
+    '   · 이 관계 전체를 단 3단어로 압축. 두 글자 ~ 다섯 글자.\n' +
+    '   · 각 단어 + 한 줄 설명 (15자 이내)\n' +
+    '   · 예: "균형 — 한쪽이 식으면 한쪽이 데워줘 / 도전 — 같이 새로운 시도 / 폭발 — 의외의 시너지 분출"\n\n' +
+    '[블록 3] 💬 사주가 너희에게\n' +
+    '   · 단 1~2 문장만. 짧고 통찰력 있게.\n' +
+    '   · 메타포 활용 OK ("롤코 한 바퀴 다 탄 후에..." 같은)\n' +
+    '   · 오글 절대 금지. 응원·축복·바람·기원 직설 X\n\n';
+}
+
 // ============================================================
 // 유형별 섹션 구성
 // ============================================================
@@ -277,9 +307,7 @@ function loveSections(p1: CompatPersonProfile, p2: CompatPersonProfile): string 
     '구체 행동 리스트. 데이트 추천/화해법/용신 활용/공동 취미 등. 4단 강제 X');
   out += '형식: 5~7개 구체 처방 리스트. 각 항목 명리 근거 + 구체 명사(지명/제품) 포함.\n\n';
 
-  out += titleRule(8, '두 사람에게 — 따뜻한 편지',
-    '3~4단 자유 편지. 격국·조후 흐름 기반 비유, 진심 응원');
-  out += '형식: 자유 편지. 4단 강제 X.\n\n';
+  out += signatureCardSection(8, p1.name, p2.name, '❤️');
   return out;
 }
 
@@ -316,8 +344,7 @@ function marriageSections(p1: CompatPersonProfile, p2: CompatPersonProfile): str
   out += titleRule(7, '부부 처방 — 매주/매달 실천 가이드');
   out += '형식: 5~7개 구체 처방. 4단 X.\n\n';
 
-  out += titleRule(8, '부부에게 — 따뜻한 편지');
-  out += '형식: 자유 편지.\n\n';
+  out += signatureCardSection(8, p1.name, p2.name, '❤️');
   return out;
 }
 
@@ -346,8 +373,7 @@ function friendshipSections(p1: CompatPersonProfile, p2: CompatPersonProfile): s
   out += titleRule(6, '친해지는 법 — 함께하면 좋은 활동');
   out += '형식: 5~7개 구체 활동/시간대/장소 리스트. 4단 X.\n\n';
 
-  out += titleRule(7, '친구에게 — 따뜻한 편지');
-  out += '형식: 자유 편지.\n\n';
+  out += signatureCardSection(7, p1.name, p2.name, '🤝');
   return out;
 }
 
@@ -372,8 +398,7 @@ function colleagueSections(p1: CompatPersonProfile, p2: CompatPersonProfile): st
   out += titleRule(5, '함께 할 일 / 따로 할 일');
   out += '형식: 두 리스트 (각 3개). 4단 X.\n\n';
 
-  out += titleRule(6, '동료에게 — 짧은 응원 한마디');
-  out += '형식: 자유 (짧게).\n\n';
+  out += signatureCardSection(6, p1.name, p2.name, '🤝');
   return out;
 }
 
@@ -404,8 +429,7 @@ function reunionSections(p1: CompatPersonProfile, p2: CompatPersonProfile): stri
   out += titleRule(6, '마음 회복 처방 — 사주적 셀프케어');
   out += '형식: 5~7개 구체 처방 리스트. 4단 X.\n\n';
 
-  out += titleRule(7, '너에게 — 위로 편지');
-  out += '형식: 자유 편지. 부드럽게 위로.\n\n';
+  out += signatureCardSection(7, p1.name, p2.name, '✨');
   return out;
 }
 
@@ -439,7 +463,6 @@ function crushSections(p1: CompatPersonProfile, p2: CompatPersonProfile): string
   out += titleRule(7, '다가가는 법 — 구체 시나리오');
   out += '형식: 5~7개 구체 행동 리스트. 4단 X.\n\n';
 
-  out += titleRule(8, '너에게 — 두근거리는 응원');
-  out += '형식: 자유 편지.\n\n';
+  out += signatureCardSection(8, p1.name, p2.name, '✨');
   return out;
 }

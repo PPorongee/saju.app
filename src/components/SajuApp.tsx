@@ -2660,42 +2660,56 @@ export default function SajuApp() {
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{CG_HANJA[data.theirDS]} {CG[data.theirDS]} {PROFILES[data.theirDS].short}</div>
                 </div>
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '20px 0 4px', fontWeight: 600, letterSpacing: '0.5px' }}>
-                {lang === 'en' ? 'YOUR RELATIONSHIP, DEFINED' : '두 사람의 관계 정의'}
+              <div style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '24px 0 12px', fontWeight: 600, letterSpacing: '1px' }}>
+                {lang === 'en' ? 'YOUR RELATIONSHIP' : '두 사람의 관계 정의'}
               </div>
-              {data.summaryCards && data.summaryCards.length > 0 ? (
-                <div style={{ margin: '8px 0 8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {data.summaryCards.map((card: any, i: number) => (
-                    <div key={i} style={{
-                      padding: '16px 18px',
-                      borderRadius: '14px',
-                      background: card.isSpicy
-                        ? 'linear-gradient(135deg, rgba(244,63,94,0.18), rgba(217,70,239,0.12))'
-                        : 'linear-gradient(135deg, rgba(99,102,241,0.16), rgba(139,92,246,0.10))',
-                      border: card.isSpicy
-                        ? '1px solid rgba(244,63,94,0.35)'
-                        : '1px solid rgba(139,92,246,0.30)',
-                      textAlign: 'left',
-                    }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: card.isSpicy ? '#F43F5E' : '#A78BFA', marginBottom: '6px', letterSpacing: '0.5px' }}>
-                        {card.isSpicy ? '🌶️ ' : ''}{card.category}
-                      </div>
-                      <div style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)', marginBottom: '6px' }}>
-                        {card.title}
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                        {card.tagline}
-                      </div>
-                      {card.reasons && card.reasons.length > 0 && (
-                        <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '8px', opacity: 0.7 }}>
-                          {(lang === 'en' ? 'Why: ' : '근거: ') + card.reasons.slice(0, 3).join(' / ')}
-                        </div>
-                      )}
+              {data.summaryCards && data.summaryCards.length > 0 ? (() => {
+                const card = data.summaryCards[0];
+                const colors = ((cat: string) => {
+                  switch (cat) {
+                    case '운명형': return { primary: '#A78BFA', bg: 'linear-gradient(135deg, rgba(167,139,250,0.28), rgba(139,92,246,0.14))', border: 'rgba(167,139,250,0.45)' };
+                    case '보완형': return { primary: '#22D3EE', bg: 'linear-gradient(135deg, rgba(34,211,238,0.25), rgba(16,185,129,0.12))', border: 'rgba(34,211,238,0.45)' };
+                    case '역할형': return { primary: '#F472B6', bg: 'linear-gradient(135deg, rgba(244,114,182,0.25), rgba(236,72,153,0.12))', border: 'rgba(244,114,182,0.45)' };
+                    case '도전형': return { primary: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.25), rgba(245,158,11,0.12))', border: 'rgba(251,146,60,0.45)' };
+                    case '다이내믹형': return { primary: '#F87171', bg: 'linear-gradient(135deg, rgba(248,113,113,0.25), rgba(239,68,68,0.12))', border: 'rgba(248,113,113,0.45)' };
+                    case '안정형': return { primary: '#FCD34D', bg: 'linear-gradient(135deg, rgba(252,211,77,0.25), rgba(245,158,11,0.12))', border: 'rgba(252,211,77,0.45)' };
+                    case '주의형': return { primary: '#94A3B8', bg: 'linear-gradient(135deg, rgba(148,163,184,0.25), rgba(100,116,139,0.12))', border: 'rgba(148,163,184,0.45)' };
+                    case '성장형': return { primary: '#4ADE80', bg: 'linear-gradient(135deg, rgba(74,222,128,0.25), rgba(34,197,94,0.12))', border: 'rgba(74,222,128,0.45)' };
+                    default: return { primary: '#A78BFA', bg: 'linear-gradient(135deg, rgba(167,139,250,0.22), rgba(139,92,246,0.10))', border: 'rgba(167,139,250,0.4)' };
+                  }
+                })(card.category);
+                return (
+                  <div style={{
+                    padding: '32px 22px 26px',
+                    borderRadius: '22px',
+                    background: colors.bg,
+                    border: '1.5px solid ' + colors.border,
+                    textAlign: 'center',
+                    margin: '4px 0 8px',
+                    boxShadow: `0 8px 32px ${colors.border}`,
+                  }}>
+                    <div style={{ fontSize: '64px', lineHeight: 1, marginBottom: '14px' }}>{card.emoji}</div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: colors.primary, marginBottom: '10px', letterSpacing: '2px' }}>
+                      {card.category}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ fontSize: '13px', color: 'var(--text-dim)', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '26px', fontWeight: 900, color: 'var(--text)', marginBottom: '14px', lineHeight: 1.25, letterSpacing: '-0.5px' }}>
+                      {card.title}
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-dim)', marginBottom: '18px', fontStyle: 'italic', lineHeight: 1.55, padding: '0 8px' }}>
+                      "{card.tagline}"
+                    </div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', padding: '14px 0', borderTop: '1px solid ' + colors.border, borderBottom: '1px solid ' + colors.border, letterSpacing: '0.5px' }}>
+                      {data.myName} <span style={{ color: colors.primary, margin: '0 6px' }}>+</span> {data.cName}
+                    </div>
+                    {card.reasons && card.reasons.length > 0 && (
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '14px', opacity: 0.75, lineHeight: 1.5 }}>
+                        {(lang === 'en' ? 'Why: ' : '매칭 근거: ') + card.reasons.slice(0, 3).join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
+                <div style={{ fontSize: '13px', color: 'var(--text-dim)', padding: '20px', textAlign: 'center' }}>
                   {lang === 'en' ? 'Calm chemistry — neither dramatic clashes nor dramatic attraction.' : '잔잔한 케미 — 큰 충돌도 큰 끌림도 없는 평이한 인연'}
                 </div>
               )}

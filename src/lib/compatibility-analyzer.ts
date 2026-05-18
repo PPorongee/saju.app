@@ -151,6 +151,7 @@ export interface CompatAnalysisResult {
 export interface SummaryCard {
   category: string;
   title: string;
+  emoji: string;
   tagline: string;
   reasons: string[];
   isSpicy?: boolean;
@@ -332,24 +333,17 @@ export function analyzeCompatibility(
   relationType: RelationType,
 ): CompatAnalysisResult {
   const ctx = buildCompatContext(p1, p2, relationType);
-  const mainRelationships = selectMainRelationships(ctx, 3);
+  const mainRelationships = selectMainRelationships(ctx, 1);
   const spicyRelationships = selectSpicyRelationships(ctx, 2);
 
-  const summaryCards: SummaryCard[] = [
-    ...mainRelationships.map(m => ({
-      category: m.relationship.category,
-      title: m.relationship.title,
-      tagline: m.relationship.tagline,
-      reasons: m.matchReasons,
-    })),
-    ...spicyRelationships.map(m => ({
-      category: m.relationship.category,
-      title: m.relationship.title,
-      tagline: m.relationship.tagline,
-      reasons: m.matchReasons,
-      isSpicy: true,
-    })),
-  ];
+  // 메인 1개만 UI 카드(히어로)로. 매콤은 본문 매콤 섹션에서만 활용.
+  const summaryCards: SummaryCard[] = mainRelationships.map(m => ({
+    category: m.relationship.category,
+    title: m.relationship.title,
+    emoji: m.relationship.emoji,
+    tagline: m.relationship.tagline,
+    reasons: m.matchReasons,
+  }));
 
   const promptBlock = buildPromptBlock(ctx, mainRelationships, spicyRelationships);
   return { ctx, mainRelationships, spicyRelationships, promptBlock, summaryCards };
