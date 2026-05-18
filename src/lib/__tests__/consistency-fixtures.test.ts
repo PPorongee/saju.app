@@ -259,10 +259,10 @@ describe('Layer 2: different inputs produce different prompts', () => {
     const oh = getOhCount(sj);
     const promM = buildSajuPrompts(sj, oh, mkUser({ relationship: 3 }));
     const promU = buildSajuPrompts(sj, oh, mkUser({ relationship: 0 }));
-    // Section 5 (love/marriage) is in prompt[1] (Part 2: sections 5-10)
-    expect(promM[1]).toContain('부부 관계');
-    expect(promU[1]).toContain('연애 & 인연의 지도');
-    expect(promM[1]).not.toContain('연애 & 인연의 지도');
-    expect(promU[1]).not.toContain('부부 관계');
+    // Section 4 (love/marriage) is in prompt[0] (Part 1: sections 1-4)
+    expect(promM[0]).toContain('부부 관계');
+    expect(promU[0]).toContain('연애 & 결혼 타이밍');
+    expect(promM[0]).not.toContain('연애 & 결혼 타이밍');
+    expect(promU[0]).not.toContain('부부 관계');
   });
 });

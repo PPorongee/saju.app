@@ -159,14 +159,14 @@ describe('Prompt Differentiation', () => {
     const unmarriedPrompts = buildFor(1990, 1, 15, 4, { relationship: 0 });
     const marriedPrompts = buildFor(1990, 1, 15, 4, { relationship: 3 });
 
-    // Section 5 (love/marriage) is now in prompt[1] (Part 2: sections 5-10)
-    expect(unmarriedPrompts[1]).toContain('연애 & 인연의 지도');
-    expect(marriedPrompts[1]).toContain('부부 관계');
-    expect(unmarriedPrompts[1]).not.toContain('부부 관계 & 배우자 분석');
-    expect(marriedPrompts[1]).not.toContain('연애 & 인연의 지도');
+    // Section 4 (love/marriage) is now in prompt[0] (Part 1: sections 1-4)
+    expect(unmarriedPrompts[0]).toContain('연애 & 결혼 타이밍');
+    expect(marriedPrompts[0]).toContain('부부 관계');
+    expect(unmarriedPrompts[0]).not.toContain('부부 관계 & 배우자 분석');
+    expect(marriedPrompts[0]).not.toContain('연애 & 결혼 타이밍');
   });
 
-  it('injects classical references based on day master (ref-selector)', () => {
+  it.skip('injects classical references based on day master (ref-selector) — DISABLED: ref-selector removed', () => {
     // Day master is CG[dStem]. getRelevantRefs prioritises refs containing the
     // day-master character.  Both prompts call getRelevantRefs so at minimum the
     // reference block header should be present when refs exist.

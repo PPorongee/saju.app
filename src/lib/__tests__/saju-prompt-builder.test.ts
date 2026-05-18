@@ -1,5 +1,7 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, it } from 'vitest';
+import * as fs from 'node:fs';
 import { buildSajuPrompts } from '@/lib/saju-prompt-builder';
+import { calcSaju, getOhCount } from '@/lib/saju-calc';
 import type { UserData } from '@/lib/saju-prompt';
 
 const sj = { yStem:0,yBranch:0,mStem:2,mBranch:2,dStem:4,dBranch:4,hStem:6,hBranch:6,sajuYear:1990,sajuMonthIdx:3 };
@@ -48,5 +50,20 @@ describe('buildSajuPrompts', () => {
   test('includes user name', () => {
     const r = buildSajuPrompts(sj,oh,mkUser({name:'Alice'}));
     expect(r[0]).toContain('Alice');
+  });
+
+  it('debug: 이서은 사주(1995-07-06 11:49)로 prompt 3개 파일 저장', () => {
+    const eseo = calcSaju(1995, 7, 6, 6);
+    const eseoOh = getOhCount(eseo);
+    const user = mkUser({
+      name: '이서은', gender: 'f',
+      year: 1995, month: 7, day: 6, hour: 6,
+      concern: 1, state: 1, personality: [0, 1, 0], relationship: 0, wantToKnow: 1,
+    });
+    const prompts = buildSajuPrompts(eseo, eseoOh, user);
+    fs.writeFileSync('eseo-prompt-1.txt', prompts[0], 'utf8');
+    fs.writeFileSync('eseo-prompt-2.txt', prompts[1], 'utf8');
+    fs.writeFileSync('eseo-prompt-3.txt', prompts[2], 'utf8');
+    expect(prompts[0].length).toBeGreaterThan(0);
   });
 });
