@@ -10,6 +10,8 @@ import {
 import { buildSajuPrompts } from '@/lib/saju-prompt-builder';
 import type { UserData } from '@/lib/saju-prompt';
 import { getRelevantRefs } from '@/lib/saju-ref-selector';
+import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
+import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer';
 import { lunarToSolar } from '@/lib/lunar-solar';
 import { t, Lang } from '@/lib/i18n';
 import { saveReadingToSession, loadReadingFromSession, clearReadingFromSession } from '@/lib/reading-storage';
@@ -2178,215 +2180,40 @@ export default function SajuApp() {
 
       const myDS = mySaju.dStem;
       const theirDS = cSaju.dStem;
-      const myDB = mySaju.dBranch;
-      const cDB = cSaju.dBranch;
 
-      const hapPairs = [[0, 5], [1, 6], [2, 7], [3, 8], [4, 9]];
-      let hasHap = false;
-      for (const hp of hapPairs) {
-        if ((myDS === hp[0] && theirDS === hp[1]) || (myDS === hp[1] && theirDS === hp[0])) {
-          hasHap = true; break;
-        }
-      }
-
-      // Deterministic score based on birth data
-      const seed = (myDS * 13 + theirDS * 7 + myDB * 11 + cDB * 5) % 15;
-      let baseScore = 55 + seed;
-      if (hasHap) baseScore += 20;
-      const myElem = OH_CG[myDS];
-      const theirElem = OH_CG[theirDS];
-      const generating: Record<string, string> = { '목': '화', '화': '토', '토': '금', '금': '수', '수': '목' };
-      if (generating[myElem] === theirElem || generating[theirElem] === myElem) baseScore += 8;
-      if (baseScore > 98) baseScore = 98;
-
-      const pScore = Math.min(99, Math.max(30, baseScore + ((myDS + theirDS) % 6) - 3));
-      const lScore = Math.min(99, Math.max(30, baseScore + ((myDB + cDB) % 10) - 5));
-      const mScore = Math.min(99, Math.max(30, baseScore + ((myDS + cDB) % 8) - 4));
-      const cScore = Math.min(99, Math.max(30, baseScore + ((theirDS + myDB) % 6) - 2));
+      const myAge = 2026 - compatPerson1.year;
+      const partnerAge = 2026 - compatPerson2.year;
+      const { prompt, analysis } = buildCompatPrompt({
+        p1: {
+          name: myName,
+          gender: 'm',
+          age: myAge,
+          saju: mySaju,
+          exactHour: compatExact1.use && compatExact1.hour >= 0 ? compatExact1.hour : undefined,
+          exactMinute: compatExact1.use && compatExact1.hour >= 0 ? compatExact1.min : undefined,
+        },
+        p2: {
+          name: cName,
+          gender: 'm',
+          age: partnerAge,
+          saju: cSaju,
+          exactHour: compatExact2.use && compatExact2.hour >= 0 ? compatExact2.hour : undefined,
+          exactMinute: compatExact2.use && compatExact2.hour >= 0 ? compatExact2.min : undefined,
+        },
+        relationType: REL_TYPE_BY_IDX[compatRelType] || 'love',
+        lang,
+      });
 
       setCompatResult({
-        html: JSON.stringify({ myName, cName, myDS, theirDS, baseScore, pScore, lScore, mScore, cScore, hasHap })
+        html: JSON.stringify({
+          myName, cName, myDS, theirDS,
+          summaryCards: analysis.summaryCards,
+        }),
       });
 
       /* AI compat analysis - accumulate silently, reveal when done */
       setCompatLoading(true);
       setCompatAiText('');
-
-      /* 두 사람의 사주 전체 데이터 구성 */
-      const myOh = getOhCount(mySaju);
-      const cOh = getOhCount(cSaju);
-      const mySipsung = getSipsung(mySaju);
-      const cSipsung = getSipsung(cSaju);
-      const myShinsal = calcShinsal(mySaju);
-      const cShinsal = calcShinsal(cSaju);
-      let mySipsungStr = ''; for (const k in mySipsung) { mySipsungStr += k + ':' + mySipsung[k] + ' '; }
-      let cSipsungStr = ''; for (const k in cSipsung) { cSipsungStr += k + ':' + cSipsung[k] + ' '; }
-
-      /* 용신/기신 계산 */
-      const myYs = calcYongsin(mySaju);
-      const cYs = calcYongsin(cSaju);
-
-      /* 일지 관계 분석 */
-      const yukHapPairs = [[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]];
-      let hasYukHap = false;
-      for (const yh of yukHapPairs) { if ((myDB===yh[0]&&cDB===yh[1])||(myDB===yh[1]&&cDB===yh[0])) { hasYukHap=true; break; } }
-      const chungPairsC = [[0,6],[1,7],[2,8],[3,9],[4,10],[5,11]];
-      let hasChung = false;
-      for (const cp of chungPairsC) { if ((myDB===cp[0]&&cDB===cp[1])||(myDB===cp[1]&&cDB===cp[0])) { hasChung=true; break; } }
-
-      const exact1Str = compatExact1.use && compatExact1.hour >= 0 ? '정확한 출생시간: ' + String(compatExact1.hour).padStart(2, '0') + '시 ' + String(compatExact1.min).padStart(2, '0') + '분\n' : '';
-      const exact2Str = compatExact2.use && compatExact2.hour >= 0 ? '정확한 출생시간: ' + String(compatExact2.hour).padStart(2, '0') + '시 ' + String(compatExact2.min).padStart(2, '0') + '분\n' : '';
-
-      const myAge = 2026 - compatPerson1.year;
-      const partnerAge = 2026 - compatPerson2.year;
-      const agePairNote = '⚠️ 나이 맞춤 해석: ' + myName + ' 만 ' + myAge + '세, ' + cName + ' 만 ' + partnerAge + '세. ' +
-        (myAge <= 19 || partnerAge <= 19 ? '10대가 포함되어 있으므로 성적/결혼/부동산/투자 등 성인 주제는 "먼 미래에~" 정도로만 가볍게 언급하고 학교생활/진로/교우관계에 집중해.' :
-         myAge <= 29 || partnerAge <= 29 ? '20대이므로 연애/자기계발/커리어 시작에 비중을 두고, 결혼은 가능성으로, 자녀/노후는 가볍게만.' :
-         myAge <= 39 || partnerAge <= 39 ? '30대이므로 커리어 성장/결혼(또는 결혼생활)/재테크/자녀계획에 맞는 현실적 조언을.' :
-         myAge <= 49 || partnerAge <= 49 ? '40대이므로 커리어 전성기/자녀교육/부부관계/건강에 비중을 둬.' :
-         myAge <= 59 || partnerAge <= 59 ? '50대이므로 인생 2막/건강/은퇴준비/부부관계재정립에 초점.' :
-         '60대 이상이므로 건강/노후/가족관계에 초점. 취업/수능 등 젊은 시절 이야기는 안 해.') +
-        ' 두 사람의 나이에 동떨어진 조언은 절대 금지!\n\n';
-
-      const prompt = (lang === 'en' ? '🚨 CRITICAL LANGUAGE INSTRUCTION 🚨\nYou MUST write EVERYTHING in English. EVERY sentence, EVERY section title, EVERY explanation — ALL in English.\nDo NOT write Korean sentences. Translate Korean section titles to English.\nExample: Write ##1.How to read compatibility## NOT ##1.궁합 읽는 법##\nSaju terms like Gap(甲) can appear with English meaning, but ALL text must be English.\nUse warm, casual, friendly tone. IF YOU WRITE IN KOREAN, THE RESPONSE WILL BE REJECTED.\n\n' : '') +
-        agePairNote +
-        '너는 20년 경력의 사주명리학 전문가이자 솔직한 궁합 상담가야. 한자 절대 쓰지 마. 괄호 안 한자 금지. 고전 문헌 인용 금지. 어려운 용어는 재밌는 비유로 설명해. 반말만 써. 존댓말 금지.\n' +
-        '궁합 분석 시 반드시 일간 관계(천간합/상생/상극), 일지 관계(육합/삼합/충/형/파/해), 오행 균형 보완성, 용신 궁합, 십성 궁합(재성/관성/식상/인성 구조 비교)을 모두 근거로 활용해.\n' +
-        '모든 주장에는 반드시 구체적 사주 근거를 붙여: 어떤 천간/지지/십성이 어떤 관계이기 때문에 그런 결론이 나오는지 명시해.\n' +
-        '"결론적으로" "정리하면" 패턴 절대 금지! 다음 섹션이 궁금해지는 떡밥으로 끝내.\n\n' +
-        '=== 팩트폭행 규칙 (궁합도 솔직해야 신뢰!) ===\n' +
-        '칭찬만 하는 궁합은 가치가 없어. 두 사람의 성격적 충돌 포인트를 솔직하게 짚어줘:\n' +
-        '- 각 사람의 성격 약점이 관계에서 어떤 문제를 만드는지 직구로: "솔직히 너 이런 적 있지?"\n' +
-        '- "이 커플의 지뢰밭": 어떤 상황에서 폭발하는지 구체적 시나리오\n' +
-        '- "너희가 싸우는 패턴": 일간/십성 조합으로 예측되는 반복적 갈등 패턴\n' +
-        '- 돌려 말하지 마! "약간의 마찰이 있을 수 있어" (X) → "이거 분명 싸운 적 있지?" (O)\n' +
-        '- 팩트폭행 후 반드시 구체적 해결책 제시\n' +
-        '- 콘텐츠 비율: 좋은 점 55% + 솔직한 문제점/경고 25% + 해결책 20%\n\n' +
-        '=== 말투 규칙 ===\n' +
-        '⚠️ "마치" 단어 사용 절대 금지! 한 번이라도 쓰면 탈락! AI 정형 패턴 금지!\n' +
-        '비유는 직접 대입: "너희 관계는 롤코야 — 올라갈 때 짜릿하고 내려갈 때 비명" (O)\n' +
-        '"이건 롤러코스터야" (O) / "이건 마치 롤러코스터와 같아" (X)\n\n' +
-        '=== ' + myName + '의 사주 원국 ===\n' +
-        exact1Str +
-        '일간: ' + CG[mySaju.dStem] + '(' + OH_CG[mySaju.dStem] + ') 일지: ' + JJ[mySaju.dBranch] + '(' + OH_JJ[mySaju.dBranch] + ')\n' +
-        '년주: ' + CG[mySaju.yStem] + JJ[mySaju.yBranch] + ' 월주: ' + CG[mySaju.mStem] + JJ[mySaju.mBranch] + ' 일주: ' + CG[mySaju.dStem] + JJ[mySaju.dBranch] + (mySaju.hStem>=0?' 시주: '+CG[mySaju.hStem]+JJ[mySaju.hBranch]:'') + '\n' +
-        '오행: 목' + myOh['목'] + ' 화' + myOh['화'] + ' 토' + myOh['토'] + ' 금' + myOh['금'] + ' 수' + myOh['수'] + '\n' +
-        '십성: ' + mySipsungStr + '\n' +
-        '신살: ' + (myShinsal.length>0?myShinsal.join(','):'없음') + '\n' +
-        '신강/신약: ' + (myYs.isStrong ? '신강 (' + myYs.strengthPct.toFixed(0) + '%)' : '신약 (' + myYs.strengthPct.toFixed(0) + '%)') + '\n' +
-        '용신: ' + myYs.yongsin + ' (' + myYs.type + ')' + '\n' +
-        '기신: ' + myYs.gisin + '\n\n' +
-        '=== ' + cName + '의 사주 원국 ===\n' +
-        exact2Str +
-        '일간: ' + CG[cSaju.dStem] + '(' + OH_CG[cSaju.dStem] + ') 일지: ' + JJ[cSaju.dBranch] + '(' + OH_JJ[cSaju.dBranch] + ')\n' +
-        '년주: ' + CG[cSaju.yStem] + JJ[cSaju.yBranch] + ' 월주: ' + CG[cSaju.mStem] + JJ[cSaju.mBranch] + ' 일주: ' + CG[cSaju.dStem] + JJ[cSaju.dBranch] + (cSaju.hStem>=0?' 시주: '+CG[cSaju.hStem]+JJ[cSaju.hBranch]:'') + '\n' +
-        '오행: 목' + cOh['목'] + ' 화' + cOh['화'] + ' 토' + cOh['토'] + ' 금' + cOh['금'] + ' 수' + cOh['수'] + '\n' +
-        '십성: ' + cSipsungStr + '\n' +
-        '신살: ' + (cShinsal.length>0?cShinsal.join(','):'없음') + '\n' +
-        '신강/신약: ' + (cYs.isStrong ? '신강 (' + cYs.strengthPct.toFixed(0) + '%)' : '신약 (' + cYs.strengthPct.toFixed(0) + '%)') + '\n' +
-        '용신: ' + cYs.yongsin + ' (' + cYs.type + ')' + '\n' +
-        '기신: ' + cYs.gisin + '\n\n' +
-        '=== 두 사주 관계 분석 데이터 ===\n' +
-        '일간 관계: ' + CG[myDS] + '(' + OH_CG[myDS] + ') vs ' + CG[theirDS] + '(' + OH_CG[theirDS] + ')\n' +
-        '천간합: ' + (hasHap ? '있음! (' + CG[myDS] + '+' + CG[theirDS] + ')' : '없음') + '\n' +
-        '일지 관계: ' + JJ[myDB] + ' vs ' + JJ[cDB] + ' → ' + (hasYukHap?'육합(六合)! 깊은 인연':'') + (hasChung?'충(冲)! 갈등/변화 요소':'') + (!hasYukHap&&!hasChung?'중립':'') + '\n' +
-        '용신 궁합 팩트:\n' +
-        '  ' + myName + ' 용신: ' + myYs.yongsin + ' / 기신: ' + myYs.gisin + '\n' +
-        '  ' + cName + ' 용신: ' + cYs.yongsin + ' / 기신: ' + cYs.gisin + '\n' +
-        '  ' + cName + ' 일간 오행: ' + OH_CG[cSaju.dStem] + (OH_CG[cSaju.dStem] === myYs.yongsin ? ' → ' + myName + '의 용신과 일치!' : ' → ' + myName + '의 용신(' + myYs.yongsin + ')과 불일치') + '\n' +
-        '  ' + myName + ' 일간 오행: ' + OH_CG[mySaju.dStem] + (OH_CG[mySaju.dStem] === cYs.yongsin ? ' → ' + cName + '의 용신과 일치!' : ' → ' + cName + '의 용신(' + cYs.yongsin + ')과 불일치') + '\n' +
-        '  ⚠️ 위 팩트를 정확히 반영하여 용신 궁합을 분석해. 일치하지 않는 경우 "서로의 용신을 가지고 있다"고 거짓 주장하지 마.\n' +
-        '오행 보완: ' + myName + '에게 부족한 오행을 ' + cName + '이 가지고 있는지 분석 필요\n' +
-        '총점: ' + baseScore + '점\n\n' +
-        '=== 중복 금지 규칙 (매우 중요!) ===\n' +
-        '각 섹션은 고유한 역할이 있어. 이전 섹션에서 말한 내용을 다른 섹션에서 반복하지 마!\n' +
-        '- ##2/##3(개인 사주 특성)에서 분석한 성격/격국/용신을 ##4(케미) 이후 섹션에서 처음부터 다시 설명하지 마. "앞서 분석한 것처럼" 정도로 언급하고 새로운 분석에 집중해.\n' +
-        '- ##4(케미)에서 다룬 성격 비교를 ##5 이후에서 똑같이 반복하지 마. 각 섹션은 자기만의 새로운 관점을 가져야 해.\n' +
-        '- 같은 사주 근거(예: 천간합, 일지 충)를 여러 섹션에서 반복 언급하지 마. 한 번 설명한 근거는 이후에 "앞서 말한 천간합 덕분에" 정도로 짧게 참조만 해.\n' +
-        '- 각 섹션의 결론/조언이 다른 섹션과 겹치면 안 돼. 섹션마다 새로운 인사이트를 줘야 해.\n\n' +
-        '=== 분석 지시 ===\n' +
-        '##1.궁합 읽는 법## 다음에 바로 ##2.' + myName + '의 사주적 특성## 과 ##3.' + cName + '의 사주적 특성## 으로 나눠서 넣어줘.\n' +
-        '- ##2/##3: 각각 상세하게 분석해줘(각 10줄 이상):\n' +
-        '  · 격국(格局) 판별과 용신(用神)/기신 분석\n' +
-        '  · 성격 핵심 키워드 3가지 (일간+일지+십성 기반) + 각 키워드 설명\n' +
-        '  · 연애/관계 스타일 (재성/관성/식상 구조 기반)\n' +
-        '  · 감정 표현 방식과 갈등 대처 패턴\n' +
-        '  · 이 사람의 연애에서 가장 큰 강점과 약점\n' +
-        '  여기서 한 분석은 이후 섹션에서 반복 금지!\n' +
-        '- ##4부터: 두 사람의 "관계"에 집중. 개인 특성 재설명 금지, 오직 두 사람이 만났을 때 생기는 새로운 역학만 분석.\n' +
-        '- 모든 해석에 사주 근거를 구체적으로 붙이되, 같은 근거를 여러 섹션에서 반복하지 마.\n\n' +
-        '관계 유형: ' + ['연애 중', '혼인 관계', '우정 관계', '동료 사이', '재회/이별', '짝사랑/썸'][compatRelType] + '\n\n' +
-        '##1.궁합 읽는 법## 궁합 점수가 어떤 기준(일간 관계, 일지 관계, 오행 보완)으로 나왔는지 일반인도 이해할 수 있게 2-3줄로 간결하게.\n' +
-        '##4.두 사람의 케미## [중복 금지: ##2/##3에서 이미 분석한 개인 성격을 다시 나열하지 마!] 두 사람이 "만났을 때" 생기는 시너지와 갈등에만 집중. 구체적 시나리오: "A의 X가 B의 Y와 만나면 이런 상황이 생긴다". 잘 맞는 점 2가지, 주의점 1가지.\n' +
-        (compatRelType === 0 ? '##5.연애 궁합## 연애 스타일 비교, 설렘 포인트, 갈등 포인트. 두 사람의 사랑 언어(식상/재성/관성 구조 기반)가 어떻게 다른지.\n' +
-          '##6.누가 더 좋아하는 궁합?## 두 사주의 재성/관성 힘을 비교해서 누가 더 상대에게 끌리는 구조인지, 감정 온도 차이가 있는지 분석\n' +
-          '##7.권태기 극복요령## 두 사주의 식상/인성/비겁 구조로 권태기가 오는 시기와 패턴을 분석. 이 커플만의 권태기 탈출법을 사주 근거와 함께 구체적으로(오행별 활동 추천, 함께하면 좋은 것 등).\n' +
-          '##8.이 사람과 계속 만나도 될까?## 두 사주의 장기적 궁합을 보고 이 관계가 시간이 갈수록 좋아지는지 아니면 갈등이 커지는지 판단. 사주적 근거와 함께\n' +
-          '##9.결혼 가능성## 이 커플이 결혼까지 갈 수 있는지, 결혼하면 어떤 부부가 될지. 결혼하기 좋은 시기도 알려줘.\n' +
-          '##10.이 인연에게 보내는 한마디## 두 사주의 구조를 바탕으로 이 커플에게 보내는 따뜻한 응원과 현실적 조언. 비유를 써서 감동적으로.\n' :
-        compatRelType === 5 ? '##5.이 사람과 연애로 발전할 가능성## 두 사주의 일간/일지 관계와 천간합/육합 여부를 근거로 연애로 발전할 확률을 분석.\n' +
-          '##6.상대가 나를 어떻게 보는 성향인지## 상대 사주의 재성/관성/식상 구조를 분석해서 상대가 이성을 대하는 패턴.\n' +
-          '##7.누가 먼저 다가가는 게 좋을까?## 두 사주의 식상/관성/비겁 구조를 비교해서 누가 먼저 다가가면 성공 확률이 높은지.\n' +
-          '##8.고백 타이밍## 2026~2028년 세운과 월운 분석으로 고백 성공 확률이 높은 시기.\n' +
-          '##9.이 관계가 오래 끌 가능성## 두 사주 구조상 썸이 길어지기 쉬운 관계인지 분석.\n' +
-          '##10.이 인연의 결론## 이 썸/짝사랑이 결국 어떻게 될지 사주적 전망.\n' :
-        compatRelType === 1 ? '##5.부부 조화도## 결혼 생활 안정성, 역할 분담, 서로에게 필요한 것\n' +
-          '##6.돈 문제로 갈등이 생길까?## 두 사주의 재성 구조를 비교해서 소비패턴/저축관 차이, 갈등 요소와 해결법\n' +
-          '##7.배우자 운이 좋은 편인가?## 각자의 배우자궁(일지) 상태와 배우자성의 힘을 분석.\n' +
-          '##8.이혼 가능성 분석## 두 일지의 충/형/해 여부와 대운 흐름상 위기 시기. 부드럽게 돌려서.\n' +
-          '##9.누가 집안 주도권을 잡나?## 두 사주의 관성/비겁/인성 힘 비교로 누가 리드하는 구조인지.\n' +
-          '##10.권태기 극복법## 부부 관계에서 위기가 오는 시기와 극복 방법\n' +
-          '##11.자녀운## 자녀복, 자녀 시기, 아이 성향, 양육 궁합.\n' :
-        compatRelType === 2 ? '##5.우정 케미## 두 사람이 만나면 어떤 에너지가 흐르는지. 비견/겁재/식상 관계로 어떤 유형의 친구 사이인지 구체적으로 분석. 같이 있으면 에너지가 올라가는 타입인지, 편안하게 쉬는 타입인지. 비슷한 유명인 조합 비유.\n' +
-          '##6.오래갈 인연인가?## 두 일지의 합/충/형을 근거로 이 우정이 평생 갈 인연인지, 일정 시기에 자연스럽게 멀어질 수 있는지 솔직하게. 10년, 20년 후에도 연락할 사이인지 대운 흐름으로 분석.\n' +
-          '##7.이 친구의 진짜 속마음## 상대의 일간/식상/인성 구조로 이 사람이 나를 진심으로 생각하는지, 표현이 서툰 건지, 아니면 가볍게 생각하는 건지 분석. 상대의 우정 표현 방식과 내가 오해할 수 있는 포인트.\n' +
-          '##8.술자리/여행/위기 때 이 친구는?## 지지 관계로 위기 상황(다툼, 험담, 곤란한 상황)에서 이 친구가 어떻게 행동할지 예측. 여행 궁합, 술자리 케미, 싸웠을 때 화해 패턴.\n' +
-          '##9.돈 문제 & 비밀 공유## 재성과 비겁 관계로 돈 빌려주기, 동업 가능성, 비밀 지키기 성향 분석. 이 친구한테 돈 관련 부탁을 해도 되는지, 비밀을 털어놔도 되는지.\n' +
-          '##10.감정 소모 체크## 이 관계에서 에너지를 얻는지 빼앗기는지. 만나고 나면 충전되는 느낌인지 피곤한 느낌인지. 오행 기준 서로에게 주는 기운 분석.\n' +
-          '##11.이 친구와 더 가까워지는 법## 두 사주의 용신/희신 기반으로 함께하면 좋은 활동 3가지, 만나기 좋은 시간대/요일/계절, 선물 추천 (오행 기반).\n' +
-          '##12.우정 타임라인 2026~2030## 이 우정이 깊어지는 시기와 소원해질 수 있는 시기를 년도별로 구체적으로. 특별한 이벤트가 생길 수 있는 해.\n' +
-          '##13.이 인연에게 보내는 한마디## 두 사주를 보고 느낀 이 우정의 특별한 점, 따뜻한 응원 메시지. 비유를 써서 감동적으로.\n' :
-        compatRelType === 3 ? '##5.업무 시너지## 일할 때 시너지가 나는지, 역할 분담이 잘 맞는지\n' +
-          '##6.사업 파트너 가능성## 같이 사업하면 성공할 수 있는지, 주의점\n' +
-          '##7.직장에서 주의할 점## 갈등이 생길 수 있는 상황과 대처법\n' :
-        '##5.재회 가능성## 사주적으로 다시 만날 인연인지, 재회 확률과 시기\n' +
-          '##6.상대방의 마음## 상대가 아직 미련이 있는지, 연락이 올 가능성\n' +
-          '##7.잡아야 할까 놓아야 할까## 지금 이 관계를 붙잡는 게 맞는지 사주적 근거\n') +
-        (compatRelType <= 1 || compatRelType === 5 ? '' :
-          '##' + (compatRelType === 2 ? '14' : compatRelType === 3 ? '8' : '8') + '.주의할 점## 갈등 요인과 극복 조언 (부드럽게 돌려서)\n') +
-        (compatRelType === 4 ?
-          '##8.새로운 인연 시기## 새로운 사람이 들어오는 시기, 어떤 사람을 만나면 좋을지\n' +
-          '##9.마음 회복 조언## 지금 감정을 정리하는 데 도움이 되는 사주적 조언\n' +
-          '##10.함께하면 좋은 활동 & 따로 하면 좋은 활동## 함께 하면 시너지 나는 취미 3가지, 따로 하는 게 좋은 활동 2가지 (오행 근거).\n' +
-          '##11.종합 한마디## 이 관계를 한 문장으로\n' :
-        compatRelType === 3 ?
-          '##9.함께하면 좋은 활동 & 따로 하면 좋은 활동## 함께 하면 시너지 나는 취미 3가지, 따로 하는 게 좋은 활동 2가지 (오행 근거).\n' +
-          '##10.종합 한마디## 이 관계를 한 문장으로\n' :
-          '') +
-        '5. 용신 궁합 분석: 두 사람 각각의 용신/기신을 밝히고, 상대방 사주에 내 용신 오행이 있는지 확인. 서로의 용신이 상대에게 있으면 최고의 궁합, 서로의 기신이 있으면 에너지 소모.\n' +
-        '6. 오행 보완성: 두 사주의 오행을 합산했을 때 균형이 맞는지. A에게 부족한 오행을 B가 채워주는지 구체적으로.\n' +
-        '7. 12운성 궁합: 두 사람의 일지 12운성을 비교해서 에너지 밸런스가 맞는지. 한쪽이 제왕이고 한쪽이 쇠면 에너지 차이가 있을 수 있어.\n' +
-        '8. 격국 궁합: 두 사람의 격국이 서로 어울리는지 분석. 식신격+정관격은 조화롭고, 상관격+정관격은 충돌 가능.\n' +
-        '9. 조후 궁합: 둘 다 겨울 태생이면 함께 있으면 더 차갑고, 화+수 조합이면 서로 조후를 맞춰주는 좋은 궁합.\n\n' +
-        '\n각 섹션 최소 20-25줄. 짧으면 안 돼! 풍성하고 깊이 있게 써! 반말만. 부정적 내용은 부드럽게 돌려서. 사주 용어는 괄호로 쉽게 풀어서.\n' +
-        '비유적 표현을 적극 사용해! 매 섹션마다 최소 3개 이상의 재미있는 비유/은유를 넣어줘. 일상적인 것(음식/영화/게임/카페/날씨)에 빗대면 더 좋아.\n' +
-        '갈등이 언급될 때마다 반드시 구체적 개운법/조율팁/관계회복팁을 함께 제시해! "조심하세요" 같은 추상적 조언 금지.\n' +
-        '예시: "갈등이 생기면 함께 동쪽 방향으로 산책가봐. 두 사람 모두 목(木) 기운이 부족해서 자연 속에서 에너지를 채우면 화해가 빨라져" 이런 식으로 구체적 행동+오행 근거.\n' +
-        '각 섹션마다 최소 2개 이상의 구체적 사주 근거(천간/지지/오행/십성 관계)를 반드시 포함해.\n' +
-        '근거 없이 "잘 맞아/안 맞아" 같은 말 금지. 반드시 "A의 일간 X가 B의 일간 Y를 생(生)/극(剋)하므로..." 형태로 증거를 제시해.\n' +
-        '중요: 시기를 언급할 때 반드시 구체적인 년도와 월을 명시해줘!\n' +
-        '예시: "2026년 하반기", "2027년 3~4월", "2028년", "올해 가을쯤" 이런 식으로.\n' +
-        '"언젠가", "조만간", "머지않아" 같은 모호한 표현 금지! 두 사람의 세운/대운 흐름을 2026~2030년까지 분석해서 구체적 년도를 제시해.\n' +
-        '결혼 적기, 위기 시기, 재회 가능 시기, 자녀 시기, 이직 시기 등 모든 타이밍에 년도를 넣어줘.\n\n' +
-        '가장 중요한 규칙: 모든 해석에 반드시 사주 명리학적 근거를 구체적으로 밝혀!\n' +
-        '나쁜 예: "두 사람은 잘 맞아" (근거 없음)\n' +
-        '좋은 예: "' + myName + '의 일간 ' + CG[myDS] + '(' + OH_CG[myDS] + ')이 ' + cName + '의 일간 ' + CG[theirDS] + '(' + OH_CG[theirDS] + ')을 생(生)해주는 관계야. ' + OH_CG[myDS] + '이 ' + OH_CG[theirDS] + '을 키워주는 구조라서 자연스럽게 ' + myName + '이 돌봐주는 역할을 하게 돼."\n' +
-        '이런 식으로 일간/일지/오행/십성/충합 관계를 구체적으로 언급하면서 설명해. 매 문단마다 사주 근거 1개 이상 필수!\n\n' +
-        '한자 절대 금지! 괄호 안 한자 금지! 고전 문헌 인용 금지! 대신 어려운 개념은 재밌는 비유로 풀어서 친근하게 조언해.\n' +
-        '해석의 여지가 있을 때는 반드시 긍정적으로 해석해. 충(冲)도 "정체를 깨는 기회의 문"으로, 기신도 "이겨내면 더 강해지는 시련"으로.\n' +
-        '흥미 유발 포인트를 매 섹션 1개 이상: "사실 이 조합은 100쌍 중 5쌍만 가진 희귀한 구조야!" 같은 훅.\n\n' +
-        getRelevantRefs({ dayMaster: myDS, topics: ['compatibility', 'love', 'general'] });
-
       fetch('/api/saju', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2833,42 +2660,45 @@ export default function SajuApp() {
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{CG_HANJA[data.theirDS]} {CG[data.theirDS]} {PROFILES[data.theirDS].short}</div>
                 </div>
               </div>
-              <div className="compat-score gradient-text">{data.baseScore}<span style={{ fontSize: '24px' }}>{t('scoreUnit', lang)}</span></div>
-              <div style={{ margin: '12px 0 16px' }}>
-                {[
-                  { min: 90, label: '💑 ' + t('tierSoulmate', lang), color: '#FFD700', desc: t('tierSoulmateDesc', lang) },
-                  { min: 80, label: '💍 ' + t('tierMarriage', lang), color: '#2ED573', desc: t('tierMarriageDesc', lang) },
-                  { min: 70, label: '💕 ' + t('tierGood', lang), color: '#4299E1', desc: t('tierGoodDesc', lang) },
-                  { min: 55, label: '🤝 ' + t('tierGrowth', lang), color: '#FF9F43', desc: t('tierGrowthDesc', lang) },
-                  { min: 0, label: '🌱 ' + t('tierChallenge', lang), color: '#9F7AEA', desc: t('tierChallengeDesc', lang) },
-                ].map((tier, i) => {
-                  const isActive = (i === 0 && data.baseScore >= 90) ||
-                    (i === 1 && data.baseScore >= 80 && data.baseScore < 90) ||
-                    (i === 2 && data.baseScore >= 70 && data.baseScore < 80) ||
-                    (i === 3 && data.baseScore >= 55 && data.baseScore < 70) ||
-                    (i === 4 && data.baseScore < 55);
-                  return (
-                    <div key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '8px 12px', borderRadius: '10px', marginBottom: '4px',
-                      background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
-                      border: isActive ? '1px solid ' + tier.color : '1px solid transparent',
-                      opacity: isActive ? 1 : 0.4,
-                      transition: 'all 0.3s'
-                    }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: tier.color, minWidth: '110px' }}>{tier.label}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{tier.desc}</span>
-                      {isActive && <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: 800, color: tier.color }}>{t('tierHere', lang)}</span>}
-                    </div>
-                  );
-                })}
+              <div style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '20px 0 4px', fontWeight: 600, letterSpacing: '0.5px' }}>
+                {lang === 'en' ? 'YOUR RELATIONSHIP, DEFINED' : '두 사람의 관계 정의'}
               </div>
-              {data.hasHap && (
-                <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.15)', borderRadius: '12px', fontSize: '13px', marginBottom: '12px' }}>
-                  ✨ {t('hapFound', lang)}
+              {data.summaryCards && data.summaryCards.length > 0 ? (
+                <div style={{ margin: '8px 0 8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {data.summaryCards.map((card: any, i: number) => (
+                    <div key={i} style={{
+                      padding: '16px 18px',
+                      borderRadius: '14px',
+                      background: card.isSpicy
+                        ? 'linear-gradient(135deg, rgba(244,63,94,0.18), rgba(217,70,239,0.12))'
+                        : 'linear-gradient(135deg, rgba(99,102,241,0.16), rgba(139,92,246,0.10))',
+                      border: card.isSpicy
+                        ? '1px solid rgba(244,63,94,0.35)'
+                        : '1px solid rgba(139,92,246,0.30)',
+                      textAlign: 'left',
+                    }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: card.isSpicy ? '#F43F5E' : '#A78BFA', marginBottom: '6px', letterSpacing: '0.5px' }}>
+                        {card.isSpicy ? '🌶️ ' : ''}{card.category}
+                      </div>
+                      <div style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)', marginBottom: '6px' }}>
+                        {card.title}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                        {card.tagline}
+                      </div>
+                      {card.reasons && card.reasons.length > 0 && (
+                        <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '8px', opacity: 0.7 }}>
+                          {(lang === 'en' ? 'Why: ' : '근거: ') + card.reasons.slice(0, 3).join(' / ')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '13px', color: 'var(--text-dim)', padding: '12px', textAlign: 'center' }}>
+                  {lang === 'en' ? 'Calm chemistry — neither dramatic clashes nor dramatic attraction.' : '잔잔한 케미 — 큰 충돌도 큰 끌림도 없는 평이한 인연'}
                 </div>
               )}
-              {/* 카테고리별 점수 생략 - AI가 상세 분석 제공 */}
             </div>
 
             {/* Visual Comparison Charts - separate cards matching AI section style */}

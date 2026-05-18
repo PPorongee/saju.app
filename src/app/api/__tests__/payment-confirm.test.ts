@@ -20,6 +20,16 @@ vi.mock('@/lib/reading-code', () => ({
 // Mock env to avoid throwing on missing TOSS_SECRET_KEY
 vi.mock('@/lib/env', () => ({
   getTossSecretKey: vi.fn(() => 'test-secret-key'),
+  getOpenAIApiKey: vi.fn(() => 'test-openai-key'),
+  getDatabaseUrl: vi.fn(() => undefined),
+  NEXT_PUBLIC_TOSS_CLIENT_KEY: '',
+  NEXT_PUBLIC_COMPANY_NAME: '테스트회사',
+  NEXT_PUBLIC_CEO_NAME: '테스트대표',
+  NEXT_PUBLIC_BUSINESS_NUMBER: '000-00-00000',
+  NEXT_PUBLIC_SALES_NUMBER: '',
+  NEXT_PUBLIC_ADDRESS: '테스트주소',
+  NEXT_PUBLIC_CS_PHONE: '000-0000-0000',
+  NEXT_PUBLIC_CS_EMAIL: 'test@example.com',
 }));
 
 // Mock rate-limit to always pass (return null = allowed)
