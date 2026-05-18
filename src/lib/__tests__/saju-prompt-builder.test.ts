@@ -29,10 +29,11 @@ describe('buildSajuPrompts', () => {
     expect(r[0]).toContain('CRITICAL LANGUAGE INSTRUCTION');
     expect(r[1]).toContain('FINAL REMINDER');
   });
-  test('prompt1 has ##1-##4, prompt2 has ##5-##10 (unmarried)', () => {
+  test('prompt1 ##1-##4, prompt2 ##5-##8, prompt3 ##9-##12 (unmarried)', () => {
     const r = buildSajuPrompts(sj,oh,mkUser({relationship:0}));
     for (let i=1;i<=4;i++) expect(r[0]).toContain('##'+i+'.');
-    for (let i=5;i<=10;i++) expect(r[1]).toContain('##'+i+'.');
+    for (let i=5;i<=8;i++) expect(r[1]).toContain('##'+i+'.');
+    for (let i=9;i<=12;i++) expect(r[2]).toContain('##'+i+'.');
   });
   test('prompt3 has ##11 ##12', () => {
     const r = buildSajuPrompts(sj,oh,mkUser());
@@ -41,8 +42,8 @@ describe('buildSajuPrompts', () => {
   test('married has spouse section, unmarried has love section', () => {
     const m = buildSajuPrompts(sj,oh,mkUser({relationship:3}));
     const u = buildSajuPrompts(sj,oh,mkUser({relationship:0}));
-    expect(m[1]).toContain('부부 관계');
-    expect(u[1]).toContain('연애 & 인연의 지도');
+    expect(m[0]).toContain('부부 관계');
+    expect(u[0]).toContain('연애 & 결혼 타이밍');
   });
   test('includes user name', () => {
     const r = buildSajuPrompts(sj,oh,mkUser({name:'Alice'}));

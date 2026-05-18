@@ -1,4 +1,5 @@
 import { SajuResult, CG, JJ, OH_CG, OH_JJ, getSipsung, calcShinsal, get12Unsung } from './saju-calc';
+import { analyzeBranchRelations } from './branch-relations';
 import { getRelevantRefs } from './saju-ref-selector';
 import { getTerminologyPromptBlock } from './saju-terminology';
 import type { UserData } from './saju-prompt';
@@ -24,20 +25,7 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
   const shinsal = calcShinsal(sj);
   const shinsalStr = shinsal.length > 0 ? shinsal.join(', ') : '없음';
 
-  const chungPairs: number[][] = [[0,6],[1,7],[2,8],[3,9],[4,10],[5,11]];
-  const chungList: string[] = [];
-  const allBranches = [sj.yBranch, sj.mBranch, sj.dBranch];
-  if (sj.hBranch >= 0) allBranches.push(sj.hBranch);
-  for (let ci = 0; ci < allBranches.length; ci++) {
-    for (let cj = ci + 1; cj < allBranches.length; cj++) {
-      for (let ck = 0; ck < chungPairs.length; ck++) {
-        if ((allBranches[ci] === chungPairs[ck][0] && allBranches[cj] === chungPairs[ck][1]) ||
-            (allBranches[ci] === chungPairs[ck][1] && allBranches[cj] === chungPairs[ck][0])) {
-          chungList.push(JJ[allBranches[ci]] + '-' + JJ[allBranches[cj]] + ' 충');
-        }
-      }
-    }
-  }
+  const branchRelations = analyzeBranchRelations(sj);
 
   const cTexts = ['연애/관계','커리어/진로','돈/재정','인간관계','건강','학업/시험'];
   const sTexts = ['안정적이고 평화로움','변화의 흐름 속','스트레스 많음','도전적인 시기','잘 모르겠음'];
@@ -128,7 +116,7 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
   if (unsung['시지']) unsungStr += ' 시지:' + unsung['시지'];
   prompt += '십이운성: ' + unsungStr + '\n';
   prompt += '신살: ' + shinsalStr + '\n';
-  if (chungList.length > 0) prompt += '충: ' + chungList.join(', ') + '\n';
+  prompt += '\n' + branchRelations.promptBlock + '\n';
   prompt += '\n이 사주의 신강/신약 판단: 일간 ' + CG[ds] + '가 월령에서 득령/실령 여부, 통근 여부를 분석해서 신강인지 신약인지 먼저 판단한 뒤 용신(억부/조후)을 정해.\n';
 
   prompt += '\n=== 사용자 질문 답변 ===\n';
