@@ -109,7 +109,6 @@ export const T: Record<string, Record<Lang, string>> = {
   unlock: { ko: '🔓 지금 잠금 해제하기', en: '🔓 Unlock Now' },
   freePreview: { ko: '무료로 먼저 볼게요', en: 'Preview for free' },
   todaySpecial: { ko: '(오늘 한정 특가)', en: '(Today only special)' },
-  specialEnds: { ko: '특가 종료까지', en: 'Special ends in' },
   alreadyChecked: { ko: '명이 이미 확인했어요', en: 'people already checked' },
   analysisInProgress: { ko: '분석 진행 중...', en: 'Analysis in progress...' },
   analysisComplete: { ko: '분석 완료', en: 'Analysis complete' },
@@ -703,4 +702,34 @@ export const T: Record<string, Record<Lang, string>> = {
 
 export function t(key: string, lang: Lang): string {
   return T[key]?.[lang] || T[key]?.['ko'] || key;
+}
+
+// Daily-rotating hero copy for the home intro screen.
+// One line per day, cycling through the pool. Tone: light motivation +
+// good-fortune nudge + a touch of zen. Two-line ko/en pairs.
+export const HERO_LINES: ReadonlyArray<{ ko: string; en: string }> = [
+  { ko: '오늘 좋은 일은\n작은 시도에서 와요', en: 'Good things today\nbegin with small tries' },
+  { ko: '흐름이 좋을 때\n한 걸음 더 가봐요', en: 'When the flow is good,\nstep one more' },
+  { ko: '좋은 기운은\n움직이는 사람에게 와요', en: 'Good energy follows\nthose who move' },
+  { ko: '작은 한 걸음에\n좋은 일이 따라와요', en: 'Good things follow\na single small step' },
+  { ko: '좋은 흐름은\n준비된 마음에 와요', en: 'Good flow comes\nto a ready mind' },
+  { ko: '마음이 향하는 곳에\n좋은 일이 있어요', en: 'Where your heart points,\ngood things wait' },
+  { ko: '오늘 시작한 일은\n좋은 자리를 잡아요', en: 'What begins today\nfinds its place' },
+  { ko: '가벼운 마음에\n좋은 일이 깃들어요', en: 'Good things settle\nin a light heart' },
+  { ko: '오늘 한 번의 결심이\n좋은 운을 불러와요', en: 'One resolve today\ncalls in good fortune' },
+  { ko: '작은 정성에\n좋은 자리가 만들어져요', en: 'Small care\nshapes a good place' },
+  { ko: '마음을 열어두면\n좋은 인연이 찾아와요', en: 'Keep your heart open,\nand good people find you' },
+  { ko: '가는 길에\n좋은 바람이 불어와요', en: 'A good wind comes\nto the road you walk' },
+  { ko: '손을 내밀면\n좋은 만남이 따라와요', en: 'Reach out,\nand good meetings follow' },
+  { ko: '작은 호기심이\n좋은 기회로 이어져요', en: 'A small curiosity\nleads to good chances' },
+  { ko: '두드린 만큼\n좋은 문이 열려요', en: 'The door opens\nas much as you knock' },
+  { ko: '발을 떼는 순간\n좋은 길이 시작돼요', en: 'The path begins\nthe moment you step' },
+  { ko: '마음의 방향이 곧\n좋은 운의 방향이에요', en: 'Where your heart turns,\nfortune turns too' },
+];
+
+export function getTodayHeroLine(lang: Lang, today: Date = new Date()): string {
+  const start = new Date(today.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((today.getTime() - start.getTime()) / 86400000);
+  const idx = ((dayOfYear % HERO_LINES.length) + HERO_LINES.length) % HERO_LINES.length;
+  return HERO_LINES[idx][lang];
 }

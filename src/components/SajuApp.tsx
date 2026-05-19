@@ -13,7 +13,7 @@ import { getRelevantRefs } from '@/lib/saju-ref-selector';
 import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
 import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer';
 import { lunarToSolar } from '@/lib/lunar-solar';
-import { t, Lang } from '@/lib/i18n';
+import { t, Lang, getTodayHeroLine } from '@/lib/i18n';
 import { saveReadingToSession, loadReadingFromSession, clearReadingFromSession } from '@/lib/reading-storage';
 import { generateOrderId } from '@/lib/payment-config';
 import { formatLLMText } from '@/lib/format-llm';
@@ -1272,18 +1272,8 @@ export default function SajuApp() {
               letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
               whiteSpace: 'pre-line', fontFamily: 'var(--orot-font)',
             }}>
-              {isEn
-                ? 'Trust your rhythm,\neven when slow.'
-                : '조금 느려도\n너의 리듬을 믿어봐.'}
+              {getTodayHeroLine(lang)}
             </h2>
-            <p style={{
-              fontSize: 13, color: 'var(--orot-ink-soft)',
-              lineHeight: 1.7, margin: '12px 0 0', whiteSpace: 'pre-line',
-            }}>
-              {isEn
-                ? 'Inner balance\nweaves the light.'
-                : '내면의 균형이\n빛을 만들 거야.'}
-            </p>
           </div>
         </BleedCard>
 
@@ -1345,7 +1335,7 @@ export default function SajuApp() {
                   fontSize: 19, fontWeight: 700, color: 'var(--orot-coral)',
                   letterSpacing: '-0.012em', lineHeight: 1.3, margin: 0,
                 }}>
-                  {isEn ? 'View your past readings' : '지난 결을 다시 살펴봐요.'}
+                  {isEn ? 'Past readings' : '지난 풀이를 모아뒀어요'}
                 </h3>
                 <p style={{ fontSize: 12, color: 'var(--orot-ink-soft)', margin: '8px 0 0', lineHeight: 1.6 }}>
                   {savedResults.length}{isEn ? ' saved reading(s)' : '개의 저장된 해석'}
