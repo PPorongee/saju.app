@@ -1,0 +1,52 @@
+{
+  "home-hero-character": {
+    "scale": 1,
+    "offsetX": 9.069911748483184,
+    "offsetY": 0
+  },
+  "home-feat-saju": {
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  "home-feat-compat": {
+    "scale": 1,
+    "offsetX": -10.29841345934251,
+    "offsetY": 0
+  },
+  "home-feat-baby": {
+    "scale": 1,
+    "offsetX": 8.4717607973422,
+    "offsetY": 1.1102230246251565e-14
+  },
+  "home-feat-year": {
+    "scale": 1,
+    "offsetX": -11.67154014480474,
+    "offsetY": 0
+  },
+  "home-history-character": {
+    "scale": 1,
+    "offsetX": -3.310204598687192,
+    "offsetY": 0
+  },
+  "year-character": {
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  "compat-character": {
+    "scale": 1,
+    "offsetX": -25.810449262082237,
+    "offsetY": 0
+  },
+  "saju-in-character": {
+    "scale": 1,
+    "offsetX": 2.865961199294542,
+    "offsetY": 0
+  },
+  "baby-character": {
+    "scale": 1,
+    "offsetX": 23.296960999641236,
+    "offsetY": 0
+  }
+}

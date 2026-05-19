@@ -2,7 +2,8 @@ import React from 'react';
 import { CG, JJ, CG_HANJA, JJ_HANJA, OH_CG, OH_JJ, PROFILES } from '@/lib/saju-calc';
 import { t, type Lang } from '@/lib/i18n';
 
-const OH_COLORS: Record<string, string> = { '목': '#81C784', '화': '#EF5350', '토': '#FFD54F', '금': '#E0E0E0', '수': '#64B5F6' };
+// Orot palette element colors — subdued, fits navy/coral/cream theme
+const OH_COLORS: Record<string, string> = { '목': '#94b88f', '화': '#e88578', '토': '#d3b87a', '금': '#b5b7c7', '수': '#8aa1c4' };
 const OH_EN_CAP: Record<string, string> = { '목': 'Wood', '화': 'Fire', '토': 'Earth', '금': 'Metal', '수': 'Water' };
 
 function getElemColor(oh: string): string {
@@ -41,10 +42,10 @@ export default function PillarDisplay({ pillars, sipsungMap, unsungMap, dayMaste
           const isDay = pp.key === '일주';
           return (
             <div key={pi} className="pillar" style={isDay
-              ? { border: '1.5px solid rgba(240,199,94,0.5)', borderRadius: '12px', background: 'rgba(240,199,94,0.06)', padding: '6px 2px' }
-              : { border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '6px 2px' }}>
-              <div className="pillar-label" style={isDay ? { color: '#F0C75E', fontWeight: 700 } : undefined}>
-                {pp.label}{isDay ? ' ★' : ''}
+              ? { border: '1.5px solid var(--orot-coral-faint)', borderRadius: '12px', background: 'rgba(243, 160, 146, 0.08)', padding: '6px 2px' }
+              : { border: '1px solid var(--orot-hair)', borderRadius: '12px', padding: '6px 2px' }}>
+              <div className="pillar-label" style={isDay ? { color: 'var(--orot-coral)', fontWeight: 700 } : { color: 'var(--orot-ink-mute)' }}>
+                {pp.label}{isDay ? ' ✦' : ''}
               </div>
               <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginBottom: '4px', lineHeight: 1.2 }}>{pp.desc}</div>
               {pp.stem < 0 ? (
@@ -61,14 +62,14 @@ export default function PillarDisplay({ pillars, sipsungMap, unsungMap, dayMaste
                     <span style={{ fontSize: '28px' }}>{CG_HANJA[pp.stem]}</span><br />
                     <span style={{ fontSize: '12px', opacity: 0.7 }}>{CG[pp.stem]}({lang === 'en' ? OH_EN_CAP[OH_CG[pp.stem]] : OH_CG[pp.stem]})</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: isDay ? 'rgba(240,199,94,0.7)' : '#C4B5FD', minHeight: '16px', fontWeight: 600 }}>
+                  <div style={{ fontSize: '11px', color: isDay ? 'var(--orot-coral)' : 'var(--orot-ink-soft)', minHeight: '16px', fontWeight: 600 }}>
                     {isDay ? t('dayMasterBracket', lang) : (sipsungMap[pp.key] || '')}
                   </div>
                   <div className="branch" style={{ color: getElemColor(OH_JJ[pp.branch]) }}>
                     <span style={{ fontSize: '28px' }}>{JJ_HANJA[pp.branch]}</span><br />
                     <span style={{ fontSize: '12px', opacity: 0.7 }}>{JJ[pp.branch]}({OH_JJ[pp.branch]})</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#7DD3FC', minHeight: '16px', fontWeight: 600 }}>
+                  <div style={{ fontSize: '11px', color: 'var(--orot-ink-mute)', minHeight: '16px', fontWeight: 600 }}>
                     {unsungMap[pp.key] || ''}
                   </div>
                   <span className={'elem elem-' + (OH_CG[pp.stem] === '목' ? 'wood' : OH_CG[pp.stem] === '화' ? 'fire' : OH_CG[pp.stem] === '토' ? 'earth' : OH_CG[pp.stem] === '금' ? 'metal' : 'water')}>
@@ -86,10 +87,10 @@ export default function PillarDisplay({ pillars, sipsungMap, unsungMap, dayMaste
       <p style={{ textAlign: 'center', fontSize: '12px', marginTop: '8px' }}>
         {t('dayMasterLabel', lang)}: <strong style={{ color: getElemColor(OH_CG[ds]) }}>{CG[ds]} {profile.short}</strong>
       </p>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', fontSize: '10px', marginTop: '4px', opacity: 0.5 }}>
-        <span style={{ color: '#C4B5FD' }}>{t('sipsungLabel', lang)}</span>
-        <span>|</span>
-        <span style={{ color: '#7DD3FC' }}>{t('unsungLabel', lang)}</span>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', fontSize: '10px', marginTop: '4px', opacity: 0.7 }}>
+        <span style={{ color: 'var(--orot-coral)' }}>{t('sipsungLabel', lang)}</span>
+        <span style={{ color: 'var(--orot-ink-faint)' }}>|</span>
+        <span style={{ color: 'var(--orot-ink-mute)' }}>{t('unsungLabel', lang)}</span>
       </div>
     </div>
   );

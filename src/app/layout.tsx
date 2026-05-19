@@ -38,8 +38,12 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;600;700;800&display=swap"
           rel="stylesheet"
         />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css"
+        />
       </head>
-      <body><ErrorBoundary>{children}</ErrorBoundary></body>
+      <body className="orot-page"><ErrorBoundary>{children}</ErrorBoundary></body>
     </html>
   );
 }

@@ -4,7 +4,8 @@ import type { Lang } from '@/lib/i18n';
 import { getOhInterpretation } from '@/components/ui/TermExplainer';
 
 const OH_EN_CAP: Record<string, string> = { '목': 'Wood', '화': 'Fire', '토': 'Earth', '금': 'Metal', '수': 'Water' };
-const OH_COLORS: Record<string, string> = { '목': '#22C55E', '화': '#EF4444', '토': '#EAB308', '금': '#94A3B8', '수': '#3B82F6' };
+// Orot element palette — subdued, fits the navy/coral/cream theme
+const OH_COLORS: Record<string, string> = { '목': '#94b88f', '화': '#e88578', '토': '#d3b87a', '금': '#b5b7c7', '수': '#8aa1c4' };
 
 function getElemClass(oh: string): string {
   const map: Record<string, string> = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
@@ -55,12 +56,12 @@ export default function OhaengChart({ ohCount, lang }: OhaengChartProps) {
                   {ohCount[k]}
                 </div>
               </div>
-              {interp && <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.45)', marginTop: '2px', paddingLeft: '4px' }}>{interp}</div>}
+              {interp && <div style={{ fontSize: '11px', color: 'var(--orot-ink-mute)', marginTop: '2px', paddingLeft: '4px' }}>{interp}</div>}
             </div>
           );
         })}
       </div>
-      <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.4)', marginTop: '10px', lineHeight: 1.5, padding: '0 4px' }}>
+      <p style={{ fontSize: '11px', color: 'var(--orot-ink-mute)', marginTop: '10px', lineHeight: 1.5, padding: '0 4px' }}>
         {lang === 'en'
           ? 'This chart shows the balance of five elements in your birth chart. A balanced distribution is ideal, but imbalances reveal unique strengths and growth areas.'
           : '사주의 다섯 가지 기운(오행) 분포를 보여줘요. 균형이 이상적이지만, 편중은 고유한 강점과 성장 포인트를 알려줘요.'}

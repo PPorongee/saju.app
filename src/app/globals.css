@@ -299,10 +299,10 @@ input:focus, select:focus {
 }
 .time-option {
   text-align: center;
-  padding: 10px 4px;
+  padding: 14px 6px;
   border-radius: 10px;
   min-width: 0;
-  min-height: 44px;
+  min-height: 56px;
   cursor: pointer;
   transition: all 0.2s;
   background: rgba(255,255,255,0.06);
@@ -319,9 +319,9 @@ input:focus, select:focus {
   color: #FFD080;
   font-weight: 700;
 }
-.time-range { font-size: 12px; font-weight: 800; color: var(--text); display: block; margin-bottom: 1px; white-space: nowrap; }
-.time-hanja { font-size: 12px; font-weight: 600; margin-bottom: 1px; }
-.time-hangul { font-size: 11px; color: var(--text-dim); }
+.time-range { font-size: 14px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px; white-space: nowrap; }
+.time-hanja { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.time-hangul { font-size: 13px; color: var(--text-dim); font-weight: 500; }
 .time-option.unknown-time { grid-column: 1 / -1; }
 
 /* Exact time input */
@@ -873,9 +873,9 @@ input:focus, select:focus {
   .pillar-grid { gap: 4px; }
   .card { padding: 16px; }
   .back-btn { top: 14px; left: 12px; min-height: 44px; height: auto; font-size: 12px; padding: 0 12px; }
-  .time-range { font-size: 11px; }
-  .time-hanja { font-size: 11px; }
-  .time-hangul { font-size: 11px; }
+  .time-range { font-size: 13px; }
+  .time-hanja { font-size: 13px; }
+  .time-hangul { font-size: 12px; }
   .btn { padding: 12px 20px; font-size: 15px; }
   .llm-section { padding: 16px; }
   .llm-section h3 { font-size: 18px; }
@@ -1241,4 +1241,578 @@ input:focus-visible,
   width: 100%;
   margin-bottom: 24px;
   text-align: left;
+}
+
+/* ────────────────────────────────────────────────────────────
+   ✦ 별빛 사주 · Orot Redesign Tokens & Utilities
+   (additive — does not touch existing styles)
+   ──────────────────────────────────────────────────────────── */
+:root {
+  /* Night sky */
+  --orot-bg-deep: #10142c;
+  --orot-bg-base: #161c3d;
+  --orot-bg-soft: #1c2348;
+  --orot-card-navy: #1d2649;
+  --orot-card-navy-2: #20294e;
+  --orot-card-purple: #2a2148;
+  --orot-card-purple-2: #312250;
+  --orot-card-pink: #f0a99c;
+  --orot-card-pink-2: #e89589;
+
+  /* Coral (point) */
+  --orot-coral: #f3a092;
+  --orot-coral-deep: #e88578;
+  --orot-coral-soft: #f5b7a9;
+  --orot-coral-faint: rgba(243, 160, 146, 0.22);
+
+  /* Cream (text) */
+  --orot-ink: #f3e7cf;
+  --orot-ink-soft: #e2d2b3;
+  --orot-ink-mute: #b3a48a;
+  --orot-ink-faint: #7d7058;
+  --orot-ink-on-pink: #2a1830;
+
+  /* Hairlines */
+  --orot-hair: rgba(243, 231, 207, 0.10);
+  --orot-hair-strong: rgba(243, 231, 207, 0.20);
+  --orot-hair-on-pink: rgba(42, 24, 48, 0.18);
+
+  /* 오행 */
+  --orot-el-wood: #94b88f;
+  --orot-el-fire: #e88578;
+  --orot-el-earth: #d3b87a;
+  --orot-el-metal: #b5b7c7;
+  --orot-el-water: #8aa1c4;
+
+  /* Type */
+  --orot-font: 'Pretendard Variable', 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Spacing */
+  --orot-s-1: 4px;
+  --orot-s-2: 8px;
+  --orot-s-3: 12px;
+  --orot-s-4: 16px;
+  --orot-s-5: 20px;
+  --orot-s-6: 24px;
+  --orot-s-7: 32px;
+  --orot-s-8: 48px;
+
+  /* Radii */
+  --orot-r-sm: 10px;
+  --orot-r-md: 16px;
+  --orot-r-lg: 22px;
+  --orot-r-xl: 28px;
+}
+
+.orot-root {
+  font-family: var(--orot-font);
+  color: var(--orot-ink);
+  background: var(--orot-bg-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  line-height: 1.6;
+  letter-spacing: -0.005em;
+}
+.orot-root *, .orot-root *::before, .orot-root *::after { box-sizing: border-box; }
+
+/* Night sky / starfield backdrop */
+.orot-sky {
+  position: absolute; inset: 0;
+  background: radial-gradient(160% 80% at 50% 0%, #21275a 0%, #1a2042 50%, #12162e 100%);
+  pointer-events: none;
+}
+.orot-stars {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 14%, rgba(243,160,146,0.85), transparent 60%),
+    radial-gradient(1px 1px at 78% 8%, rgba(243,231,207,0.6), transparent 60%),
+    radial-gradient(1.4px 1.4px at 38% 22%, rgba(243,160,146,0.5), transparent 60%),
+    radial-gradient(1px 1px at 88% 28%, rgba(243,231,207,0.55), transparent 60%),
+    radial-gradient(1.2px 1.2px at 22% 34%, rgba(243,160,146,0.4), transparent 60%),
+    radial-gradient(1px 1px at 64% 38%, rgba(243,231,207,0.45), transparent 60%),
+    radial-gradient(1.4px 1.4px at 6% 48%, rgba(243,160,146,0.55), transparent 60%),
+    radial-gradient(1px 1px at 92% 52%, rgba(243,231,207,0.45), transparent 60%),
+    radial-gradient(1.2px 1.2px at 30% 66%, rgba(243,160,146,0.5), transparent 60%),
+    radial-gradient(1px 1px at 70% 74%, rgba(243,231,207,0.55), transparent 60%),
+    radial-gradient(1.4px 1.4px at 14% 84%, rgba(243,160,146,0.55), transparent 60%),
+    radial-gradient(1px 1px at 86% 90%, rgba(243,231,207,0.5), transparent 60%);
+}
+
+/* Bleed image layer */
+.orot-bleed {
+  position: absolute; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.orot-bleed img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0.55;
+}
+.orot-veil { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.orot-veil--left {
+  background: linear-gradient(to right,
+    rgba(16,20,44,0.85) 0%, rgba(16,20,44,0.5) 40%,
+    rgba(16,20,44,0.2) 70%, transparent 100%);
+}
+.orot-veil--bottom {
+  background: linear-gradient(to top,
+    rgba(16,20,44,0.85) 0%, rgba(16,20,44,0.4) 40%, transparent 80%);
+}
+.orot-veil--soft {
+  background: linear-gradient(180deg, rgba(16,20,44,0.4) 0%, rgba(16,20,44,0.25) 100%);
+}
+.orot-veil--pink {
+  background: linear-gradient(to right,
+    rgba(240,169,156,0.85) 0%, rgba(240,169,156,0.5) 40%,
+    rgba(240,169,156,0.15) 70%, transparent 100%);
+}
+
+/* Card */
+.orot-card {
+  position: relative;
+  background: linear-gradient(180deg, var(--orot-card-navy) 0%, var(--orot-card-navy-2) 100%);
+  border: 1px solid var(--orot-hair);
+  border-radius: var(--orot-r-lg);
+  padding: var(--orot-s-6);
+  overflow: hidden;
+  color: var(--orot-ink);
+}
+.orot-card--purple {
+  background: linear-gradient(180deg, var(--orot-card-purple) 0%, var(--orot-card-purple-2) 100%);
+}
+.orot-card--pink {
+  background: linear-gradient(180deg, var(--orot-card-pink) 0%, var(--orot-card-pink-2) 100%);
+  color: var(--orot-ink-on-pink);
+}
+.orot-card--pink * { color: inherit; }
+
+/* Eyebrow */
+.orot-eyebrow {
+  font-family: var(--orot-font);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--orot-coral);
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.orot-eyebrow::before {
+  content: '✦';
+  font-size: 13px;
+}
+
+/* Pill button */
+.orot-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 50px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-family: var(--orot-font);
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+.orot-btn--primary { background: var(--orot-coral); color: var(--orot-ink-on-pink); }
+.orot-btn--primary:hover { background: var(--orot-coral-deep); }
+.orot-btn--ghost { background: transparent; color: var(--orot-ink); border-color: var(--orot-hair-strong); }
+.orot-btn--ghost:hover { border-color: var(--orot-coral-faint); color: var(--orot-coral); }
+.orot-btn--full { width: 100%; }
+
+/* Round next button */
+.orot-next {
+  position: absolute;
+  right: var(--orot-s-5);
+  bottom: var(--orot-s-5);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: var(--orot-ink-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.orot-card--pink .orot-next { color: var(--orot-ink-on-pink); border-color: var(--orot-ink-on-pink); opacity: 0.7; }
+
+/* Form */
+.orot-input {
+  width: 100%;
+  background: rgba(243, 231, 207, 0.04);
+  border: 1px solid var(--orot-hair-strong);
+  border-radius: var(--orot-r-md);
+  padding: 14px 16px;
+  color: var(--orot-ink);
+  font-family: var(--orot-font);
+  font-size: 15px;
+}
+.orot-input:focus { outline: none; border-color: var(--orot-coral); }
+.orot-input::placeholder { color: var(--orot-ink-faint); }
+.orot-label {
+  font-family: var(--orot-font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--orot-ink-mute);
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Divider */
+.orot-divider {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  color: var(--orot-ink-faint);
+  font-size: 10px;
+  margin: var(--orot-s-7) 0;
+}
+.orot-divider::before, .orot-divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--orot-hair-strong), transparent);
+}
+
+/* Chip / tag */
+.orot-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-family: var(--orot-font);
+  letter-spacing: 0.04em;
+  background: rgba(243, 231, 207, 0.05);
+  border: 1px solid var(--orot-hair);
+  color: var(--orot-ink-soft);
+}
+.orot-chip--coral {
+  color: var(--orot-coral);
+  border-color: var(--orot-coral-faint);
+  background: rgba(243, 160, 146, 0.06);
+}
+
+/* Tabbar */
+.orot-tabbar {
+  position: fixed;
+  left: 12px; right: 12px; bottom: 12px;
+  max-width: 406px;
+  margin: 0 auto;
+  height: 64px;
+  border-radius: 24px;
+  background: rgba(16, 20, 44, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--orot-hair);
+  display: flex; align-items: center; justify-content: space-around;
+  z-index: 50;
+}
+.orot-tabbar button {
+  flex: 1; height: 100%;
+  background: transparent; border: 0;
+  color: var(--orot-ink-mute);
+  font-family: var(--orot-font);
+  font-size: 11px;
+  font-weight: 500;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  cursor: pointer;
+}
+.orot-tabbar button[aria-current="true"] { color: var(--orot-coral); }
+
+/* Moon (CSS-only) */
+.orot-moon {
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, #f7c3b7 0%, #ee9b8e 48%, #d97667 100%);
+  box-shadow:
+    0 0 24px rgba(243, 160, 146, 0.32),
+    inset -2px -3px 8px rgba(42, 24, 48, 0.15);
+}
+
+/* Breathe animation for loading */
+@keyframes orot-breathe {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.05); }
+}
+.orot-breathe { animation: orot-breathe 3.6s ease-in-out infinite; }
+
+/* Phone-shell helpers used by full screens */
+.orot-shell {
+  position: relative;
+  min-height: 100vh;
+  background: var(--orot-bg-base);
+  color: var(--orot-ink);
+  font-family: var(--orot-font);
+  overflow-x: hidden;
+}
+
+/* Hide scrollbars on horizontal chip rows */
+.orot-noscroll::-webkit-scrollbar { display: none; }
+.orot-noscroll { scrollbar-width: none; }
+
+/* Light-touch global font application — apply Pretendard to body without forcing colors/background */
+.orot-page, .orot-page button, .orot-page input, .orot-page select, .orot-page textarea {
+  font-family: var(--orot-font);
+}
+
+/* ── Birth-Input form re-theme (scoped to .orot-form-screen) ── */
+.orot-form-screen .input-group label,
+.orot-form-screen label {
+  color: var(--orot-ink-mute);
+  font-weight: 500;
+  font-family: var(--orot-font);
+}
+.orot-form-screen input[type="text"],
+.orot-form-screen select {
+  background: rgba(243, 231, 207, 0.05) !important;
+  border: 1px solid var(--orot-hair-strong) !important;
+  color: var(--orot-ink) !important;
+  border-radius: var(--orot-r-md) !important;
+  font-family: var(--orot-font);
+}
+.orot-form-screen input[type="text"]:focus,
+.orot-form-screen select:focus {
+  outline: none;
+  border-color: var(--orot-coral) !important;
+}
+.orot-form-screen input[type="text"]::placeholder {
+  color: var(--orot-ink-faint);
+}
+.orot-form-screen .pill-toggle {
+  background: rgba(243, 231, 207, 0.04);
+  border: 1px solid var(--orot-hair);
+  border-radius: 999px;
+  padding: 4px;
+}
+.orot-form-screen .pill-toggle button {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--orot-ink-soft) !important;
+  font-family: var(--orot-font);
+  font-weight: 500;
+  border-radius: 999px !important;
+}
+.orot-form-screen .pill-toggle button.active {
+  background: var(--orot-coral) !important;
+  color: var(--orot-ink-on-pink) !important;
+}
+.orot-form-screen .time-grid .time-option {
+  background: rgba(243, 231, 207, 0.04) !important;
+  border: 1px solid var(--orot-hair-strong) !important;
+  color: var(--orot-ink-soft) !important;
+  border-radius: var(--orot-r-md) !important;
+}
+.orot-form-screen .time-grid .time-option.selected {
+  background: rgba(243, 160, 146, 0.10) !important;
+  border-color: var(--orot-coral) !important;
+  color: var(--orot-ink) !important;
+}
+.orot-form-screen .time-hanja { color: var(--orot-coral) !important; }
+.orot-form-screen .time-hangul,
+.orot-form-screen .time-range { color: var(--orot-ink-soft) !important; }
+.orot-form-screen .time-grid .time-option.unknown-time {
+  border-style: dashed !important;
+}
+.orot-form-screen .exact-time-checkbox {
+  background: rgba(243, 231, 207, 0.05);
+  border: 1px solid var(--orot-hair-strong);
+  color: var(--orot-coral);
+}
+.orot-form-screen .exact-time-checkbox.checked {
+  background: var(--orot-coral);
+  border-color: var(--orot-coral);
+  color: var(--orot-ink-on-pink);
+}
+.orot-form-screen .exact-time-toggle {
+  color: var(--orot-ink-soft);
+  font-family: var(--orot-font);
+  font-weight: 500;
+}
+.orot-form-screen .exact-time-select {
+  background: rgba(243, 231, 207, 0.05) !important;
+  border: 1px solid var(--orot-hair-strong) !important;
+  color: var(--orot-ink) !important;
+  border-radius: var(--orot-r-sm) !important;
+  font-family: var(--orot-font);
+}
+.orot-form-screen .exact-time-siju { color: var(--orot-coral); font-family: var(--orot-font); }
+.orot-form-screen .exact-time-note { color: var(--orot-ink-mute); font-family: var(--orot-font); }
+
+/* ── Questions screen — progress dots, option-card, pair-toggle ── */
+.orot-form-screen .progress-dots { gap: 8px; }
+.orot-form-screen .progress-dots .dot {
+  background: var(--orot-hair-strong) !important;
+  border: 0 !important;
+  width: 8px !important; height: 8px !important;
+  transition: all 240ms ease;
+}
+.orot-form-screen .progress-dots .dot.active {
+  background: var(--orot-coral) !important;
+  transform: scale(1.2);
+}
+.orot-form-screen .progress-dots .dot.done {
+  background: var(--orot-coral) !important;
+  opacity: 0.6;
+}
+.orot-form-screen .option-grid .option-card {
+  background: rgba(243, 231, 207, 0.04) !important;
+  border: 1px solid var(--orot-hair-strong) !important;
+  color: var(--orot-ink-soft) !important;
+  border-radius: var(--orot-r-md) !important;
+  font-family: var(--orot-font);
+  font-weight: 500;
+  transition: all 160ms ease;
+}
+.orot-form-screen .option-grid .option-card:hover {
+  border-color: var(--orot-coral-faint) !important;
+}
+.orot-form-screen .option-grid .option-card.selected {
+  background: rgba(243, 160, 146, 0.10) !important;
+  border-color: var(--orot-coral) !important;
+  color: var(--orot-ink) !important;
+}
+.orot-form-screen .option-grid .option-card .icon {
+  color: var(--orot-coral) !important;
+}
+.orot-form-screen .pair-toggle .pair-btn {
+  background: rgba(243, 231, 207, 0.04) !important;
+  border: 1px solid var(--orot-hair-strong) !important;
+  color: var(--orot-ink-soft) !important;
+  font-family: var(--orot-font);
+  font-weight: 500;
+  border-radius: var(--orot-r-md) !important;
+  transition: all 160ms ease;
+}
+.orot-form-screen .pair-toggle .pair-btn.active {
+  background: var(--orot-coral) !important;
+  border-color: var(--orot-coral) !important;
+  color: var(--orot-ink-on-pink) !important;
+}
+.orot-form-screen .pair-toggle .vs {
+  color: var(--orot-ink-mute) !important;
+  font-family: var(--orot-font);
+}
+.orot-form-screen .card-glow {
+  background: linear-gradient(180deg, var(--orot-card-navy) 0%, var(--orot-card-navy-2) 100%) !important;
+  border: 1px solid var(--orot-hair) !important;
+}
+.orot-form-screen h3 {
+  color: var(--orot-ink) !important;
+  font-family: var(--orot-font) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.012em !important;
+  font-size: 22px !important;
+  line-height: 1.35 !important;
+  margin: 0 0 18px !important;
+  background: none !important;
+  -webkit-text-fill-color: var(--orot-ink) !important;
+}
+
+/* ── Results / Reading screen re-theme (scoped to .orot-results-screen) ── */
+.orot-results-screen {
+  font-family: var(--orot-font);
+  color: var(--orot-ink);
+}
+.orot-results-screen .section-divider {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--orot-font);
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--orot-coral) !important;
+  letter-spacing: 0.02em !important;
+  margin: 28px 0 12px !important;
+  background: none !important;
+  background-image: none !important;
+  border: none !important;
+  padding: 0 !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: var(--orot-coral) !important;
+  text-align: left !important;
+  text-transform: none !important;
+  position: static !important;
+}
+.orot-results-screen .section-divider::before {
+  content: '✦' !important;
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  background: none !important;
+  font-size: 13px !important;
+  color: var(--orot-coral) !important;
+  display: inline-block !important;
+  left: auto !important;
+  top: auto !important;
+}
+.orot-results-screen .section-divider::after {
+  display: none !important;
+  content: none !important;
+}
+.orot-results-screen .result-header { display: none !important; }
+.orot-results-screen .gradient-text {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: var(--orot-ink) !important;
+  -webkit-text-fill-color: var(--orot-ink) !important;
+}
+.orot-results-screen .card {
+  background: linear-gradient(180deg, var(--orot-card-navy) 0%, var(--orot-card-navy-2) 100%) !important;
+  border: 1px solid var(--orot-hair) !important;
+  border-radius: var(--orot-r-lg) !important;
+  color: var(--orot-ink) !important;
+}
+.orot-results-screen .llm-text {
+  color: var(--orot-ink-soft);
+  font-family: var(--orot-font);
+}
+.orot-results-screen .llm-text strong,
+.orot-results-screen .llm-text b { color: var(--orot-coral); }
+.orot-results-screen .llm-text h1,
+.orot-results-screen .llm-text h2,
+.orot-results-screen .llm-text h3 {
+  color: var(--orot-ink);
+  font-family: var(--orot-font);
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+.orot-results-screen .llm-text p { line-height: 1.85; }
+.orot-results-screen .back-btn {
+  color: var(--orot-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+.orot-results-screen .paywall-cta {
+  background: var(--orot-coral) !important;
+  color: var(--orot-ink-on-pink) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 16px 26px !important;
+  font-family: var(--orot-font) !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  letter-spacing: 0.01em !important;
+  animation: none !important;
+  box-shadow: 0 4px 20px rgba(243, 160, 146, 0.30) !important;
+  transition: background 160ms ease;
+}
+.orot-results-screen .paywall-cta:hover {
+  background: var(--orot-coral-deep) !important;
+}
+.orot-results-screen .locked-item {
+  background: rgba(243, 231, 207, 0.04) !important;
+  border: 1px solid var(--orot-hair) !important;
+  border-radius: var(--orot-r-md) !important;
+}
+.orot-results-screen .locked-item .lock-icon { color: var(--orot-coral); opacity: 0.6; }
+.orot-results-screen .locked-item .item-title { color: var(--orot-ink) !important; font-family: var(--orot-font); font-weight: 600; }
+.orot-results-screen .locked-item .item-hint { color: var(--orot-ink-mute) !important; font-family: var(--orot-font); }
+.orot-results-screen .card-glow {
+  background: linear-gradient(180deg, var(--orot-card-navy) 0%, var(--orot-card-navy-2) 100%) !important;
+  border: 1px solid var(--orot-hair) !important;
 }

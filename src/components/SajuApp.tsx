@@ -22,6 +22,7 @@ import { SectionExplainer, getShinsalExplanation, getSingangExplanation, getOhIn
 import ConsentModal from '@/components/ui/ConsentModal';
 import OhaengChart from '@/components/ui/OhaengChart';
 import PillarDisplay, { type Pillar } from '@/components/ui/PillarDisplay';
+import { BleedCard, FeatureCard } from '@/components/orot';
 
 /* ===== Stars Background - SVG Star Illustrations ===== */
 const STAR_COLORS = ['#F0C75E', '#FFD080', '#FF6B9D', '#7DD3FC', '#C4B5FD', '#6EE7B7', '#FF8A8A', '#FFF0C8'];
@@ -1218,123 +1219,276 @@ export default function SajuApp() {
 
   /* ===== SCREEN 0: Intro ===== */
   function renderIntro() {
+    const isEn = lang === 'en';
     return (
-      <div className="inner screen-enter" style={{ textAlign: 'center', paddingTop: '60px' }}>
-        <div style={{ fontSize: '72px', animation: 'float 3s ease-in-out infinite', marginBottom: '16px', filter: 'drop-shadow(0 0 24px rgba(240,199,94,0.5))' }}>
-          🔮
+      <div className="inner screen-enter orot-root" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+        {/* App logo header */}
+        <div style={{ padding: '4px 4px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ color: 'var(--orot-coral)', fontSize: 19, fontWeight: 700, letterSpacing: '-0.012em' }}>
+            {t('appTitle', lang)} <span style={{ fontSize: 14 }}>✦</span>
+          </div>
         </div>
-        <h1 className="gradient-text" style={{ marginBottom: '8px' }}>{t('appTitle', lang)}</h1>
-        <p className="intro-subtitle">{t('appSubtitle', lang)}</p>
+
+        {/* Greeting block */}
+        <div style={{ padding: '0 4px 18px' }}>
+          <h1 style={{
+            fontSize: 28,
+            fontWeight: 700,
+            color: 'var(--orot-ink)',
+            letterSpacing: '-0.015em',
+            lineHeight: 1.3,
+            margin: 0,
+            background: 'none',
+            WebkitTextFillColor: 'var(--orot-ink)',
+          }}>
+            {isEn ? 'Hello' : '안녕하세요'}
+          </h1>
+          <p style={{
+            fontSize: 14,
+            color: 'var(--orot-ink-soft)',
+            lineHeight: 1.6,
+            margin: '6px 0 0',
+          }}>
+            {isEn
+              ? 'Understanding today brings clarity to your path.'
+              : '오늘의 나를 이해하면, 삶의 방향이 선명해져요.'}
+          </p>
+        </div>
+
+        {/* Hero BleedCard — 오늘의 흐름 */}
+        <BleedCard
+          image="/images/orot/home-hero-character.webp"
+          framingId="home-hero-character"
+          veil="left"
+          minHeight={300}
+          style={{ marginBottom: 16 }}
+        >
+          <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 14 }}>
+              {isEn ? "Today's flow" : '오늘의 흐름'}
+            </div>
+            <h2 style={{
+              fontSize: 26, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
+              whiteSpace: 'pre-line', fontFamily: 'var(--orot-font)',
+            }}>
+              {isEn
+                ? 'Trust your rhythm,\neven when slow.'
+                : '조금 느려도\n너의 리듬을 믿어봐.'}
+            </h2>
+            <p style={{
+              fontSize: 13, color: 'var(--orot-ink-soft)',
+              lineHeight: 1.7, margin: '12px 0 0', whiteSpace: 'pre-line',
+            }}>
+              {isEn
+                ? 'Inner balance\nweaves the light.'
+                : '내면의 균형이\n빛을 만들 거야.'}
+            </p>
+          </div>
+        </BleedCard>
+
+        {/* 2×2 Feature Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <FeatureCard
+            image="/images/orot/home-feat-saju.webp"
+            framingId="home-feat-saju"
+            emoji="📜"
+            title={t('sajuTitle', lang)}
+            sub={t('sajuDesc', lang)}
+            onClick={() => { setAppMode('saju'); setCurrentScreen(1); }}
+          />
+          <FeatureCard
+            image="/images/orot/home-feat-compat.webp"
+            framingId="home-feat-compat"
+            emoji="💞"
+            title={t('compatTitle', lang)}
+            sub={t('compatDesc', lang)}
+            onClick={() => { setAppMode('compat'); setCurrentScreen(5); }}
+          />
+          <FeatureCard
+            image="/images/orot/home-feat-year.webp"
+            framingId="home-feat-year"
+            emoji="🗓️"
+            title={t('yearlyTitle', lang)}
+            sub={t('yearlyDesc', lang)}
+            onClick={() => { setAppMode('yearly'); setCurrentScreen(1); }}
+          />
+          <FeatureCard
+            image="/images/orot/home-feat-baby.webp"
+            framingId="home-feat-baby"
+            emoji="👶"
+            title={t('pregTitle', lang)}
+            sub={t('pregDesc', lang)}
+            onClick={() => { setAppMode('pregnancy'); setCurrentScreen(6); }}
+          />
+        </div>
+
+        {/* History BleedCard — 지난 해석 보기 (savedResults가 있을 때만) */}
         {savedResults.length > 0 && (
-          <div style={{ width: '100%', maxWidth: '340px', margin: '0 auto 20px' }}>
-            <button style={{
-              width: '100%', padding: '12px 16px', borderRadius: '14px', border: '1px solid rgba(240,199,94,0.3)',
-              background: 'linear-gradient(135deg, rgba(240,199,94,0.12), rgba(255,208,128,0.08))',
-              color: '#F0C75E', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              fontFamily: 'inherit',               boxShadow: '0 2px 12px rgba(240,199,94,0.15)'
-            }} onClick={() => setShowSavedResults(!showSavedResults)}>
-              <span>📂</span> {t('prevResults', lang)} <span style={{ background: 'rgba(240,199,94,0.2)', borderRadius: '10px', padding: '2px 10px', fontSize: '13px', fontWeight: 800, color: '#FFD080' }}>{savedResults.length}</span>
-            </button>
+          <>
+            <BleedCard
+              image="/images/orot/home-history-character.webp"
+              framingId="home-history-character"
+              veil="left"
+              minHeight={180}
+              next
+              onClick={() => setShowSavedResults(!showSavedResults)}
+              style={{ marginBottom: showSavedResults ? 12 : 24, cursor: 'pointer' }}
+              role="button"
+              ariaLabel={t('prevResults', lang)}
+            >
+              <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '70%' }}>
+                <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
+                  📚 {t('prevResults', lang)}
+                </div>
+                <h3 style={{
+                  fontSize: 19, fontWeight: 700, color: 'var(--orot-coral)',
+                  letterSpacing: '-0.012em', lineHeight: 1.3, margin: 0,
+                }}>
+                  {isEn ? 'View your past readings' : '지난 결을 다시 살펴봐요.'}
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--orot-ink-soft)', margin: '8px 0 0', lineHeight: 1.6 }}>
+                  {savedResults.length}{isEn ? ' saved reading(s)' : '개의 저장된 해석'}
+                </p>
+              </div>
+            </BleedCard>
+
             {showSavedResults && (
-              <div style={{ marginTop: '8px', maxHeight: '240px', overflowY: 'auto', borderRadius: '14px', background: 'rgba(255,255,255,0.06)', padding: '8px', border: '1px solid rgba(240,199,94,0.1)' }}>
+              <div style={{
+                marginBottom: 24,
+                borderRadius: 'var(--orot-r-lg)',
+                background: 'rgba(243, 231, 207, 0.04)',
+                border: '1px solid var(--orot-hair)',
+                padding: 12,
+                maxHeight: 280,
+                overflowY: 'auto',
+              }}>
                 {savedResults.map((r: { name: string; date: string; type: string; text: string; saju?: unknown; user?: unknown }, i: number) => (
-                  <div key={i} style={{ padding: '12px 14px', borderRadius: '12px', marginBottom: '6px', background: 'rgba(255,255,255,0.06)', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)', transition: 'all 0.2s' }} onClick={() => {
-                    setAiText(r.text);
-                    if (r.saju) setSajuResult(r.saju as SajuResult);
-                    if (r.user) setUserData(r.user as typeof userData);
-                    setCurrentScreen(r.type === '2026 운세' || r.type === '2026 Fortune' ? 7 : 4);
-                    setShowSavedResults(false);
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{r.name} - {r.type}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>{r.date}</span>
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setAiText(r.text);
+                      if (r.saju) setSajuResult(r.saju as SajuResult);
+                      if (r.user) setUserData(r.user as typeof userData);
+                      setCurrentScreen(r.type === '2026 운세' || r.type === '2026 Fortune' ? 7 : 4);
+                      setShowSavedResults(false);
+                    }}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 'var(--orot-r-md)',
+                      marginBottom: 6,
+                      background: 'rgba(243, 231, 207, 0.04)',
+                      cursor: 'pointer',
+                      border: '1px solid var(--orot-hair)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--orot-ink)' }}>{r.name} · {r.type}</span>
+                      <span style={{ fontSize: 11, color: 'var(--orot-ink-mute)', whiteSpace: 'nowrap' }}>{r.date}</span>
                     </div>
                   </div>
                 ))}
-                <button style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,100,100,0.2)', background: 'rgba(255,100,100,0.08)', color: '#FF8A8A', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginTop: '4px', fontFamily: 'inherit', minHeight: '44px' }} onClick={() => {
-                  try { localStorage.removeItem('saju-saved-results'); } catch { /* private browsing */ }
-                  setSavedResults([]);
-                  setShowSavedResults(false);
-                }}>{t('deleteAll', lang)}</button>
+                <button
+                  onClick={() => {
+                    try { localStorage.removeItem('saju-saved-results'); } catch { /* private browsing */ }
+                    setSavedResults([]);
+                    setShowSavedResults(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: 'var(--orot-r-md)',
+                    border: '1px solid rgba(255,100,100,0.2)',
+                    background: 'rgba(255,100,100,0.06)',
+                    color: '#FF8A8A',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    marginTop: 8,
+                    fontFamily: 'inherit',
+                    minHeight: 44,
+                  }}
+                >
+                  {t('deleteAll', lang)}
+                </button>
               </div>
             )}
-          </div>
+          </>
         )}
-        <div className="feature-grid">
-          <div
-            className="feature-card"
-            role="button"
-            tabIndex={0}
-            style={{ background: 'linear-gradient(135deg, #1E1060, #4C2889, #7C3AED)', boxShadow: '0 8px 30px rgba(124,58,237,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
-            onClick={() => { setAppMode('saju'); setCurrentScreen(1); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAppMode('saju'); setCurrentScreen(1); } }}
-          >
-            <span style={{ position: 'absolute', top: '8px', right: '10px', fontSize: '10px', opacity: 0.5 }}>✨</span>
-            <span className="feature-icon">🔮</span>
-            <span className="feature-title">{t('sajuTitle', lang)}</span>
-            <span className="feature-desc">{t('sajuDesc', lang)}</span>
-          </div>
-          <div
-            className="feature-card"
-            role="button"
-            tabIndex={0}
-            style={{ background: 'linear-gradient(135deg, #7A1F40, #FF6B9D, #FF8A8A)', boxShadow: '0 8px 30px rgba(255,107,157,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
-            onClick={() => { setAppMode('compat'); setCurrentScreen(5); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAppMode('compat'); setCurrentScreen(5); } }}
-          >
-            <span style={{ position: 'absolute', top: '8px', right: '10px', fontSize: '10px', opacity: 0.5 }}>💫</span>
-            <span className="feature-icon">💑</span>
-            <span className="feature-title">{t('compatTitle', lang)}</span>
-            <span className="feature-desc">{t('compatDesc', lang)}</span>
-          </div>
-          <div
-            className="feature-card"
-            role="button"
-            tabIndex={0}
-            style={{ background: 'linear-gradient(135deg, #7A5B1E, #F0C75E, #FFD080)', boxShadow: '0 8px 30px rgba(240,199,94,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
-            onClick={() => { setAppMode('yearly'); setCurrentScreen(1); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAppMode('yearly'); setCurrentScreen(1); } }}
-          >
-            <span style={{ position: 'absolute', top: '8px', right: '10px', fontSize: '10px', opacity: 0.5 }}>⭐</span>
-            <span className="feature-icon">📅</span>
-            <span className="feature-title">{t('yearlyTitle', lang)}</span>
-            <span className="feature-desc">{t('yearlyDesc', lang)}</span>
-          </div>
-          <div
-            className="feature-card"
-            role="button"
-            tabIndex={0}
-            style={{ background: 'linear-gradient(135deg, #0A4A3A, #14B8A6, #6EE7B7)', boxShadow: '0 8px 30px rgba(20,184,166,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
-            onClick={() => { setAppMode('pregnancy'); setCurrentScreen(6); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAppMode('pregnancy'); setCurrentScreen(6); } }}
-          >
-            <span style={{ position: 'absolute', top: '8px', right: '10px', fontSize: '10px', opacity: 0.5 }}>🌿</span>
-            <span className="feature-icon">🤰</span>
-            <span className="feature-title">{t('pregTitle', lang)}</span>
-            <span className="feature-desc">{t('pregDesc', lang)}</span>
-          </div>
-        </div>
-        {/* 이전 결과 보기 - moved to top */}
+
+        {/* Tagline */}
+        <p style={{
+          fontSize: 12,
+          color: 'var(--orot-ink-mute)',
+          textAlign: 'center',
+          margin: '24px 22px 0',
+          lineHeight: 1.6,
+        }}>
+          {isEn
+            ? 'Starlight Saju reads your texture through Korean cosmology.'
+            : '별빛 사주는 당신의 결을 명리학으로 다시 읽어드립니다.'}
+        </p>
       </div>
     );
   }
 
   /* ===== SCREEN 1: Birth Input ===== */
   function renderBirthInput() {
+    const isEn = lang === 'en';
+    const heroLabel = appMode === 'yearly'
+      ? (isEn ? 'My 2026' : '2026 나의 한 해')
+      : (isEn ? 'Read me through Saju' : '나를 읽는 사주');
+    const heroTitle = isEn
+      ? 'Let me read your texture\nfrom the moment you were born.'
+      : '태어난 순간의 기운으로\n당신의 결을 풀어드릴게요.';
+    const ctaLabel = appMode === 'yearly'
+      ? (isEn ? 'Read my 2026 ›' : '2026 풀이 시작 ›')
+      : (isEn ? 'Start my reading ›' : '내 사주 풀이 시작 ›');
+
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '40px' }}>
-        <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
-        <h2 className="gradient-text" style={{ textAlign: 'center', marginBottom: '24px' }}>{t('enterBirthday', lang)}</h2>
+      <div className="inner screen-enter orot-root orot-form-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+        <button
+          onClick={() => setCurrentScreen(0)}
+          aria-label={t('backBtn', lang)}
+          style={{
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
+
+        {/* Hero BleedCard */}
+        <BleedCard
+          image="/images/orot/saju-in-character.webp"
+          framingId="saju-in-character"
+          veil="left"
+          minHeight={220}
+          style={{ marginBottom: 20 }}
+        >
+          <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 14 }}>{heroLabel}</div>
+            <h1 style={{
+              fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
+              whiteSpace: 'pre-line', fontFamily: 'var(--orot-font)',
+              background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
+            }}>
+              {heroTitle}
+            </h1>
+          </div>
+        </BleedCard>
+
         {profiles.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
-            <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dim)', marginBottom: '8px', textAlign: 'center' }}>{t('savedProfiles', lang)}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--orot-ink-mute)', marginBottom: 8, fontFamily: 'var(--orot-font)' }}>{t('savedProfiles', lang)}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {profiles.map((p, i) => (
                 <button key={i} style={{
-                  padding: '8px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: 700,
-                  background: 'rgba(159,122,234,0.12)', border: '1px solid rgba(159,122,234,0.3)',
-                  color: 'var(--text)', cursor: 'pointer'
+                  padding: '8px 14px', borderRadius: '999px', fontSize: 12, fontWeight: 500,
+                  background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)',
+                  color: 'var(--orot-coral)', cursor: 'pointer', fontFamily: 'var(--orot-font)',
                 }} onClick={() => {
                   setUserData({ name: p.name, gender: p.gender, year: p.year, month: p.month, day: p.day, hour: p.hour, concern: p.concern, state: p.state, personality: [...p.personality], relationship: p.relationship, wantToKnow: p.wantToKnow });
                   if (p.concern >= 0 && p.state >= 0) {
@@ -1359,7 +1513,7 @@ export default function SajuApp() {
             </div>
           </div>
         )}
-        <div className="card card-glow">
+        <div className="orot-card" style={{ marginBottom: 16 }}>
           <div className="input-group">
             <label htmlFor="input-name">{t('name', lang)}</label>
             <input id="input-name" type="text" maxLength={50} placeholder={t('namePlaceholder', lang)} value={userData.name} onChange={e => updateUser('name', e.target.value)} aria-label={t('name', lang)} />
@@ -1413,8 +1567,7 @@ export default function SajuApp() {
                   onClick={() => updateUser('hour', ti.h)}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); updateUser('hour', ti.h); } }}>
                   <div className="time-range">{ti.range}</div>
-                  <div className="time-hanja">{lang === 'en' ? ti.hanja.replace('시', '') : ti.hanja}</div>
-                  <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
+                                    <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
                 </div>
               ))}
               <div role="radio" aria-checked={userData.hour === -1} tabIndex={0}
@@ -1461,14 +1614,30 @@ export default function SajuApp() {
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-          <button className="btn btn-primary btn-full" style={{ flex: 1 }} onClick={() => {
+        <div style={{
+          background: 'rgba(243, 160, 146, 0.06)',
+          border: '1px solid var(--orot-coral-faint)',
+          borderRadius: 'var(--orot-r-md)',
+          padding: '12px 14px',
+          marginBottom: 16,
+          color: 'var(--orot-ink-soft)',
+          fontSize: 12,
+          lineHeight: 1.6,
+          fontFamily: 'var(--orot-font)',
+        }}>
+          {isEn
+            ? 'Your info is used only for the reading and can be deleted anytime.'
+            : '입력하신 정보는 풀이에만 사용되며 언제든 삭제하실 수 있어요.'}
+        </div>
+        <button
+          className="orot-btn orot-btn--primary orot-btn--full"
+          onClick={() => {
             if (!userData.name) updateUser('name', t('anonymous', lang));
             setCurrentScreen(2); setQuestionStep(0);
-          }}>
-            {t('next', lang)}
-          </button>
-        </div>
+          }}
+        >
+          {ctaLabel}
+        </button>
       </div>
     );
   }
@@ -1504,14 +1673,29 @@ export default function SajuApp() {
     );
 
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '40px' }}>
-        <button className="back-btn" onClick={() => setCurrentScreen((appMode === 'saju' || appMode === 'yearly') ? 1 : 0)}>{t('backBtn', lang)}</button>
-        <div className="progress-dots">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className={'dot' + (i < questionStep ? ' done' : '') + (i === questionStep ? ' active' : '')} />
-          ))}
+      <div className="inner screen-enter orot-root orot-form-screen" style={{ paddingTop: '24px' }}>
+        <button
+          onClick={() => setCurrentScreen((appMode === 'saju' || appMode === 'yearly') ? 1 : 0)}
+          aria-label={t('backBtn', lang)}
+          style={{
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
+        <div style={{ marginBottom: 16 }}>
+          <div className="orot-eyebrow" style={{ marginBottom: 10 }}>
+            {lang === 'en' ? `Question ${questionStep + 1} of 4` : `질문 ${questionStep + 1} / 4`}
+          </div>
+          <div className="progress-dots" style={{ marginTop: 0, marginBottom: 0 }}>
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} className={'dot' + (i < questionStep ? ' done' : '') + (i === questionStep ? ' active' : '')} />
+            ))}
+          </div>
         </div>
-        <div className="card card-glow" style={{ animation: 'fadeInUp 0.4s ease' }}>
+        <div className="orot-card" style={{ animation: 'fadeInUp 0.4s ease' }}>
           {questionStep === 0 && (
             <>
               <h3>{t('q1Title', lang)}</h3>
@@ -1526,7 +1710,7 @@ export default function SajuApp() {
           )}
           {questionStep === 2 && (
             <>
-              <h3>{t('q3Title', lang)}<br /><span style={{ fontSize: '13px', color: 'var(--text-dim)', fontWeight: 400 }}>{t('q3Sub', lang)}</span></h3>
+              <h3>{t('q3Title', lang)}<br /><span style={{ fontSize: 13, color: 'var(--orot-ink-soft)', fontWeight: 400, fontFamily: 'var(--orot-font)' }}>{t('q3Sub', lang)}</span></h3>
               {persKeys.map((pairKeys, pi) => [t(pairKeys[0], lang), t(pairKeys[1], lang)]).map((pair, pi) => (
                 <div key={pi} className="pair-toggle" role="group">
                   <div role="radio" aria-checked={userData.personality[pi] === 0} tabIndex={0}
@@ -1550,13 +1734,13 @@ export default function SajuApp() {
           )}
           {/* 5번째 질문 삭제됨 */}
         </div>
-        <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           {questionStep > 0 && (
-            <button className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)' }} onClick={() => setQuestionStep(questionStep - 1)}>
+            <button className="orot-btn orot-btn--ghost" style={{ flex: 1 }} onClick={() => setQuestionStep(questionStep - 1)}>
               {t('prev', lang)}
             </button>
           )}
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => {
+          <button className="orot-btn orot-btn--primary" style={{ flex: 1 }} onClick={() => {
             if (questionStep < 3) setQuestionStep(questionStep + 1);
             else {
               /* 프로필 자동 저장 */
@@ -1588,18 +1772,60 @@ export default function SajuApp() {
 
   /* ===== SCREEN 3: Loading ===== */
   function renderLoading() {
+    const isEn = lang === 'en';
     const steps = [t('loading1', lang), t('loading2', lang), t('loading3', lang)];
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '120px', textAlign: 'center' }}>
-        <button className="back-btn" onClick={() => { cancelLoading(); setIsLoading(false); setIsGenerating(false); setCurrentScreen(2); }}>{t('backBtn', lang)}</button>
-        <div style={{ fontSize: '48px', animation: 'float 2s ease-in-out infinite', marginBottom: '32px' }}>🔮</div>
-        {steps.map((step, i) => (
-          <div key={i} className={'loading-step' + (i <= loadingStep ? (i < loadingStep ? ' done' : ' active') : '')}>
-            <div className="spinner" />
-            <div className="check">✓</div>
-            <span>{step}</span>
+      <div className="inner screen-enter orot-root" style={{
+        paddingTop: '24px', paddingBottom: 32, textAlign: 'center',
+        minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+      }}>
+        <button
+          onClick={() => { cancelLoading(); setIsLoading(false); setIsGenerating(false); setCurrentScreen(2); }}
+          aria-label={t('backBtn', lang)}
+          style={{
+            alignSelf: 'flex-start',
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <div className="orot-moon orot-breathe" style={{ width: 64, height: 64, marginBottom: 28 }} aria-hidden="true" />
+
+          <h2 style={{
+            fontSize: 22, fontWeight: 700, color: 'var(--orot-ink)',
+            letterSpacing: '-0.012em', margin: '0 0 8px', fontFamily: 'var(--orot-font)',
+          }}>
+            {isEn ? 'Reading your texture' : '결을 살펴보는 중'}
+          </h2>
+          <p style={{
+            fontSize: 14, color: 'var(--orot-ink-soft)',
+            lineHeight: 1.6, margin: 0, whiteSpace: 'pre-line', fontFamily: 'var(--orot-font)',
+          }}>
+            {isEn ? 'Just a moment, please.\nStarlight is settling into place.' : '잠시만 기다려 주세요.\n별빛이 자리를 잡고 있어요.'}
+          </p>
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 32 }} aria-hidden="true">
+            {steps.map((_, i) => (
+              <div key={i} style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: i <= loadingStep ? 'var(--orot-coral)' : 'var(--orot-hair-strong)',
+                opacity: i === loadingStep ? 1 : (i < loadingStep ? 0.7 : 0.4),
+                transition: 'all 240ms ease',
+              }} />
+            ))}
           </div>
-        ))}
+
+          <div role="status" aria-live="polite" style={{
+            marginTop: 18, fontSize: 12, color: 'var(--orot-ink-mute)', fontFamily: 'var(--orot-font)',
+            minHeight: 18,
+          }}>
+            {steps[loadingStep] || ''}
+          </div>
+        </div>
       </div>
     );
   }
@@ -1609,23 +1835,45 @@ export default function SajuApp() {
     if (!sajuResult) {
       // Saved result view — no saju calc data, just AI text
       if (aiText) {
+        const isEn = lang === 'en';
         return (
-          <div className="inner screen-enter">
-            <button className="back-btn" onClick={() => { setCurrentScreen(0); setAiText(''); }}>{t('backBtn', lang)}</button>
-            <div className="result-header">
-              <div style={{ fontSize: '48px', marginBottom: '8px' }}>📂</div>
-              <div className="name gradient-text">{lang === 'en' ? 'Saved Result' : '저장된 결과'}</div>
-            </div>
+          <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+            <button
+              onClick={() => { setCurrentScreen(0); setAiText(''); }}
+              aria-label={t('backBtn', lang)}
+              style={{
+                background: 'transparent', border: 0, color: 'var(--orot-ink)',
+                fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+                fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+            </button>
+            <BleedCard veil="soft" minHeight={160} style={{ marginBottom: 20 }}>
+              <div style={{ paddingTop: 6, paddingBottom: 6 }}>
+                <div className="orot-eyebrow" style={{ marginBottom: 10 }}>
+                  📂 {isEn ? 'Saved reading' : '저장된 해석'}
+                </div>
+                <h1 style={{
+                  fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
+                  letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
+                  fontFamily: 'var(--orot-font)',
+                  background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
+                }}>
+                  {isEn ? 'A reading you saved' : '내가 저장해 둔 해석'}
+                </h1>
+              </div>
+            </BleedCard>
             <div className="section-divider">{t('aiReading', lang)}</div>
             {renderTOC(aiText)}
             <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
-            <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
-              <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
+            <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
+              <button className="orot-btn orot-btn--ghost" style={{ flex: 1, height: 44, fontSize: 13 }}
                 disabled={isSharingLink}
-                onClick={() => shareLink(aiText, lang === 'en' ? 'Saved Result' : '저장된 결과')}>
-                {isSharingLink ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 링크 공유')}
+                onClick={() => shareLink(aiText, isEn ? 'Saved Result' : '저장된 결과')}>
+                {isSharingLink ? (isEn ? '🔗 Creating...' : '🔗 생성 중...') : (isEn ? '🔗 Share Link' : '🔗 링크 공유')}
               </button>
-              <button className="btn" style={{ flex: 1, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: 'var(--text)', fontSize: '13px' }}
+              <button className="orot-btn orot-btn--ghost" style={{ flex: 1, height: 44, fontSize: 13 }}
                 disabled={isTranslating}
                 onClick={() => {
                   const targetLang = aiTextTranslated ? (lang === 'ko' ? 'ko' : 'en') : (lang === 'ko' ? 'en' : 'ko');
@@ -1633,7 +1881,8 @@ export default function SajuApp() {
                 }}>
                 {isTranslating ? t('translating', lang) : (aiTextTranslated ? (lang === 'ko' ? t('translateToKo', lang) : t('translateToEn', lang)) : (lang === 'ko' ? t('translateToEn', lang) : t('translateToKo', lang)))}
               </button>
-              <button className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)', fontSize: '13px' }} onClick={() => { setCurrentScreen(0); setAiText(''); }}>
+              <button className="orot-btn orot-btn--ghost" style={{ flex: 1, height: 44, fontSize: 13 }}
+                onClick={() => { setCurrentScreen(0); setAiText(''); }}>
                 {t('restart', lang)}
               </button>
             </div>
@@ -1715,19 +1964,33 @@ export default function SajuApp() {
       { label: t('pillarHour', lang) + '\n' + t('lateYearsLabel', lang), value: unsung['시지'] ? (energyMap[unsung['시지']] || 5) : 5 },
     ];
 
-    const ohColors: Record<string, string> = {'목':'#22C55E','화':'#EF4444','토':'#EAB308','금':'#94A3B8','수':'#3B82F6'};
+    const ohColors: Record<string, string> = {'목':'#94b88f','화':'#e88578','토':'#d3b87a','금':'#b5b7c7','수':'#8aa1c4'};
 
+    const isEn = lang === 'en';
+    const heroBirthLine = isEn
+      ? `${t(('monthName' + userData.month) as any, lang)} ${userData.day}, ${userData.year}`
+      : `${userData.year}${t('yearUnit', lang)} ${userData.month}${t('monthUnit', lang)} ${userData.day}${t('dayUnit', lang)}`;
     return (
-      <div className="inner screen-enter">
-        <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
+      <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+        <button
+          onClick={() => setCurrentScreen(0)}
+          aria-label={t('backBtn', lang)}
+          style={{
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
         {/* Reading save status indicator */}
         {readingSaveStatus === 'saving' && (
-          <div role="status" aria-live="polite" style={{ textAlign: 'center', fontSize: 13, color: 'rgba(245,240,232,0.5)', marginBottom: 8 }}>
+          <div role="status" aria-live="polite" style={{ textAlign: 'center', fontSize: 13, color: 'var(--orot-ink-mute)', marginBottom: 8 }}>
             {t('savingStatus', lang)}
           </div>
         )}
         {readingSaveStatus === 'saved' && (
-          <div role="status" aria-live="polite" style={{ textAlign: 'center', fontSize: 13, color: '#50C878', marginBottom: 8 }}>
+          <div role="status" aria-live="polite" style={{ textAlign: 'center', fontSize: 13, color: 'var(--orot-el-wood)', marginBottom: 8 }}>
             {t('savedStatus', lang)}
           </div>
         )}
@@ -1744,11 +2007,34 @@ export default function SajuApp() {
             )}
           </div>
         )}
-        {/* Result Header */}
-        <div className="result-header">
-          <div className="name gradient-text">{userData.name || t('anonymous', lang)}{t('sajuAnalysisOf', lang)}</div>
-          <div className="sub">{lang === 'en' ? `${t('monthName' + userData.month as any, lang)} ${userData.day}, ${userData.year}` : `${userData.year}${t('yearUnit', lang)} ${userData.month}${t('monthUnit', lang)} ${userData.day}${t('dayUnit', lang)}`} {t('born', lang)}</div>
-        </div>
+        {/* Hero BleedCard */}
+        <BleedCard veil="left" minHeight={240} style={{ marginBottom: 20 }}>
+          <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '80%' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
+              {isEn ? 'My reading' : '나의 풀이'}
+            </div>
+            <p style={{
+              fontSize: 13, color: 'var(--orot-ink-soft)', margin: 0,
+              fontFamily: 'var(--orot-font)',
+            }}>
+              {(userData.name || t('anonymous', lang))}{isEn ? '' : ' 님은'}
+            </p>
+            <h1 style={{
+              fontSize: 26, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.3, margin: '8px 0 0',
+              fontFamily: 'var(--orot-font)',
+              background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
+            }}>
+              {userData.name || t('anonymous', lang)}{t('sajuAnalysisOf', lang)}
+            </h1>
+            <p style={{
+              fontSize: 12, color: 'var(--orot-ink-mute)', margin: '10px 0 0',
+              fontFamily: 'var(--orot-font)',
+            }}>
+              {heroBirthLine} {t('born', lang)}
+            </p>
+          </div>
+        </BleedCard>
 
         {/* Four Pillars - Enhanced */}
         <div className="section-divider">{t('sajuMyeongsik', lang)}</div>
@@ -1773,27 +2059,28 @@ export default function SajuApp() {
                   <span key={i} style={{
                     display: 'inline-block',
                     padding: '3px 10px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
+                    borderRadius: 999,
+                    fontSize: 12,
                     fontWeight: 600,
-                    background: isGwiin ? 'rgba(240,199,94,0.15)' : isGil ? 'rgba(110,231,183,0.12)' : 'rgba(251,191,36,0.10)',
-                    border: isGwiin ? '1px solid rgba(240,199,94,0.4)' : isGil ? '1px solid rgba(110,231,183,0.3)' : '1px solid rgba(251,191,36,0.25)',
-                    color: isGwiin ? '#F0C75E' : isGil ? '#6EE7B7' : '#FBBF24'
+                    fontFamily: 'var(--orot-font)',
+                    background: isGwiin ? 'rgba(243, 160, 146, 0.10)' : isGil ? 'rgba(148, 184, 143, 0.10)' : 'rgba(211, 184, 122, 0.08)',
+                    border: isGwiin ? '1px solid var(--orot-coral-faint)' : isGil ? '1px solid rgba(148, 184, 143, 0.30)' : '1px solid rgba(211, 184, 122, 0.25)',
+                    color: isGwiin ? 'var(--orot-coral)' : isGil ? 'var(--orot-el-wood)' : 'var(--orot-el-earth)'
                   }}>
-                    {isGwiin ? '⭐ ' : ''}{shinsalDisplay[s] || s}
+                    {isGwiin ? '✦ ' : ''}{shinsalDisplay[s] || s}
                   </span>
                 );
               })}
             </div>
             {/* 개별 신살 설명 */}
-            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {shinsal.map((s, i) => {
                 const explain = shinsalExplain[s];
                 if (!explain) return null;
                 const isGwiinItem = gwiin.includes(s);
                 return (
-                  <div key={i} style={{ fontSize: '12px', lineHeight: 1.5, color: 'rgba(245,240,232,0.65)', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
-                    <strong style={{ color: isGwiinItem ? '#F0C75E' : '#FBBF24' }}>{shinsalDisplay[s] || s}</strong>
+                  <div key={i} style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--orot-ink-soft)', padding: '6px 10px', borderRadius: 8, background: 'rgba(243, 231, 207, 0.04)', fontFamily: 'var(--orot-font)' }}>
+                    <strong style={{ color: isGwiinItem ? 'var(--orot-coral)' : 'var(--orot-el-earth)' }}>{shinsalDisplay[s] || s}</strong>
                     {' — '}{lang === 'en' ? explain.en : explain.ko}
                   </div>
                 );
@@ -1812,8 +2099,8 @@ export default function SajuApp() {
           <svg viewBox="0 0 320 165" style={{ width: '100%', height: 'auto' }}>
             <defs>
               <linearGradient id="energyGrad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#F0C75E" />
-                <stop offset="100%" stopColor="#F687B3" />
+                <stop offset="0%" stopColor="#f3a092" />
+                <stop offset="100%" stopColor="#e88578" />
               </linearGradient>
             </defs>
             {/* Grid lines */}
@@ -1836,21 +2123,21 @@ export default function SajuApp() {
                   <polyline points={pts.map(p => p.x + ',' + p.y).join(' ')} fill="none" stroke="url(#energyGrad)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                   {pts.map((p, i) => (
                     <g key={i}>
-                      <circle cx={p.x} cy={p.y} r="5" fill={i === 2 ? '#F0C75E' : '#F687B3'} stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
-                      <text x={p.x} y={p.y - 10} fill="rgba(255,255,255,0.8)" fontSize="10" textAnchor="middle" fontWeight="700">
+                      <circle cx={p.x} cy={p.y} r="5" fill={i === 2 ? '#f3a092' : '#e88578'} stroke="rgba(16,20,44,0.5)" strokeWidth="1.5" />
+                      <text x={p.x} y={p.y - 10} fill="#f3e7cf" fontSize="10" textAnchor="middle" fontWeight="700">
                         {energyPoints[i].value}
                       </text>
                     </g>
                   ))}
                   {energyPoints.map((ep, i) => (
                     <g key={'lbl'+i}>
-                      <text x={xs[i]} y="125" fill="rgba(255,255,255,0.7)" fontSize="10" textAnchor="middle" fontWeight="600">
+                      <text x={xs[i]} y="125" fill="#e2d2b3" fontSize="10" textAnchor="middle" fontWeight="600">
                         {ep.label.split('\n')[0]}
                       </text>
-                      <text x={xs[i]} y="137" fill="rgba(255,255,255,0.4)" fontSize="9" textAnchor="middle">
+                      <text x={xs[i]} y="137" fill="#b3a48a" fontSize="9" textAnchor="middle">
                         {ep.label.split('\n')[1] || ''}
                       </text>
-                      <text x={xs[i]} y="150" fill="#7DD3FC" fontSize="9" textAnchor="middle" fontWeight="600">
+                      <text x={xs[i]} y="150" fill="#8aa1c4" fontSize="9" textAnchor="middle" fontWeight="600">
                         {[unsung['년지'], unsung['월지'], unsung['일지'], unsung['시지'] || '?'][i]}
                       </text>
                     </g>
@@ -1888,32 +2175,32 @@ export default function SajuApp() {
               const pillarStages = [unsung['년지'], unsung['월지'], unsung['일지'], unsung['시지'] || '?'];
 
               return (
-                <div style={{ background: 'rgba(240,199,94,0.05)', borderRadius: '12px', padding: '14px', border: '1px solid rgba(240,199,94,0.1)' }}>
+                <div style={{ background: 'rgba(243, 160, 146, 0.06)', borderRadius: 'var(--orot-r-md)', padding: 14, border: '1px solid var(--orot-coral-faint)' }}>
                   {/* 나의 핵심 에너지 */}
-                  <div style={{ fontWeight: 700, color: '#F0C75E', marginBottom: '4px', fontSize: '15px' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 4, fontSize: 15, fontFamily: 'var(--orot-font)' }}>
                     {dayInfo.emoji} {t('myEnergy', lang)} {dayInfo.name} ({dayE}/10)
                   </div>
-                  <div style={{ fontSize: '12px', color: '#FFD080', marginBottom: '8px', fontStyle: 'italic' }}>
+                  <div style={{ fontSize: 12, color: 'var(--orot-coral-soft)', marginBottom: 8, fontStyle: 'italic', fontFamily: 'var(--orot-font)' }}>
                     "{dayInfo.analogy}"
                   </div>
-                  <div style={{ marginBottom: '12px', fontSize: '13px', lineHeight: '1.6' }}>{dayInfo.desc}</div>
+                  <div style={{ marginBottom: 12, fontSize: 13, lineHeight: 1.6, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>{dayInfo.desc}</div>
 
                   {/* 에너지 최고/최저 */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ background: 'rgba(110,231,183,0.08)', borderRadius: '10px', padding: '8px 10px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '10px', color: '#6EE7B7', fontWeight: 600 }}>{t('energyHighPoint', lang)}</div>
-                      <div style={{ fontSize: '14px', fontWeight: 700 }}>{highPoint.label.replace('\n', ' ')}</div>
-                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#6EE7B7' }}>{highPoint.value}/10</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                    <div style={{ background: 'rgba(148, 184, 143, 0.10)', borderRadius: 10, padding: '8px 10px', textAlign: 'center', border: '1px solid rgba(148, 184, 143, 0.25)' }}>
+                      <div style={{ fontSize: 10, color: 'var(--orot-el-wood)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('energyHighPoint', lang)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>{highPoint.label.replace('\n', ' ')}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--orot-el-wood)', fontFamily: 'var(--orot-font)' }}>{highPoint.value}/10</div>
                     </div>
-                    <div style={{ background: 'rgba(248,113,113,0.08)', borderRadius: '10px', padding: '8px 10px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '10px', color: '#F87171', fontWeight: 600 }}>{t('energyLowPoint', lang)}</div>
-                      <div style={{ fontSize: '14px', fontWeight: 700 }}>{lowPoint.label.replace('\n', ' ')}</div>
-                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#F87171' }}>{lowPoint.value}/10</div>
+                    <div style={{ background: 'rgba(243, 160, 146, 0.10)', borderRadius: 10, padding: '8px 10px', textAlign: 'center', border: '1px solid var(--orot-coral-faint)' }}>
+                      <div style={{ fontSize: 10, color: 'var(--orot-coral)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('energyLowPoint', lang)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>{lowPoint.label.replace('\n', ' ')}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>{lowPoint.value}/10</div>
                     </div>
                   </div>
 
                   {/* 4주별 해설 */}
-                  <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>{t('periodEnergyDesc', lang)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>{t('periodEnergyDesc', lang)}</div>
                   {(() => {
                     const pillarMeaning = lang === 'en'
                       ? ['Year Pillar — your roots, ancestors, and childhood (ages 1-15). Shows inherited fortune and early environment.',
@@ -1932,19 +2219,19 @@ export default function SajuApp() {
                         </div>
                       );
                       return (
-                        <div key={idx} style={{ padding: '10px 0', borderBottom: idx < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: 700, color: idx === 2 ? '#F0C75E' : 'var(--text)' }}>
+                        <div key={idx} style={{ padding: '10px 0', borderBottom: idx < 3 ? '1px solid var(--orot-hair)' : 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: idx === 2 ? 'var(--orot-coral)' : 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>
                               {info.emoji} {pillarNames[idx]}
                             </span>
-                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#7DD3FC' }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
                               {info.name} ({energyMap[stage]}/10)
                             </span>
                           </div>
-                          <div style={{ fontSize: '11px', color: 'rgba(125,211,252,0.7)', lineHeight: '1.5', marginBottom: '4px', fontStyle: 'italic' }}>
+                          <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', lineHeight: 1.5, marginBottom: 4, fontStyle: 'italic', fontFamily: 'var(--orot-font)' }}>
                             {pillarMeaning[idx]}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
+                          <div style={{ fontSize: 11, color: 'var(--orot-ink-soft)', lineHeight: 1.5, fontFamily: 'var(--orot-font)' }}>
                             {lang === 'en' ? 'Energy level' : '에너지'} {energyMap[stage]}/10: {info.analogy} — {info.desc.split('.')[0]}.
                           </div>
                         </div>
@@ -1991,91 +2278,89 @@ export default function SajuApp() {
                 {/* 신강/신약 게이지 */}
                 <div style={{ marginBottom: '16px' }}>
                   <SectionExplainer text={getSingangExplanation(isStrong, lang)} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('singangSinyak', lang)}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: isStrong ? '#F0C75E' : '#7DD3FC' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>{t('singangSinyak', lang)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: isStrong ? 'var(--orot-coral)' : 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
                       {isStrong ? t('singangFull', lang) : t('sinyakFull', lang)}
                     </span>
                   </div>
-                  <div style={{ width: '100%', height: '24px', background: 'rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ width: '100%', height: 24, background: 'rgba(243, 231, 207, 0.06)', borderRadius: 12, overflow: 'hidden', position: 'relative', border: '1px solid var(--orot-hair)' }}>
                     <div style={{
                       width: strengthPct + '%',
                       height: '100%',
-                      background: isStrong
-                        ? 'linear-gradient(90deg, #F0C75E, #FF6B9D)'
-                        : 'linear-gradient(90deg, #7DD3FC, #C4B5FD)',
-                      borderRadius: '12px',
+                      background: isStrong ? 'var(--orot-coral)' : 'var(--orot-el-water)',
+                      borderRadius: 12,
                       transition: 'width 1s ease',
-                      display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px'
+                      display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8
                     }}>
-                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#0A0E2A' }}>{Math.round(strengthPct)}%</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--orot-ink-on-pink)', fontFamily: 'var(--orot-font)' }}>{Math.round(strengthPct)}%</span>
                     </div>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: 10, color: 'var(--orot-ink-mute)', fontWeight: 500, fontFamily: 'var(--orot-font)' }}>
                       {t('weakStrong', lang)}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, fontFamily: 'var(--orot-font)' }}>
                     <span>{t('deukryungLabel', lang)}: {deukryung ? '✓' : '✗'} | {t('tonggeunLabel', lang)}: {tonggeunCount}{t('countUnit', lang)} | {t('bigyupLabel', lang)}: {bigyupCount}{t('countUnit', lang)}</span>
                   </div>
-                  <p style={{ fontSize: '12px', marginTop: '8px', lineHeight: '1.5', color: 'var(--text-dim)' }}>
+                  <p style={{ fontSize: 12, marginTop: 8, lineHeight: 1.5, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
                     {isStrong ? t('singangDesc', lang) : t('sinyakDesc', lang)}
                   </p>
                 </div>
 
                 {/* 용신/희신/기신 카드 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                  <div style={{ background: 'rgba(110,231,183,0.08)', border: '1px solid rgba(110,231,183,0.2)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '11px', color: '#6EE7B7', fontWeight: 700, marginBottom: '4px' }}>{t('yongsinLabel', lang)}</div>
-                    <div style={{ fontSize: '28px', fontWeight: 800, color: yongsinColor }}>{OH_ICON[yongsin]} {lang === 'en' ? OH_EN_CAP[yongsin] : yongsin}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div style={{ background: 'rgba(148, 184, 143, 0.08)', border: '1px solid rgba(148, 184, 143, 0.25)', borderRadius: 14, padding: 12, textAlign: 'center' }}>
+                    <div style={{ fontSize: 11, color: 'var(--orot-el-wood)', fontWeight: 700, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{t('yongsinLabel', lang)}</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: yongsinColor, fontFamily: 'var(--orot-font)' }}>{OH_ICON[yongsin]} {lang === 'en' ? OH_EN_CAP[yongsin] : yongsin}</div>
+                    <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, fontFamily: 'var(--orot-font)' }}>
                       {t('johuYongsin', lang)}
                     </div>
                   </div>
-                  <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '11px', color: '#F87171', fontWeight: 700, marginBottom: '4px' }}>{t('gisinLabel', lang)}</div>
-                    <div style={{ fontSize: '28px', fontWeight: 800, color: gisinColor }}>{OH_ICON[gisin]} {lang === 'en' ? OH_EN_CAP[gisin] : gisin}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>
+                  <div style={{ background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)', borderRadius: 14, padding: 12, textAlign: 'center' }}>
+                    <div style={{ fontSize: 11, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{t('gisinLabel', lang)}</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: gisinColor, fontFamily: 'var(--orot-font)' }}>{OH_ICON[gisin]} {lang === 'en' ? OH_EN_CAP[gisin] : gisin}</div>
+                    <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, fontFamily: 'var(--orot-font)' }}>
                       {t('gisinWarning', lang)}
                     </div>
                   </div>
                 </div>
                 {/* 희신/구신 서브 라벨 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
                   {heesin && (
-                    <div style={{ background: 'rgba(125,211,252,0.06)', border: '1px solid rgba(125,211,252,0.12)', borderRadius: '10px', padding: '8px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '11px', color: '#7DD3FC', fontWeight: 600 }}>{t('heesinLabel', lang)}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: heesinColor }}>{OH_ICON[heesin]} {heesin}</span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{t('heesinDesc', lang)}</span>
+                    <div style={{ background: 'rgba(138, 161, 196, 0.06)', border: '1px solid rgba(138, 161, 196, 0.20)', borderRadius: 10, padding: 8, textAlign: 'center' }}>
+                      <span style={{ fontSize: 11, color: 'var(--orot-el-water)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('heesinLabel', lang)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: heesinColor, marginLeft: 6, fontFamily: 'var(--orot-font)' }}>{OH_ICON[heesin]} {heesin}</span>
+                      <span style={{ fontSize: 10, color: 'var(--orot-ink-mute)', display: 'block', marginTop: 2, fontFamily: 'var(--orot-font)' }}>{t('heesinDesc', lang)}</span>
                     </div>
                   )}
                   {gusin && (
-                    <div style={{ background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.12)', borderRadius: '10px', padding: '8px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '11px', color: '#FBBF24', fontWeight: 600 }}>{t('gusinLabel', lang)}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: ohColors[gusin] || '#FBBF24' }}>{OH_ICON[gusin]} {gusin}</span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{t('gusinDesc', lang)}</span>
+                    <div style={{ background: 'rgba(211, 184, 122, 0.06)', border: '1px solid rgba(211, 184, 122, 0.20)', borderRadius: 10, padding: 8, textAlign: 'center' }}>
+                      <span style={{ fontSize: 11, color: 'var(--orot-el-earth)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('gusinLabel', lang)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: ohColors[gusin] || 'var(--orot-el-earth)', marginLeft: 6, fontFamily: 'var(--orot-font)' }}>{OH_ICON[gusin]} {gusin}</span>
+                      <span style={{ fontSize: 10, color: 'var(--orot-ink-mute)', display: 'block', marginTop: 2, fontFamily: 'var(--orot-font)' }}>{t('gusinDesc', lang)}</span>
                     </div>
                   )}
                 </div>
                 {tongguanNote && (
-                  <div style={{ fontSize: '12px', color: '#C4B5FD', marginBottom: '12px', padding: '8px 12px', background: 'rgba(196,181,253,0.06)', borderRadius: '10px', border: '1px solid rgba(196,181,253,0.12)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginBottom: 12, padding: '8px 12px', background: 'rgba(243, 231, 207, 0.05)', borderRadius: 10, border: '1px solid var(--orot-hair-strong)', fontFamily: 'var(--orot-font)' }}>
                     {t('tongguanLabel', lang)}{tongguanNote}
                   </div>
                 )}
 
                 {/* 조후 */}
-                <div style={{ background: 'rgba(125,211,252,0.06)', border: '1px solid rgba(125,211,252,0.15)', borderRadius: '14px', padding: '12px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#7DD3FC', marginBottom: '6px' }}>
+                <div style={{ background: 'rgba(138, 161, 196, 0.06)', border: '1px solid rgba(138, 161, 196, 0.22)', borderRadius: 14, padding: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-el-water)', marginBottom: 6, fontFamily: 'var(--orot-font)' }}>
                     {t('johuTitle', lang)} — {season} {t('bornInSeason', lang)}
                   </div>
-                  <div style={{ fontSize: '13px', lineHeight: '1.6', marginBottom: '8px' }}>
+                  <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 8, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
                     {johu}
                   </div>
-                  <div style={{ fontSize: '12px', lineHeight: '1.5' }}>
-                    {t('johuYongsinLabel', lang)}<strong style={{ color: ohColors[johuYongsin] || '#7DD3FC' }}>{OH_ICON[johuYongsin]} {johuYongsin}</strong>
-                    {johuYongsin !== yongsin && <span style={{ color: 'var(--text-dim)' }}> ({lang === 'en' ? OH_EN_CAP[yongsin] : yongsin}{t('eokbuDiff', lang)})</span>}
-                    {johuYongsin === yongsin && <span style={{ color: '#6EE7B7' }}>{t('eokbuMatch', lang)}</span>}
+                  <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
+                    {t('johuYongsinLabel', lang)}<strong style={{ color: ohColors[johuYongsin] || 'var(--orot-el-water)' }}>{OH_ICON[johuYongsin]} {johuYongsin}</strong>
+                    {johuYongsin !== yongsin && <span style={{ color: 'var(--orot-ink-mute)' }}> ({lang === 'en' ? OH_EN_CAP[yongsin] : yongsin}{t('eokbuDiff', lang)})</span>}
+                    {johuYongsin === yongsin && <span style={{ color: 'var(--orot-el-wood)' }}>{t('eokbuMatch', lang)}</span>}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '8px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                  <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 8, padding: 8, background: 'rgba(243, 231, 207, 0.04)', borderRadius: 8, fontFamily: 'var(--orot-font)' }}>
                     {t('gaewunTip', lang)}{yongsin === '화' || johuYongsin === '화' ? t('gaewun_fire', lang) :
                     yongsin === '수' || johuYongsin === '수' ? t('gaewun_water', lang) :
                     yongsin === '목' || johuYongsin === '목' ? t('gaewun_wood', lang) :
@@ -2091,28 +2376,26 @@ export default function SajuApp() {
         {/* AI Reading */}
         <div className="section-divider">{t('aiReading', lang)}</div>
         {isGenerating && (
-          <div className="card" style={{ textAlign: 'center', padding: '48px 24px', background: 'rgba(159,122,234,0.08)', border: '1px solid rgba(159,122,234,0.2)', borderRadius: '20px' }}>
-            <div style={{ fontSize: '64px', animation: 'float 2s ease-in-out infinite', marginBottom: '20px' }}>
-              {generatingProgress === 0 ? '\uD83D\uDD2E' : generatingProgress === 1 ? '\u2728' : '\uD83C\uDF1F'}
-            </div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '12px' }}>
+          <div className="card" style={{ textAlign: 'center', padding: '48px 24px', background: 'linear-gradient(180deg, rgba(243,160,146,0.10), rgba(243,160,146,0.04))', border: '1px solid var(--orot-coral-faint)', borderRadius: 'var(--orot-r-lg)' }}>
+            <div className="orot-moon orot-breathe" style={{ width: 56, height: 56, display: 'inline-block', marginBottom: 20 }} aria-hidden="true" />
+            <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 12, fontFamily: 'var(--orot-font)' }}>
               {generatingProgress === 0 && t('genStep0Msg', lang)}
               {generatingProgress === 1 && t('genStep1Msg', lang)}
               {generatingProgress === 2 && t('genStep2Msg', lang)}
             </p>
-            <div style={{ width: '100%', maxWidth: '280px', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', margin: '0 auto 16px', overflow: 'hidden' }}>
+            <div style={{ width: '100%', maxWidth: 280, height: 8, background: 'rgba(243, 231, 207, 0.08)', borderRadius: 4, margin: '0 auto 16px', overflow: 'hidden' }}>
               <div style={{
                 width: ((generatingProgress + 1) / 3 * 100) + '%',
                 height: '100%',
-                background: 'linear-gradient(90deg, #9F7AEA, #F687B3)',
-                borderRadius: '4px',
+                background: 'var(--orot-coral)',
+                borderRadius: 4,
                 transition: 'width 0.5s ease'
               }} />
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '4px' }}>
+            <p style={{ fontSize: 13, color: 'var(--orot-ink-soft)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
               {loadingProgress || t('preparing', lang)}
             </p>
-            <p style={{ fontSize: '12px', opacity: 0.4 }}>
+            <p style={{ fontSize: 12, color: 'var(--orot-ink-mute)', fontFamily: 'var(--orot-font)' }}>
               {generatingProgress === 0 ? t('genTime0', lang) : generatingProgress === 1 ? t('genTime1', lang) : t('genTime2', lang)}
             </p>
           </div>
@@ -2123,16 +2406,16 @@ export default function SajuApp() {
         )}
 
         {/* Share + Save + Restart */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
           {aiText && !isGenerating && (
-            <button className="btn" style={{ flex: 1, background: 'rgba(240,199,94,0.18)', border: '1px solid rgba(240,199,94,0.35)', color: 'var(--text)', fontSize: '13px' }}
+            <button className="orot-btn orot-btn--ghost" style={{ flex: 1, minWidth: 120, height: 44, fontSize: 13 }}
               disabled={isSharingLink}
               onClick={() => shareLink(aiText, (userData.name || '') + (lang === 'en' ? "'s Saju Reading" : '의 사주 해설'))}>
               {isSharingLink ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 링크 공유')}
             </button>
           )}
           {aiText && !isGenerating && (
-            <button className="btn" style={{ flex: 1, background: 'rgba(159,122,234,0.15)', border: '1px solid rgba(159,122,234,0.3)', color: 'var(--text)', fontSize: '13px' }} onClick={() => {
+            <button className="orot-btn orot-btn--primary" style={{ flex: 1, minWidth: 120, height: 44, fontSize: 13 }} onClick={() => {
               try {
                 const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
                 const entry = { name: userData.name, date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: currentScreen === 7 ? (lang === 'en' ? '2026 Fortune' : '2026 운세') : (lang === 'en' ? 'Saju Reading' : '사주 해설'), text: aiText, saju: sajuResult, user: userData };
@@ -2143,7 +2426,7 @@ export default function SajuApp() {
             }}>{t('saveResult', lang)}</button>
           )}
           {aiText && !isGenerating && (
-            <button className="btn" style={{ flex: 1, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: 'var(--text)', fontSize: '13px' }}
+            <button className="orot-btn orot-btn--ghost" style={{ flex: 1, minWidth: 120, height: 44, fontSize: 13 }}
               disabled={isTranslating}
               onClick={() => {
                 const targetLang = aiTextTranslated ? (lang === 'ko' ? 'ko' : 'en') : (lang === 'ko' ? 'en' : 'ko');
@@ -2152,11 +2435,11 @@ export default function SajuApp() {
               {isTranslating ? t('translating', lang) : (aiTextTranslated ? (lang === 'ko' ? t('translateToKo', lang) : t('translateToEn', lang)) : (lang === 'ko' ? t('translateToEn', lang) : t('translateToKo', lang)))}
             </button>
           )}
-          <button className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)', fontSize: '13px' }} onClick={() => { setCurrentScreen(0); setAiText(''); setSajuResult(null); }}>
+          <button className="orot-btn orot-btn--ghost" style={{ flex: 1, minWidth: 120, height: 44, fontSize: 13 }} onClick={() => { setCurrentScreen(0); setAiText(''); setSajuResult(null); }}>
             {t('restart', lang)}
           </button>
         </div>
-        <p style={{ textAlign: 'center', fontSize: '11px', marginTop: '24px', opacity: 0.3 }}>
+        <p style={{ textAlign: 'center', fontSize: 11, marginTop: 24, color: 'var(--orot-ink-faint)' }}>
           {t('disclaimer', lang)}
         </p>
       </div>
@@ -2243,13 +2526,45 @@ export default function SajuApp() {
     const data = compatResult ? (() => { try { return JSON.parse(compatResult.html); } catch { return null; } })() : null;
 
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '56px' }}>
-        <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
-        <h2 className="gradient-text" style={{ textAlign: 'center', marginBottom: '24px' }}>{t('compatAnalysis', lang)}</h2>
+      <div className="inner screen-enter orot-root orot-form-screen orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+        <button
+          onClick={() => setCurrentScreen(0)}
+          aria-label={t('backBtn', lang)}
+          style={{
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
+        <BleedCard
+          image="/images/orot/compat-character.webp"
+          framingId="compat-character"
+          veil="left"
+          minHeight={220}
+          style={{ marginBottom: 20 }}
+        >
+          <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
+              {lang === 'en' ? "Two people's textures" : '두 사람의 결'}
+            </div>
+            <h1 style={{
+              fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
+              fontFamily: 'var(--orot-font)',
+              background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
+            }}>
+              {t('compatAnalysis', lang)}
+            </h1>
+          </div>
+        </BleedCard>
 
         {!sajuResult && (
-          <div className="card card-glow">
-            <h3>{t('person1', lang)}</h3>
+          <div className="orot-card" style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--orot-coral)', margin: '0 0 16px', letterSpacing: '-0.012em', fontFamily: 'var(--orot-font)' }}>
+              <span style={{ fontSize: 11, marginRight: 8 }}>✦</span>{t('person1', lang)}
+            </h3>
             {profiles.length > 0 && (
               <div className="input-group">
                 <label>{t('loadProfileSaved', lang)}</label>
@@ -2307,8 +2622,7 @@ export default function SajuApp() {
                        onClick={() => setCompatPerson1(p => ({ ...p, hour: ti.h }))}
                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCompatPerson1(p => ({ ...p, hour: ti.h })); } }}>
                     <div className="time-range">{ti.range}</div>
-                    <div className="time-hanja">{lang === 'en' ? ti.hanja.replace('시', '') : ti.hanja}</div>
-                    <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
+                                        <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
                   </div>
                 ))}
                 <div role="radio" aria-checked={compatPerson1.hour === -1} tabIndex={0}
@@ -2356,8 +2670,10 @@ export default function SajuApp() {
           </div>
         )}
 
-        <div className="card card-glow">
-          <h3>{t('person2', lang)}</h3>
+        <div className="orot-card" style={{ marginBottom: 16 }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--orot-coral)', margin: '0 0 16px', letterSpacing: '-0.012em', fontFamily: 'var(--orot-font)' }}>
+            <span style={{ fontSize: 11, marginRight: 8 }}>✦</span>{t('person2', lang)}
+          </h3>
           {profiles.length > 0 && (
             <div className="input-group">
               <label>{t('loadProfileLabel', lang)}</label>
@@ -2415,8 +2731,7 @@ export default function SajuApp() {
                      onClick={() => setCompatPerson2(p => ({ ...p, hour: ti.h }))}
                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCompatPerson2(p => ({ ...p, hour: ti.h })); } }}>
                   <div className="time-range">{ti.range}</div>
-                  <div className="time-hanja">{lang === 'en' ? ti.hanja.replace('시', '') : ti.hanja}</div>
-                  <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
+                                    <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
                 </div>
               ))}
               <div role="radio" aria-checked={compatPerson2.hour === -1} tabIndex={0}
@@ -2463,9 +2778,9 @@ export default function SajuApp() {
           </div>
         </div>
 
-        <div className="card" style={{ marginTop: '12px', padding: '20px' }}>
-          <h3 style={{ marginBottom: '12px' }}>{t('relTypeTitle', lang)}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div className="orot-card" style={{ marginTop: 12, marginBottom: 12, padding: 22 }}>
+          <h3>{t('relTypeTitle', lang)}</h3>
+          <div className="option-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {[
               { label: t('relDating', lang), idx: 0 },
               { label: t('relMarried', lang), idx: 1 },
@@ -2475,15 +2790,35 @@ export default function SajuApp() {
               { label: t('relCrush', lang), idx: 5 },
             ].map(r => (
               <div key={r.idx}
+                role="radio"
+                aria-checked={compatRelType === r.idx}
+                tabIndex={0}
                 className={'option-card' + (compatRelType === r.idx ? ' selected' : '')}
                 onClick={() => { setCompatRelType(r.idx); resetCompatResult(); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCompatRelType(r.idx); resetCompatResult(); } }}
               >{r.label}</div>
             ))}
           </div>
         </div>
 
-        <button className="btn btn-primary btn-full" style={{ marginTop: '12px' }} onClick={() => setCompatPaywall(true)}>
-          {t('analyzeCompat', lang)}
+        <div style={{
+          background: 'rgba(243, 160, 146, 0.06)',
+          border: '1px solid var(--orot-coral-faint)',
+          borderRadius: 'var(--orot-r-md)',
+          padding: '12px 14px',
+          marginTop: 12,
+          marginBottom: 12,
+          color: 'var(--orot-ink-soft)',
+          fontSize: 12,
+          lineHeight: 1.6,
+          fontFamily: 'var(--orot-font)',
+        }}>
+          {lang === 'en'
+            ? 'Your info is used only for the reading and can be deleted anytime.'
+            : '입력하신 정보는 풀이에만 사용되며 언제든 삭제하실 수 있어요.'}
+        </div>
+        <button className="orot-btn orot-btn--primary orot-btn--full" onClick={() => setCompatPaywall(true)}>
+          {t('analyzeCompat', lang)} ›
         </button>
 
         {compatPaywall && !compatResult && (() => {
@@ -2728,7 +3063,7 @@ export default function SajuApp() {
               const oh1 = getOhCount(s1);
               const oh2 = getOhCount(s2);
               const ohKeys = ['목','화','토','금','수'] as const;
-              const ohColors: Record<string, string> = {'목':'#22C55E','화':'#EF4444','토':'#EAB308','금':'#94A3B8','수':'#3B82F6'};
+              const ohColors: Record<string, string> = {'목':'#94b88f','화':'#e88578','토':'#d3b87a','금':'#b5b7c7','수':'#8aa1c4'};
               const maxOh = Math.max(...ohKeys.map(k => Math.max(oh1[k], oh2[k])), 1);
 
               // Day master relationship
@@ -3066,11 +3401,38 @@ export default function SajuApp() {
     const data = pregResult ? (() => { try { return JSON.parse(pregResult); } catch { return null; } })() : null;
 
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '56px' }}>
-        <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
-        <h2 style={{ textAlign: 'center', marginBottom: '8px', background: 'linear-gradient(135deg,#E91E8C,#FF6FB7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-          {t('pregGuide', lang)}
-        </h2>
+      <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+        <button
+          onClick={() => setCurrentScreen(0)}
+          aria-label={t('backBtn', lang)}
+          style={{
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
+        <BleedCard
+          image="/images/orot/baby-character.webp"
+          framingId="baby-character"
+          veil="left"
+          minHeight={220}
+          style={{ marginBottom: 20 }}
+        >
+          <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
+              {lang === 'en' ? 'Mother & baby' : '엄마와 아기'}
+            </div>
+            <h1 style={{
+              fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
+              fontFamily: 'var(--orot-font)',
+            }}>
+              {t('pregGuide', lang)}
+            </h1>
+          </div>
+        </BleedCard>
         <p style={{ textAlign: 'center', marginBottom: '24px', fontSize: '14px', color: 'var(--text-dim)' }}>
           {t('pregSubtitle', lang)}
         </p>
@@ -3268,14 +3630,39 @@ export default function SajuApp() {
       // Saved result view — no saju calc data, just AI text
       if (aiText) {
         return (
-          <div className="inner screen-enter">
-            <button className="back-btn" onClick={() => { setCurrentScreen(0); setAiText(''); }}>{t('backBtn', lang)}</button>
-            <div className="result-header">
-              <div style={{ fontSize: '48px', marginBottom: '8px' }}>📅</div>
-              <div className="name" style={{ background: 'linear-gradient(135deg,#F59E0B,#EF4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+          <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+            <button
+              onClick={() => { setCurrentScreen(0); setAiText(''); }}
+              aria-label={t('backBtn', lang)}
+              style={{
+                background: 'transparent', border: 0, color: 'var(--orot-ink)',
+                fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+                fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+            </button>
+            <BleedCard
+              image="/images/orot/year-character.webp"
+              framingId="year-character"
+              veil="left"
+              minHeight={180}
+              style={{ marginBottom: 20 }}
+            >
+              <div style={{ paddingTop: 6, paddingBottom: 6, maxWidth: '70%' }}>
+                <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
+                  📅 {lang === 'en' ? 'Saved fortune' : '저장된 운세'}
+                </div>
+                <h1 style={{
+                  fontSize: 22, fontWeight: 700, color: 'var(--orot-ink)',
+                  letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
+                  fontFamily: 'var(--orot-font)',
+                  background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
+                }}>
                 {lang === 'en' ? 'Saved Fortune' : '저장된 운세'}
-              </div>
+              </h1>
             </div>
+            </BleedCard>
             <div className="section-divider">{t('aiReading', lang)}</div>
             <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
             <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
@@ -3305,10 +3692,47 @@ export default function SajuApp() {
     ];
 
     return (
-      <div className="inner screen-enter">
-        <button className="back-btn" onClick={() => { setCurrentScreen(0); setAiText(''); setSajuResult(null); }}>{t('backBtn', lang)}</button>
+      <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+        <button
+          onClick={() => { setCurrentScreen(0); setAiText(''); setSajuResult(null); }}
+          aria-label={t('backBtn', lang)}
+          style={{
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
+        <BleedCard
+          image="/images/orot/year-character.webp"
+          framingId="year-character"
+          veil="left"
+          minHeight={240}
+          style={{ marginBottom: 20 }}
+        >
+          <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '70%' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
+              {lang === 'en' ? '◇ 2026 ◇' : '◇ 2026 나의 한 해 ◇'}
+            </div>
+            <h1 style={{
+              fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
+              fontFamily: 'var(--orot-font)',
+              background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
+            }}>
+              {(userData.name || t('anonymous', lang)) + t('yearlyFortuneOf', lang)}
+            </h1>
+            <p style={{
+              fontSize: 12, color: 'var(--orot-ink-mute)', margin: '10px 0 0',
+              fontFamily: 'var(--orot-font)',
+            }}>
+              {lang === 'en' ? `${t(('monthName' + userData.month) as any, lang)} ${userData.day}, ${userData.year}` : `${userData.year}${t('yearUnit', lang)} ${userData.month}${t('monthUnit', lang)} ${userData.day}${t('dayUnit', lang)}`} {t('born', lang)}
+            </p>
+          </div>
+        </BleedCard>
 
-        {/* Header */}
+        {/* Header (hidden, replaced by hero) */}
         <div className="result-header">
           <div style={{ fontSize: '48px', marginBottom: '8px' }}>📅</div>
           <div className="name" style={{ background: 'linear-gradient(135deg,#F59E0B,#EF4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
@@ -3674,23 +4098,57 @@ export default function SajuApp() {
 
     const icons = isYearly ? yearlyIcons : ['🎯', '🗺', '💰', '💕', '🔍', '👥', '👨‍👩‍👧', '🏥', '🛤', '📅', '🍀', '💌'];
 
+    const isEn = lang === 'en';
+    const teaserBirthLine = isEn
+      ? `${t(('monthName' + userData.month) as any, lang)} ${userData.day}, ${userData.year}`
+      : `${userData.year}${t('yearUnit', lang)} ${userData.month}${t('monthUnit', lang)} ${userData.day}${t('dayUnit', lang)}`;
     return (
-      <div className="inner screen-enter">
-        <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
+      <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+        <button
+          onClick={() => setCurrentScreen(0)}
+          aria-label={t('backBtn', lang)}
+          style={{
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
 
-        {/* Result Header */}
-        <div className="result-header">
-          {isYearly && <div style={{ fontSize: '48px', marginBottom: '8px' }}>📅</div>}
-          <div className="name gradient-text" style={isYearly ? { background: 'linear-gradient(135deg,#F59E0B,#EF4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' } : undefined}>
-            {isYearly ? (userData.name || t('anonymous', lang)) + t('yearlyFortuneOf', lang) : (userData.name || t('anonymous', lang)) + t('sajuAnalysisOf', lang)}
-          </div>
-          <div className="sub">{lang === 'en' ? `${t('monthName' + userData.month as any, lang)} ${userData.day}, ${userData.year}` : `${userData.year}${t('yearUnit', lang)} ${userData.month}${t('monthUnit', lang)} ${userData.day}${t('dayUnit', lang)}`} {t('born', lang)}</div>
-          {isYearly && (
-            <div style={{ marginTop: '8px', display: 'inline-block', padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#F59E0B' }}>
-              {t('yearlyBadge', lang)}
+        {/* Hero BleedCard */}
+        <BleedCard
+          image={isYearly ? '/images/orot/year-character.webp' : '/images/orot/saju-in-character.webp'}
+          framingId={isYearly ? 'year-character' : 'saju-in-character'}
+          veil="left"
+          minHeight={240}
+          style={{ marginBottom: 20 }}
+        >
+          <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '70%' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
+              {isYearly ? (isEn ? '◇ 2026 ◇' : '◇ 2026 나의 한 해 ◇') : (isEn ? 'My reading' : '나의 풀이')}
             </div>
-          )}
-        </div>
+            <h1 style={{
+              fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
+              fontFamily: 'var(--orot-font)',
+              background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
+            }}>
+              {isYearly ? (userData.name || t('anonymous', lang)) + t('yearlyFortuneOf', lang) : (userData.name || t('anonymous', lang)) + t('sajuAnalysisOf', lang)}
+            </h1>
+            <p style={{
+              fontSize: 12, color: 'var(--orot-ink-mute)', margin: '10px 0 0',
+              fontFamily: 'var(--orot-font)',
+            }}>
+              {teaserBirthLine} {t('born', lang)}
+            </p>
+            {isYearly && (
+              <div style={{ marginTop: 12, display: 'inline-block', padding: '4px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(243, 160, 146, 0.10)', border: '1px solid var(--orot-coral-faint)', color: 'var(--orot-coral)' }}>
+                {t('yearlyBadge', lang)}
+              </div>
+            )}
+          </div>
+        </BleedCard>
 
         {/* Section B: Spoiler Cards - personalized teasers */}
         <div className="section-divider">{isYearly ? t('teaserFortune', lang) : t('teaserSaju', lang)}</div>
@@ -3835,28 +4293,29 @@ export default function SajuApp() {
 
         {/* Section E: Star-based Unlock CTA */}
         <div className="card" style={{
-          background: 'linear-gradient(135deg, rgba(246,196,67,0.12), rgba(245,158,11,0.08))',
-          border: '1px solid rgba(246,196,67,0.3)',
+          background: 'linear-gradient(180deg, rgba(243,160,146,0.10), rgba(243,160,146,0.04))',
+          border: '1px solid var(--orot-coral-faint)',
+          borderRadius: 'var(--orot-r-lg)',
           textAlign: 'center',
           padding: '32px 24px'
         }}>
-          <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '12px' }}>
-            <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>전문가 대면 상담 ₩50,000+</span>
-            {' → AI 사주 해석'}
+          <div style={{ fontSize: 13, color: 'var(--orot-ink-mute)', marginBottom: 12, fontFamily: 'var(--orot-font)' }}>
+            <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>{lang === 'en' ? 'In-person reading ₩50,000+' : '전문가 대면 상담 ₩50,000+'}</span>
+            {' → '}{lang === 'en' ? 'AI Saju reading' : 'AI 사주 해석'}
           </div>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.7, marginBottom: '20px' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--orot-ink)', lineHeight: 1.7, marginBottom: 20, fontFamily: 'var(--orot-font)' }}>
             {isYearly
               ? t('paywallMsgYearly', lang)
               : t('paywallMsgSaju', lang)}
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <span style={{ fontSize: '28px', fontWeight: 800, color: '#F6C443' }}>⭐ 10 {lang === 'en' ? 'Stars' : '별빛'}</span>
-            <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '6px' }}>
+          <div style={{ marginBottom: 20 }}>
+            <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>⭐ 10 {lang === 'en' ? 'Stars' : '별빛'}</span>
+            <div style={{ fontSize: 13, color: 'var(--orot-ink-mute)', marginTop: 6, fontFamily: 'var(--orot-font)' }}>
               {lang === 'en' ? 'Your balance: ' : '보유 별빛: '}⭐ {starBalance}{lang === 'en' ? '' : '개'}
             </div>
             {isYearly && (
-              <div style={{ fontSize: '12px', color: '#F59E0B', marginTop: '4px', fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: 'var(--orot-coral-deep)', marginTop: 4, fontWeight: 600, fontFamily: 'var(--orot-font)' }}>
                 {t('currentMonthNoteLabel', lang)}
               </div>
             )}
@@ -3896,88 +4355,144 @@ export default function SajuApp() {
 
   /* ===== SCREEN 9: Star Charging ===== */
   function renderChargeScreen() {
+    const isEn = lang === 'en';
+    const packages = [
+      { stars: 10, price: 990,  desc: isEn ? 'Unlock 1 full reading' : '전체 해석 1회', highlight: false },
+      { stars: 20, price: 1900, desc: isEn ? '2 readings (save ₩80)' : '2회 이용 (80원 절약)', highlight: true },
+      { stars: 30, price: 2700, desc: isEn ? '3 readings (save ₩270)' : '3회 이용 (270원 절약)', highlight: false },
+    ];
     return (
-      <div className="inner screen-enter" style={{ paddingTop: '40px', paddingBottom: '40px' }}>
-        <button className="back-btn" onClick={() => setCurrentScreen(0)}>{t('backBtn', lang)}</button>
+      <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+        <button
+          onClick={() => setCurrentScreen(0)}
+          aria-label={t('backBtn', lang)}
+          style={{
+            background: 'transparent', border: 0, color: 'var(--orot-ink)',
+            fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+            fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
 
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ fontSize: '56px', marginBottom: '8px', animation: 'float 3s ease-in-out infinite' }}>⭐</div>
-          <h2 className="gradient-text" style={{ marginBottom: '8px' }}>
-            {lang === 'en' ? 'Star Shop' : '별빛 충전소'}
-          </h2>
-          <p style={{ fontSize: '14px', color: 'var(--text-dim)' }}>
-            {lang === 'en' ? 'Charge stars to unlock your readings' : '별빛을 충전하고 사주 해석을 열어보세요'}
-          </p>
-        </div>
+        {/* Hero BleedCard */}
+        <BleedCard veil="soft" minHeight={180} style={{ marginBottom: 20 }}>
+          <div style={{ paddingTop: 6, paddingBottom: 6, maxWidth: '70%' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
+              {isEn ? 'Star shop' : '별빛 충전소'}
+            </div>
+            <h1 style={{
+              fontSize: 22, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.35, margin: 0,
+              fontFamily: 'var(--orot-font)',
+              background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
+            }}>
+              {isEn ? 'Charge stars\nto unlock your readings.' : '별빛을 충전하고\n사주 해석을 열어보세요.'}
+            </h1>
+          </div>
+        </BleedCard>
 
         {/* Current balance */}
-        <div className="card card-glow" style={{ textAlign: 'center', marginBottom: '20px', padding: '20px' }}>
-          <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '4px' }}>
-            {lang === 'en' ? 'My Stars' : '보유 별빛'}
+        <div className="orot-card" style={{ textAlign: 'center', marginBottom: 16, padding: 22 }}>
+          <p style={{ fontSize: 13, color: 'var(--orot-ink-mute)', marginBottom: 6, fontFamily: 'var(--orot-font)' }}>
+            {isEn ? 'My Stars' : '보유 별빛'}
           </p>
-          <div style={{ fontSize: '36px', fontWeight: 900, color: '#F6C443' }}>⭐ {starBalance}{lang === 'en' ? '' : '개'}</div>
+          <div style={{ fontSize: 36, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)', lineHeight: 1.1 }}>
+            ⭐ {starBalance}{isEn ? '' : '개'}
+          </div>
         </div>
 
         {/* Charge option cards */}
-        {[
-          { stars: 10, price: 990, desc: lang === 'en' ? 'Unlock 1 full reading' : '전체 해석 1회', highlight: false },
-          { stars: 20, price: 1900, desc: lang === 'en' ? '2 readings (save ₩80)' : '2회 이용 (80원 절약)', highlight: true },
-          { stars: 30, price: 2700, desc: lang === 'en' ? '3 readings (save ₩270)' : '3회 이용 (270원 절약)', highlight: false },
-        ].map((pkg, i) => (
-          <div key={i} className="card" style={{
-            padding: '24px', marginBottom: '12px',
-            border: pkg.highlight ? '2px solid rgba(240,199,94,0.6)' : '1px solid rgba(240,199,94,0.15)',
-            background: pkg.highlight ? 'linear-gradient(135deg, rgba(240,199,94,0.12), rgba(255,208,128,0.06))' : undefined,
-            position: 'relative'
-          }}>
-            {pkg.highlight && <div style={{ position: 'absolute', top: '-10px', right: '16px', background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A', fontSize: '11px', fontWeight: 800, padding: '3px 12px', borderRadius: '10px' }}>{lang === 'en' ? 'BEST' : '인기'}</div>}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        {packages.map((pkg, i) => (
+          <div
+            key={i}
+            className="orot-card"
+            style={{
+              padding: 22,
+              marginBottom: 12,
+              position: 'relative',
+              border: pkg.highlight ? '1.5px solid var(--orot-coral)' : '1px solid var(--orot-hair)',
+              background: pkg.highlight
+                ? 'linear-gradient(180deg, rgba(243,160,146,0.12), rgba(243,160,146,0.05))'
+                : 'linear-gradient(180deg, var(--orot-card-navy) 0%, var(--orot-card-navy-2) 100%)',
+            }}
+          >
+            {pkg.highlight && (
+              <div style={{
+                position: 'absolute',
+                top: -10, right: 16,
+                background: 'var(--orot-coral)',
+                color: 'var(--orot-ink-on-pink)',
+                fontSize: 10, fontWeight: 700,
+                padding: '3px 12px',
+                borderRadius: 999,
+                letterSpacing: 0.04 + 'em',
+                fontFamily: 'var(--orot-font)',
+              }}>
+                ✦ {isEn ? 'BEST' : '인기'}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', marginBottom: '4px' }}>⭐ {lang === 'en' ? pkg.stars + ' Stars' : '별빛 ' + pkg.stars + '개'}</div>
-                <div style={{ fontSize: '13px', color: 'var(--text-dim)' }}>{pkg.desc}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
+                  ⭐ {isEn ? pkg.stars + ' Stars' : '별빛 ' + pkg.stars + '개'}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>{pkg.desc}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '24px', fontWeight: 900, color: '#F6C443' }}>₩{pkg.price.toLocaleString()}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
+                  ₩{pkg.price.toLocaleString()}
+                </div>
               </div>
             </div>
-            <a href="/payment" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '14px', fontSize: '16px', fontWeight: 700, width: '100%', boxSizing: 'border-box' }}>
-              {lang === 'en' ? 'Buy ' + pkg.stars + ' Stars — ₩' + pkg.price.toLocaleString() : '별빛 ' + pkg.stars + '개 구매 — ₩' + pkg.price.toLocaleString()}
+            <a
+              href="/payment"
+              className={pkg.highlight ? 'orot-btn orot-btn--primary orot-btn--full' : 'orot-btn orot-btn--ghost orot-btn--full'}
+              style={{ textDecoration: 'none', fontSize: 15 }}
+            >
+              {isEn ? 'Buy ' + pkg.stars + ' Stars — ₩' + pkg.price.toLocaleString() : '별빛 ' + pkg.stars + '개 구매 — ₩' + pkg.price.toLocaleString()} ›
             </a>
           </div>
         ))}
 
         {/* Pricing info */}
-        <div className="card" style={{ padding: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.8, marginBottom: '20px' }}>
-          <p style={{ marginBottom: '8px', fontWeight: 700, color: 'var(--text)' }}>
-            {lang === 'en' ? 'How stars work' : '별빛 사용 안내'}
+        <div className="orot-card" style={{ padding: 16, textAlign: 'center', fontSize: 13, lineHeight: 1.8, marginBottom: 20 }}>
+          <p style={{ marginBottom: 8, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
+            <span style={{ fontSize: 11, marginRight: 6 }}>✦</span>
+            {isEn ? 'How stars work' : '별빛 사용 안내'}
           </p>
-          <p style={{ marginBottom: '4px' }}>
-            {lang === 'en' ? '⭐ 10 stars = Full saju or yearly reading' : '⭐ 10개 = 개인 사주 또는 올해 운세 전체 해석'}
+          <p style={{ marginBottom: 4, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
+            {isEn ? '⭐ 10 stars = Full saju or yearly reading' : '⭐ 10개 = 개인 사주 또는 올해 운세 전체 해석'}
           </p>
-          <p style={{ marginBottom: '4px' }}>
-            {lang === 'en' ? '⭐ 5 stars = Compatibility reading' : '⭐ 5개 = 궁합 전체 해석'}
+          <p style={{ marginBottom: 4, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
+            {isEn ? '⭐ 5 stars = Compatibility reading' : '⭐ 5개 = 궁합 전체 해석'}
           </p>
-          <p>
-            {lang === 'en' ? '🤰 Pregnancy reading = Free' : '🤰 임산부 사주 = 무료'}
+          <p style={{ color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
+            {isEn ? '🤰 Pregnancy reading = Free' : '🤰 임산부 사주 = 무료'}
           </p>
         </div>
 
         {/* Free charge button for testing */}
-        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
           <button
             onClick={() => {
-              const pw = prompt(lang === 'en' ? 'Enter code:' : '코드를 입력해주세요:');
+              const pw = prompt(isEn ? 'Enter code:' : '코드를 입력해주세요:');
               if (!pw || pw !== '5386') return;
               updateStarBalance(starBalance + 10);
             }}
             style={{
-              background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
-              padding: '10px 20px', fontSize: '13px', color: 'var(--text-dim)', cursor: 'pointer',
-              opacity: 0.6, fontFamily: 'inherit', transition: 'opacity 0.2s'
+              background: 'transparent',
+              border: '1px solid var(--orot-hair-strong)',
+              borderRadius: 999,
+              padding: '10px 18px',
+              fontSize: 12,
+              color: 'var(--orot-ink-mute)',
+              cursor: 'pointer',
+              fontFamily: 'var(--orot-font)',
+              transition: 'opacity 160ms ease',
             }}
           >
-            {lang === 'en' ? '🎁 Add 10 Free Stars (Testing)' : '🎁 무료 별빛 10개 충전 (테스트용)'}
+            {isEn ? '🎁 Add 10 Free Stars (Testing)' : '🎁 무료 별빛 10개 충전 (테스트용)'}
           </button>
         </div>
       </div>
@@ -3993,26 +4508,35 @@ export default function SajuApp() {
           onClick={() => setCurrentScreen(9)}
           aria-label={lang === 'ko' ? '별빛 충전소' : 'Star Shop'}
           style={{
-            background: 'linear-gradient(135deg, rgba(240,199,94,0.25), rgba(255,208,128,0.15))',
-            border: '1.5px solid rgba(246,196,67,0.5)',
-            borderRadius: '24px', padding: '8px 16px', fontSize: '14px', fontWeight: 800,
-            color: '#F6C443', cursor: 'pointer', minHeight: '44px', display: 'flex', alignItems: 'center', gap: '6px',
-            boxShadow: '0 2px 12px rgba(240,199,94,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
-            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            background: 'rgba(16, 20, 44, 0.55)',
+            border: '1px solid var(--orot-coral-faint)',
+            borderRadius: 999,
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--orot-coral)',
+            fontFamily: 'var(--orot-font)',
+            cursor: 'pointer', minHeight: 36,
+            display: 'flex', alignItems: 'center', gap: 6,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.20)',
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
             animation: starBalance === 0 ? 'pulse 2s ease-in-out infinite' : 'none'
           }}
         >
-          <span style={{ fontSize: '16px' }}>⭐</span>
+          <span style={{ fontSize: 14 }}>⭐</span>
           <span>{starBalance}</span>
-          <span style={{ fontSize: '10px', opacity: 0.7, marginLeft: '2px' }}>{lang === 'en' ? 'CHARGE' : '충전'}</span>
+          <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 2, color: 'var(--orot-ink-mute)' }}>{lang === 'en' ? 'CHARGE' : '충전'}</span>
         </button>
         <button
           onClick={() => { const next = lang === 'ko' ? 'en' : 'ko'; setLang(next); try { localStorage.setItem('saju-lang', next); } catch {} }}
           aria-label={lang === 'ko' ? 'Switch to English' : '한국어로 전환'}
           style={{
-            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: '20px', padding: '10px 14px', fontSize: '13px', fontWeight: 700,
-            color: 'var(--text)', cursor: 'pointer', minHeight: '44px'
+            background: 'rgba(16, 20, 44, 0.55)',
+            border: '1px solid var(--orot-hair-strong)',
+            borderRadius: 999, padding: '8px 12px', fontSize: 12, fontWeight: 600,
+            color: 'var(--orot-ink-soft)', cursor: 'pointer', minHeight: 36,
+            fontFamily: 'var(--orot-font)',
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
           }}
         >
           {t('langToggle', lang)}
