@@ -148,6 +148,25 @@ export default function TermsPage() {
         </p>
 
         <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>
+          {isEn ? 'Article 6-2 (Payment by Minors)' : '제6조의2 (미성년자의 결제)'}
+        </h2>
+        <p>
+          {isEn
+            ? '① Users under the age of 19 (minors) must obtain consent from their legal representative before making a payment. The Company recommends that minors confirm with their legal representative before completing the payment process.'
+            : '① 만 19세 미만의 미성년자(이하 "미성년자")가 본 서비스의 유료 콘텐츠를 결제하는 경우, 미성년자는 결제 전에 법정대리인(부모 등)의 동의를 받아야 합니다. 회사는 미성년자의 결제 진행 전에 법정대리인의 동의 여부를 확인할 것을 권고합니다.'}
+        </p>
+        <p>
+          {isEn
+            ? '② Payments made by minors without the consent of their legal representative may be cancelled by the minor or their legal representative in accordance with Article 5 of the Civil Act. The Company will refund such payments in accordance with applicable laws and the Refund Policy.'
+            : '② 법정대리인의 동의 없이 이루어진 미성년자의 결제는 「민법」 제5조에 따라 미성년자 본인 또는 법정대리인이 취소할 수 있으며, 회사는 관련 법령 및 환불정책에 따라 환불을 진행합니다.'}
+        </p>
+        <p>
+          {isEn
+            ? '③ Cancellation requests under the preceding paragraph must be sent to the Company\'s customer support, accompanied by documents proving the user\'s minority status and the legal representative relationship.'
+            : '③ 전항에 따른 취소 요청은 회사의 고객센터로 접수해야 하며, 이용자가 미성년자임을 증명할 수 있는 자료 및 법정대리인 관계를 확인할 수 있는 서류를 함께 제출해야 합니다.'}
+        </p>
+
+        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>
           {isEn ? 'Article 7 (Service Delivery Timing)' : '제7조 (서비스 제공 시점)'}
         </h2>
         <p>
@@ -281,6 +300,25 @@ export default function TermsPage() {
           {isEn
             ? <>⑤ Details regarding refunds are governed by the separate <a href="/refund" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Refund Policy</a>.</>
             : <>⑤ 환불에 관한 세부 사항은 별도의 <a href="/refund" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>환불정책</a>을 따릅니다.</>}
+        </p>
+
+        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>
+          {isEn ? 'Article 11-2 (Service Errors and Re-provision)' : '제11조의2 (서비스 오류 및 재제공)'}
+        </h2>
+        <p>
+          {isEn
+            ? '① If the Service is not properly delivered due to a technical defect or system error attributable to the Company, the user may request re-provision of the same Service or a full refund of the amount paid.'
+            : '① 회사의 기술적 결함 또는 시스템 오류로 인하여 서비스가 정상적으로 제공되지 않은 경우, 이용자는 동일한 서비스의 무상 재제공 또는 결제 금액의 전액 환불을 요청할 수 있습니다.'}
+        </p>
+        <p>
+          {isEn
+            ? '② If the saju interpretation result is generated incompletely (e.g., output is truncated, sections are missing) or if any content other than the requested service is delivered, the Company will re-provide the service free of charge upon request from the user.'
+            : '② 사주 해석 결과물이 일부 누락되거나, 출력이 중단되는 등 정상적인 결과가 생성되지 않은 경우, 또는 이용자가 요청한 서비스와 다른 내용이 제공된 경우, 회사는 이용자의 요청에 따라 해당 서비스를 무상으로 재제공합니다.'}
+        </p>
+        <p>
+          {isEn
+            ? '③ Requests for re-provision or refund related to service errors must be submitted to the customer center within 30 days from the date of service use.'
+            : '③ 서비스 오류에 따른 재제공 또는 환불 요청은 서비스 이용일로부터 30일 이내에 고객센터로 접수해야 합니다.'}
         </p>
 
         <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>

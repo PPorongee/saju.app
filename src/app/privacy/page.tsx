@@ -291,6 +291,23 @@ export default function PrivacyPage() {
         )}
 
         <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>
+          {isEn ? '11-2. Processing Information of Children Under 14' : '11-2. 만 14세 미만 아동의 개인정보 처리'}
+        </h2>
+        {isEn ? (
+          <>
+            <p>① The Company, in principle, does not collect personal information from children under the age of 14. In order to use this Service, the consent of a legal representative is required for children under 14.</p>
+            <p>② If it is confirmed that a child under 14 has used the Service without the consent of their legal representative, the Company will immediately destroy the relevant personal information. Legal representatives may also request that any personal information of children under 14 be deleted via the customer center.</p>
+            <p>③ Detailed inquiries regarding the processing of personal information of children under 14 may be directed to the privacy officer below.</p>
+          </>
+        ) : (
+          <>
+            <p>① 회사는 원칙적으로 만 14세 미만 아동의 개인정보를 수집하지 않습니다. 본 서비스를 만 14세 미만 아동이 이용하기 위해서는 법정대리인의 동의가 필요합니다.</p>
+            <p>② 만 14세 미만 아동이 법정대리인의 동의 없이 서비스를 이용한 사실이 확인되는 경우, 회사는 해당 개인정보를 즉시 파기합니다. 법정대리인은 고객센터를 통해 만 14세 미만 아동의 개인정보 삭제를 요청할 수 있습니다.</p>
+            <p>③ 만 14세 미만 아동의 개인정보 처리에 관한 세부 문의는 아래 개인정보 보호책임자에게 연락하여 주시기 바랍니다.</p>
+          </>
+        )}
+
+        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: '28px 0 12px' }}>
           {isEn ? '12. Privacy Officer' : '12. 개인정보 보호책임자'}
         </h2>
         <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px', margin: '8px 0', fontSize: '13px' }}>

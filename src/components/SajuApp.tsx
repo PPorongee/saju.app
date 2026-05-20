@@ -2436,7 +2436,7 @@ export default function SajuApp() {
             {t('restart', lang)}
           </button>
         </div>
-        <p style={{ textAlign: 'center', fontSize: 11, marginTop: 24, color: 'var(--orot-ink-faint)' }}>
+        <p style={{ textAlign: 'center', fontSize: 12, marginTop: 24, padding: '12px 16px', color: 'var(--orot-ink-mute)', background: 'rgba(243, 231, 207, 0.04)', border: '1px solid var(--orot-hair)', borderRadius: 12, lineHeight: 1.6 }}>
           {t('disclaimer', lang)}
         </p>
       </div>
@@ -4033,7 +4033,7 @@ export default function SajuApp() {
             {t('restart', lang)}
           </button>
         </div>
-        <p style={{ textAlign: 'center', fontSize: '11px', marginTop: '24px', opacity: 0.3 }}>
+        <p style={{ textAlign: 'center', fontSize: '12px', marginTop: '24px', padding: '12px 16px', color: 'var(--orot-ink-mute)', background: 'rgba(243, 231, 207, 0.04)', border: '1px solid var(--orot-hair)', borderRadius: 12, lineHeight: 1.6 }}>
           {t('disclaimer', lang)}
         </p>
       </div>
@@ -4345,7 +4345,7 @@ export default function SajuApp() {
           )}
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: '11px', marginTop: '8px', opacity: 0.3 }}>
+        <p style={{ textAlign: 'center', fontSize: '12px', marginTop: '8px', padding: '12px 16px', color: 'var(--orot-ink-mute)', background: 'rgba(243, 231, 207, 0.04)', border: '1px solid var(--orot-hair)', borderRadius: 12, lineHeight: 1.6 }}>
           {t('disclaimer', lang)}
         </p>
       </div>

@@ -100,6 +100,9 @@ function PaymentPageContent() {
           <div className="payment-price">
             {priceFormatted}<span className="won">원</span>
           </div>
+          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', marginTop: '-4px', marginBottom: '12px' }}>
+            (부가가치세 포함)
+          </div>
           <div className="payment-info-row">
             <span className="payment-info-label">제공 방식</span>
             <span className="payment-info-value">{product.deliveryMethod}</span>
@@ -108,7 +111,27 @@ function PaymentPageContent() {
             <span className="payment-info-label">제공 시점</span>
             <span className="payment-info-value">{product.deliveryTime}</span>
           </div>
+          <div className="payment-info-row">
+            <span className="payment-info-label">결제 수단</span>
+            <span className="payment-info-value">신용/체크카드, 계좌이체, 토스페이, 간편결제</span>
+          </div>
           <p className="payment-desc">{product.description}</p>
+        </div>
+
+        {/* Service notices: minor / customer support / A/S */}
+        <div className="payment-card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 12px', color: 'var(--text)' }}>구매 전 확인사항</h3>
+          <div style={{ fontSize: '13px', lineHeight: 1.7, color: 'rgba(245,240,232,0.8)' }}>
+            <p style={{ margin: '0 0 8px' }}>
+              <strong style={{ color: 'var(--primary)' }}>미성년자 안내</strong> · 만 19세 미만 미성년자는 법정대리인의 동의 후 결제해주세요. 법정대리인 동의 없이 이루어진 결제는 법정대리인이 취소를 요청할 수 있습니다.
+            </p>
+            <p style={{ margin: '0 0 8px' }}>
+              <strong style={{ color: 'var(--primary)' }}>오류·재제공 (A/S)</strong> · 서비스 오류로 결과가 정상 제공되지 않은 경우 무상 재제공 또는 전액 환불됩니다. 고객센터로 문의해주세요.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: 'var(--primary)' }}>고객센터</strong> · 평일 10:00 ~ 18:00 (주말·공휴일 휴무) · {BUSINESS_INFO.email}
+            </p>
+          </div>
         </div>
 
         {/* Refund policy */}

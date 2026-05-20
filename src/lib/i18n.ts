@@ -85,7 +85,7 @@ export const T: Record<string, Record<Lang, string>> = {
   aiReading: { ko: 'AI 사주 풀이', en: 'AI Saju Reading' },
   saveResult: { ko: '💾 결과 저장', en: '💾 Save Result' },
   restart: { ko: '처음부터 다시 하기', en: 'Start Over' },
-  disclaimer: { ko: '사주풀이는 재미를 위한 것이며 전문 상담을 대체하지 않습니다.', en: 'This reading is for entertainment purposes only.' },
+  disclaimer: { ko: '본 서비스의 사주 해석 결과는 명리학 이론과 AI 기술을 활용한 참고용 콘텐츠이며, 의료·법률·재무 등 전문 자문이나 진단을 대체하지 않습니다. 특정 결과나 효과를 보장하지 않습니다.', en: 'Saju readings are reference content combining myeongrihak theory and AI, and do not replace medical, legal, or financial advice. No specific result is guaranteed.' },
   sajuMyeongsik: { ko: '사주 명식', en: 'Birth Chart' },
   ohBalance: { ko: '오행 밸런스', en: 'Five Elements Balance' },
   resultSaved: { ko: '저장되었어!', en: 'Saved!' },
