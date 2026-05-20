@@ -272,7 +272,7 @@ function PaymentPageContent() {
         {/* Footer */}
         <div className="payment-footer">
           <div>{BUSINESS_INFO.companyName} | 대표 {BUSINESS_INFO.ceoName}</div>
-          <div>사업자등록번호 {BUSINESS_INFO.businessNumber} | 통신판매업신고 {BUSINESS_INFO.salesNumber}</div>
+          <div>사업자등록번호 {BUSINESS_INFO.businessNumber} | 통신판매업신고 {BUSINESS_INFO.salesNumber || '신고 진행 중'}</div>
           <div>{BUSINESS_INFO.address}</div>
           <div>고객센터 {BUSINESS_INFO.phone} | {BUSINESS_INFO.email}</div>
           <div className="payment-footer-links">

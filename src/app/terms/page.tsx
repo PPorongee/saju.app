@@ -399,7 +399,7 @@ export default function TermsPage() {
           <p>{isEn ? `Company: ${B.companyName}` : `상호: ${B.companyName}`}</p>
           <p>{isEn ? `CEO: ${B.ceoName}` : `대표자: ${B.ceoName}`}</p>
           <p>{isEn ? `Business Registration No.: ${B.businessNumber}` : `사업자등록번호: ${B.businessNumber}`}</p>
-          <p>{isEn ? `Mail-Order Business No.: ${B.salesNumber}` : `통신판매업 신고번호: ${B.salesNumber}`}</p>
+          <p>{isEn ? `Mail-Order Business No.: ${B.salesNumber || 'Application in progress'}` : `통신판매업 신고번호: ${B.salesNumber || '신고 진행 중'}`}</p>
           <p>{isEn ? `Address: ${B.address}` : `주소: ${B.address}`}</p>
           <p>{isEn ? `Email: ${B.email}` : `이메일: ${B.email}`}</p>
           <p>{isEn ? `Phone: ${B.phone}` : `전화: ${B.phone}`}</p>
