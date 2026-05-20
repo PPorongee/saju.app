@@ -1241,7 +1241,7 @@ export default function SajuApp() {
             background: 'none',
             WebkitTextFillColor: 'var(--orot-ink)',
           }}>
-            {isEn ? 'Hello' : '안녕하세요'}
+            {isEn ? 'Welcome' : '잘 오셨어요'}
           </h1>
           <p style={{
             fontSize: 14,
@@ -1250,8 +1250,8 @@ export default function SajuApp() {
             margin: '6px 0 0',
           }}>
             {isEn
-              ? 'Understanding today brings clarity to your path.'
-              : '오늘의 나를 이해하면, 삶의 방향이 선명해져요.'}
+              ? 'Understanding yourself brings clarity to your path.'
+              : '나를 이해하면, 삶의 방향이 선명해져요.'}
           </p>
         </div>
 
