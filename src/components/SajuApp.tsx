@@ -1231,10 +1231,11 @@ export default function SajuApp() {
             letterSpacing: '-0.015em',
             lineHeight: 1.3,
             margin: 0,
+            whiteSpace: 'pre-line',
             background: 'none',
             WebkitTextFillColor: 'var(--orot-coral)',
           }}>
-            {isEn ? 'Welcome to Starlight Saju' : '별빛 사주에 오신 걸 환영해요'} <span style={{ fontSize: 18 }}>✦</span>
+            {isEn ? 'Welcome to\nStarlight Saju' : '별빛 사주,\n잘 오셨어요'} <span style={{ fontSize: 18 }}>✦</span>
           </h1>
           <p style={{
             fontSize: 14,
