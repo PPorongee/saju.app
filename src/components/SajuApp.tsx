@@ -1224,8 +1224,8 @@ export default function SajuApp() {
       <div className="inner screen-enter orot-root" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
         {/* App logo header */}
         <div style={{ padding: '4px 4px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ color: 'var(--orot-coral)', fontSize: 19, fontWeight: 700, letterSpacing: '-0.012em' }}>
-            {t('appTitle', lang)} <span style={{ fontSize: 14 }}>✦</span>
+          <div style={{ color: 'var(--orot-coral)', fontSize: 21, fontWeight: 700, letterSpacing: '-0.012em' }}>
+            {t('appTitle', lang)} <span style={{ fontSize: 15 }}>✦</span>
           </div>
         </div>
 
@@ -1332,7 +1332,7 @@ export default function SajuApp() {
                   📚 {t('prevResults', lang)}
                 </div>
                 <h3 style={{
-                  fontSize: 19, fontWeight: 700, color: 'var(--orot-coral)',
+                  fontSize: 21, fontWeight: 700, color: 'var(--orot-coral)',
                   letterSpacing: '-0.012em', lineHeight: 1.3, margin: 0,
                 }}>
                   {isEn ? 'Past readings' : '지난 풀이를 모아뒀어요'}
@@ -1481,7 +1481,7 @@ export default function SajuApp() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {profiles.map((p, i) => (
                 <button key={i} style={{
-                  padding: '8px 14px', borderRadius: '999px', fontSize: 12, fontWeight: 500,
+                  padding: '8px 14px', borderRadius: '999px', fontSize: 13, fontWeight: 500,
                   background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)',
                   color: 'var(--orot-coral)', cursor: 'pointer', fontFamily: 'var(--orot-font)',
                 }} onClick={() => {
@@ -2172,10 +2172,10 @@ export default function SajuApp() {
               return (
                 <div style={{ background: 'rgba(243, 160, 146, 0.06)', borderRadius: 'var(--orot-r-md)', padding: 14, border: '1px solid var(--orot-coral-faint)' }}>
                   {/* 나의 핵심 에너지 */}
-                  <div style={{ fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 4, fontSize: 15, fontFamily: 'var(--orot-font)' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 4, fontSize: 17, fontFamily: 'var(--orot-font)' }}>
                     {dayInfo.emoji} {t('myEnergy', lang)} {dayInfo.name} ({dayE}/10)
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--orot-coral-soft)', marginBottom: 8, fontStyle: 'italic', fontFamily: 'var(--orot-font)' }}>
+                  <div style={{ fontSize: 13, color: 'var(--orot-coral-soft)', marginBottom: 8, fontStyle: 'italic', fontFamily: 'var(--orot-font)' }}>
                     "{dayInfo.analogy}"
                   </div>
                   <div style={{ marginBottom: 12, fontSize: 13, lineHeight: 1.6, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>{dayInfo.desc}</div>
@@ -2188,9 +2188,9 @@ export default function SajuApp() {
                       <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--orot-el-wood)', fontFamily: 'var(--orot-font)' }}>{highPoint.value}/10</div>
                     </div>
                     <div style={{ background: 'rgba(243, 160, 146, 0.10)', borderRadius: 10, padding: '8px 10px', textAlign: 'center', border: '1px solid var(--orot-coral-faint)' }}>
-                      <div style={{ fontSize: 10, color: 'var(--orot-coral)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('energyLowPoint', lang)}</div>
+                      <div style={{ fontSize: 11, color: 'var(--orot-coral)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('energyLowPoint', lang)}</div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>{lowPoint.label.replace('\n', ' ')}</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>{lowPoint.value}/10</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>{lowPoint.value}/10</div>
                     </div>
                   </div>
 
@@ -2216,7 +2216,7 @@ export default function SajuApp() {
                       return (
                         <div key={idx} style={{ padding: '10px 0', borderBottom: idx < 3 ? '1px solid var(--orot-hair)' : 'none' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: idx === 2 ? 'var(--orot-coral)' : 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: idx === 2 ? 'var(--orot-coral)' : 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>
                               {info.emoji} {pillarNames[idx]}
                             </span>
                             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
@@ -2274,8 +2274,8 @@ export default function SajuApp() {
                 <div style={{ marginBottom: '16px' }}>
                   <SectionExplainer text={getSingangExplanation(isStrong, lang)} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>{t('singangSinyak', lang)}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: isStrong ? 'var(--orot-coral)' : 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>{t('singangSinyak', lang)}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: isStrong ? 'var(--orot-coral)' : 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
                       {isStrong ? t('singangFull', lang) : t('sinyakFull', lang)}
                     </span>
                   </div>
@@ -2312,7 +2312,7 @@ export default function SajuApp() {
                     </div>
                   </div>
                   <div style={{ background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)', borderRadius: 14, padding: 12, textAlign: 'center' }}>
-                    <div style={{ fontSize: 11, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{t('gisinLabel', lang)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{t('gisinLabel', lang)}</div>
                     <div style={{ fontSize: 28, fontWeight: 700, color: gisinColor, fontFamily: 'var(--orot-font)' }}>{OH_ICON[gisin]} {lang === 'en' ? OH_EN_CAP[gisin] : gisin}</div>
                     <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, fontFamily: 'var(--orot-font)' }}>
                       {t('gisinWarning', lang)}
@@ -2558,8 +2558,8 @@ export default function SajuApp() {
 
         {!sajuResult && (
           <div className="orot-card" style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--orot-coral)', margin: '0 0 16px', letterSpacing: '-0.012em', fontFamily: 'var(--orot-font)' }}>
-              <span style={{ fontSize: 11, marginRight: 8 }}>✦</span>{t('person1', lang)}
+            <h3 style={{ fontSize: 19, fontWeight: 700, color: 'var(--orot-coral)', margin: '0 0 16px', letterSpacing: '-0.012em', fontFamily: 'var(--orot-font)' }}>
+              <span style={{ fontSize: 12, marginRight: 8 }}>✦</span>{t('person1', lang)}
             </h3>
             {profiles.length > 0 && (
               <div className="input-group">
@@ -2667,8 +2667,8 @@ export default function SajuApp() {
         )}
 
         <div className="orot-card" style={{ marginBottom: 16 }}>
-          <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--orot-coral)', margin: '0 0 16px', letterSpacing: '-0.012em', fontFamily: 'var(--orot-font)' }}>
-            <span style={{ fontSize: 11, marginRight: 8 }}>✦</span>{t('person2', lang)}
+          <h3 style={{ fontSize: 19, fontWeight: 700, color: 'var(--orot-coral)', margin: '0 0 16px', letterSpacing: '-0.012em', fontFamily: 'var(--orot-font)' }}>
+            <span style={{ fontSize: 12, marginRight: 8 }}>✦</span>{t('person2', lang)}
           </h3>
           {profiles.length > 0 && (
             <div className="input-group">
@@ -4140,7 +4140,7 @@ export default function SajuApp() {
               {teaserBirthLine} {t('born', lang)}
             </p>
             {isYearly && (
-              <div style={{ marginTop: 12, display: 'inline-block', padding: '4px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: 'rgba(243, 160, 146, 0.10)', border: '1px solid var(--orot-coral-faint)', color: 'var(--orot-coral)' }}>
+              <div style={{ marginTop: 12, display: 'inline-block', padding: '4px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: 'rgba(243, 160, 146, 0.10)', border: '1px solid var(--orot-coral-faint)', color: 'var(--orot-coral)' }}>
                 {t('yearlyBadge', lang)}
               </div>
             )}
@@ -4307,12 +4307,12 @@ export default function SajuApp() {
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>⭐ 10 {lang === 'en' ? 'Stars' : '별빛'}</span>
+            <span style={{ fontSize: 31, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>⭐ 10 {lang === 'en' ? 'Stars' : '별빛'}</span>
             <div style={{ fontSize: 13, color: 'var(--orot-ink-mute)', marginTop: 6, fontFamily: 'var(--orot-font)' }}>
               {lang === 'en' ? 'Your balance: ' : '보유 별빛: '}⭐ {starBalance}{lang === 'en' ? '' : '개'}
             </div>
             {isYearly && (
-              <div style={{ fontSize: 12, color: 'var(--orot-coral-deep)', marginTop: 4, fontWeight: 600, fontFamily: 'var(--orot-font)' }}>
+              <div style={{ fontSize: 13, color: 'var(--orot-coral-deep)', marginTop: 4, fontWeight: 600, fontFamily: 'var(--orot-font)' }}>
                 {t('currentMonthNoteLabel', lang)}
               </div>
             )}
@@ -4394,7 +4394,7 @@ export default function SajuApp() {
           <p style={{ fontSize: 13, color: 'var(--orot-ink-mute)', marginBottom: 6, fontFamily: 'var(--orot-font)' }}>
             {isEn ? 'My Stars' : '보유 별빛'}
           </p>
-          <div style={{ fontSize: 36, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)', lineHeight: 1.1 }}>
+          <div style={{ fontSize: 40, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)', lineHeight: 1.1 }}>
             ⭐ {starBalance}{isEn ? '' : '개'}
           </div>
         </div>
@@ -4437,7 +4437,7 @@ export default function SajuApp() {
                 <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>{pkg.desc}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
                   ₩{pkg.price.toLocaleString()}
                 </div>
               </div>

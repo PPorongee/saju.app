@@ -1392,7 +1392,7 @@ input:focus-visible,
 /* Eyebrow */
 .orot-eyebrow {
   font-family: var(--orot-font);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--orot-coral);
   letter-spacing: 0.02em;
@@ -1722,7 +1722,7 @@ input:focus-visible,
   align-items: center;
   gap: 8px;
   font-family: var(--orot-font);
-  font-size: 16px !important;
+  font-size: 18px !important;
   font-weight: 600 !important;
   color: var(--orot-coral) !important;
   letter-spacing: 0.02em !important;
