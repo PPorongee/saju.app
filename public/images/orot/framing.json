@@ -14,10 +14,30 @@
     "offsetX": -10.29841345934251,
     "offsetY": 0
   },
+  "home-feat-saju-hero": {
+    "scale": 1,
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  "home-feat-year-hero": {
+    "scale": 1,
+    "offsetX": -11.67154014480474,
+    "offsetY": 0
+  },
+  "home-feat-compat-hero": {
+    "scale": 1,
+    "offsetX": 20,
+    "offsetY": 0
+  },
   "home-feat-baby": {
     "scale": 1,
     "offsetX": 8.4717607973422,
     "offsetY": 1.1102230246251565e-14
+  },
+  "home-feat-baby-hero": {
+    "scale": 1,
+    "offsetX": 8.4717607973422,
+    "offsetY": 40
   },
   "home-feat-year": {
     "scale": 1,

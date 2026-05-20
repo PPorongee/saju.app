@@ -1429,7 +1429,7 @@ export default function SajuApp() {
     const eyebrowTitle = t(isYearly ? 'yearlyTitle' : 'sajuTitle', lang);
     const eyebrowDesc = t(isYearly ? 'yearlyDesc' : 'sajuDesc', lang);
     const heroImage = isYearly ? '/images/orot/home-feat-year.webp' : '/images/orot/home-feat-saju.webp';
-    const heroFramingId = isYearly ? 'home-feat-year' : 'home-feat-saju';
+    const heroFramingId = isYearly ? 'home-feat-year-hero' : 'home-feat-saju-hero';
     const heroTitle = isYearly
       ? (isEn ? 'A look ahead at the flow\nthis year brings' : '올해 내게 올 흐름을\n미리 살펴봐요')
       : (isEn ? 'Through your birth chart,\nlook within' : '태어난 날의 사주로\n나를 들여다봐요');
@@ -2535,7 +2535,7 @@ export default function SajuApp() {
         </button>
         <BleedCard
           image="/images/orot/home-feat-compat.webp"
-          framingId="home-feat-compat"
+          framingId="home-feat-compat-hero"
           veil="left"
           minHeight={220}
           style={{ marginBottom: 20 }}
@@ -3411,7 +3411,7 @@ export default function SajuApp() {
         </button>
         <BleedCard
           image="/images/orot/home-feat-baby.webp"
-          framingId="home-feat-baby"
+          framingId="home-feat-baby-hero"
           veil="left"
           minHeight={220}
           style={{ marginBottom: 20 }}
