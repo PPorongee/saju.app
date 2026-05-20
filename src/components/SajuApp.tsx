@@ -1428,6 +1428,8 @@ export default function SajuApp() {
     const isYearly = appMode === 'yearly';
     const eyebrowTitle = t(isYearly ? 'yearlyTitle' : 'sajuTitle', lang);
     const eyebrowDesc = t(isYearly ? 'yearlyDesc' : 'sajuDesc', lang);
+    const heroImage = isYearly ? '/images/orot/home-feat-year.webp' : '/images/orot/home-feat-saju.webp';
+    const heroFramingId = isYearly ? 'home-feat-year' : 'home-feat-saju';
     const heroTitle = isYearly
       ? (isEn ? 'A look ahead at the flow\nthis year brings' : '올해 내게 올 흐름을\n미리 살펴봐요')
       : (isEn ? 'Through your birth chart,\nlook within' : '태어난 날의 사주로\n나를 들여다봐요');
@@ -1451,8 +1453,8 @@ export default function SajuApp() {
 
         {/* Hero BleedCard */}
         <BleedCard
-          image="/images/orot/saju-in-character.webp"
-          framingId="saju-in-character"
+          image={heroImage}
+          framingId={heroFramingId}
           veil="left"
           minHeight={220}
           style={{ marginBottom: 20 }}
@@ -2532,8 +2534,8 @@ export default function SajuApp() {
           <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
         </button>
         <BleedCard
-          image="/images/orot/compat-character.webp"
-          framingId="compat-character"
+          image="/images/orot/home-feat-compat.webp"
+          framingId="home-feat-compat"
           veil="left"
           minHeight={220}
           style={{ marginBottom: 20 }}
@@ -3408,8 +3410,8 @@ export default function SajuApp() {
           <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
         </button>
         <BleedCard
-          image="/images/orot/baby-character.webp"
-          framingId="baby-character"
+          image="/images/orot/home-feat-baby.webp"
+          framingId="home-feat-baby"
           veil="left"
           minHeight={220}
           style={{ marginBottom: 20 }}
