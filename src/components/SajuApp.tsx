@@ -7,7 +7,7 @@ import {
   getSipsung, calcShinsal, get12Unsung,
   SajuResult
 } from '@/lib/saju-calc';
-import { buildSajuPrompts } from '@/lib/saju-prompt-builder';
+import { buildSajuPrompts, parseYongsinMeta, stripYongsinMeta, type YongsinMeta } from '@/lib/saju-prompt-builder';
 import type { UserData } from '@/lib/saju-prompt';
 import { getRelevantRefs } from '@/lib/saju-ref-selector';
 import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
@@ -275,6 +275,7 @@ export default function SajuApp() {
   });
   const [sajuResult, setSajuResult] = useState<SajuResult | null>(null);
   const [aiText, setAiText] = useState('');
+  const [llmYongsin, setLlmYongsin] = useState<YongsinMeta | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readingSaveStatus, setReadingSaveStatus] = useState<'saving' | 'saved' | 'failed' | null>(null);
   const [pendingPersist, setPendingPersist] = useState<{ readingCode: string; orderId: string; body: object } | null>(null);
@@ -709,6 +710,7 @@ export default function SajuApp() {
     setIsGenerating(true);
     setGeneratingProgress(0);
     setAiText('');
+    setLlmYongsin(null);
     let fullText = '';
     const decoder = new TextDecoder();
 
@@ -748,6 +750,19 @@ export default function SajuApp() {
         if (fullText && partText && !fullText.endsWith('\n')) fullText += '\n\n';
         fullText += partText;
       }
+      // Parse yongsin meta from response header (first line) before stripping
+      try {
+        const meta = parseYongsinMeta(fullText);
+        if (meta) {
+          setLlmYongsin(meta);
+          if (typeof console !== 'undefined' && console.info) {
+            console.info('[yongsin] LLM:', meta.yongsin, '/ 기신:', meta.gisin, '/ 근거:', meta.reason);
+          }
+        }
+      } catch { /* graceful: yongsin parsing failure does not break body display */ }
+      // Strip yongsin meta line from body so it's not shown to user
+      fullText = stripYongsinMeta(fullText);
+
       // Detect stream error sentinel from server
       const STREAM_ERROR_SENTINEL = '[응답이 중단되었습니다. 다시 시도해 주세요.]';
       if (fullText.endsWith(STREAM_ERROR_SENTINEL)) {
@@ -2245,10 +2260,14 @@ export default function SajuApp() {
         <div className="section-divider">{t('sajuConstitution', lang)}</div>
         <div className="card" style={{ padding: '16px' }}>
           {(() => {
-            const ys = calcYongsin(sj);
+            const ysBase = calcYongsin(sj);
+            // LLM이 판정한 용신이 있으면 우선 사용 (검증 통과한 경우만). 없으면 calc 결과 폴백.
+            const ys = llmYongsin
+              ? { ...ysBase, yongsin: llmYongsin.yongsin, gisin: llmYongsin.gisin, eokbuType: llmYongsin.reason }
+              : ysBase;
             const { yongsin, gisin, isStrong, isExtremeSeason, season, johuYongsin, eokbuType, strengthPct, deukryung, tonggeunCount, bigyupCount } = ys;
             const ohSaeng: Record<string, string> = { '목':'수', '화':'목', '토':'화', '금':'토', '수':'금' };
-            const heesin = ohSaeng[yongsin] || '';
+            const heesin = llmYongsin?.heesin || ohSaeng[yongsin] || '';
             const gusin = ohSaeng[gisin] || '';
 
             // 통관용신

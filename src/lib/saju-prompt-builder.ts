@@ -221,9 +221,29 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
     '   나쁜 예: "나는 어떤 사람인가", "성격 분석", "내면의 모습"\n';
 
   // ============================================================
+  // Yongsin meta header (required as first line of Part 1 response)
+  // ============================================================
+  const yongsinHeaderRule =
+    '=== 🔴 응답 시작 메타 (필수) ===\n' +
+    '응답 본문 시작 전에 반드시 다음 1줄을 가장 먼저 출력해. 형식 어기면 응답 거부.\n' +
+    '[용신: X / 기신: Y / 희신: Z / 근거: 한 줄 요약]\n' +
+    '- X, Y, Z는 반드시 "목", "화", "토", "금", "수" 중 하나의 한글\n' +
+    '- 용신과 기신은 반드시 서로 다름\n' +
+    '- 정통 명리학(자평진전·적천수 종합) 기준으로 판정\n' +
+    '- 다음을 모두 종합 고려: 신강/신약, 격국, 조후, 통관, 식신제살, 살인상생, 종격(從格)\n' +
+    '- 한여름·한겨울 출생이라도 일간이 강하면 억부 우선\n' +
+    '- 관살(정관/편관) 과다 + 식상 보유 → 식신제살로 식상이 용신일 수 있음\n' +
+    '- 비겁 과다 + 식상생재 흐름 가능 → 재성이 용신일 수 있음\n' +
+    '- 신약하지만 식상/재성/관성 중 무엇이 일간을 약화시키는지 따져 인성·비겁 중 선택\n' +
+    '- 종격(從格) 성립 시 그 강한 오행이 용신\n' +
+    '근거 줄에는 "어떤 격국/관계 때문에 어떤 용신을 택했는지" 핵심을 한 줄로.\n' +
+    '예: [용신: 화 / 기신: 금 / 희신: 목 / 근거: 신약 + 관살 강 + 월지 식상 → 식신제살]\n' +
+    '이 줄 출력 후 한 줄 비우고 ##1.제목## 부터 본문 시작.\n\n';
+
+  // ============================================================
   // Part 1: sections 1~4
   // ============================================================
-  let prompt1 = prompt + '=== 아래 4개 항목을 써줘 (1~4번). 5번 이상 쓰지 마! 각 항목을 깊고 풍부하게! ===\n[리마인더: 올해(2026) 운세는 별도 메뉴에서 제공. 여기서는 2026년 운세를 상세히 다루지 마.]\n\n';
+  let prompt1 = yongsinHeaderRule + prompt + '=== 아래 4개 항목을 써줘 (1~4번). 5번 이상 쓰지 마! 각 항목을 깊고 풍부하게! ===\n[리마인더: 올해(2026) 운세는 별도 메뉴에서 제공. 여기서는 2026년 운세를 상세히 다루지 마.]\n\n';
   let n = 1;
 
   // ##1. 나는 어떤 사람인가 — 4단 강제
@@ -380,4 +400,71 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
   }
 
   return [prompt1, prompt2, prompt3];
+}
+
+// ============================================================
+// LLM 응답 첫 줄에서 용신 메타 추출 + 검증
+// ============================================================
+export interface YongsinMeta {
+  yongsin: string;
+  gisin: string;
+  heesin: string;
+  reason: string;
+}
+
+const VALID_OH = ['목', '화', '토', '금', '수'];
+
+/**
+ * LLM 응답 텍스트에서 첫 줄의 [용신: X / 기신: Y / 희신: Z / 근거: ...] 메타를 추출.
+ * 형식·정합성 검증 통과 시 객체 반환, 실패 시 null.
+ * 영어 응답도 처리 ([Yongsin: Fire / Gisin: Metal / ...] 형식).
+ */
+export function parseYongsinMeta(text: string): YongsinMeta | null {
+  if (!text) return null;
+  // 한국어 형식 우선 시도
+  const koRe = /\[\s*용신\s*:\s*([목화토금수])\s*\/\s*기신\s*:\s*([목화토금수])\s*\/\s*희신\s*:\s*([목화토금수])\s*\/\s*근거\s*:\s*([^\]]+?)\s*\]/;
+  let m = text.match(koRe);
+  if (m) {
+    const result = { yongsin: m[1], gisin: m[2], heesin: m[3], reason: m[4].trim() };
+    return validateYongsinMeta(result) ? result : null;
+  }
+  // 영어 형식 시도 (LLM이 영어로 출력한 경우)
+  const enRe = /\[\s*(?:Yongsin|용신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Gisin|기신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Heesin|희신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Reason|근거)\s*:\s*([^\]]+?)\s*\]/i;
+  m = text.match(enRe);
+  if (m) {
+    const enToKo: Record<string, string> = { wood: '목', fire: '화', earth: '토', metal: '금', water: '수' };
+    const result = {
+      yongsin: enToKo[m[1].toLowerCase()],
+      gisin: enToKo[m[2].toLowerCase()],
+      heesin: enToKo[m[3].toLowerCase()],
+      reason: m[4].trim(),
+    };
+    return validateYongsinMeta(result) ? result : null;
+  }
+  return null;
+}
+
+/**
+ * 명리 정합성 검증 — 명백한 오류만 잡고 회색지대(식신제살 등)는 통과시킴.
+ */
+function validateYongsinMeta(meta: YongsinMeta): boolean {
+  // 형식: 5오행 중 하나
+  if (!VALID_OH.includes(meta.yongsin)) return false;
+  if (!VALID_OH.includes(meta.gisin)) return false;
+  if (!VALID_OH.includes(meta.heesin)) return false;
+  // 용신과 기신은 달라야 함
+  if (meta.yongsin === meta.gisin) return false;
+  // 근거 비어있으면 의심
+  if (!meta.reason || meta.reason.length < 2) return false;
+  return true;
+}
+
+/**
+ * LLM 응답 본문에서 용신 메타 줄을 제거하고 깔끔한 본문만 반환.
+ * 메타가 없거나 형식이 다르면 원본 그대로.
+ */
+export function stripYongsinMeta(text: string): string {
+  if (!text) return text;
+  const re = /\[\s*(?:용신|Yongsin)\s*:[^\]]*?\]\s*\n*/i;
+  return text.replace(re, '').trimStart();
 }
