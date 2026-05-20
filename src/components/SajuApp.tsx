@@ -1425,12 +1425,12 @@ export default function SajuApp() {
   /* ===== SCREEN 1: Birth Input ===== */
   function renderBirthInput() {
     const isEn = lang === 'en';
-    const heroLabel = appMode === 'yearly'
-      ? (isEn ? 'My 2026' : '2026 나의 한 해')
-      : (isEn ? 'Read me through Saju' : '나를 읽는 사주');
-    const heroTitle = isEn
-      ? 'Let me read your texture\nfrom the moment you were born.'
-      : '태어난 순간의 기운으로\n당신의 결을 풀어드릴게요.';
+    const isYearly = appMode === 'yearly';
+    const eyebrowTitle = t(isYearly ? 'yearlyTitle' : 'sajuTitle', lang);
+    const eyebrowDesc = t(isYearly ? 'yearlyDesc' : 'sajuDesc', lang);
+    const heroTitle = isYearly
+      ? (isEn ? 'A look ahead at the flow\nthis year brings' : '올해 내게 올 흐름을\n미리 살펴봐요')
+      : (isEn ? 'Through your birth chart,\nlook within' : '태어난 날의 사주로\n나를 들여다봐요');
     const ctaLabel = appMode === 'yearly'
       ? (isEn ? 'Read my 2026 ›' : '2026 풀이 시작 ›')
       : (isEn ? 'Start my reading ›' : '내 사주 풀이 시작 ›');
@@ -1458,7 +1458,10 @@ export default function SajuApp() {
           style={{ marginBottom: 20 }}
         >
           <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
-            <div className="orot-eyebrow" style={{ marginBottom: 14 }}>{heroLabel}</div>
+            <div style={{ marginBottom: 14 }}>
+              <div className="orot-eyebrow">{eyebrowTitle}</div>
+              <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, marginLeft: 21, fontFamily: 'var(--orot-font)', letterSpacing: '0.01em' }}>{eyebrowDesc}</div>
+            </div>
             <h1 style={{
               fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
               letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
@@ -2536,16 +2539,17 @@ export default function SajuApp() {
           style={{ marginBottom: 20 }}
         >
           <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
-            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
-              {lang === 'en' ? "Two people's textures" : '두 사람의 결'}
+            <div style={{ marginBottom: 12 }}>
+              <div className="orot-eyebrow">{t('compatTitle', lang)}</div>
+              <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, marginLeft: 21, fontFamily: 'var(--orot-font)', letterSpacing: '0.01em' }}>{t('compatDesc', lang)}</div>
             </div>
             <h1 style={{
               fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
               letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
-              fontFamily: 'var(--orot-font)',
+              whiteSpace: 'pre-line', fontFamily: 'var(--orot-font)',
               background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
             }}>
-              {t('compatAnalysis', lang)}
+              {lang === 'en' ? "When two charts meet,\nwhat shape do they form" : '두 사주가 만나면\n어떤 모습일까요'}
             </h1>
           </div>
         </BleedCard>
@@ -3411,15 +3415,16 @@ export default function SajuApp() {
           style={{ marginBottom: 20 }}
         >
           <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
-            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
-              {lang === 'en' ? 'Mother & baby' : '엄마와 아기'}
+            <div style={{ marginBottom: 12 }}>
+              <div className="orot-eyebrow">{t('pregTitle', lang)}</div>
+              <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, marginLeft: 21, fontFamily: 'var(--orot-font)', letterSpacing: '0.01em' }}>{t('pregDesc', lang)}</div>
             </div>
             <h1 style={{
-              fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)',
-              letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
-              fontFamily: 'var(--orot-font)',
+              fontSize: 20, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.015em', lineHeight: 1.4, margin: 0,
+              whiteSpace: 'pre-line', fontFamily: 'var(--orot-font)',
             }}>
-              {t('pregGuide', lang)}
+              {lang === 'en' ? "A bond from a past life —\nmother and child, together" : '전생부터 이어진 인연,\n엄마와 아기의 사주를 함께 풀어드려요'}
             </h1>
           </div>
         </BleedCard>
