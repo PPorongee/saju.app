@@ -1222,20 +1222,28 @@ export default function SajuApp() {
     const isEn = lang === 'en';
     return (
       <div className="inner screen-enter orot-root" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
-        {/* Greeting block — merged brand + welcome */}
-        <div style={{ padding: '0 4px 18px' }}>
+        {/* Logo banner — lang-aware (ko/en) */}
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <img
+            src={isEn ? '/images/orot/logo-en.png' : '/images/orot/logo-ko.png'}
+            alt={isEn ? 'Starlight Saju' : '별빛 사주'}
+            style={{ width: '100%', maxWidth: 220, display: 'block', margin: '0 auto' }}
+          />
+        </div>
+
+        {/* Welcome block */}
+        <div style={{ padding: '0 4px 18px', textAlign: 'center' }}>
           <h1 style={{
-            fontSize: 25,
+            fontSize: 24,
             fontWeight: 700,
             color: 'var(--orot-coral)',
-            letterSpacing: '-0.015em',
+            letterSpacing: '-0.012em',
             lineHeight: 1.3,
             margin: 0,
-            whiteSpace: 'pre-line',
             background: 'none',
             WebkitTextFillColor: 'var(--orot-coral)',
           }}>
-            {isEn ? 'Welcome to\nStarlight Saju' : '별빛 사주,\n잘 오셨어요'} <span style={{ fontSize: 18 }}>✦</span>
+            {isEn ? 'Welcome' : '오신 걸 환영해요'}
           </h1>
           <p style={{
             fontSize: 14,
