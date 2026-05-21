@@ -7,7 +7,7 @@ import {
   getSipsung, calcShinsal, get12Unsung,
   SajuResult
 } from '@/lib/saju-calc';
-import { buildSajuPrompts, parseYongsinMeta, stripYongsinMeta, type YongsinMeta } from '@/lib/saju-prompt-builder';
+import { buildSajuPrompts, parseYongsinMeta, stripYongsinMeta, getCachedYongsin, setCachedYongsin, type YongsinMeta } from '@/lib/saju-prompt-builder';
 import type { UserData } from '@/lib/saju-prompt';
 import { getRelevantRefs } from '@/lib/saju-ref-selector';
 import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
@@ -788,14 +788,28 @@ export default function SajuApp() {
         if (fullText && partText && !fullText.endsWith('\n')) fullText += '\n\n';
         fullText += partText;
       }
-      // Parse yongsin meta from response header (first line) before stripping
+      // Parse yongsin meta + apply cache for consistency (same saju = same yongsin)
       try {
         const meta = parseYongsinMeta(fullText);
-        if (meta) {
-          setLlmYongsin(meta);
-          if (typeof console !== 'undefined' && console.info) {
-            console.info('[yongsin] LLM:', meta.yongsin, '/ 기신:', meta.gisin, '/ 근거:', meta.reason);
+        if (meta && sajuResult) {
+          const cached = getCachedYongsin(sajuResult);
+          if (cached) {
+            // 이미 캐시가 있으면 캐시값 사용 — 같은 사주 다시 풀어도 일관성 유지
+            setLlmYongsin(cached);
+            if (typeof console !== 'undefined' && console.info) {
+              console.info('[yongsin] cache HIT:', cached.yongsin, '(LLM said:', meta.yongsin, ')');
+            }
+          } else {
+            // 첫 풀이 — LLM 결과를 캐시에 저장
+            setCachedYongsin(sajuResult, meta);
+            setLlmYongsin(meta);
+            if (typeof console !== 'undefined' && console.info) {
+              console.info('[yongsin] cache MISS → saved:', meta.yongsin, '/ 기신:', meta.gisin, '/ 근거:', meta.reason);
+            }
           }
+        } else if (meta) {
+          // sajuResult 없으면 캐싱만 스킵
+          setLlmYongsin(meta);
         }
       } catch { /* graceful: yongsin parsing failure does not break body display */ }
       // Strip yongsin meta line from body so it's not shown to user
@@ -3970,7 +3984,7 @@ export default function SajuApp() {
           );
         })()}
 
-        {/* AI 해설 + 분기별 에너지 그래프 (섹션3 뒤에 삽입) */}
+        {/* 분기별 에너지 그래프 — TOC 위에 별도 표시 */}
         {!isGenerating && aiText && (() => {
           const qMatch = aiText.match(/\[에너지점수:\s*Q1=(\d+),\s*Q2=(\d+),\s*Q3=(\d+),\s*Q4=(\d+)\]/);
           const qScores = qMatch
@@ -3980,16 +3994,8 @@ export default function SajuApp() {
           const qColors = ['#7DD3FC', '#6EE7B7', '#F0C75E', '#F687B3'];
           const maxQ = Math.max(...qScores);
 
-          const sec3Marker = aiText.match(/##\s*3[\.\s]/);
-          const sec4Marker = aiText.match(/##\s*4[\.\s]/);
-          const splitIdxBefore = sec3Marker ? aiText.indexOf(sec3Marker[0]) : -1;
-          const splitIdxAfter = sec4Marker ? aiText.indexOf(sec4Marker[0]) : -1;
-          const beforeSec3 = splitIdxBefore > 0 ? aiText.slice(0, splitIdxBefore) : '';
-          const sec3Text = splitIdxBefore > 0 && splitIdxAfter > 0 ? aiText.slice(splitIdxBefore, splitIdxAfter) : '';
-          const afterSec3 = splitIdxAfter > 0 ? aiText.slice(splitIdxAfter) : (splitIdxBefore > 0 ? '' : aiText);
-
-          const energyGraph = (
-            <div style={{ marginBottom: '8px' }}>
+          return (
+            <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-dim)', marginBottom: '12px', textAlign: 'center' }}>
                 ⚡ {lang === 'en' ? 'Quarterly Energy Graph' : '분기별 에너지 그래프'}
               </div>
@@ -4018,35 +4024,10 @@ export default function SajuApp() {
               </div>
             </div>
           );
-
-          const graphHtml = `<div style="margin:16px 0 20px;text-align:center">
-            <div style="font-size:14px;font-weight:700;color:var(--text-dim);margin-bottom:12px">⚡ ${lang === 'en' ? 'Quarterly Energy Graph' : '분기별 에너지 그래프'}</div>
-            <div style="display:flex;align-items:flex-end;justify-content:center;gap:12px;height:140px;margin-bottom:8px;padding:0 8px">
-              ${qScores.map((score: number, i: number) => `<div style="display:flex;flex-direction:column;align-items:center;flex:1">
-                <div style="font-size:18px;font-weight:900;color:${qColors[i]};margin-bottom:6px">${score}<span style="font-size:11px;opacity:0.5">/10</span></div>
-                <div style="width:100%;max-width:52px;height:${Math.max(12, (score / 10) * 110)}px;background:linear-gradient(180deg,${qColors[i]},${qColors[i]}33);border-radius:10px 10px 4px 4px;${score === maxQ ? `box-shadow:0 0 16px ${qColors[i]}55;border:2px solid ${qColors[i]}` : 'border:1px solid rgba(255,255,255,0.08)'}"></div>
-              </div>`).join('')}
-            </div>
-            <div style="display:flex;justify-content:center;gap:12px;padding:0 8px">
-              ${qLabels.map((label: string, i: number) => `<div style="flex:1;text-align:center;font-size:10px;color:${qColors[i]};font-weight:600;white-space:pre-line;line-height:1.3">${label}</div>`).join('')}
-            </div>
-            <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--text-dim)">${lang === 'en' ? 'Highest energy: ' : '에너지 최고 분기: '}<strong style="color:${qColors[qScores.indexOf(maxQ)]}">${qLabels[qScores.indexOf(maxQ)].split('\n')[0]}</strong></div>
-          </div>`;
-
-          const sec3Html = sec3Text ? formatLLMText(sec3Text, lang) : '';
-          const insertIdx = sec3Html.indexOf('</h3>');
-          const sec3Combined = insertIdx > 0
-            ? sec3Html.slice(0, insertIdx + 5) + graphHtml + sec3Html.slice(insertIdx + 5)
-            : sec3Html;
-
-          return (
-            <>
-              {beforeSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(beforeSec3, lang) }} />}
-              {sec3Text && <div className="llm-text" dangerouslySetInnerHTML={{ __html: sec3Combined }} />}
-              {afterSec3 && <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(afterSec3, lang) }} />}
-            </>
-          );
         })()}
+
+        {/* 사주 해설 본문 — 목차 아코디언 */}
+        {!isGenerating && aiText && renderTOC(aiText)}
 
         {/* Share + Save + Restart */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>

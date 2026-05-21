@@ -468,3 +468,34 @@ export function stripYongsinMeta(text: string): string {
   const re = /\[\s*(?:용신|Yongsin)\s*:[^\]]*?\]\s*\n*/i;
   return text.replace(re, '').trimStart();
 }
+
+// ============================================================
+// 용신 캐싱 — 같은 사주 = 같은 용신 일관성 보장
+// ============================================================
+// 사주명식이 동일하면 용신도 동일해야 함. localStorage에 영구 저장.
+
+export function getYongsinCacheKey(sj: SajuResult): string {
+  // 사주 8글자(stem 4 + branch 4) 조합으로 유일 키 생성
+  return `yongsin:${sj.yStem}-${sj.yBranch}-${sj.mStem}-${sj.mBranch}-${sj.dStem}-${sj.dBranch}-${sj.hStem}-${sj.hBranch}`;
+}
+
+export function getCachedYongsin(sj: SajuResult): YongsinMeta | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(getYongsinCacheKey(sj));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as YongsinMeta;
+    // 검증 — 손상된 캐시 거름
+    if (parsed && parsed.yongsin && parsed.gisin && parsed.heesin
+        && VALID_OH.includes(parsed.yongsin) && VALID_OH.includes(parsed.gisin) && VALID_OH.includes(parsed.heesin)
+        && parsed.yongsin !== parsed.gisin) {
+      return parsed;
+    }
+    return null;
+  } catch { return null; }
+}
+
+export function setCachedYongsin(sj: SajuResult, meta: YongsinMeta): void {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(getYongsinCacheKey(sj), JSON.stringify(meta)); } catch { /* quota exceeded etc — ignore */ }
+}
