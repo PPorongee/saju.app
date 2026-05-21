@@ -1278,7 +1278,9 @@ export default function SajuApp() {
       } else {
         setCurrentScreen(8); // Go to teaser/paywall first
         const ohCount = getOhCount(sj);
-        const prompts = buildSajuPrompts(sj, ohCount, { ...userData, isLunar, lang, useExactTime, exactHour, exactMinute });
+        const cachedYs = getCachedYongsin(sj) || undefined;
+        const prompts = buildSajuPrompts(sj, ohCount, { ...userData, isLunar, lang, useExactTime, exactHour, exactMinute }, cachedYs);
+        if (cachedYs) setLlmYongsin(cachedYs);
         fetchSajuReading(prompts, controller.signal);
       }
     }, 4500);
@@ -1566,7 +1568,9 @@ export default function SajuApp() {
                       } else {
                         setCurrentScreen(8); // Go to teaser/paywall first
                         const oh = getOhCount(sj);
-                        fetchSajuReading(buildSajuPrompts(sj, oh, { name: p.name, gender: p.gender, year: p.year, month: p.month, day: p.day, hour: p.hour, concern: p.concern, state: p.state, personality: p.personality, relationship: p.relationship, wantToKnow: p.wantToKnow, lang }));
+                        const cachedYs2 = getCachedYongsin(sj) || undefined;
+                        if (cachedYs2) setLlmYongsin(cachedYs2);
+                        fetchSajuReading(buildSajuPrompts(sj, oh, { name: p.name, gender: p.gender, year: p.year, month: p.month, day: p.day, hour: p.hour, concern: p.concern, state: p.state, personality: p.personality, relationship: p.relationship, wantToKnow: p.wantToKnow, lang }, cachedYs2));
                       }
                     }, 4500);
                   }
@@ -2306,6 +2310,46 @@ export default function SajuApp() {
             })()}
           </div>
         </div>
+
+        {/* 용신 풀이 카드 — 사주별 친근한 한 단락 설명 */}
+        {llmYongsin && llmYongsin.explanation && (
+          <div className="orot-card" style={{
+            padding: 18, marginTop: 24, marginBottom: 16,
+            background: 'linear-gradient(180deg, rgba(243,160,146,0.10), rgba(243,160,146,0.03))',
+            border: '1px solid var(--orot-coral-faint)',
+            borderRadius: 'var(--orot-r-md)',
+          }}>
+            <div style={{ fontSize: 13, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 14, letterSpacing: '0.02em', fontFamily: 'var(--orot-font)' }}>
+              ✦ {lang === 'en' ? 'Your saju’s core energy' : '너의 사주 핵심 기운'}
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
+              <div style={{ flex: 1, padding: '10px 12px', background: 'rgba(243,160,146,0.10)', borderRadius: 12, border: '1px solid var(--orot-coral-faint)' }}>
+                <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
+                  💎 {lang === 'en' ? 'Keep close' : '가까이 둘 기운'}
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
+                  {llmYongsin.yongsin}
+                </div>
+              </div>
+              <div style={{ flex: 1, padding: '10px 12px', background: 'rgba(138,161,196,0.10)', borderRadius: 12, border: '1px solid rgba(138,161,196,0.30)' }}>
+                <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
+                  ⚠️ {lang === 'en' ? 'Keep distance' : '멀리할 기운'}
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
+                  {llmYongsin.gisin}
+                </div>
+              </div>
+            </div>
+            <div style={{ paddingTop: 12, borderTop: '1px solid var(--orot-hair)', fontSize: 13, lineHeight: 1.7, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
+              {llmYongsin.explanation}
+            </div>
+            {llmYongsin.reason && (
+              <div style={{ marginTop: 8, fontSize: 11, color: 'var(--orot-ink-mute)', fontFamily: 'var(--orot-font)', textAlign: 'right' }}>
+                {lang === 'en' ? 'Based on: ' : '근거: '}{llmYongsin.reason}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 신강/신약 & 용신 Panel */}
         <div className="section-divider">{t('sajuConstitution', lang)}</div>

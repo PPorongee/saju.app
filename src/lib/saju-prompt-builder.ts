@@ -4,7 +4,7 @@ import { analyzeAdvanced } from './gyeokguk-johoo';
 import { getTerminologyPromptBlock } from './saju-terminology';
 import type { UserData } from './saju-prompt';
 
-export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>, userData: UserData): string[] {
+export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>, userData: UserData, cachedYongsin?: YongsinMeta): string[] {
   const ds = sj.dStem;
   const ohKeys = ['목','화','토','금','수'];
   let ohDist = '';
@@ -226,7 +226,7 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
   const yongsinHeaderRule =
     '=== 🔴 응답 시작 메타 (필수) ===\n' +
     '응답 본문 시작 전에 반드시 다음 1줄을 가장 먼저 출력해. 형식 어기면 응답 거부.\n' +
-    '[용신: X / 기신: Y / 희신: Z / 근거: 한 줄 요약]\n' +
+    '[용신: X / 기신: Y / 희신: Z / 근거: 명리학 라벨 / 풀이: 사용자용 2~3문장 친근한 설명]\n' +
     '- X, Y, Z는 반드시 "목", "화", "토", "금", "수" 중 하나의 한글\n' +
     '- 용신과 기신은 반드시 서로 다름\n' +
     '- 정통 명리학(자평진전·적천수 종합) 기준으로 판정\n' +
@@ -236,9 +236,34 @@ export function buildSajuPrompts(sj: SajuResult, ohCount: Record<string, number>
     '- 비겁 과다 + 식상생재 흐름 가능 → 재성이 용신일 수 있음\n' +
     '- 신약하지만 식상/재성/관성 중 무엇이 일간을 약화시키는지 따져 인성·비겁 중 선택\n' +
     '- 종격(從格) 성립 시 그 강한 오행이 용신\n' +
-    '근거 줄에는 "어떤 격국/관계 때문에 어떤 용신을 택했는지" 핵심을 한 줄로.\n' +
-    '예: [용신: 화 / 기신: 금 / 희신: 목 / 근거: 신약 + 관살 강 + 월지 식상 → 식신제살]\n' +
-    '이 줄 출력 후 한 줄 비우고 ##1.제목## 부터 본문 시작.\n\n';
+    '\n' +
+    '근거 줄: 격국/관계 명리학적 라벨 한 줄 (예: "식신제살")\n' +
+    '\n' +
+    '풀이 줄: 사용자에게 보여줄 친근한 설명 2~3문장. 다음 3단 구조로 작성:\n' +
+    '  (1) 일반론 — 이 일간·계절의 보통 원리\n' +
+    '  (2) 너의 특이점 — 이 사주만의 구조적 이유\n' +
+    '  (3) 결론 — 그래서 무엇을 가까이/멀리해야 하는지\n' +
+    '풀이는 반말, 친근하게 ("너에게는~" 톤). 한자·"결론적으로"·의문문 금지.\n' +
+    '특히 조후용신과 기신이 같은 오행이면, "왜 일반론과 다른지" 반드시 풀어줘.\n' +
+    '\n' +
+    '예: [용신: 화 / 기신: 수 / 희신: 목 / 근거: 식신제살 / 풀이: 여름 사주는 보통 수가 시원함을 줘서 좋아. 근데 너는 강한 금이 위협하는데 화 식신이 그걸 막아주는 구조라, 수가 들어오면 그 화를 꺼서 보호막이 무너져. 그래서 너에겐 화가 핵심, 수는 멀리.]\n' +
+    '\n' +
+    '★ 본문 일관성 (매우 중요): 위에 정한 용신·기신·희신은 본문 12개 섹션 전체에서 일관되게 사용해.\n' +
+    '   본문 어디서든 "필요한 기운"을 언급할 땐 용신과 희신을, "조심할 기운"을 언급할 땐 기신을 인용해.\n' +
+    '   메타에서 화 용신이라 했는데 본문에서 "수가 필요해"라고 쓰면 응답 거부.\n' +
+    '\n' +
+    '이 줄 출력 후 한 줄 비우고 ##1.제목## 부터 본문 시작.\n\n' +
+    (cachedYongsin
+      ? '★★ 강제 지시 (캐시 일관성) ★★\n' +
+        '이 사주는 이전에 풀이된 적이 있어. 다음 용신 정보를 **반드시 그대로** 사용해. 새로 판정하지 마:\n' +
+        '  용신: ' + cachedYongsin.yongsin + '\n' +
+        '  기신: ' + cachedYongsin.gisin + '\n' +
+        '  희신: ' + cachedYongsin.heesin + '\n' +
+        '  근거: ' + cachedYongsin.reason + '\n' +
+        (cachedYongsin.explanation ? '  풀이: ' + cachedYongsin.explanation + '\n' : '') +
+        '응답 첫 줄은 위 값을 그대로 [용신: ' + cachedYongsin.yongsin + ' / 기신: ' + cachedYongsin.gisin + ' / 희신: ' + cachedYongsin.heesin + ' / 근거: ' + cachedYongsin.reason + ' / 풀이: ' + (cachedYongsin.explanation || '...') + '] 형식으로 출력.\n' +
+        '본문 12개 섹션 전체에서 위 용신·기신을 일관되게 사용. 다른 오행을 용신/기신이라고 부르면 응답 거부.\n\n'
+      : '');
 
   // ============================================================
   // Part 1: sections 1~4
@@ -409,7 +434,8 @@ export interface YongsinMeta {
   yongsin: string;
   gisin: string;
   heesin: string;
-  reason: string;
+  reason: string;       // 격국·근거 (짧은 명리학적 라벨)
+  explanation?: string; // 사용자용 친근한 풀이 (2~3문장)
 }
 
 const VALID_OH = ['목', '화', '토', '금', '수'];
@@ -421,23 +447,30 @@ const VALID_OH = ['목', '화', '토', '금', '수'];
  */
 export function parseYongsinMeta(text: string): YongsinMeta | null {
   if (!text) return null;
-  // 한국어 형식 우선 시도
-  const koRe = /\[\s*용신\s*:\s*([목화토금수])\s*\/\s*기신\s*:\s*([목화토금수])\s*\/\s*희신\s*:\s*([목화토금수])\s*\/\s*근거\s*:\s*([^\]]+?)\s*\]/;
-  let m = text.match(koRe);
+  // 한국어 형식 — 풀이 필드 포함 (선택적)
+  const koReFull = /\[\s*용신\s*:\s*([목화토금수])\s*\/\s*기신\s*:\s*([목화토금수])\s*\/\s*희신\s*:\s*([목화토금수])\s*\/\s*근거\s*:\s*([^\/\]]+?)\s*(?:\/\s*풀이\s*:\s*([^\]]+?))?\s*\]/;
+  let m = text.match(koReFull);
   if (m) {
-    const result = { yongsin: m[1], gisin: m[2], heesin: m[3], reason: m[4].trim() };
+    const result: YongsinMeta = {
+      yongsin: m[1],
+      gisin: m[2],
+      heesin: m[3],
+      reason: m[4].trim(),
+      explanation: m[5] ? m[5].trim() : undefined,
+    };
     return validateYongsinMeta(result) ? result : null;
   }
-  // 영어 형식 시도 (LLM이 영어로 출력한 경우)
-  const enRe = /\[\s*(?:Yongsin|용신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Gisin|기신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Heesin|희신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Reason|근거)\s*:\s*([^\]]+?)\s*\]/i;
-  m = text.match(enRe);
+  // 영어 형식
+  const enReFull = /\[\s*(?:Yongsin|용신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Gisin|기신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Heesin|희신)\s*:\s*(Wood|Fire|Earth|Metal|Water)\s*\/\s*(?:Reason|근거)\s*:\s*([^\/\]]+?)\s*(?:\/\s*(?:Explanation|풀이)\s*:\s*([^\]]+?))?\s*\]/i;
+  m = text.match(enReFull);
   if (m) {
     const enToKo: Record<string, string> = { wood: '목', fire: '화', earth: '토', metal: '금', water: '수' };
-    const result = {
+    const result: YongsinMeta = {
       yongsin: enToKo[m[1].toLowerCase()],
       gisin: enToKo[m[2].toLowerCase()],
       heesin: enToKo[m[3].toLowerCase()],
       reason: m[4].trim(),
+      explanation: m[5] ? m[5].trim() : undefined,
     };
     return validateYongsinMeta(result) ? result : null;
   }
