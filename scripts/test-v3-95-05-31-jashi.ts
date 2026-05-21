@@ -37,6 +37,11 @@ function validateRound1(text: string, shinsalStr: string): ValidationResult {
     section4Love: /##4\.[^#]{0,400}(연애|사랑|인연|결혼|부부|배우자|매력|배우자궁|이성|로맨스)/.test(text),
     fiveLifeStages: /아동기/.test(text) && /청소년기/.test(text) && /성년기/.test(text) && /중년기/.test(text) && /노년기/.test(text),
     noGenericPhrases: !/조화는 너를 특별하게|성장할 수 있어\b|빛날 거야\b|성장하는 시기야\b/.test(text),
+    // 1번 레퍼런스 품질 가드레일
+    termGloss: /격국[\s\S]{0,30}\([^)]{3,30}\)|구조/.test(text), // 격국 호명 시 괄호 풀이 또는 "구조" 단어로 풀이
+    narrativeConnector: /(이러한 해석|이런 해석|여기에|특히|이런 기운을 가진)/.test(text), // 연결어 사용
+    weaknessShadow: /(아이콘이지만|이지만|하지만|다만|그런데).{1,100}(놓치|약점|함정|소진|지칠|지치|위축|잃|마무리.{0,3}못|마무리.{0,3}안|늦|흐려|덜|밀려|머물|돌아오|쉬워|쏠리)/.test(text),
+    closingPunchline: /([^.\n]{1,40}[해해보봐세요]\.)\s*$/.test(text.trim()), // 마지막 문장이 권유형 격언 (40자 이내)
     noQuestionEnding: !/맞지\?|아니야\?|있지\?|않아\?/.test(text),
   };
   const failures: string[] = [];
@@ -52,6 +57,10 @@ function validateRound1(text: string, shinsalStr: string): ValidationResult {
   if (!scorecard.section4Love) failures.push('##4가 연애·인연 섹션이 아님');
   if (!scorecard.fiveLifeStages) failures.push('##2 인생 로드맵 5단계(아동·청소년·성년·중년·노년) 중 일부 누락');
   if (!scorecard.noGenericPhrases) failures.push('일반론 패턴 발견 (조화는 너를 특별하게 / 성장할 수 있어 / 빛날 거야 등)');
+  if (!scorecard.termGloss) failures.push('격국 호명 시 풀이(괄호 또는 "구조" 표현) 누락');
+  if (!scorecard.narrativeConnector) failures.push('연결어(이러한 해석/여기에/특히/이런 기운을 가진) 누락');
+  if (!scorecard.weaknessShadow) failures.push('약점=강점 그림자 패턴 없음 (이지만/하지만 + 놓치/약점 연결)');
+  if (!scorecard.closingPunchline) failures.push('마지막 문장이 권유형 격언이 아님 (해봐/해보세요로 끝나는 짧은 처방)');
   if (!scorecard.noQuestionEnding) failures.push('의문문 마무리 사용');
   return { pass: failures.length === 0, scorecard, failures };
 }
