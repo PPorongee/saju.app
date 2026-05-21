@@ -2311,48 +2311,56 @@ export default function SajuApp() {
           </div>
         </div>
 
-        {/* 용신 풀이 카드 — 사주별 친근한 한 단락 설명 */}
+        {/* 용신 풀이 카드 — 메인 시각 강조 + 명리학 용어 병기 */}
         {llmYongsin && llmYongsin.explanation && (
           <div className="orot-card" style={{
-            padding: 18, marginTop: 24, marginBottom: 16,
-            background: 'linear-gradient(180deg, rgba(243,160,146,0.10), rgba(243,160,146,0.03))',
+            padding: 20, marginTop: 24, marginBottom: 16,
+            background: 'linear-gradient(180deg, rgba(243,160,146,0.12), rgba(243,160,146,0.03))',
             border: '1px solid var(--orot-coral-faint)',
-            borderRadius: 'var(--orot-r-md)',
+            borderRadius: 'var(--orot-r-lg)',
           }}>
-            <div style={{ fontSize: 13, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 14, letterSpacing: '0.02em', fontFamily: 'var(--orot-font)' }}>
+            <div style={{ fontSize: 14, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 18, letterSpacing: '0.02em', fontFamily: 'var(--orot-font)', textAlign: 'center' }}>
               ✦ {lang === 'en' ? 'Your saju’s core energy' : '너의 사주 핵심 기운'}
             </div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-              <div style={{ flex: 1, padding: '10px 12px', background: 'rgba(243,160,146,0.10)', borderRadius: 12, border: '1px solid var(--orot-coral-faint)' }}>
-                <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
-                  💎 {lang === 'en' ? 'Keep close' : '가까이 둘 기운'}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              {/* 가까이 둘 기운 (용신) */}
+              <div style={{ flex: 1, padding: '18px 12px', background: 'rgba(243,160,146,0.12)', borderRadius: 16, border: '1.5px solid var(--orot-coral-faint)', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginBottom: 10, fontFamily: 'var(--orot-font)', letterSpacing: '0.02em' }}>
+                  💎 {lang === 'en' ? 'Keep close' : '가까이 둘 기운'} <span style={{ opacity: 0.65 }}>({lang === 'en' ? 'yongsin' : '용신'})</span>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
-                  {llmYongsin.yongsin}
+                <div style={{ fontSize: 44, lineHeight: 1, marginBottom: 6 }}>
+                  {OH_ICON[llmYongsin.yongsin] || '✦'}
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
+                  {lang === 'en' ? OH_EN_CAP[llmYongsin.yongsin] : llmYongsin.yongsin}
                 </div>
               </div>
-              <div style={{ flex: 1, padding: '10px 12px', background: 'rgba(138,161,196,0.10)', borderRadius: 12, border: '1px solid rgba(138,161,196,0.30)' }}>
-                <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
-                  ⚠️ {lang === 'en' ? 'Keep distance' : '멀리할 기운'}
+              {/* 멀리할 기운 (기신) */}
+              <div style={{ flex: 1, padding: '18px 12px', background: 'rgba(138,161,196,0.10)', borderRadius: 16, border: '1.5px solid rgba(138,161,196,0.30)', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginBottom: 10, fontFamily: 'var(--orot-font)', letterSpacing: '0.02em' }}>
+                  ⚠️ {lang === 'en' ? 'Keep distance' : '멀리할 기운'} <span style={{ opacity: 0.65 }}>({lang === 'en' ? 'gisin' : '기신'})</span>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
-                  {llmYongsin.gisin}
+                <div style={{ fontSize: 44, lineHeight: 1, marginBottom: 6 }}>
+                  {OH_ICON[llmYongsin.gisin] || '✦'}
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
+                  {lang === 'en' ? OH_EN_CAP[llmYongsin.gisin] : llmYongsin.gisin}
                 </div>
               </div>
             </div>
-            <div style={{ paddingTop: 12, borderTop: '1px solid var(--orot-hair)', fontSize: 13, lineHeight: 1.7, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
+            <div style={{ paddingTop: 14, borderTop: '1px solid var(--orot-hair)', fontSize: 13, lineHeight: 1.75, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
               {llmYongsin.explanation}
             </div>
             {llmYongsin.reason && (
-              <div style={{ marginTop: 8, fontSize: 11, color: 'var(--orot-ink-mute)', fontFamily: 'var(--orot-font)', textAlign: 'right' }}>
+              <div style={{ marginTop: 10, fontSize: 11, color: 'var(--orot-ink-mute)', fontFamily: 'var(--orot-font)', textAlign: 'right' }}>
                 {lang === 'en' ? 'Based on: ' : '근거: '}{llmYongsin.reason}
               </div>
             )}
           </div>
         )}
 
-        {/* 신강/신약 & 용신 Panel */}
-        <div className="section-divider">{t('sajuConstitution', lang)}</div>
+        {/* 사주의 다른 결 — 친근한 라벨 + 충돌 안내 */}
+        <div className="section-divider">{lang === 'en' ? 'More about your saju' : '사주의 다른 결'}</div>
         <div className="card" style={{ padding: '16px' }}>
           {(() => {
             const ysBase = calcYongsin(sj);
@@ -2386,11 +2394,13 @@ export default function SajuApp() {
 
             return (
               <>
-                {/* 신강/신약 게이지 */}
+                {/* ⚖️ 타고난 기운의 강약 (신강·신약) */}
                 <div style={{ marginBottom: '16px' }}>
                   <SectionExplainer text={getSingangExplanation(isStrong, lang)} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>{t('singangSinyak', lang)}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>
+                      ⚖️ {lang === 'en' ? 'Inner strength' : '타고난 기운의 강약'} <span style={{ fontSize: 11, color: 'var(--orot-ink-mute)', fontWeight: 500 }}>({lang === 'en' ? 'singang/sinyak' : '신강·신약'})</span>
+                    </span>
                     <span style={{ fontSize: 14, fontWeight: 700, color: isStrong ? 'var(--orot-coral)' : 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
                       {isStrong ? t('singangFull', lang) : t('sinyakFull', lang)}
                     </span>
@@ -2456,26 +2466,77 @@ export default function SajuApp() {
                   </>
                 )}
                 {tongguanNote && (
-                  <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginBottom: 12, padding: '8px 12px', background: 'rgba(243, 231, 207, 0.05)', borderRadius: 10, border: '1px solid var(--orot-hair-strong)', fontFamily: 'var(--orot-font)' }}>
-                    {t('tongguanLabel', lang)}{tongguanNote}
+                  <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', marginBottom: 12, padding: '12px 14px', background: 'rgba(243, 231, 207, 0.05)', borderRadius: 12, border: '1px solid var(--orot-hair-strong)', fontFamily: 'var(--orot-font)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 6 }}>
+                      🌉 {lang === 'en' ? 'Bridging clashing energies' : '충돌하는 기운 사이를 잇기'} <span style={{ fontSize: 11, color: 'var(--orot-ink-mute)', fontWeight: 500 }}>({lang === 'en' ? 'tongguan' : '통관용신'})</span>
+                    </div>
+                    <div style={{ fontSize: 12, lineHeight: 1.6 }}>{tongguanNote}</div>
                   </div>
                 )}
 
-                {/* 조후 */}
-                <div style={{ background: 'rgba(138, 161, 196, 0.06)', border: '1px solid rgba(138, 161, 196, 0.22)', borderRadius: 14, padding: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-el-water)', marginBottom: 6, fontFamily: 'var(--orot-font)' }}>
-                    {t('johuTitle', lang)} — {season} {t('bornInSeason', lang)}
+                {/* 🌡️ 계절이 필요로 하는 기운 (조후용신) — 충돌 자동 감지 */}
+                {(() => {
+                  let conflictMsg = '';
+                  let conflictColor = 'var(--orot-ink-mute)';
+                  let conflictIcon = '🔅';
+                  if (llmYongsin) {
+                    if (johuYongsin === llmYongsin.yongsin) {
+                      conflictIcon = '✓'; conflictColor = 'var(--orot-el-wood)';
+                      conflictMsg = lang === 'en'
+                        ? `Your saju aligns with the seasonal flow — keep ${OH_EN_CAP[johuYongsin]} energy close.`
+                        : `너의 사주는 흐름과 잘 맞아. ${johuYongsin} 기운을 가까이 두면 그대로 좋아.`;
+                    } else if (johuYongsin === llmYongsin.gisin) {
+                      conflictIcon = '⚡'; conflictColor = 'var(--orot-coral)';
+                      conflictMsg = lang === 'en'
+                        ? `You're a special case. ${season} sajus usually like ${OH_EN_CAP[johuYongsin]}, but it doesn't suit you. Follow the 'core energy (yongsin)' above instead.`
+                        : `너는 좀 특별한 케이스야. 보통 ${season} 사주는 ${johuYongsin} 기운이 좋다지만 너에겐 그게 안 맞아. 위 '핵심 기운(용신)'을 우선해.`;
+                    } else if (johuYongsin === llmYongsin.heesin) {
+                      conflictIcon = '🌿'; conflictColor = 'var(--orot-el-wood)';
+                      conflictMsg = lang === 'en'
+                        ? `The seasonal flow also helps you. Keep core energy as main, ${OH_EN_CAP[johuYongsin]} as support.`
+                        : `계절의 흐름도 너에게 도움 돼. 위 '핵심 기운(용신)'이 메인, ${johuYongsin} 기운은 보조로.`;
+                    } else {
+                      conflictIcon = '🔅'; conflictColor = 'var(--orot-ink-mute)';
+                      conflictMsg = lang === 'en'
+                        ? `The seasonal flow doesn't strongly affect you. Focus on the core energy above.`
+                        : `계절의 흐름은 너에게 큰 영향 없어. 위 '핵심 기운(용신)'만 신경 써도 충분해.`;
+                    }
+                  }
+                  return (
+                    <div style={{ background: 'rgba(138, 161, 196, 0.08)', border: '1px solid rgba(138, 161, 196, 0.25)', borderRadius: 14, padding: 14, marginBottom: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-el-water)', marginBottom: 10, fontFamily: 'var(--orot-font)' }}>
+                        🌡️ {lang === 'en' ? 'What this season needs' : '계절이 필요로 하는 기운'} <span style={{ fontSize: 11, color: 'var(--orot-ink-mute)', fontWeight: 500 }}>({lang === 'en' ? 'johu yongsin' : '조후용신'})</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '8px 12px', background: 'rgba(243, 231, 207, 0.04)', borderRadius: 10 }}>
+                        <div style={{ fontSize: 28, lineHeight: 1 }}>{OH_ICON[johuYongsin]}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', fontFamily: 'var(--orot-font)' }}>
+                            {season} {lang === 'en' ? 'born — typically needs' : '태생 — 보통 필요한 기운'}
+                          </div>
+                          <div style={{ fontSize: 18, fontWeight: 700, color: ohColors[johuYongsin] || 'var(--orot-el-water)', fontFamily: 'var(--orot-font)' }}>
+                            {lang === 'en' ? OH_EN_CAP[johuYongsin] : johuYongsin}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)', marginBottom: conflictMsg ? 10 : 0 }}>
+                        {johu}
+                      </div>
+                      {conflictMsg && (
+                        <div style={{ fontSize: 12, lineHeight: 1.65, color: conflictColor, fontWeight: 500, padding: '10px 12px', background: 'rgba(243, 231, 207, 0.05)', borderRadius: 10, fontFamily: 'var(--orot-font)', borderLeft: `3px solid ${conflictColor}` }}>
+                          <span style={{ marginRight: 6 }}>{conflictIcon}</span>{conflictMsg}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ✨ 운을 도와주는 일상 (개운법) */}
+                <div style={{ background: 'rgba(243, 231, 207, 0.05)', border: '1px solid var(--orot-hair)', borderRadius: 14, padding: 14 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 8, fontFamily: 'var(--orot-font)' }}>
+                    ✨ {lang === 'en' ? 'Daily habits that lift your luck' : '운을 도와주는 일상'} <span style={{ fontSize: 11, color: 'var(--orot-ink-mute)', fontWeight: 500 }}>({lang === 'en' ? 'gaewun' : '개운법'})</span>
                   </div>
-                  <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 8, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
-                    {johu}
-                  </div>
-                  <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
-                    {t('johuYongsinLabel', lang)}<strong style={{ color: ohColors[johuYongsin] || 'var(--orot-el-water)' }}>{OH_ICON[johuYongsin]} {johuYongsin}</strong>
-                    {johuYongsin !== yongsin && <span style={{ color: 'var(--orot-ink-mute)' }}> ({lang === 'en' ? OH_EN_CAP[yongsin] : yongsin}{t('eokbuDiff', lang)})</span>}
-                    {johuYongsin === yongsin && <span style={{ color: 'var(--orot-el-wood)' }}>{t('eokbuMatch', lang)}</span>}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 8, padding: 8, background: 'rgba(243, 231, 207, 0.04)', borderRadius: 8, fontFamily: 'var(--orot-font)' }}>
-                    {t('gaewunTip', lang)}{yongsin === '화' || johuYongsin === '화' ? t('gaewun_fire', lang) :
+                  <div style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
+                    {yongsin === '화' || johuYongsin === '화' ? t('gaewun_fire', lang) :
                     yongsin === '수' || johuYongsin === '수' ? t('gaewun_water', lang) :
                     yongsin === '목' || johuYongsin === '목' ? t('gaewun_wood', lang) :
                     yongsin === '금' || johuYongsin === '금' ? t('gaewun_metal', lang) :
