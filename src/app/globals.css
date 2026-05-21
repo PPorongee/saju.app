@@ -1816,3 +1816,9 @@ input:focus-visible,
   background: linear-gradient(180deg, var(--orot-card-navy) 0%, var(--orot-card-navy-2) 100%) !important;
   border: 1px solid var(--orot-hair) !important;
 }
+
+/* TOC accordion fade-in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
