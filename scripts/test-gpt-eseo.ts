@@ -8,9 +8,11 @@ import OpenAI from 'openai';
 import * as fs from 'node:fs';
 import { calcSaju, getOhCount } from '../src/lib/saju-calc';
 import { buildSajuPrompts } from '../src/lib/saju-prompt-builder';
-import { SAJU_SYSTEM_PROMPT } from '../src/lib/saju-prompt';
 import { getOpenAIApiKey } from '../src/lib/env';
 import type { UserData } from '../src/lib/saju-prompt';
+
+// v3 system prompt (mirrors src/app/api/saju/route.ts SYSTEM_KO core)
+const SAJU_SYSTEM_PROMPT = '너는 20년차 사주명리학 분석가. 점쟁이 X, 분석가 톤. 친한 친구에게 분석해주듯 반말. 한자 금지, 고전 인용 금지. 일반론·당연한말 금지, 이 사주만의 디테일. 긍정 55% + 단점 25% + 조언 20%. "신살" 단어 X — "별"로 호명, 천을·문창귀인은 희소성 어필.';
 
 async function main() {
   const sj = calcSaju(1995, 7, 6, 6);
@@ -27,7 +29,7 @@ async function main() {
   const apiKey = getOpenAIApiKey();
   const openai = new OpenAI({ apiKey });
 
-  const partNames = ['Part 1 (1-4)', 'Part 2 (5-8)', 'Part 3 (9-12)'];
+  const partNames = ['Part 1 (1-4)', 'Part 2 (5-8)', 'Part 3 (9-11)'];
   const results: string[] = [];
   let totalInput = 0;
   let totalOutput = 0;

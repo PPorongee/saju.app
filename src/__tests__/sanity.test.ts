@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest';
 import { CG, JJ, CG_HANJA, JJ_HANJA, OH_CG, OH_JJ, PROFILES } from '@/lib/saju-calc';
-import { SAJU_SYSTEM_PROMPT, SAJU_SYSTEM_PROMPT_EN } from '@/lib/saju-prompt';
 import { SAJU_REFS } from '@/lib/saju-references';
 import { T } from '@/lib/i18n';
 
@@ -26,18 +25,6 @@ describe('Sanity: PROFILES', () => {
         expect((p as any)[f].length).toBeGreaterThan(0);
     }
   });
-});
-
-describe('Sanity: System prompts', () => {
-  test('Korean prompt has Korean', () => {
-    expect(SAJU_SYSTEM_PROMPT.length).toBeGreaterThan(100);
-    expect(/[가-힣]/.test(SAJU_SYSTEM_PROMPT)).toBe(true);
-  });
-  test('English prompt has English', () => {
-    expect(SAJU_SYSTEM_PROMPT_EN.length).toBeGreaterThan(100);
-    expect(SAJU_SYSTEM_PROMPT_EN).toContain('English');
-  });
-  test('prompts are different', () => expect(SAJU_SYSTEM_PROMPT).not.toBe(SAJU_SYSTEM_PROMPT_EN));
 });
 
 describe('Sanity: SAJU_REFS', () => {
