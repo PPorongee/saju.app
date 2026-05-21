@@ -2483,8 +2483,8 @@ export default function SajuApp() {
                     if (johuYongsin === llmYongsin.yongsin) {
                       conflictIcon = '✓'; conflictColor = 'var(--orot-el-wood)';
                       conflictMsg = lang === 'en'
-                        ? `Your saju aligns with the seasonal flow — keep ${OH_EN_CAP[johuYongsin]} energy close.`
-                        : `너의 사주는 흐름과 잘 맞아. ${johuYongsin} 기운을 가까이 두면 그대로 좋아.`;
+                        ? `Your saju aligns with the season's natural character — keep ${OH_EN_CAP[johuYongsin]} energy close.`
+                        : `너의 사주는 계절의 본래 성질과 잘 맞아. ${johuYongsin} 기운을 가까이 두면 그대로 좋아.`;
                     } else if (johuYongsin === llmYongsin.gisin) {
                       conflictIcon = '⚡'; conflictColor = 'var(--orot-coral)';
                       conflictMsg = lang === 'en'
@@ -2493,13 +2493,13 @@ export default function SajuApp() {
                     } else if (johuYongsin === llmYongsin.heesin) {
                       conflictIcon = '🌿'; conflictColor = 'var(--orot-el-wood)';
                       conflictMsg = lang === 'en'
-                        ? `The seasonal flow also helps you. Keep core energy as main, ${OH_EN_CAP[johuYongsin]} as support.`
-                        : `계절의 흐름도 너에게 도움 돼. 위 '핵심 기운(용신)'이 메인, ${johuYongsin} 기운은 보조로.`;
+                        ? `The season's natural character also helps you. Keep core energy as main, ${OH_EN_CAP[johuYongsin]} as support.`
+                        : `계절의 본래 성질도 너에게 도움 돼. 위 '핵심 기운(용신)'이 메인, ${johuYongsin} 기운은 보조로.`;
                     } else {
                       conflictIcon = '🔅'; conflictColor = 'var(--orot-ink-mute)';
                       conflictMsg = lang === 'en'
-                        ? `The seasonal flow doesn't strongly affect you. Focus on the core energy above.`
-                        : `계절의 흐름은 너에게 큰 영향 없어. 위 '핵심 기운(용신)'만 신경 써도 충분해.`;
+                        ? `The season's natural character doesn't strongly affect you. Focus on the core energy above.`
+                        : `계절의 본래 성질은 너에게 큰 영향 없어. 위 '핵심 기운(용신)'만 신경 써도 충분해.`;
                     }
                   }
                   return (
