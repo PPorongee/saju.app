@@ -2418,40 +2418,43 @@ export default function SajuApp() {
                   </p>
                 </div>
 
-                {/* 용신/희신/기신 카드 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                  <div style={{ background: 'rgba(148, 184, 143, 0.08)', border: '1px solid rgba(148, 184, 143, 0.25)', borderRadius: 14, padding: 12, textAlign: 'center' }}>
-                    <div style={{ fontSize: 11, color: 'var(--orot-el-wood)', fontWeight: 700, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{t('yongsinLabel', lang)}</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: yongsinColor, fontFamily: 'var(--orot-font)' }}>{OH_ICON[yongsin]} {lang === 'en' ? OH_EN_CAP[yongsin] : yongsin}</div>
-                    <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, fontFamily: 'var(--orot-font)' }}>
-                      {t('johuYongsin', lang)}
+                {/* 용신/희신/기신 큰 카드 — 위쪽 풀이 카드가 표시될 때는 중복이라 숨김 */}
+                {!(llmYongsin && llmYongsin.explanation) && (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                      <div style={{ background: 'rgba(148, 184, 143, 0.08)', border: '1px solid rgba(148, 184, 143, 0.25)', borderRadius: 14, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: 11, color: 'var(--orot-el-wood)', fontWeight: 700, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{t('yongsinLabel', lang)}</div>
+                        <div style={{ fontSize: 28, fontWeight: 700, color: yongsinColor, fontFamily: 'var(--orot-font)' }}>{OH_ICON[yongsin]} {lang === 'en' ? OH_EN_CAP[yongsin] : yongsin}</div>
+                        <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, fontFamily: 'var(--orot-font)' }}>
+                          {t('johuYongsin', lang)}
+                        </div>
+                      </div>
+                      <div style={{ background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)', borderRadius: 14, padding: 12, textAlign: 'center' }}>
+                        <div style={{ fontSize: 12, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{t('gisinLabel', lang)}</div>
+                        <div style={{ fontSize: 28, fontWeight: 700, color: gisinColor, fontFamily: 'var(--orot-font)' }}>{OH_ICON[gisin]} {lang === 'en' ? OH_EN_CAP[gisin] : gisin}</div>
+                        <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, fontFamily: 'var(--orot-font)' }}>
+                          {t('gisinWarning', lang)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)', borderRadius: 14, padding: 12, textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{t('gisinLabel', lang)}</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: gisinColor, fontFamily: 'var(--orot-font)' }}>{OH_ICON[gisin]} {lang === 'en' ? OH_EN_CAP[gisin] : gisin}</div>
-                    <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 4, fontFamily: 'var(--orot-font)' }}>
-                      {t('gisinWarning', lang)}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                      {heesin && (
+                        <div style={{ background: 'rgba(138, 161, 196, 0.06)', border: '1px solid rgba(138, 161, 196, 0.20)', borderRadius: 10, padding: 8, textAlign: 'center' }}>
+                          <span style={{ fontSize: 11, color: 'var(--orot-el-water)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('heesinLabel', lang)}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: heesinColor, marginLeft: 6, fontFamily: 'var(--orot-font)' }}>{OH_ICON[heesin]} {heesin}</span>
+                          <span style={{ fontSize: 10, color: 'var(--orot-ink-mute)', display: 'block', marginTop: 2, fontFamily: 'var(--orot-font)' }}>{t('heesinDesc', lang)}</span>
+                        </div>
+                      )}
+                      {gusin && (
+                        <div style={{ background: 'rgba(211, 184, 122, 0.06)', border: '1px solid rgba(211, 184, 122, 0.20)', borderRadius: 10, padding: 8, textAlign: 'center' }}>
+                          <span style={{ fontSize: 11, color: 'var(--orot-el-earth)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('gusinLabel', lang)}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: ohColors[gusin] || 'var(--orot-el-earth)', marginLeft: 6, fontFamily: 'var(--orot-font)' }}>{OH_ICON[gusin]} {gusin}</span>
+                          <span style={{ fontSize: 10, color: 'var(--orot-ink-mute)', display: 'block', marginTop: 2, fontFamily: 'var(--orot-font)' }}>{t('gusinDesc', lang)}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </div>
-                {/* 희신/구신 서브 라벨 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-                  {heesin && (
-                    <div style={{ background: 'rgba(138, 161, 196, 0.06)', border: '1px solid rgba(138, 161, 196, 0.20)', borderRadius: 10, padding: 8, textAlign: 'center' }}>
-                      <span style={{ fontSize: 11, color: 'var(--orot-el-water)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('heesinLabel', lang)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: heesinColor, marginLeft: 6, fontFamily: 'var(--orot-font)' }}>{OH_ICON[heesin]} {heesin}</span>
-                      <span style={{ fontSize: 10, color: 'var(--orot-ink-mute)', display: 'block', marginTop: 2, fontFamily: 'var(--orot-font)' }}>{t('heesinDesc', lang)}</span>
-                    </div>
-                  )}
-                  {gusin && (
-                    <div style={{ background: 'rgba(211, 184, 122, 0.06)', border: '1px solid rgba(211, 184, 122, 0.20)', borderRadius: 10, padding: 8, textAlign: 'center' }}>
-                      <span style={{ fontSize: 11, color: 'var(--orot-el-earth)', fontWeight: 600, fontFamily: 'var(--orot-font)' }}>{t('gusinLabel', lang)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: ohColors[gusin] || 'var(--orot-el-earth)', marginLeft: 6, fontFamily: 'var(--orot-font)' }}>{OH_ICON[gusin]} {gusin}</span>
-                      <span style={{ fontSize: 10, color: 'var(--orot-ink-mute)', display: 'block', marginTop: 2, fontFamily: 'var(--orot-font)' }}>{t('gusinDesc', lang)}</span>
-                    </div>
-                  )}
-                </div>
+                  </>
+                )}
                 {tongguanNote && (
                   <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginBottom: 12, padding: '8px 12px', background: 'rgba(243, 231, 207, 0.05)', borderRadius: 10, border: '1px solid var(--orot-hair-strong)', fontFamily: 'var(--orot-font)' }}>
                     {t('tongguanLabel', lang)}{tongguanNote}
