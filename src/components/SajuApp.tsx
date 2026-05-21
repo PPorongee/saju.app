@@ -602,7 +602,7 @@ export default function SajuApp() {
       title: cur.title,
       body: text.slice(cur.end, i + 1 < matches.length ? matches[i + 1].start : text.length).trim(),
     }));
-    const tocIcons: Record<number, string> = { 1:'🪞',2:'🗺️',3:'💰',4:'💕',5:'🎯',6:'👥',7:'👨‍👩‍👧',8:'🏥',9:'📍',10:'🔮',11:'🍀',12:'💌' };
+    const tocIcons: Record<number, string> = { 1:'🪞',2:'🗺️',3:'💰',4:'💕',5:'🎯',6:'👥',7:'👨‍👩‍👧',8:'🏥',9:'📍',10:'🍀',11:'💌',12:'💌' };
     return (
       <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
         <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '12px' }}>
@@ -4074,16 +4074,16 @@ export default function SajuApp() {
     const sectionTitles = isYearly ? yearlySectionTitles : [
       t('secTitle1', lang), t('secTitle2', lang), t('secTitle3', lang), title4,
       t('secTitle5', lang), t('secTitle6', lang), t('secTitle7', lang), t('secTitle8', lang),
-      t('secTitle9', lang), t('secTitle10', lang), t('secTitle11', lang), t('secTitle12', lang)
+      t('secTitle9', lang), t('secTitle10', lang), t('secTitle11', lang)
     ];
 
     const sectionHints = isYearly ? yearlySectionHints : [
       t('secHint1', lang), t('secHint2', lang), t('secHint3', lang), hint4,
       t('secHint5', lang), t('secHint6', lang), t('secHint7', lang), t('secHint8', lang),
-      t('secHint9', lang), t('secHint10', lang), t('secHint11', lang), t('secHint12', lang)
+      t('secHint9', lang), t('secHint10', lang), t('secHint11', lang)
     ];
 
-    const icons = isYearly ? yearlyIcons : ['🎯', '🗺', '💰', '💕', '🔍', '👥', '👨‍👩‍👧', '🏥', '🛤', '📅', '🍀', '💌'];
+    const icons = isYearly ? yearlyIcons : ['🎯', '🗺', '💰', '💕', '🔍', '👥', '👨‍👩‍👧', '🏥', '📍', '🍀', '💌'];
 
     const isEn = lang === 'en';
     const teaserBirthLine = isEn

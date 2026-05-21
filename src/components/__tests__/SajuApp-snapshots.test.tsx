@@ -67,9 +67,10 @@ describe('SajuApp — smoke render tests', () => {
 
   it('renders the intro screen (screen 0) by default', async () => {
     await mountSajuApp();
-    // h1 with the app title must be present
+    // h1 with the welcome title must be present
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
-    expect(screen.getByText('별빛 사주')).toBeInTheDocument();
+    // "별빛 사주" appears as logo alt text (lang=ko)
+    expect(screen.getByAltText('별빛 사주')).toBeInTheDocument();
   });
 
   it('renders the language toggle button', async () => {

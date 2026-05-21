@@ -8,7 +8,7 @@ export const T: Record<string, Record<Lang, string>> = {
 
   // Feature cards
   sajuTitle: { ko: '내 사주 해설', en: 'My Saju Reading' },
-  sajuDesc: { ko: '12가지 심층 분석', en: '12 Deep Analysis' },
+  sajuDesc: { ko: '11가지 심층 분석', en: '11 Deep Analysis' },
   compatTitle: { ko: '궁합 보기', en: 'Compatibility' },
   compatDesc: { ko: '두 사람의 인연 분석', en: 'Analyze your connection' },
   yearlyTitle: { ko: '2026 올해운세', en: '2026 Fortune' },
@@ -350,7 +350,7 @@ export const T: Record<string, Record<Lang, string>> = {
   // Free preview link
   freePreviewLink: { ko: '무료로 먼저 볼게요', en: 'Preview for free' },
 
-  // Section titles for teaser (saju) — 12 sections, 3 parts
+  // Section titles for teaser (saju) — 11 sections, 3 parts
   secTitle1: { ko: '나는 어떤 사람인가', en: 'Who Am I?' },
   secTitle2: { ko: '인생 로드맵 (5단계)', en: 'Life Roadmap (5 Stages)' },
   secTitle3: { ko: '돈과 커리어', en: 'Money & Career' },
@@ -359,12 +359,11 @@ export const T: Record<string, Record<Lang, string>> = {
   secTitle6: { ko: '인간관계 & 귀인', en: 'Relationships & Noble Helpers' },
   secTitle7: { ko: '가정 & 자녀운', en: 'Family & Children Fortune' },
   secTitle8: { ko: '건강 & 멘탈 관리', en: 'Health & Mental Care' },
-  secTitle9: { ko: '지금 나의 인생 챕터', en: 'My Current Life Chapter' },
-  secTitle10: { ko: '향후 10년 시나리오', en: '10-Year Future Scenario' },
-  secTitle11: { ko: '행운 루틴 & 개운법 + 부동산', en: 'Lucky Routines & Real Estate' },
-  secTitle12: { ko: '나에게 보내는 편지', en: 'A Letter to Myself' },
+  secTitle9: { ko: '지금 1년과 다가올 2~3년', en: 'This Year & Next 2~3 Years' },
+  secTitle10: { ko: '행운 루틴 & 개운법 + 부동산', en: 'Lucky Routines & Real Estate' },
+  secTitle11: { ko: '나에게 보내는 편지', en: 'A Letter to Myself' },
 
-  // Section hints for teaser (saju) — 12 sections
+  // Section hints for teaser (saju) — 11 sections
   secHint1: { ko: '격국·용신·성격·멘탈·12운성 통합 분석...', en: 'Integrated analysis: structure, personality & energy...' },
   secHint2: { ko: '대운 흐름으로 보는 인생 5단계 시나리오...', en: 'Five life stages through luck cycles...' },
   secHint3: { ko: '재물 구조·투자 체질·천직 TOP 5...', en: 'Wealth structure, career calling & top 5 jobs...' },
@@ -373,10 +372,9 @@ export const T: Record<string, Record<Lang, string>> = {
   secHint6: { ko: '귀인·좋은 사람·피할 사람 총정리...', en: 'Noble helpers & people to avoid...' },
   secHint7: { ko: '가족관계·자녀복·부모 스타일...', en: 'Family dynamics, children & parenting...' },
   secHint8: { ko: '오행 균형으로 보는 건강 레이더...', en: 'Health radar through five elements...' },
-  secHint9: { ko: '현재 대운 + 2027 미리보기...', en: 'Current luck cycle + 2027 preview...' },
-  secHint10: { ko: '10년 미래 + 빛나는 나이...', en: '10-year future + brightest age...' },
-  secHint11: { ko: '용신 개운법 + 부동산 방위...', en: 'Fortune tips + real estate directions...' },
-  secHint12: { ko: '사주가 전하는 따뜻한 편지...', en: 'A warm letter from your Saju...' },
+  secHint9: { ko: '현재 대운 + 2027·2028 가시권 미리보기...', en: 'Current luck + 2027·2028 visible horizon...' },
+  secHint10: { ko: '용신 개운법 + 부동산 방위...', en: 'Fortune tips + real estate directions...' },
+  secHint11: { ko: '사주가 전하는 따뜻한 편지...', en: 'A warm letter from your Saju...' },
 
   // Section titles for yearly teaser
   yrSecTitle1: { ko: '올해의 큰 그림 & 핵심 미션', en: 'Big Picture & Core Mission' },

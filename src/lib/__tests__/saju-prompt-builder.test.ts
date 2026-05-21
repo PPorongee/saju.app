@@ -31,15 +31,18 @@ describe('buildSajuPrompts', () => {
     expect(r[0]).toContain('CRITICAL LANGUAGE INSTRUCTION');
     expect(r[1]).toContain('FINAL REMINDER');
   });
-  test('prompt1 ##1-##4, prompt2 ##5-##8, prompt3 ##9-##12 (unmarried)', () => {
+  test('prompt1 ##1-##4, prompt2 ##5-##8, prompt3 ##9-##11 (unmarried)', () => {
     const r = buildSajuPrompts(sj,oh,mkUser({relationship:0}));
     for (let i=1;i<=4;i++) expect(r[0]).toContain('##'+i+'.');
     for (let i=5;i<=8;i++) expect(r[1]).toContain('##'+i+'.');
-    for (let i=9;i<=12;i++) expect(r[2]).toContain('##'+i+'.');
+    for (let i=9;i<=11;i++) expect(r[2]).toContain('##'+i+'.');
+    // ##12는 더 이상 없음 (향후 10년 시나리오 섹션 삭제됨)
+    expect(r[2]).not.toContain('##12.');
   });
-  test('prompt3 has ##11 ##12', () => {
+  test('prompt3 has ##11 (편지) but no ##12', () => {
     const r = buildSajuPrompts(sj,oh,mkUser());
-    expect(r[2]).toContain('##11.'); expect(r[2]).toContain('##12.');
+    expect(r[2]).toContain('##11.');
+    expect(r[2]).not.toContain('##12.');
   });
   test('married has spouse section, unmarried has love section', () => {
     const m = buildSajuPrompts(sj,oh,mkUser({relationship:3}));
