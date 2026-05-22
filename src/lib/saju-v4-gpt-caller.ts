@@ -16,8 +16,14 @@ const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.SAJU_V4_GPT_MAX_TOKENS ?? '
 let _client: OpenAI | null = null;
 function client(): OpenAI {
   if (_client) return _client;
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY missing');
+  const raw = process.env.OPENAI_API_KEY;
+  if (!raw) throw new Error('OPENAI_API_KEY missing');
+  const apiKey = raw.trim();
+  // Vercel 환경변수에 가운데 공백/개행이 섞이면 OpenAI SDK가 HTTP 헤더 invalid로 거부.
+  // 정상 키는 공백 없음 — 명확한 에러로 즉시 진단.
+  if (/\s/.test(apiKey)) {
+    throw new Error('OPENAI_API_KEY contains whitespace — Vercel 환경변수를 공백·줄바꿈 없이 재설정하세요.');
+  }
   _client = new OpenAI({ apiKey });
   return _client;
 }
