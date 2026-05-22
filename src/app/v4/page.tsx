@@ -208,24 +208,32 @@ export default function V4Page() {
 }
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 10px', fontSize: 14,
-  borderRadius: 6, border: '1px solid var(--orot-hair)',
-  background: 'transparent', color: 'var(--orot-ink)',
+  width: '100%', padding: '10px 12px', fontSize: 14,
+  borderRadius: 6, border: '1px solid #3a4060',
+  background: '#1a1d3a', color: '#e8e8f0',
+  appearance: 'auto',
 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 12, color: 'var(--orot-ink-mute)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 12, color: '#9a9ab0', marginBottom: 6 }}>{label}</div>
       {children}
     </div>
   );
 }
 
+// 칩 스타일 토글 — 다크 테마에서 native radio 안 보이는 문제 우회
 function Radio({ name, value, checked, onChange, label }: { name: string; value: string; checked: boolean; onChange: () => void; label: string }) {
+  void name; void value;
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, cursor: 'pointer' }}>
-      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} />{label}
-    </label>
+    <button type="button" onClick={onChange}
+      style={{
+        padding: '8px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer',
+        border: '1px solid ' + (checked ? '#F0C75E' : '#3a4060'),
+        background: checked ? 'rgba(240,199,94,0.18)' : 'transparent',
+        color: checked ? '#F0C75E' : '#c8c8d8',
+        fontWeight: checked ? 700 : 400,
+      }}>{label}</button>
   );
 }
