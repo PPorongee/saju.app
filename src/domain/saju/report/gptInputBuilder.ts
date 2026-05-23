@@ -8,6 +8,7 @@ import type {
   TenGodAnalysis, ElementStrengthAnalysis, DayMasterStrengthAnalysis,
   UsefulGodAnalysis, CombinationsAndConflicts, SpecialStarInfo,
   SpecialPoint, FortuneCycleInfo,
+  IdentityKeyword, LifeWeapon, LifeTrap, FortuneTriggerAnalysis,
 } from './sajuReportSchema';
 import type { RuleConfig } from '../rules/ruleConfig';
 
@@ -23,6 +24,10 @@ export function buildPersonalSajuGptInput(args: {
   combinationsAndConflicts: CombinationsAndConflicts;
   specialStars: SpecialStarInfo[];
   specialPoints: SpecialPoint[];
+  identityKeywords: IdentityKeyword[];
+  lifeWeapons: LifeWeapon[];
+  lifeTraps: LifeTrap[];
+  fortuneTriggers: FortuneTriggerAnalysis;
   fortune: FortuneCycleInfo;
 }): PersonalSajuGptInput {
   const { userContext, pillars } = args;
@@ -54,6 +59,10 @@ export function buildPersonalSajuGptInput(args: {
       specialStars: args.specialStars,
     },
     specialPoints: args.specialPoints,
+    identityKeywords: args.identityKeywords,
+    lifeWeapons: args.lifeWeapons,
+    lifeTraps: args.lifeTraps,
+    fortuneTriggers: args.fortuneTriggers,
     fortune: args.fortune,
     constraints: {
       doNotInvent: true,

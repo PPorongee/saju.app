@@ -227,6 +227,76 @@ export interface ContextGuardResult {
 }
 
 // ============================================================
+// 차별화 4섹션 (사용자 spec §3-1~3-4)
+// ============================================================
+
+export type IdentityEvidenceSource =
+  | 'dayMaster' | 'monthBranch' | 'tenGod' | 'elementStrength'
+  | 'usefulGod' | 'specialPoint' | 'combination' | 'conflict';
+
+export interface IdentityKeyword {
+  keyword: string;            // 예: "기준이 분명한 사람"
+  shortDescription: string;
+  evidence: Array<{ source: IdentityEvidenceSource; description: string }>;
+  narrativeHint: string;
+  displayPriority: number;
+}
+
+export type LifeWeaponCategory =
+  | 'judgment' | 'expression' | 'money' | 'relationship'
+  | 'career' | 'persistence' | 'learning' | 'creativity' | 'leadership';
+
+export type LifeWeaponEvidenceSource =
+  | 'tenGod' | 'element' | 'dayMasterStrength' | 'usefulGod'
+  | 'specialPoint' | 'daewoon' | 'sewoon';
+
+export interface LifeWeapon {
+  name: string;
+  category: LifeWeaponCategory;
+  evidence: Array<{ source: LifeWeaponEvidenceSource; description: string }>;
+  realLifeScene: string;
+  howToUse: string;
+  caution: string;
+  strengthScore: number;       // 0~100
+  displayPriority: number;
+}
+
+export type LifeTrapCategory =
+  | 'overthinking' | 'relationship' | 'money' | 'career'
+  | 'emotion' | 'persistence' | 'perfectionism' | 'avoidance' | 'over-responsibility';
+
+export type LifeTrapEvidenceSource =
+  | 'tenGod' | 'elementExcess' | 'elementDeficiency' | 'conflict'
+  | 'usefulGod' | 'unfavorableGod' | 'specialPoint';
+
+export interface LifeTrap {
+  name: string;
+  category: LifeTrapCategory;
+  evidence: Array<{ source: LifeTrapEvidenceSource; description: string }>;
+  patternDescription: string;
+  realLifeScene: string;
+  escapeStrategy: string;
+  riskScore: number;           // 0~100
+  displayPriority: number;
+}
+
+export interface FortuneTriggerAnalysis {
+  fortuneActivatingChoices: Array<{
+    title: string;
+    reason: string;
+    practicalAction: string;
+    relatedTo: 'usefulGod' | 'tenGod' | 'specialPoint' | 'daewoon' | 'sewoon' | 'elementBalance';
+  }>;
+  fortuneBlockingChoices: Array<{
+    title: string;
+    reason: string;
+    practicalRisk: string;
+    correction: string;
+    relatedTo: 'unfavorableGod' | 'tenGodExcess' | 'elementImbalance' | 'conflict' | 'lifeTrap';
+  }>;
+}
+
+// ============================================================
 // GPT 입력 JSON (Module 13)
 // ============================================================
 
@@ -258,6 +328,10 @@ export interface PersonalSajuGptInput {
     specialStars: SpecialStarInfo[];
   };
   specialPoints: SpecialPoint[];
+  identityKeywords: IdentityKeyword[];
+  lifeWeapons: LifeWeapon[];
+  lifeTraps: LifeTrap[];
+  fortuneTriggers: FortuneTriggerAnalysis;
   fortune: FortuneCycleInfo;
   constraints: {
     doNotInvent: true;
@@ -297,6 +371,11 @@ export interface ReportValidationResult {
 
 export interface PersonalSajuReport {
   summary: string;
+  identityKeywords: Array<{
+    keyword: string;
+    body: string;
+    evidenceSummary: string[];
+  }>;
   specialSection: {
     title: '이 사주가 평범하지 않은 이유';
     points: Array<{
@@ -305,6 +384,35 @@ export interface PersonalSajuReport {
       body: string;
       evidenceSummary: string[];
       strengthScore: number;
+    }>;
+  };
+  lifeWeapons: Array<{
+    name: string;
+    body: string;
+    realLifeScene: string;
+    howToUse: string;
+    caution: string;
+    evidenceSummary: string[];
+  }>;
+  lifeTraps: Array<{
+    name: string;
+    body: string;
+    realLifeScene: string;
+    escapeStrategy: string;
+    evidenceSummary: string[];
+  }>;
+  fortuneTriggers: {
+    activatingChoices: Array<{
+      title: string;
+      body: string;
+      practicalAction: string;
+      evidenceSummary: string[];
+    }>;
+    blockingChoices: Array<{
+      title: string;
+      body: string;
+      correction: string;
+      evidenceSummary: string[];
     }>;
   };
   questions: Array<{

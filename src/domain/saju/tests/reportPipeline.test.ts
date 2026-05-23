@@ -89,6 +89,10 @@ describe('buildPersonalSajuGptInput — JSON 스키마 적합', () => {
     dayMasterStrength: all.dm, usefulGod: all.ug,
     combinationsAndConflicts: all.cc,
     specialStars: all.ss, specialPoints: all.sp,
+    identityKeywords: [],
+    lifeWeapons: [],
+    lifeTraps: [],
+    fortuneTriggers: { fortuneActivatingChoices: [], fortuneBlockingChoices: [] },
     fortune: all.ff,
   });
 
@@ -125,6 +129,10 @@ describe('buildPersonalSajuPrompt — 시스템/유저 프롬프트', () => {
     dayMasterStrength: all.dm, usefulGod: all.ug,
     combinationsAndConflicts: all.cc,
     specialStars: all.ss, specialPoints: all.sp,
+    identityKeywords: [],
+    lifeWeapons: [],
+    lifeTraps: [],
+    fortuneTriggers: { fortuneActivatingChoices: [], fortuneBlockingChoices: [] },
     fortune: all.ff,
   });
   const guard = buildContextGuard(all.n.context, all.n.hourUnknown);

@@ -20,6 +20,10 @@ import { analyzeSpecialStars } from './analysis/specialStarAnalyzer';
 import { analyzeCombinationsAndConflicts } from './analysis/combinationConflictAnalyzer';
 import { analyzeFortuneFlow } from './analysis/fortuneFlowAnalyzer';
 import { detectSpecialPoints } from './specialPoints/specialPointDetector';
+import { generateIdentityKeywords } from './analysis/identityKeywordsGenerator';
+import { detectLifeWeapons } from './analysis/lifeWeaponsDetector';
+import { detectLifeTraps } from './analysis/lifeTrapsDetector';
+import { analyzeFortuneTriggers } from './analysis/fortuneTriggersAnalyzer';
 import { buildPersonalSajuGptInput } from './report/gptInputBuilder';
 import { buildPersonalSajuPrompt, type BuiltPrompt } from './report/personalSajuPromptBuilder';
 import { buildContextGuard } from './report/contextGuard';
@@ -74,6 +78,30 @@ export async function generatePersonalSajuReport(
     hourUnknown: normalized.hourUnknown,
   });
 
+  // ── 차별화 4섹션 (코드 결정론 — GPT는 풀어쓰기만) ──
+  const identityKeywords = generateIdentityKeywords({
+    pillars: pillarsRes.pillars,
+    tenGods, elements,
+    dayMasterStrength: dm, structure, usefulGod, specialPoints,
+  });
+  const lifeWeapons = detectLifeWeapons({
+    pillars: pillarsRes.pillars,
+    tenGods, elements,
+    dayMasterStrength: dm, usefulGod, specialPoints, fortune,
+  });
+  const lifeTraps = detectLifeTraps({
+    pillars: pillarsRes.pillars,
+    tenGods, elements,
+    dayMasterStrength: dm, usefulGod, specialPoints, fortune,
+    userContext: normalized.context,
+  });
+  const fortuneTriggers = analyzeFortuneTriggers({
+    pillars: pillarsRes.pillars,
+    tenGods, elements,
+    usefulGod, specialPoints,
+    lifeWeapons, lifeTraps, fortune,
+  });
+
   // ── GPT 입력·프롬프트 ──
   const gptInput = buildPersonalSajuGptInput({
     userContext: normalized.context,
@@ -86,6 +114,10 @@ export async function generatePersonalSajuReport(
     combinationsAndConflicts: combConflicts,
     specialStars,
     specialPoints,
+    identityKeywords,
+    lifeWeapons,
+    lifeTraps,
+    fortuneTriggers,
     fortune,
   });
 
