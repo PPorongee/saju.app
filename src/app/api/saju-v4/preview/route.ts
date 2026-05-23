@@ -29,6 +29,9 @@ export async function POST(req: Request) {
       lifeTraps: result.lifeTraps,
       fortuneTriggers: result.fortuneTriggers,
       fortune: result.fortune,
+      careerSpecificAnalysis: result.careerSpecificAnalysis,
+      timingAnchors: result.timingAnchors,
+      futureTimingAnalysis: result.futureTimingAnalysis,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'unknown_error';

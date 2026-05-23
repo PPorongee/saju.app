@@ -24,9 +24,13 @@ import { generateIdentityKeywords } from './analysis/identityKeywordsGenerator';
 import { detectLifeWeapons } from './analysis/lifeWeaponsDetector';
 import { detectLifeTraps } from './analysis/lifeTrapsDetector';
 import { analyzeFortuneTriggers } from './analysis/fortuneTriggersAnalyzer';
+import { analyzeCareerSpecifics } from './analysis/careerSpecificsAnalyzer';
+import { generateTimingAnchors } from './analysis/timingAnchorsGenerator';
+import { analyzeFutureTiming } from './analysis/futureTimingAnalyzer';
 import { buildPersonalSajuGptInput } from './report/gptInputBuilder';
 import { buildPersonalSajuPrompt, type BuiltPrompt } from './report/personalSajuPromptBuilder';
 import { buildContextGuard } from './report/contextGuard';
+import { buildContentLedger } from './report/contentLedgerBuilder';
 import { validateReport } from './report/reportValidator';
 import { DEFAULT_RULE_CONFIG } from './rules/ruleConfig';
 import type { PersonalSajuGptInput, ReportValidationResult, SpecialPoint } from './report/sajuReportSchema';
@@ -93,6 +97,26 @@ export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date())
     usefulGod, specialPoints, lifeWeapons, lifeTraps, fortune,
   });
 
+  const careerSpecificAnalysis = analyzeCareerSpecifics({
+    pillars: pillarsRes.pillars, tenGods, elements,
+    dayMasterStrength: dm, usefulGod, specialPoints, fortune,
+    userContext: normalized.context,
+  });
+  const timingAnchors = generateTimingAnchors({
+    pillars: pillarsRes.pillars, cycles, tenGods, usefulGod, specialPoints,
+    userContext: normalized.context,
+    currentYear: now.getFullYear(),
+    birthYear: normalized.year,
+  });
+  const futureTimingAnalysis = analyzeFutureTiming({
+    pillars: pillarsRes.pillars, cycles, tenGods, usefulGod, specialPoints,
+    birthYear: normalized.year,
+  });
+  const contentLedger = buildContentLedger({
+    identityKeywords, specialPoints, lifeWeapons, lifeTraps,
+    fortuneTriggers, careerSpecificAnalysis, futureTimingAnalysis,
+  });
+
   return buildPersonalSajuGptInput({
     userContext: normalized.context,
     birthTimeConfidence: input.birthTimeConfidence,
@@ -109,6 +133,10 @@ export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date())
     lifeTraps,
     fortuneTriggers,
     fortune,
+    careerSpecificAnalysis,
+    timingAnchors,
+    futureTimingAnalysis,
+    contentLedger,
   });
 }
 
@@ -164,6 +192,27 @@ export async function generatePersonalSajuReport(
     lifeWeapons, lifeTraps, fortune,
   });
 
+  // ── 직업·환경·돈 / 타이밍 / 미래 시기 / Content Ledger ──
+  const careerSpecificAnalysis = analyzeCareerSpecifics({
+    pillars: pillarsRes.pillars, tenGods, elements,
+    dayMasterStrength: dm, usefulGod, specialPoints, fortune,
+    userContext: normalized.context,
+  });
+  const timingAnchors = generateTimingAnchors({
+    pillars: pillarsRes.pillars, cycles, tenGods, usefulGod, specialPoints,
+    userContext: normalized.context,
+    currentYear: now.getFullYear(),
+    birthYear: normalized.year,
+  });
+  const futureTimingAnalysis = analyzeFutureTiming({
+    pillars: pillarsRes.pillars, cycles, tenGods, usefulGod, specialPoints,
+    birthYear: normalized.year,
+  });
+  const contentLedger = buildContentLedger({
+    identityKeywords, specialPoints, lifeWeapons, lifeTraps,
+    fortuneTriggers, careerSpecificAnalysis, futureTimingAnalysis,
+  });
+
   // ── GPT 입력·프롬프트 ──
   const gptInput = buildPersonalSajuGptInput({
     userContext: normalized.context,
@@ -181,6 +230,10 @@ export async function generatePersonalSajuReport(
     lifeTraps,
     fortuneTriggers,
     fortune,
+    careerSpecificAnalysis,
+    timingAnchors,
+    futureTimingAnalysis,
+    contentLedger,
   });
 
   const contextGuard = buildContextGuard(normalized.context, normalized.hourUnknown);
@@ -198,6 +251,7 @@ export async function generatePersonalSajuReport(
       reportText,
       userContext: normalized.context,
       specialPoints,
+      careerSpecificAnalysis,
     });
     if (validation.isValid) break;
     // repair: 같은 prompt에 검증 실패 issue를 알려주고 다시 호출

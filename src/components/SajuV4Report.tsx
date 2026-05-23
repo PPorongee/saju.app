@@ -436,7 +436,7 @@ function SectionIdentityKeywords({ keywords, parsedItems }: { keywords: Identity
   if (keywords.length === 0) return null;
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="section-divider" style={{ marginBottom: 12 }}>나만의 사주 키워드</div>
+      <div className="section-divider" style={{ marginBottom: 12 }}>나를 설명하는 사주 키워드</div>
       <div style={{ display: 'grid', gap: 8 }}>
         {keywords.map((k, i) => {
           const matched = parsedItems[i];
@@ -468,7 +468,7 @@ function SectionLifeWeapons({ weapons, parsedItems }: { weapons: LifeWeapon[]; p
   if (weapons.length === 0) return null;
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="section-divider" style={{ marginBottom: 12 }}>내 사주의 무기</div>
+      <div className="section-divider" style={{ marginBottom: 12 }}>내가 잘 쓰면 강해지는 무기</div>
       {weapons.map((w, i) => {
         const matched = parsedItems[i];
         return (
@@ -494,7 +494,7 @@ function SectionLifeTraps({ traps, parsedItems }: { traps: LifeTrap[]; parsedIte
   if (traps.length === 0) return null;
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="section-divider" style={{ marginBottom: 12 }}>내 사주의 함정</div>
+      <div className="section-divider" style={{ marginBottom: 12 }}>반복해서 빠지기 쉬운 함정</div>
       {traps.map((t, i) => {
         const matched = parsedItems[i];
         return (
@@ -522,7 +522,7 @@ function SectionFortuneTriggers({ triggers, parsedAct, parsedBlk }: { triggers: 
   if (a.length === 0 && b.length === 0) return null;
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="section-divider" style={{ marginBottom: 12 }}>운이 살아나는 / 막는 선택</div>
+      <div className="section-divider" style={{ marginBottom: 12 }}>운을 살리는 선택 · 운을 막는 선택</div>
       {a.length > 0 && (
         <div className="card" style={{ padding: 14, marginBottom: 8 }}>
           <div className="orot-eyebrow" style={{ marginBottom: 8, color: 'rgba(120,200,140,0.9)' }}>+ 운이 살아나는 선택</div>
@@ -595,7 +595,7 @@ function SectionSummary({ text }: { text: string }) {
   if (!text) return null;
   return (
     <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>전체 요약</div>
+      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>이 사주의 핵심 한눈에 보기</div>
       <Body text={text} />
     </div>
   );
@@ -656,7 +656,7 @@ function SectionNextYears({ fortune, parsedYears }: { fortune: FortuneCycleInfo;
   if (fortune.nextThreeYears.length === 0) return null;
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="section-divider" style={{ marginBottom: 12 }}>앞으로 3년의 흐름</div>
+      <div className="section-divider" style={{ marginBottom: 12 }}>앞으로 3년, 어떤 판이 열릴까</div>
       {fortune.nextThreeYears.map((y, i) => {
         const parsed = parsedYears[i];
         return (
@@ -698,7 +698,7 @@ function SectionPracticalGuide({ text, finalMessage }: { text: string; finalMess
     <div style={{ marginBottom: 16 }}>
       {text && (
         <div className="card" style={{ padding: 16, marginBottom: 10 }}>
-          <div className="orot-eyebrow" style={{ marginBottom: 10 }}>사주를 좋게 쓰는 방법</div>
+          <div className="orot-eyebrow" style={{ marginBottom: 10 }}>이 사주를 잘 쓰는 현실 전략</div>
           <Body text={text} />
         </div>
       )}

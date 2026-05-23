@@ -19,15 +19,15 @@ export interface ParsedReport {
 }
 
 const SECTION_KEYWORDS = [
-  { key: 'summary',           patterns: ['전체 요약', '요약'] },
-  { key: 'identityKeywords',  patterns: ['나만의 사주 키워드', '사주 키워드', '키워드 5개'] },
-  { key: 'specialReasons',    patterns: ['평범하지 않은', '특별한 이유', '이 사주가 평범'] },
-  { key: 'lifeWeapons',       patterns: ['내 사주의 무기', '사주의 무기', '나의 무기'] },
-  { key: 'lifeTraps',         patterns: ['내 사주의 함정', '사주의 함정', '나의 함정'] },
-  { key: 'fortuneTriggers',   patterns: ['운이 살아나는 선택', '운을 막는 선택', '운 트리거'] },
+  { key: 'summary',           patterns: ['핵심 한눈에', '한눈에 보기', '전체 요약', '요약'] },
+  { key: 'identityKeywords',  patterns: ['나를 설명하는 사주 키워드', '나만의 사주 키워드', '사주 키워드', '키워드 5개'] },
+  { key: 'specialReasons',    patterns: ['평범하지 않은', '눈에 띄는 이유', '특별한 이유', '이 사주가 평범'] },
+  { key: 'lifeWeapons',       patterns: ['잘 쓰면 강해지는 무기', '내 사주의 무기', '사주의 무기', '나의 무기'] },
+  { key: 'lifeTraps',         patterns: ['빠지기 쉬운 함정', '내 사주의 함정', '사주의 함정', '나의 함정'] },
+  { key: 'fortuneTriggers',   patterns: ['운을 살리는 선택', '운이 살아나는 선택', '운을 막는 선택', '운 트리거'] },
   { key: 'questions',         patterns: ['질문별', '10가지 질문', '상세 풀이'] },
-  { key: 'nextThreeYears',    patterns: ['앞으로 3년', '3년의 흐름', '3년간'] },
-  { key: 'practicalGuide',    patterns: ['좋게 쓰는', '실용', '현실적 방법'] },
+  { key: 'nextThreeYears',    patterns: ['어떤 판이 열릴까', '앞으로 3년', '3년의 흐름', '3년간'] },
+  { key: 'practicalGuide',    patterns: ['잘 쓰는 현실 전략', '좋게 쓰는', '실용', '현실적 방법'] },
   { key: 'finalMessage',      patterns: ['마지막 한 문장', '마지막', '한 문장으로'] },
 ] as const;
 type SectionKey = typeof SECTION_KEYWORDS[number]['key'];

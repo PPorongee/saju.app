@@ -297,6 +297,132 @@ export interface FortuneTriggerAnalysis {
 }
 
 // ============================================================
+// 직업·환경·돈 (Career/Environment/Money) — spec §13
+// ============================================================
+
+export type CareerEvidenceSource =
+  | 'tenGod' | 'element' | 'usefulGod' | 'unfavorableGod'
+  | 'dayMasterStrength' | 'specialPoint' | 'conflict' | 'combination';
+
+export interface CareerMatch {
+  rank: number;
+  industry: string;          // 예: '스타트업 / IT 플랫폼'
+  roles: string[];           // 예: ['서비스 기획', 'PM/PO', '운영 개선']
+  fitScore: number;          // 0~100
+  whyFits: string[];         // 명리 근거 (사람 친화적 한 줄)
+  howItShowsInLife: string;  // 실제 장면
+  caution: string;           // 그림자
+}
+
+export interface ConditionalCareerMatch {
+  industry: string;
+  roles: string[];
+  condition: string;         // 예: '책임과 권한이 같이 주어지는 자리에서'
+  whyFits: string[];
+  caution: string;
+}
+
+export interface CareerAvoidEnvironment {
+  environment: string;       // 예: '책임은 많은데 권한은 없는 조직'
+  reason: string;
+  relatedTo: 'tenGod' | 'element' | 'usefulGod' | 'unfavorableGod' | 'conflict';
+}
+
+export interface WorkStyleItem {
+  title: string;             // 예: '문제를 구조화해야 하는 역할'
+  description: string;
+  evidence: string[];
+}
+
+export type MoneyMakingStyleKind =
+  | 'salary' | 'performance' | 'content' | 'transaction'
+  | 'expertise' | 'asset' | 'network' | 'personal-brand'
+  | 'project' | 'recurring-sales';
+
+export interface MoneyMakingStyleItem {
+  kind: MoneyMakingStyleKind;
+  title: string;             // 예: '내가 만든 결과물이 시장 반응을 얻을 때'
+  description: string;
+  evidence: string[];
+}
+
+export interface CareerSpecificAnalysis {
+  topCareerMatches: CareerMatch[];                 // 상위 3개
+  conditionalCareerMatches: ConditionalCareerMatch[]; // 조건부 1~3개
+  avoidCareerEnvironments: CareerAvoidEnvironment[];
+  bestWorkStyle: WorkStyleItem[];
+  moneyMakingStyle: MoneyMakingStyleItem[];
+}
+
+// ============================================================
+// 타이밍 앵커 (과거 회고 — 가볍게)
+// ============================================================
+
+export type TimingEventType =
+  | 'move' | 'career-change' | 'relationship-change' | 'family-issue'
+  | 'study-exam' | 'money-change' | 'identity-shift'
+  | 'social-expansion' | 'isolation' | 'achievement' | 'conflict';
+
+export interface TimingAnchor {
+  year?: number;
+  age?: number;
+  title: string;             // 예: '자리가 흔들렸을 수 있는 시기'
+  eventTypes: TimingEventType[];
+  possibleManifestations: string[]; // "이사일 수도, 이직일 수도, 부서이동일 수도..."
+  confidence: 'high' | 'medium' | 'low';
+  evidence: string[];        // 짧은 명리 근거
+  tone: 'light-touch';       // 단정 금지를 의미하는 식별자
+}
+
+// ============================================================
+// 미래 시기 분석 (앞으로 3년)
+// ============================================================
+
+export type FutureTimingTheme =
+  | 'career' | 'money' | 'relationship' | 'move' | 'study'
+  | 'family' | 'self-branding' | 'business' | 'rest' | 'responsibility';
+
+export interface FutureTimingYearInfo {
+  year: number;
+  age: number;
+  pillar: string;
+  headline: string;                  // 예: '자리가 바뀌는 흐름'
+  strongestThemes: FutureTimingTheme[];
+  possibleEvents: string[];
+  bestActions: string[];
+  avoidActions: string[];
+  careerAdvice?: string;
+  moneyAdvice?: string;
+  relationshipAdvice?: string;
+  confidence: 'high' | 'medium' | 'low';
+  evidence: string[];
+}
+
+export interface FutureTimingAnalysis {
+  years: FutureTimingYearInfo[];
+}
+
+// ============================================================
+// Content Ledger — 섹션별 역할/중복 방지
+// ============================================================
+
+export type LedgerSectionId =
+  | 'summary' | 'keywords' | 'specialPoints' | 'lifeWeapons'
+  | 'lifeTraps' | 'fortuneChoices' | 'questions'
+  | 'futureThreeYears' | 'practicalGuide';
+
+export interface ContentLedgerEntry {
+  sectionId: LedgerSectionId;
+  primaryPurpose: string;
+  allowedTopics: string[];
+  forbiddenTopics: string[];
+  mustNotRepeatFromPreviousSections: string[]; // 표현/조언 키
+  keyMessage: string;
+}
+
+export type ContentLedger = ContentLedgerEntry[];
+
+// ============================================================
 // GPT 입력 JSON (Module 13)
 // ============================================================
 
@@ -333,6 +459,10 @@ export interface PersonalSajuGptInput {
   lifeTraps: LifeTrap[];
   fortuneTriggers: FortuneTriggerAnalysis;
   fortune: FortuneCycleInfo;
+  careerSpecificAnalysis: CareerSpecificAnalysis;
+  timingAnchors: TimingAnchor[];
+  futureTimingAnalysis: FutureTimingAnalysis;
+  contentLedger: ContentLedger;
   constraints: {
     doNotInvent: true;
     avoidGenericAdvice: true;
@@ -354,10 +484,33 @@ export interface ValidationIssue {
     | 'unsupported-claim'
     | 'fear-marketing'
     | 'fake-rarity'
-    | 'medical-legal-financial-risk';
+    | 'medical-legal-financial-risk'
+    | 'repetition'
+    | 'lacks-specificity'
+    | 'banned-vague-standalone';
   sentence: string;
   reason: string;
   severity: 'low' | 'medium' | 'high';
+  /** repetition·lacks-specificity·banned 검사용 — 어느 섹션에서 발생했는지 */
+  sectionId?: string;
+}
+
+export interface RepetitionIssue {
+  repeatedPhrase: string;
+  sections: string[];
+  severity: 'low' | 'medium' | 'high';
+  suggestion: string;
+}
+
+export interface SectionQualityCheck {
+  sectionId: string;
+  hasSpecificCareerOrIndustry?: boolean;
+  hasSpecificAction?: boolean;
+  hasSpecificTiming?: boolean;
+  hasSpecificRisk?: boolean;
+  hasConcreteLifeScene?: boolean;
+  hasSajuEvidence: boolean;
+  hasBannedVaguePhrase: boolean;
 }
 
 export interface ReportValidationResult {

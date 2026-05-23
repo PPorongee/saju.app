@@ -94,6 +94,13 @@ describe('buildPersonalSajuGptInput — JSON 스키마 적합', () => {
     lifeTraps: [],
     fortuneTriggers: { fortuneActivatingChoices: [], fortuneBlockingChoices: [] },
     fortune: all.ff,
+    careerSpecificAnalysis: {
+      topCareerMatches: [], conditionalCareerMatches: [],
+      avoidCareerEnvironments: [], bestWorkStyle: [], moneyMakingStyle: [],
+    },
+    timingAnchors: [],
+    futureTimingAnalysis: { years: [] },
+    contentLedger: [],
   });
 
   it('birthChart 4기둥 한글 문자열', () => {
@@ -134,6 +141,13 @@ describe('buildPersonalSajuPrompt — 시스템/유저 프롬프트', () => {
     lifeTraps: [],
     fortuneTriggers: { fortuneActivatingChoices: [], fortuneBlockingChoices: [] },
     fortune: all.ff,
+    careerSpecificAnalysis: {
+      topCareerMatches: [], conditionalCareerMatches: [],
+      avoidCareerEnvironments: [], bestWorkStyle: [], moneyMakingStyle: [],
+    },
+    timingAnchors: [],
+    futureTimingAnalysis: { years: [] },
+    contentLedger: [],
   });
   const guard = buildContextGuard(all.n.context, all.n.hourUnknown);
   const p = buildPersonalSajuPrompt({ input: json, contextGuard: guard });
