@@ -1504,13 +1504,14 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 maxHeight: 280,
                 overflowY: 'auto',
               }}>
-                {savedResults.map((r: { name: string; date: string; type: string; text: string; saju?: unknown; user?: unknown }, i: number) => (
+                {savedResults.map((r: { name: string; date: string; type: string; text: string; saju?: unknown; user?: unknown; v4Api?: unknown }, i: number) => (
                   <div
                     key={i}
                     onClick={() => {
                       setAiText(r.text);
                       if (r.saju) setSajuResult(r.saju as SajuResult);
                       if (r.user) setUserData(r.user as typeof userData);
+                      if (r.v4Api) setV4Resp(r.v4Api as _SajuV4ApiResponseType);
                       setCurrentScreen(r.type === '2026 운세' || r.type === '2026 Fortune' ? 7 : 4);
                       setShowSavedResults(false);
                     }}
@@ -2114,8 +2115,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
   /* ===== SCREEN 4: Results ===== */
   function renderResults() {
-    // v4 분기: saju mode + v4 응답이면 v3 hero/back/공유 레이아웃 안에 v4 카드들
-    if (isV4 && v4Resp) {
+    // v4 결과가 복원되어 있으면 (현재 풀이 또는 저장된 v4 결과 클릭) v4 화면.
+    // isV4 prop과 무관 — 메인 페이지에서 저장된 v4 결과 클릭해도 표시됨.
+    if (v4Resp) {
       const isEnV4 = lang === 'en';
       const userName = userData.name || t('anonymous', lang);
       const birthSummary = `${userData.year}년 ${userData.month}월 ${userData.day}일${userData.hour >= 0 ? ' ' + ['자','축','인','묘','진','사','오','미','신','유','술','해'][userData.hour] + '시' : ' (시간미상)'} (${isLunar ? '음력' : '양력'})`;
@@ -2162,7 +2164,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               onClick={() => {
                 try {
                   const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
-                  const newResult = { name: userName, date: new Date().toLocaleDateString(), type: isEnV4 ? 'Saju (v4)' : '개인사주 v4', text: aiText };
+                  const newResult = { name: userName, date: new Date().toLocaleDateString(), type: isEnV4 ? 'Saju (v4)' : '개인사주 v4', text: aiText, v4Api: v4Resp, user: userData };
                   const updated = [newResult, ...results].slice(0, 20);
                   try { localStorage.setItem('saju-saved-results', JSON.stringify(updated)); setSavedResults(updated); } catch { /* quota */ }
                 } catch { /* ignore */ }
