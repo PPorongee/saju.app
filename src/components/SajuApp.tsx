@@ -242,7 +242,15 @@ function getDaysInMonth(year: number, month: number): number {
 }
 
 /* ===== Main Component ===== */
-export default function SajuApp() {
+export interface SajuAppProps {
+  /** 'v4' = saju mode에서 v4 명리 엔진·차별화 4섹션·새 질문 사용. default 'v3'. */
+  version?: 'v3' | 'v4';
+}
+
+export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
+  // saju mode에서 v4 분기 활성화 여부
+  const isV4 = version === 'v4';
+  void isV4; // Step 2/3에서 질문·fetch·결과 분기에 사용 예정
   const [lang, setLang] = useState<Lang>('ko');
   const [currentScreen, setCurrentScreen] = useState(0);
 
