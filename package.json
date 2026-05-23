@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/bump-sw-version.mjs",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",

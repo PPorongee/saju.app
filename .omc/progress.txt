@@ -1,14 +1,46 @@
-=== Ralph TDD Progress Log ===
-Task: Comprehensive TDD test suite for saju-app
-Started: 2026-03-23
+=== Ralph Progress Log — 별빛 사주 0개 오류 도달 ===
+Started: 2026-05-24
 
-## Iteration 1
-- PRD created with 4 stories
-- Installing vitest + testing-library
-- Test files to create:
-  - src/lib/__tests__/saju-calc.test.ts
-  - src/lib/__tests__/lunar-solar.test.ts
-  - src/lib/__tests__/i18n.test.ts
-  - src/lib/__tests__/saju-ref-selector.test.ts
-  - src/lib/__tests__/saju-prompt-builder.test.ts
-  - src/__tests__/sanity.test.ts
+## Iteration 1 — 진단 + 인프라 픽스 + 검증 스크립트 3종
+
+### 사전 진단
+- production /api/compat-v4/preview 직접 curl → HTTP 200, 정상 응답
+- production /api/saju-v4/preview 직접 curl → HTTP 200 (1 케이스 제외)
+- 사용자 콘솔에 fetch 트레이스 없던 진짜 이유: **Service Worker가 옛 번들 캐싱**
+  · sw.js의 CACHE_NAME='saju-v3' 고정 + STATIC_ASSETS=['/']로 루트 HTML 영구 캐싱
+  · 같은 이름 캐시는 activate에서 무효화 안 됨
+
+### 적용된 픽스 (commit f8538b8)
+1. sw.js:
+   - CACHE_NAME 동적 버전(saju-static-YYYYMMDD-NN)
+   - STATIC_ASSETS에서 '/'(루트 HTML) 제거
+   - navigation 요청은 항상 SW 우회
+   - 모든 saju-* prefix 캐시 자동 무효화
+   - res.clone() 순서 정리
+2. next.config.ts CSP:
+   - style-src에 https://cdn.jsdelivr.net 추가
+   - font-src에 https://cdn.jsdelivr.net 추가
+   - connect-src에 fonts.googleapis.com, fonts.gstatic.com, cdn.jsdelivr.net 추가
+3. manifest.json:
+   - /icon-192.png, /icon-512.png (자산 없음) → favicon.svg 통합
+4. pillarCalculator.ts:
+   - 야자시 day+1 계산을 JS Date로 변경 (12/31 23시 → 1/1 다음해 안전)
+5. scripts/validate-compat-v4.mjs, validate-saju-v4.mjs, validate-pages.mjs
+
+### 검증 결과 (production, commit f8538b8 푸시 후 대기 중)
+- compat v4: 6/6 ✅ (모든 관계 유형 archetype 정상)
+- saju v4: 4/5 (자시 경계 픽스 후 재검증 필요)
+- pages: 7/7 ✅
+- tsc: 0 에러 ✅
+- build: 통과 ✅
+
+### 진행 중
+- Vercel 재배포 대기 (1-2분)
+- 재배포 후 saju v4 5/5 확인
+- 모두 통과 시 architect verification
+
+### 학습
+- Next.js App Router에서 sw.js를 사용할 때 navigation request는 절대 SW가 처리하면 안 됨.
+  특히 CACHE_NAME이 고정이면 옛 페이지가 영구 박힘.
+- Windows 환경 node 종료 시 libuv assertion이 뜨지만 stdout은 완전히 출력됨 (무시 가능).
+- lunar-javascript는 day overflow를 처리하지 않음 → JS Date로 normalize 필수.

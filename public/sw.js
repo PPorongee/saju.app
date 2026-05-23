@@ -1,7 +1,7 @@
 // ⚠ CACHE_VERSION을 배포마다 수동/스크립트로 갱신해야 함.
 // 같은 이름의 캐시는 절대 무효화되지 않으므로 매 배포마다 바꾸지 않으면 옛 번들이 영구 캐싱됨.
 // _next/static/는 immutable hash 경로라 안전하지만, 페이지 HTML은 절대 캐시 X.
-const CACHE_VERSION = '20260524-04';
+const CACHE_VERSION = '20260523-1629';
 const CACHE_NAME = 'saju-static-' + CACHE_VERSION;
 
 // 페이지 HTML은 절대 STATIC_ASSETS에 넣지 않는다. (SSR 결과가 바뀌면 옛 페이지 박힘)
