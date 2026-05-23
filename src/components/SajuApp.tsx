@@ -3639,6 +3639,27 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             )}
           </>
         )}
+
+        {/* ⭐ v4 compat 결과 — 부모 `{data && ...}` 조건과 무관하게 항상 그려진다.
+            이전엔 부모 조건(data && !compatV4Resp)에 갇혀 compatV4Resp set 시 unmount됐음. */}
+        {compatV4Resp && (
+          <div data-compat-v4-result style={{ marginTop: 16 }}>
+            <CompatV4Report api={compatV4Resp} />
+          </div>
+        )}
+        {!compatV4Resp && compatLoading && (
+          <div className="card" style={{ marginTop: 12, textAlign: 'center', padding: '48px 24px', background: 'rgba(246,135,179,0.08)', border: '1px solid rgba(246,135,179,0.2)', borderRadius: 20 }}>
+            <div style={{ fontSize: 56, animation: 'float 2s ease-in-out infinite', marginBottom: 16 }}>💕</div>
+            <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{t('compatReading', lang)}</p>
+            <p style={{ fontSize: 13, opacity: 0.5 }}>{t('compatTime', lang)}</p>
+          </div>
+        )}
+        {!compatV4Resp && !compatLoading && compatAiText && (
+          <div className="card" style={{ marginTop: 12, padding: 16, background: 'rgba(255,140,140,0.06)', border: '1px solid rgba(255,140,140,0.25)', borderRadius: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 6 }}>⚠ 안내</div>
+            <div style={{ fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{compatAiText}</div>
+          </div>
+        )}
       </div>
     );
   }
