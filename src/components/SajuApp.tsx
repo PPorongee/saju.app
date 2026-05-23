@@ -23,6 +23,8 @@ import ConsentModal from '@/components/ui/ConsentModal';
 import OhaengChart from '@/components/ui/OhaengChart';
 import PillarDisplay, { type Pillar } from '@/components/ui/PillarDisplay';
 import { BleedCard, FeatureCard } from '@/components/orot';
+import { SajuV4Report, type SajuV4ApiResponse as _SajuV4ApiResponseType } from '@/components/SajuV4Report';
+import { parseSajuReport } from '@/lib/saju-v4-report-parser';
 
 /* ===== Stars Background - SVG Star Illustrations ===== */
 const STAR_COLORS = ['#F0C75E', '#FFD080', '#FF6B9D', '#7DD3FC', '#C4B5FD', '#6EE7B7', '#FF8A8A', '#FFF0C8'];
@@ -862,6 +864,54 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     setIsLoading(false);
   }
 
+  /* ===== v4 GPT 호출 — saju mode + version='v4'일 때만 ===== */
+  async function fetchSajuReadingV4(signal?: AbortSignal) {
+    setIsLoading(true);
+    setIsGenerating(true);
+    setAiText('');
+    setV4Resp(null);
+    try {
+      const birthTime = useExactTime && exactHour >= 0
+        ? `${String(exactHour).padStart(2, '0')}:${String(exactMinute).padStart(2, '0')}`
+        : userData.hour >= 0 ? `${String((userData.hour * 2) || 0).padStart(2, '0')}:00` : undefined;
+      const birthTimeConfidence = (userData.hour < 0 && !useExactTime) ? 'unknown'
+        : useExactTime ? 'exact' : 'approximate';
+      const v4Input = {
+        name: userData.name || '익명',
+        gender: (userData.gender === 'm' ? 'male' : userData.gender === 'f' ? 'female' : 'unknown') as 'male' | 'female' | 'unknown',
+        calendarType: (isLunar ? 'lunar' : 'solar') as 'lunar' | 'solar',
+        birthDate: `${userData.year}-${String(userData.month).padStart(2, '0')}-${String(userData.day).padStart(2, '0')}`,
+        birthTime,
+        birthTimeConfidence: birthTimeConfidence as 'exact' | 'approximate' | 'unknown',
+        timezone: 'Asia/Seoul' as const,
+        relationshipStatus: v4Ctx.relationshipStatus,
+        hasChildren: (v4Ctx.hasChildren === 'true' ? true : v4Ctx.hasChildren === 'false' ? false : 'unknown') as boolean | 'unknown',
+        occupation: v4Ctx.occupation || undefined,
+        currentConcerns: v4Ctx.concerns,
+      };
+      const res = await fetch('/api/saju-v4', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ input: v4Input, maxRepairAttempts: 1 }),
+        signal,
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        throw new Error(`서버 오류 (${res.status}): ${detail?.detail || detail?.error || ''}`);
+      }
+      const data = await res.json() as _SajuV4ApiResponseType;
+      setV4Resp(data);
+      setAiText(data.reportText);
+    } catch (err) {
+      if (signal?.aborted) return;
+      setAiText(t('aiError', lang));
+      console.error('[v4 fetch] error:', err);
+    } finally {
+      setIsGenerating(false);
+      setIsLoading(false);
+    }
+  }
+
   /* ===== Yearly Fortune Fetch ===== */
   async function fetchYearlyReading(sj: SajuResult, signal?: AbortSignal) {
     setIsLoading(true);
@@ -1301,6 +1351,10 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       if (appMode === 'yearly') {
         setCurrentScreen(8); // Go to teaser/paywall first
         fetchYearlyReading(sj, controller.signal);
+      } else if (isV4 && appMode === 'saju') {
+        // v4 분기: server에서 사주 재계산 + 차별화 분석 + GPT 해석 통합
+        setCurrentScreen(8); // teaser/paywall first (v3와 동일)
+        fetchSajuReadingV4(controller.signal);
       } else {
         setCurrentScreen(8); // Go to teaser/paywall first
         const ohCount = getOhCount(sj);
@@ -2060,6 +2114,11 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
   /* ===== SCREEN 4: Results ===== */
   function renderResults() {
+    // v4 분기: saju mode + v4 응답 있으면 v4 결과 화면(SajuV4Report — 명리 카드 + 차별화 4섹션)
+    if (isV4 && v4Resp) {
+      const birthSummary = `${userData.year}년 ${userData.month}월 ${userData.day}일${userData.hour >= 0 ? ' ' + ['자','축','인','묘','진','사','오','미','신','유','술','해'][userData.hour] + '시' : ' (시간미상)'} (${isLunar ? '음력' : '양력'})`;
+      return <SajuV4Report api={v4Resp} parsed={parseSajuReport(v4Resp.reportText)} birthSummary={birthSummary} />;
+    }
     if (!sajuResult) {
       // Saved result view — no saju calc data, just AI text
       if (aiText) {
