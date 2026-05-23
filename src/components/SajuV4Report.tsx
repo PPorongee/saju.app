@@ -17,6 +17,10 @@ import type {
   CombinationsAndConflicts,
   SpecialStarInfo,
   FortuneCycleInfo,
+  IdentityKeyword,
+  LifeWeapon,
+  LifeTrap,
+  FortuneTriggerAnalysis,
 } from '@/domain/saju/report/sajuReportSchema';
 
 export interface SajuV4ApiResponse {
@@ -34,6 +38,10 @@ export interface SajuV4ApiResponse {
     specialStars: SpecialStarInfo[];
   };
   specialPoints: SpecialPoint[];
+  identityKeywords: IdentityKeyword[];
+  lifeWeapons: LifeWeapon[];
+  lifeTraps: LifeTrap[];
+  fortuneTriggers: FortuneTriggerAnalysis;
   fortune: FortuneCycleInfo;
   reportText: string;
   validation: { isValid: boolean; issues: Array<{ type: string; sentence: string; reason: string }> };
@@ -49,14 +57,141 @@ export interface Props {
 export function SajuV4Report({ api, parsed, birthSummary }: Props) {
   return (
     <div className="inner orot-root" style={{ paddingTop: 16, paddingBottom: 32 }}>
+      {/* spec §9 권장 순서 */}
       <SectionBasicInfo api={api} birthSummary={birthSummary} />
       <SectionSummary text={parsed.summary} />
+      <SectionIdentityKeywords keywords={api.identityKeywords} parsedItems={parsed.identityKeywords} />
       <SectionSpecialPoints points={api.specialPoints} parsedReasons={parsed.specialReasons} />
+      <SectionLifeWeapons weapons={api.lifeWeapons} parsedItems={parsed.lifeWeapons} />
+      <SectionLifeTraps traps={api.lifeTraps} parsedItems={parsed.lifeTraps} />
+      <SectionFortuneTriggers triggers={api.fortuneTriggers} parsedAct={parsed.fortuneActivating} parsedBlk={parsed.fortuneBlocking} />
       <SectionQuestions questions={parsed.questions} />
       <SectionNextYears fortune={api.fortune} parsedYears={parsed.nextThreeYears} />
       <SectionPracticalGuide text={parsed.practicalGuide} finalMessage={parsed.finalMessage} />
       <SectionEvidence api={api} />
       {!api.validation.isValid && <SectionValidationWarning issues={api.validation.issues} />}
+    </div>
+  );
+}
+
+// ============================================================
+// 2. 나만의 사주 키워드 5개
+// ============================================================
+function SectionIdentityKeywords({ keywords, parsedItems }: { keywords: IdentityKeyword[]; parsedItems: Array<{ title: string; body: string }> }) {
+  if (keywords.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div className="section-divider" style={{ marginBottom: 12 }}>나만의 사주 키워드 5개</div>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {keywords.map((k, i) => {
+          const matched = parsedItems[i];
+          return (
+            <div key={k.keyword} className="card" style={{ padding: 14 }}>
+              <div className="orot-eyebrow" style={{ marginBottom: 4 }}>키워드 {i + 1}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 8 }}>{k.keyword}</div>
+              {matched?.body
+                ? <Body text={matched.body} />
+                : <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)' }}>{k.shortDescription}</div>}
+              <details style={{ marginTop: 8 }}>
+                <summary style={{ fontSize: 11, color: 'var(--orot-ink-mute)', cursor: 'pointer' }}>명리 근거</summary>
+                <ul style={{ fontSize: 11, color: 'var(--orot-ink-soft)', paddingLeft: 18, marginTop: 4 }}>
+                  {k.evidence.map((e, j) => <li key={j}>{e.source}: {e.description}</li>)}
+                </ul>
+              </details>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// 4. 내 사주의 무기
+// ============================================================
+function SectionLifeWeapons({ weapons, parsedItems }: { weapons: LifeWeapon[]; parsedItems: Array<{ title: string; body: string }> }) {
+  if (weapons.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div className="section-divider" style={{ marginBottom: 12 }}>내 사주의 무기</div>
+      {weapons.map((w, i) => {
+        const matched = parsedItems[i];
+        return (
+          <div key={w.name} className="card" style={{ padding: 14, marginBottom: 8, borderLeft: '3px solid rgba(120,200,140,0.5)' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>⚔ {w.name}</div>
+            {matched?.body && <Body text={matched.body} />}
+            <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginTop: 6 }}>
+              <div><b style={{ color: 'var(--orot-ink-mute)' }}>실제 장면:</b> {w.realLifeScene}</div>
+              <div style={{ marginTop: 4 }}><b style={{ color: 'var(--orot-ink-mute)' }}>더 강하게:</b> {w.howToUse}</div>
+              <div style={{ marginTop: 4 }}><b style={{ color: '#c46' }}>그림자:</b> {w.caution}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// 5. 내 사주의 함정
+// ============================================================
+function SectionLifeTraps({ traps, parsedItems }: { traps: LifeTrap[]; parsedItems: Array<{ title: string; body: string }> }) {
+  if (traps.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div className="section-divider" style={{ marginBottom: 12 }}>내 사주의 함정</div>
+      {traps.map((t, i) => {
+        const matched = parsedItems[i];
+        return (
+          <div key={t.name} className="card" style={{ padding: 14, marginBottom: 8, borderLeft: '3px solid rgba(240,140,140,0.5)' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>⚠ {t.name}</div>
+            {matched?.body && <Body text={matched.body} />}
+            <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginTop: 6 }}>
+              <div><b style={{ color: 'var(--orot-ink-mute)' }}>왜 생기는가:</b> {t.patternDescription}</div>
+              <div style={{ marginTop: 4 }}><b style={{ color: 'var(--orot-ink-mute)' }}>실제 장면:</b> {t.realLifeScene}</div>
+              <div style={{ marginTop: 4 }}><b style={{ color: '#7c8' }}>벗어나는 방법:</b> {t.escapeStrategy}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// 6. 운이 살아나는 / 운을 막는 선택
+// ============================================================
+function SectionFortuneTriggers({ triggers, parsedAct, parsedBlk }: { triggers: FortuneTriggerAnalysis; parsedAct: Array<{ title: string; body: string }>; parsedBlk: Array<{ title: string; body: string }> }) {
+  const a = triggers.fortuneActivatingChoices;
+  const b = triggers.fortuneBlockingChoices;
+  if (a.length === 0 && b.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div className="section-divider" style={{ marginBottom: 12 }}>운이 살아나는 / 막는 선택</div>
+      {a.length > 0 && (
+        <div className="card" style={{ padding: 14, marginBottom: 8 }}>
+          <div className="orot-eyebrow" style={{ marginBottom: 8, color: 'rgba(120,200,140,0.9)' }}>+ 운이 살아나는 선택</div>
+          {a.map((c, i) => (
+            <div key={i} style={{ marginBottom: 10, paddingLeft: 8, borderLeft: '2px solid rgba(120,200,140,0.4)' }}>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>{c.title}</div>
+              {parsedAct[i]?.body && <Body text={parsedAct[i].body} />}
+              <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginTop: 4 }}>{c.practicalAction}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {b.length > 0 && (
+        <div className="card" style={{ padding: 14 }}>
+          <div className="orot-eyebrow" style={{ marginBottom: 8, color: 'rgba(240,140,140,0.9)' }}>− 운을 막는 선택</div>
+          {b.map((c, i) => (
+            <div key={i} style={{ marginBottom: 10, paddingLeft: 8, borderLeft: '2px solid rgba(240,140,140,0.4)' }}>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>{c.title}</div>
+              {parsedBlk[i]?.body && <Body text={parsedBlk[i].body} />}
+              <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginTop: 4 }}><b>교정:</b> {c.correction}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
