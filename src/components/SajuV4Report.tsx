@@ -81,7 +81,7 @@ function SectionIdentityKeywords({ keywords, parsedItems }: { keywords: Identity
   if (keywords.length === 0) return null;
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="section-divider" style={{ marginBottom: 12 }}>나만의 사주 키워드 5개</div>
+      <div className="section-divider" style={{ marginBottom: 12 }}>나만의 사주 키워드</div>
       <div style={{ display: 'grid', gap: 8 }}>
         {keywords.map((k, i) => {
           const matched = parsedItems[i];
