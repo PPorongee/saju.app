@@ -102,8 +102,10 @@ export function SajuV4App() {
     setForm(f => ({ ...f, concerns: f.concerns.includes(c) ? f.concerns.filter(x => x !== c) : [...f.concerns, c] }));
   }
 
+  const [unlocked, setUnlocked] = useState(false);
+
   async function submit() {
-    setLoading(true); setError(null); setApi(null); setScreen(3);
+    setLoading(true); setError(null); setApi(null); setUnlocked(false); setScreen(3);
     try {
       const birthTime = buildBirthTime(form.hourSlot, form.useExactTime, form.exactHour, form.exactMinute);
       const birthTimeConfidence: BirthInput['birthTimeConfidence'] =
@@ -132,7 +134,7 @@ export function SajuV4App() {
         throw new Error(`서버 오류 (${res.status}): ${detail?.detail || detail?.error || '알 수 없는 오류'}`);
       }
       setApi(await res.json() as SajuV4ApiResponse);
-      setScreen(5);
+      setScreen(4);  // → teaser/paywall 먼저
     } catch (e) {
       setError(e instanceof Error ? e.message : '알 수 없는 오류');
       setScreen(1);
@@ -141,16 +143,23 @@ export function SajuV4App() {
     }
   }
 
+  function unlockResult() {
+    // TODO 다음 슬라이스: 실제 토스 결제 wire. 지금은 베타라 즉시 unlock.
+    setUnlocked(true);
+    setScreen(5);
+  }
+
   const birthSummary = `${form.year}년 ${form.month}월 ${form.day}일${form.hourSlot >= 0 ? ' ' + TIME_SLOTS[form.hourSlot].name : ' (시간미상)'} (${form.calendarType === 'solar' ? '양력' : '음력'})`;
 
   if (screen === 0) return <RenderIntro onStart={() => setScreen(1)} />;
   if (screen === 1) return <RenderBirthInput form={form} update={update} onBack={() => setScreen(0)} onNext={() => setScreen(2)} error={error} />;
   if (screen === 2) return <RenderQuestions form={form} update={update} toggleConcern={toggleConcern} onBack={() => setScreen(1)} onSubmit={submit} loading={loading} />;
   if (screen === 3) return <RenderLoading />;
-  if (api && screen === 5) {
+  if (api && screen === 4) return <RenderTeaser api={api} name={form.name || '익명'} birthSummary={birthSummary} onUnlock={unlockResult} onBack={() => setScreen(0)} />;
+  if (api && screen === 5 && unlocked) {
     return (
       <>
-        <button onClick={() => { setApi(null); setScreen(0); }}
+        <button onClick={() => { setApi(null); setUnlocked(false); setScreen(0); }}
           style={{ position: 'fixed', top: 10, left: 10, zIndex: 10, padding: '6px 12px', fontSize: 12, borderRadius: 6, border: '1px solid var(--orot-hair)', background: 'rgba(10,14,42,0.8)', color: 'var(--orot-ink-soft)', cursor: 'pointer' }}>
           ← 새 풀이
         </button>
@@ -159,6 +168,145 @@ export function SajuV4App() {
     );
   }
   return null;
+}
+
+// ============================================================
+// Screen 4 — Teaser / Paywall (v3 톤: BleedCard hero + blur 스포일러 카드 + CTA)
+// ============================================================
+function RenderTeaser({ api, name, birthSummary, onUnlock, onBack }: {
+  api: SajuV4ApiResponse;
+  name: string;
+  birthSummary: string;
+  onUnlock: () => void;
+  onBack: () => void;
+}) {
+  const sigPoint = api.specialPoints[0];
+  const useful = api.coreAnalysis.usefulGod.primaryUseful.value;
+  const ki = api.coreAnalysis.usefulGod.unfavorable[0];
+
+  const spoilers = [
+    {
+      icon: '🪞',
+      visible: '나만의 정체성 키워드',
+      blurred: api.identityKeywords[0]?.keyword || '키워드',
+      hint: `${api.identityKeywords.length}개 도출`,
+      gradient: 'linear-gradient(135deg, rgba(192,132,252,0.12), rgba(139,92,246,0.06))',
+      border: 'rgba(192,132,252,0.25)',
+    },
+    {
+      icon: '⚔',
+      visible: '내 사주의 무기',
+      blurred: api.lifeWeapons[0]?.name || '무기',
+      hint: `${api.lifeWeapons.length}가지`,
+      gradient: 'linear-gradient(135deg, rgba(110,231,183,0.12), rgba(52,211,153,0.06))',
+      border: 'rgba(110,231,183,0.25)',
+    },
+    {
+      icon: '⚠',
+      visible: '내 사주의 함정',
+      blurred: api.lifeTraps[0]?.name || '함정',
+      hint: `${api.lifeTraps.length}가지`,
+      gradient: 'linear-gradient(135deg, rgba(255,107,157,0.12), rgba(239,68,68,0.06))',
+      border: 'rgba(255,107,157,0.25)',
+    },
+    {
+      icon: '🍀',
+      visible: '운이 살아나는 / 막는 선택',
+      blurred: '구체 행동 전략',
+      hint: `용신 ${useful} · 기신 ${ki}`,
+      gradient: 'linear-gradient(135deg, rgba(246,196,67,0.12), rgba(245,158,11,0.06))',
+      border: 'rgba(246,196,67,0.25)',
+    },
+  ];
+
+  return (
+    <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: 24, paddingBottom: 32 }}>
+      <button onClick={onBack}
+        style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> 뒤로
+      </button>
+
+      <BleedCard
+        image="/images/orot/saju-in-character.webp"
+        framingId="saju-in-character"
+        veil="left"
+        minHeight={240}
+        style={{ marginBottom: 20 }}
+      >
+        <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '70%' }}>
+          <div className="orot-eyebrow" style={{ marginBottom: 12 }}>나의 풀이</div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)', letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0 }}>
+            {name}님의 사주 풀이
+          </h1>
+          <p style={{ fontSize: 12, color: 'var(--orot-ink-mute)', margin: '10px 0 0' }}>
+            {birthSummary} 출생
+          </p>
+        </div>
+      </BleedCard>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 16 }}>
+        <MiniPillar label="년" v={api.birthChart.year} />
+        <MiniPillar label="월" v={api.birthChart.month} />
+        <MiniPillar label="일" v={api.birthChart.day} starred />
+        <MiniPillar label="시" v={api.birthChart.hour ?? '미상'} />
+      </div>
+
+      <div className="section-divider">사주 풀이 미리보기</div>
+
+      {spoilers.map((sp, i) => (
+        <div key={i} className="card" style={{ background: sp.gradient, border: '1px solid ' + sp.border, padding: '18px 16px', marginBottom: 10, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <span style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>{sp.icon}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', lineHeight: 1.6, marginBottom: 6 }}>{sp.visible}</div>
+              <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', filter: 'blur(4px)', userSelect: 'none', lineHeight: 1.5 }}>{sp.blurred}</div>
+              <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 6 }}>힌트 · {sp.hint}</div>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {sigPoint && (
+        <div className="card" style={{ padding: 16, marginTop: 12, borderLeft: '3px solid var(--orot-coral)' }}>
+          <div className="orot-eyebrow" style={{ marginBottom: 6 }}>signature 포인트</div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{sigPoint.title}</div>
+          <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', lineHeight: 1.6 }}>{sigPoint.narrative.coreMeaning}</div>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: 20, padding: 18, borderRadius: 'var(--orot-r-lg)',
+        background: 'linear-gradient(135deg, rgba(240,199,94,0.12), rgba(243,160,146,0.08))',
+        border: '1px solid var(--orot-coral-faint)',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 13, color: 'var(--orot-coral)', fontWeight: 600, marginBottom: 8 }}>전체 리포트 열기</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 10 }}>990원</div>
+        <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginBottom: 14, lineHeight: 1.6 }}>
+          10섹션 전체 풀이 · 정체성 키워드 · 무기 · 함정 · 운 트리거 · 10문항 답 · 3년 흐름
+        </div>
+        <button onClick={onUnlock} className="orot-btn orot-btn--primary orot-btn--full">
+          결제하고 전체 풀이 보기 ›
+        </button>
+        <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 8 }}>
+          ⓘ 베타 기간 — 결제 wire는 다음 업데이트에서 활성화
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniPillar({ label, v, starred }: { label: string; v: string; starred?: boolean }) {
+  return (
+    <div style={{
+      border: '1px solid var(--orot-hair)', borderRadius: 'var(--orot-r-md)',
+      padding: '8px 4px', textAlign: 'center',
+      background: starred ? 'rgba(240,199,94,0.08)' : 'transparent',
+    }}>
+      <div style={{ fontSize: 10, color: 'var(--orot-ink-mute)' }}>{label}{starred ? ' ★' : ''}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{v}</div>
+    </div>
+  );
 }
 
 // ============================================================
