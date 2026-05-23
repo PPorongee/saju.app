@@ -22,6 +22,42 @@ import type {
   LifeTrap,
   FortuneTriggerAnalysis,
 } from '@/domain/saju/report/sajuReportSchema';
+import Sajupan, { type SajupanChart, type OrotElement } from '@/components/orot/Sajupan';
+import WuxingStrip from '@/components/orot/WuxingStrip';
+
+// 한글 → 한자 매핑 (v3 톤 한자 표시용)
+const STEM_HANJA: Record<string, string> = {
+  갑: '甲', 을: '乙', 병: '丙', 정: '丁', 무: '戊', 기: '己',
+  경: '庚', 신: '辛', 임: '壬', 계: '癸',
+};
+const BRANCH_HANJA: Record<string, string> = {
+  자: '子', 축: '丑', 인: '寅', 묘: '卯', 진: '辰', 사: '巳',
+  오: '午', 미: '未', 신: '申', 유: '酉', 술: '戌', 해: '亥',
+};
+const STEM_EL: Record<string, OrotElement> = {
+  갑: 'wood', 을: 'wood', 병: 'fire', 정: 'fire', 무: 'earth', 기: 'earth',
+  경: 'metal', 신: 'metal', 임: 'water', 계: 'water',
+};
+const BRANCH_EL: Record<string, OrotElement> = {
+  자: 'water', 축: 'earth', 인: 'wood', 묘: 'wood', 진: 'earth', 사: 'fire',
+  오: 'fire', 미: 'earth', 신: 'metal', 유: 'metal', 술: 'earth', 해: 'water',
+};
+const EL_KO: Record<OrotElement, string> = { wood: '목', fire: '화', earth: '토', metal: '금', water: '수' };
+
+/** v4 birthChart pillar 문자열("을해") → SajupanPillar */
+function toSajupanPillar(pillarKo: string | undefined): SajupanChart['year'] {
+  if (!pillarKo || pillarKo.length < 2) {
+    return { stem: '?', stemEl: 'earth', branch: '?', branchEl: 'earth' };
+  }
+  const s = pillarKo[0];
+  const b = pillarKo[1];
+  return {
+    stem: STEM_HANJA[s] ?? s,
+    stemEl: STEM_EL[s] ?? 'earth',
+    branch: BRANCH_HANJA[b] ?? b,
+    branchEl: BRANCH_EL[b] ?? 'earth',
+  };
+}
 
 export interface SajuV4ApiResponse {
   ruleVersion: string;
@@ -57,8 +93,17 @@ export interface Props {
 export function SajuV4Report({ api, parsed, birthSummary }: Props) {
   return (
     <div className="inner orot-root" style={{ paddingTop: 16, paddingBottom: 32 }}>
-      {/* spec §9 권장 순서 */}
-      <SectionBasicInfo api={api} birthSummary={birthSummary} />
+      {/* ── 명리 데이터 카드 (v3 톤) ── */}
+      <SectionPalja api={api} birthSummary={birthSummary} />
+      <SectionCoreOverview api={api} />
+      <SectionWuxing elements={api.coreAnalysis.elementStrength} />
+      <SectionUsefulGodDetail useful={api.coreAnalysis.usefulGod} />
+      <SectionStructure api={api} />
+      <SectionDayMasterStrengthCard dm={api.coreAnalysis.dayMasterStrength} />
+      <SectionSpecialStarsDetail stars={api.coreAnalysis.specialStars} />
+      <SectionCombConflictDetail cc={api.coreAnalysis.combinationsAndConflicts} />
+
+      {/* ── 차별화 4섹션 + 기타 ── */}
       <SectionSummary text={parsed.summary} />
       <SectionIdentityKeywords keywords={api.identityKeywords} parsedItems={parsed.identityKeywords} />
       <SectionSpecialPoints points={api.specialPoints} parsedReasons={parsed.specialReasons} />
@@ -68,8 +113,273 @@ export function SajuV4Report({ api, parsed, birthSummary }: Props) {
       <SectionQuestions questions={parsed.questions} />
       <SectionNextYears fortune={api.fortune} parsedYears={parsed.nextThreeYears} />
       <SectionPracticalGuide text={parsed.practicalGuide} finalMessage={parsed.finalMessage} />
-      <SectionEvidence api={api} />
       {!api.validation.isValid && <SectionValidationWarning issues={api.validation.issues} />}
+    </div>
+  );
+}
+
+// ============================================================
+// 사주팔자 (Sajupan 활용)
+// ============================================================
+function SectionPalja({ api, birthSummary }: { api: SajuV4ApiResponse; birthSummary: string }) {
+  const chart: SajupanChart = {
+    year:  toSajupanPillar(api.birthChart.year),
+    month: toSajupanPillar(api.birthChart.month),
+    day:   toSajupanPillar(api.birthChart.day),
+    hour:  toSajupanPillar(api.birthChart.hour),
+  };
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 6 }}>사주 원국</div>
+      <div style={{ fontSize: 12, color: 'var(--orot-ink-mute)', marginBottom: 14 }}>{birthSummary}</div>
+      <Sajupan chart={chart} />
+      {api.birthChart.isHourEstimated && (
+        <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginTop: 10, textAlign: 'center' }}>
+          ⓘ 시간 미상 — 시주는 추정값 (말년/시주 관련 해석은 보수적)
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// 핵심 요약 — 일간·격국·신강신약·용신·기신 한 눈에
+// ============================================================
+function SectionCoreOverview({ api }: { api: SajuV4ApiResponse }) {
+  const dm = api.coreAnalysis.dayMasterStrength;
+  const ug = api.coreAnalysis.usefulGod;
+  const dmStem = api.birthChart.dayMaster;
+  const dmEl = STEM_EL[dmStem] ?? 'earth';
+  const levelKo: Record<string, string> = {
+    'very-strong': '매우 강',
+    'strong': '강',
+    'balanced': '중화',
+    'weak': '약',
+    'very-weak': '매우 약',
+  };
+  return (
+    <div className="card" style={{
+      padding: 16, marginBottom: 14,
+      background: 'linear-gradient(135deg, rgba(240,199,94,0.08), rgba(243,160,146,0.04))',
+      border: '1px solid var(--orot-coral-faint)',
+    }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>이 사주의 핵심</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, fontSize: 13 }}>
+        <Field label="일간">
+          <b style={{ color: `var(--orot-el-${dmEl})`, fontSize: 16 }}>
+            {STEM_HANJA[dmStem] ?? dmStem} ({EL_KO[dmEl]})
+          </b>
+        </Field>
+        <Field label="신강·신약">
+          <b>{levelKo[dm.level] ?? dm.level}</b>
+          <span style={{ color: 'var(--orot-ink-mute)', marginLeft: 6, fontSize: 12 }}>점수 {dm.score}</span>
+        </Field>
+        <Field label="용신">
+          <b style={{ color: `var(--orot-el-${ug.primaryUseful.value as OrotElement})`, fontSize: 15 }}>
+            {EL_KO[ug.primaryUseful.value as OrotElement]} ({ug.primaryUseful.value})
+          </b>
+        </Field>
+        <Field label="기신">
+          <b style={{ color: `var(--orot-el-${ug.unfavorable[0] as OrotElement})`, fontSize: 15 }}>
+            {EL_KO[ug.unfavorable[0] as OrotElement]} ({ug.unfavorable[0]})
+          </b>
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginBottom: 4 }}>{label}</div>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+// ============================================================
+// 오행 분포 (WuxingStrip)
+// ============================================================
+function SectionWuxing({ elements }: { elements: ElementStrengthAnalysis }) {
+  const total = Object.values(elements.scores).reduce((a, b) => a + b, 0) || 1;
+  const dist = {
+    wood:  (elements.scores.wood  / total) * 100,
+    fire:  (elements.scores.fire  / total) * 100,
+    earth: (elements.scores.earth / total) * 100,
+    metal: (elements.scores.metal / total) * 100,
+    water: (elements.scores.water / total) * 100,
+  };
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>오행 분포</div>
+      <WuxingStrip distribution={dist} />
+      {elements.climate.comment && (
+        <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginTop: 14, padding: 10, background: 'rgba(243,231,207,0.04)', borderRadius: 6 }}>
+          🌡 {elements.climate.comment}
+        </div>
+      )}
+      {(elements.excessive.length > 0 || elements.isolated.length > 0) && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+          {elements.excessive.map(e => (
+            <span key={'ex'+e} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 12, background: 'rgba(240,140,140,0.12)', color: '#f88' }}>
+              {EL_KO[e]} 과다
+            </span>
+          ))}
+          {elements.isolated.map(e => (
+            <span key={'is'+e} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 12, background: 'rgba(180,180,200,0.1)', color: 'var(--orot-ink-mute)' }}>
+              {EL_KO[e]} 고립
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// 용신 5관점 자세히
+// ============================================================
+function SectionUsefulGodDetail({ useful }: { useful: UsefulGodAnalysis }) {
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>용신 풀이</div>
+      <div style={{ display: 'flex', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
+        <UsefulChip label="용신" value={useful.primaryUseful.value as string} accent />
+        {useful.secondaryUseful && <UsefulChip label="희신" value={useful.secondaryUseful.value as string} />}
+        <UsefulChip label="기신" value={useful.unfavorable[0] as string} bad />
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--orot-ink-mute)', marginBottom: 8 }}>5관점 신뢰도 (0~1)</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 12 }}>
+        {Object.entries(useful.methodScores).map(([k, v]) => (
+          <div key={k} style={{ textAlign: 'center', fontSize: 11 }}>
+            <div style={{ color: 'var(--orot-ink-mute)', marginBottom: 2 }}>{methodKo(k)}</div>
+            <div style={{ fontWeight: 700, color: 'var(--orot-ink)' }}>{(v as number).toFixed(1)}</div>
+          </div>
+        ))}
+      </div>
+      <details>
+        <summary style={{ fontSize: 12, color: 'var(--orot-ink-mute)', cursor: 'pointer' }}>판단 근거 보기</summary>
+        <ul style={{ fontSize: 12, color: 'var(--orot-ink-soft)', paddingLeft: 18, marginTop: 6, lineHeight: 1.7 }}>
+          {useful.reasons.map((r, i) => <li key={i}>{r}</li>)}
+        </ul>
+      </details>
+    </div>
+  );
+}
+
+function UsefulChip({ label, value, accent, bad }: { label: string; value: string; accent?: boolean; bad?: boolean }) {
+  const el = (value as OrotElement);
+  const color = accent ? 'var(--orot-coral)' : bad ? '#f88' : `var(--orot-el-${el})`;
+  const bg = accent ? 'rgba(243,160,146,0.12)' : bad ? 'rgba(240,140,140,0.10)' : 'rgba(243,231,207,0.04)';
+  return (
+    <div style={{ padding: '8px 14px', borderRadius: 8, background: bg, border: `1px solid ${color}40`, minWidth: 64, textAlign: 'center' }}>
+      <div style={{ fontSize: 10, color: 'var(--orot-ink-mute)' }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color }}>{EL_KO[el] ?? value}</div>
+    </div>
+  );
+}
+
+function methodKo(k: string): string {
+  return ({ climate: '조후', strength: '억부', bridge: '통관', illnessMedicine: '병약', structure: '격국' } as Record<string, string>)[k] ?? k;
+}
+
+// ============================================================
+// 격국
+// ============================================================
+function SectionStructure({ api }: { api: SajuV4ApiResponse }) {
+  // 격국 정보가 api.coreAnalysis에는 없음 — usefulGod.reasons에서 격국 항목 추출
+  const structureLine = api.coreAnalysis.usefulGod.reasons.find(r => r.startsWith('[structure]'));
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 8 }}>격국 (格局)</div>
+      <div style={{ fontSize: 13, color: 'var(--orot-ink)', lineHeight: 1.6 }}>
+        {structureLine ? structureLine.replace('[structure]', '').trim() : '격국 정보 없음'}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// 신강·신약 자세히
+// ============================================================
+function SectionDayMasterStrengthCard({ dm }: { dm: DayMasterStrengthAnalysis }) {
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 8 }}>신강·신약</div>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>{dm.conclusion}</div>
+      {dm.supportFactors.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, color: 'rgba(120,200,140,0.8)', marginBottom: 4 }}>+ 도움 요인</div>
+          <ul style={{ fontSize: 12, color: 'var(--orot-ink-soft)', paddingLeft: 16, lineHeight: 1.7, margin: 0 }}>
+            {dm.supportFactors.slice(0, 5).map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </div>
+      )}
+      {dm.drainingFactors.length > 0 && (
+        <div>
+          <div style={{ fontSize: 11, color: 'rgba(240,140,140,0.8)', marginBottom: 4 }}>− 소모 요인</div>
+          <ul style={{ fontSize: 12, color: 'var(--orot-ink-soft)', paddingLeft: 16, lineHeight: 1.7, margin: 0 }}>
+            {dm.drainingFactors.slice(0, 5).map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// 신살 자세히
+// ============================================================
+function SectionSpecialStarsDetail({ stars }: { stars: SpecialStarInfo[] }) {
+  if (stars.length === 0) {
+    return (
+      <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+        <div className="orot-eyebrow" style={{ marginBottom: 8 }}>신살</div>
+        <div style={{ fontSize: 13, color: 'var(--orot-ink-mute)' }}>이 사주에 detect된 핵심 신살이 없습니다.</div>
+      </div>
+    );
+  }
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>신살 (神煞)</div>
+      {stars.map((s, i) => (
+        <div key={i} style={{ paddingTop: i === 0 ? 0 : 10, paddingBottom: 10, borderBottom: i < stars.length - 1 ? '1px solid var(--orot-hair)' : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-coral)' }}>★ {s.name}</span>
+            <span style={{ fontSize: 11, color: 'var(--orot-ink-mute)' }}>{s.positions.join(', ')}</span>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', lineHeight: 1.6 }}>{s.interpretationHint}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// 합·충·형·파·해
+// ============================================================
+function SectionCombConflictDetail({ cc }: { cc: CombinationsAndConflicts }) {
+  const all = [
+    { label: '합', items: cc.combinations, color: 'rgba(120,200,140,0.8)' },
+    { label: '충', items: cc.conflicts,    color: 'rgba(240,140,140,0.8)' },
+    { label: '형', items: cc.punishments,  color: 'rgba(240,140,140,0.6)' },
+    { label: '파', items: cc.destructions, color: 'rgba(240,180,140,0.6)' },
+    { label: '해', items: cc.harms,        color: 'rgba(240,180,140,0.6)' },
+  ];
+  const hasAny = all.some(g => g.items.length > 0);
+  if (!hasAny) return null;
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>합·충·형·파·해</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+        {all.filter(g => g.items.length > 0).map(g => (
+          <div key={g.label}>
+            <span style={{ color: g.color, fontWeight: 700, marginRight: 8 }}>{g.label}</span>
+            <span style={{ color: 'var(--orot-ink-soft)' }}>{g.items.join(', ')}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
