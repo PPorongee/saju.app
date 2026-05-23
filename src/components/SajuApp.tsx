@@ -2114,10 +2114,64 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
   /* ===== SCREEN 4: Results ===== */
   function renderResults() {
-    // v4 분기: saju mode + v4 응답 있으면 v4 결과 화면(SajuV4Report — 명리 카드 + 차별화 4섹션)
+    // v4 분기: saju mode + v4 응답이면 v3 hero/back/공유 레이아웃 안에 v4 카드들
     if (isV4 && v4Resp) {
+      const isEnV4 = lang === 'en';
+      const userName = userData.name || t('anonymous', lang);
       const birthSummary = `${userData.year}년 ${userData.month}월 ${userData.day}일${userData.hour >= 0 ? ' ' + ['자','축','인','묘','진','사','오','미','신','유','술','해'][userData.hour] + '시' : ' (시간미상)'} (${isLunar ? '음력' : '양력'})`;
-      return <SajuV4Report api={v4Resp} parsed={parseSajuReport(v4Resp.reportText)} birthSummary={birthSummary} />;
+      const teaserBirthLine = isEnV4
+        ? `${userData.year}-${String(userData.month).padStart(2,'0')}-${String(userData.day).padStart(2,'0')}`
+        : `${userData.year}년 ${userData.month}월 ${userData.day}일`;
+      return (
+        <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: 24, paddingBottom: 32 }}>
+          <button onClick={() => { setCurrentScreen(0); setAiText(''); setV4Resp(null); }}
+            aria-label={t('backBtn', lang)}
+            style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+          </button>
+
+          <BleedCard
+            image="/images/orot/saju-in-character.webp"
+            framingId="saju-in-character"
+            veil="left"
+            minHeight={240}
+            style={{ marginBottom: 20 }}
+          >
+            <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '70%' }}>
+              <div className="orot-eyebrow" style={{ marginBottom: 12 }}>{isEnV4 ? 'My reading' : '나의 풀이'}</div>
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--orot-ink)', letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0, fontFamily: 'var(--orot-font)' }}>
+                {userName}{t('sajuAnalysisOf', lang)}
+              </h1>
+              <p style={{ fontSize: 12, color: 'var(--orot-ink-mute)', margin: '10px 0 0', fontFamily: 'var(--orot-font)' }}>
+                {teaserBirthLine} {t('born', lang)}
+              </p>
+            </div>
+          </BleedCard>
+
+          {/* v4 본문 — Sajupan 명리 카드 + 차별화 4섹션 등 (자체 wrapper 포함) */}
+          <SajuV4Report api={v4Resp} parsed={parseSajuReport(v4Resp.reportText)} birthSummary={birthSummary} />
+
+          {/* v3 톤 공유/저장/재시작 */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
+            <button className="orot-btn orot-btn--ghost" style={{ flex: 1, height: 44, fontSize: 13 }}
+              disabled={isSharingLink}
+              onClick={() => shareLink(aiText, userName + (isEnV4 ? "'s Saju Reading" : '의 사주 해설'))}>
+              {t('share', lang)}
+            </button>
+            <button className="orot-btn orot-btn--ghost" style={{ flex: 1, height: 44, fontSize: 13 }}
+              onClick={() => {
+                try {
+                  const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
+                  const newResult = { name: userName, date: new Date().toLocaleDateString(), type: isEnV4 ? 'Saju (v4)' : '개인사주 v4', text: aiText };
+                  const updated = [newResult, ...results].slice(0, 20);
+                  try { localStorage.setItem('saju-saved-results', JSON.stringify(updated)); setSavedResults(updated); } catch { /* quota */ }
+                } catch { /* ignore */ }
+              }}>{t('saveResult', lang)}</button>
+            <button className="orot-btn orot-btn--ghost" style={{ flex: 1, height: 44, fontSize: 13 }}
+              onClick={() => { setCurrentScreen(0); setAiText(''); setV4Resp(null); }}>{t('restart', lang)}</button>
+          </div>
+        </div>
+      );
     }
     if (!sajuResult) {
       // Saved result view — no saju calc data, just AI text
