@@ -864,48 +864,73 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     setIsLoading(false);
   }
 
-  /* ===== v4 GPT 호출 — saju mode + version='v4'일 때만 ===== */
+  /* ===== v4 호출 — preview(즉시 명리 데이터) + report(GPT 해석) 두 단계 ===== */
   async function fetchSajuReadingV4(signal?: AbortSignal) {
     setIsLoading(true);
     setIsGenerating(true);
     setAiText('');
     setV4Resp(null);
+    const birthTime = useExactTime && exactHour >= 0
+      ? `${String(exactHour).padStart(2, '0')}:${String(exactMinute).padStart(2, '0')}`
+      : userData.hour >= 0 ? `${String((userData.hour * 2) || 0).padStart(2, '0')}:00` : undefined;
+    const birthTimeConfidence = (userData.hour < 0 && !useExactTime) ? 'unknown'
+      : useExactTime ? 'exact' : 'approximate';
+    const v4Input = {
+      name: userData.name || '익명',
+      gender: (userData.gender === 'm' ? 'male' : userData.gender === 'f' ? 'female' : 'unknown') as 'male' | 'female' | 'unknown',
+      calendarType: (isLunar ? 'lunar' : 'solar') as 'lunar' | 'solar',
+      birthDate: `${userData.year}-${String(userData.month).padStart(2, '0')}-${String(userData.day).padStart(2, '0')}`,
+      birthTime,
+      birthTimeConfidence: birthTimeConfidence as 'exact' | 'approximate' | 'unknown',
+      timezone: 'Asia/Seoul' as const,
+      relationshipStatus: v4Ctx.relationshipStatus,
+      hasChildren: (v4Ctx.hasChildren === 'true' ? true : v4Ctx.hasChildren === 'false' ? false : 'unknown') as boolean | 'unknown',
+      occupation: v4Ctx.occupation || undefined,
+      currentConcerns: v4Ctx.concerns,
+    };
+
+    // ── Phase 1: preview (즉시) ──
     try {
-      const birthTime = useExactTime && exactHour >= 0
-        ? `${String(exactHour).padStart(2, '0')}:${String(exactMinute).padStart(2, '0')}`
-        : userData.hour >= 0 ? `${String((userData.hour * 2) || 0).padStart(2, '0')}:00` : undefined;
-      const birthTimeConfidence = (userData.hour < 0 && !useExactTime) ? 'unknown'
-        : useExactTime ? 'exact' : 'approximate';
-      const v4Input = {
-        name: userData.name || '익명',
-        gender: (userData.gender === 'm' ? 'male' : userData.gender === 'f' ? 'female' : 'unknown') as 'male' | 'female' | 'unknown',
-        calendarType: (isLunar ? 'lunar' : 'solar') as 'lunar' | 'solar',
-        birthDate: `${userData.year}-${String(userData.month).padStart(2, '0')}-${String(userData.day).padStart(2, '0')}`,
-        birthTime,
-        birthTimeConfidence: birthTimeConfidence as 'exact' | 'approximate' | 'unknown',
-        timezone: 'Asia/Seoul' as const,
-        relationshipStatus: v4Ctx.relationshipStatus,
-        hasChildren: (v4Ctx.hasChildren === 'true' ? true : v4Ctx.hasChildren === 'false' ? false : 'unknown') as boolean | 'unknown',
-        occupation: v4Ctx.occupation || undefined,
-        currentConcerns: v4Ctx.concerns,
-      };
-      const res = await fetch('/api/saju-v4', {
+      const previewRes = await fetch('/api/saju-v4/preview', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ input: v4Input }),
+        signal,
+      });
+      if (!previewRes.ok) {
+        const detail = await previewRes.json().catch(() => ({}));
+        throw new Error(`preview 오류 (${previewRes.status}): ${detail?.detail || ''}`);
+      }
+      const preview = await previewRes.json();
+      // reportText 빈 문자열 + validation·attempts 기본값으로 v4Resp 즉시 세팅 (UI는 AI 카드 영역에 로딩 표시)
+      setV4Resp({ ...preview, reportText: '', validation: { isValid: true, issues: [] }, attempts: 0 } as _SajuV4ApiResponseType);
+    } catch (err) {
+      if (signal?.aborted) { setIsGenerating(false); setIsLoading(false); return; }
+      setAiText(t('aiError', lang));
+      console.error('[v4 preview] error:', err);
+      setIsGenerating(false); setIsLoading(false);
+      return;
+    }
+
+    // ── Phase 2: report (GPT 해석) — preview 응답 후 즉시 호출 ──
+    try {
+      const reportRes = await fetch('/api/saju-v4', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ input: v4Input, maxRepairAttempts: 1 }),
         signal,
       });
-      if (!res.ok) {
-        const detail = await res.json().catch(() => ({}));
-        throw new Error(`서버 오류 (${res.status}): ${detail?.detail || detail?.error || ''}`);
+      if (!reportRes.ok) {
+        const detail = await reportRes.json().catch(() => ({}));
+        throw new Error(`서버 오류 (${reportRes.status}): ${detail?.detail || detail?.error || ''}`);
       }
-      const data = await res.json() as _SajuV4ApiResponseType;
+      const data = await reportRes.json() as _SajuV4ApiResponseType;
       setV4Resp(data);
       setAiText(data.reportText);
     } catch (err) {
       if (signal?.aborted) return;
       setAiText(t('aiError', lang));
-      console.error('[v4 fetch] error:', err);
+      console.error('[v4 report] error:', err);
     } finally {
       setIsGenerating(false);
       setIsLoading(false);

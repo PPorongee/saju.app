@@ -103,17 +103,62 @@ export function SajuV4Report({ api, parsed, birthSummary }: Props) {
       <SectionSpecialStarsDetail stars={api.coreAnalysis.specialStars} />
       <SectionCombConflictDetail cc={api.coreAnalysis.combinationsAndConflicts} />
 
-      {/* ── 차별화 4섹션 + 기타 ── */}
-      <SectionSummary text={parsed.summary} />
-      <SectionIdentityKeywords keywords={api.identityKeywords} parsedItems={parsed.identityKeywords} />
-      <SectionSpecialPoints points={api.specialPoints} parsedReasons={parsed.specialReasons} />
-      <SectionLifeWeapons weapons={api.lifeWeapons} parsedItems={parsed.lifeWeapons} />
-      <SectionLifeTraps traps={api.lifeTraps} parsedItems={parsed.lifeTraps} />
-      <SectionFortuneTriggers triggers={api.fortuneTriggers} parsedAct={parsed.fortuneActivating} parsedBlk={parsed.fortuneBlocking} />
-      <SectionQuestions questions={parsed.questions} />
-      <SectionNextYears fortune={api.fortune} parsedYears={parsed.nextThreeYears} />
-      <SectionPracticalGuide text={parsed.practicalGuide} finalMessage={parsed.finalMessage} />
-      {!api.validation.isValid && <SectionValidationWarning issues={api.validation.issues} />}
+      {/* ── AI 분석 (GPT 응답) — reportText 있을 때만 표시. 없으면 로딩 카드. ── */}
+      {!api.reportText ? (
+        <SectionAiLoading />
+      ) : (
+        <>
+          <SectionSummary text={parsed.summary} />
+          <SectionIdentityKeywords keywords={api.identityKeywords} parsedItems={parsed.identityKeywords} />
+          <SectionSpecialPoints points={api.specialPoints} parsedReasons={parsed.specialReasons} />
+          <SectionLifeWeapons weapons={api.lifeWeapons} parsedItems={parsed.lifeWeapons} />
+          <SectionLifeTraps traps={api.lifeTraps} parsedItems={parsed.lifeTraps} />
+          <SectionFortuneTriggers triggers={api.fortuneTriggers} parsedAct={parsed.fortuneActivating} parsedBlk={parsed.fortuneBlocking} />
+          <SectionQuestions questions={parsed.questions} />
+          <SectionNextYears fortune={api.fortune} parsedYears={parsed.nextThreeYears} />
+          <SectionPracticalGuide text={parsed.practicalGuide} finalMessage={parsed.finalMessage} />
+          {!api.validation.isValid && <SectionValidationWarning issues={api.validation.issues} />}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// AI 분석 로딩 카드 (GPT 응답 대기)
+// ============================================================
+function SectionAiLoading() {
+  return (
+    <div className="card" style={{
+      padding: 24, marginTop: 20, marginBottom: 16, textAlign: 'center',
+      background: 'linear-gradient(135deg, rgba(243,160,146,0.08), rgba(240,199,94,0.04))',
+      border: '1px solid var(--orot-coral-faint)',
+    }}>
+      <div style={{ fontSize: 13, color: 'var(--orot-coral)', fontWeight: 600, marginBottom: 8 }}>✦ AI 사주 풀이</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 10 }}>
+        분석을 작성하고 있어요...
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', lineHeight: 1.6 }}>
+        GPT가 위 명리 데이터를 바탕으로<br/>
+        키워드·무기·함정·운 트리거·10문항·3년 흐름을 풀어내고 있습니다.<br/>
+        <span style={{ color: 'var(--orot-ink-mute)' }}>(약 30~60초 소요)</span>
+      </div>
+      <div style={{
+        marginTop: 14, height: 4, borderRadius: 2, overflow: 'hidden',
+        background: 'rgba(243,160,146,0.12)', position: 'relative',
+      }}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, height: '100%', width: '30%',
+          background: 'var(--orot-coral)',
+          animation: 'aiLoadingBar 1.6s ease-in-out infinite',
+        }} />
+      </div>
+      <style>{`
+        @keyframes aiLoadingBar {
+          0% { left: -30%; }
+          100% { left: 100%; }
+        }
+      `}</style>
     </div>
   );
 }

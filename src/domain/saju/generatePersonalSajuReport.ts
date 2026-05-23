@@ -50,6 +50,68 @@ export interface GenerateResult {
   attempts: number;
 }
 
+/**
+ * 결정론 분석만 — GPT 호출 X. preview endpoint에서 즉시 응답용.
+ * 출력: PersonalSajuGptInput과 동일 구조 (단 reportText 없음).
+ */
+export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date()): PersonalSajuGptInput {
+  const normalized = normalizeBirthInput(input, now);
+  const pillarsRes = calculatePillars(normalized);
+  const tenGods    = analyzeTenGods(pillarsRes.pillars);
+  const elements   = analyzeElementStrength(pillarsRes.pillars);
+  const dm         = analyzeDayMasterStrength(pillarsRes.pillars, tenGods, elements);
+  const structure  = analyzeStructure(pillarsRes.pillars, tenGods, elements);
+  const usefulGod  = analyzeUsefulGod({ pillars: pillarsRes.pillars, tenGods, elements, dayMasterStrength: dm, structure });
+  const specialStars   = analyzeSpecialStars(pillarsRes.pillars);
+  const combConflicts  = analyzeCombinationsAndConflicts(pillarsRes.pillars);
+  const cycles  = calculateFortuneCycles(normalized, pillarsRes.pillars, now.getFullYear());
+  const fortune = analyzeFortuneFlow({ pillars: pillarsRes.pillars, cycles, usefulGod, tenGods });
+
+  const specialPoints: SpecialPoint[] = detectSpecialPoints({
+    pillars: pillarsRes.pillars,
+    tenGods, elements,
+    dayMasterStrength: dm, structure, usefulGod,
+    specialStars, fortune,
+    hourUnknown: normalized.hourUnknown,
+  });
+
+  const identityKeywords = generateIdentityKeywords({
+    pillars: pillarsRes.pillars, tenGods, elements,
+    dayMasterStrength: dm, structure, usefulGod, specialPoints,
+  });
+  const lifeWeapons = detectLifeWeapons({
+    pillars: pillarsRes.pillars, tenGods, elements,
+    dayMasterStrength: dm, usefulGod, specialPoints, fortune,
+  });
+  const lifeTraps = detectLifeTraps({
+    pillars: pillarsRes.pillars, tenGods, elements,
+    dayMasterStrength: dm, usefulGod, specialPoints, fortune,
+    userContext: normalized.context,
+  });
+  const fortuneTriggers = analyzeFortuneTriggers({
+    pillars: pillarsRes.pillars, tenGods, elements,
+    usefulGod, specialPoints, lifeWeapons, lifeTraps, fortune,
+  });
+
+  return buildPersonalSajuGptInput({
+    userContext: normalized.context,
+    birthTimeConfidence: input.birthTimeConfidence,
+    ruleConfig: DEFAULT_RULE_CONFIG,
+    pillars: pillarsRes.pillars,
+    tenGods, elements,
+    dayMasterStrength: dm,
+    usefulGod,
+    combinationsAndConflicts: combConflicts,
+    specialStars,
+    specialPoints,
+    identityKeywords,
+    lifeWeapons,
+    lifeTraps,
+    fortuneTriggers,
+    fortune,
+  });
+}
+
 export async function generatePersonalSajuReport(
   input: BirthInput,
   opts: GenerateOptions,
