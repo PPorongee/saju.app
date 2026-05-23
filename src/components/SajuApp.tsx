@@ -2808,8 +2808,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       };
       const relationshipType = v4TypeMap[compatRelType] || 'dating';
 
-      // 결과 화면 진입을 위해 compatResult placeholder 설정
-      setCompatResult({ html: '{}' });
+      // v4 흐름 — compatResult(v3 키)는 건드리지 않음. v4 result는 compatV4Resp로만 게이트.
       setCompatLoading(true);
       setCompatAiText('');
       setCompatV4Resp(null);
@@ -3325,7 +3324,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           );
         })()}
 
-        {data && (
+        {data && !compatV4Resp && data.myDS !== undefined && data.theirDS !== undefined && PROFILES[data.myDS] && PROFILES[data.theirDS] && (
           <>
             <div className="card card-glow" style={{ marginTop: '20px', textAlign: 'center' }}>
               <div className="side-by-side">
