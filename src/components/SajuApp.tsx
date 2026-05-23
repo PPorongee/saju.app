@@ -12,6 +12,9 @@ import type { UserData } from '@/lib/saju-prompt';
 import { getRelevantRefs } from '@/lib/saju-ref-selector';
 import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
 import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer';
+import CompatV4Report, { type CompatV4ResultApi } from '@/components/CompatV4Report';
+import type { BirthInput as CompatBirthInputV4 } from '@/domain/saju/calendar/normalizeBirthInput';
+import type { RelationshipType as RelationshipTypeV4 } from '@/domain/saju/compatibility/compatibilityTypes';
 import { lunarToSolar } from '@/lib/lunar-solar';
 import { t, Lang, getTodayHeroLine } from '@/lib/i18n';
 import { saveReadingToSession, loadReadingFromSession, clearReadingFromSession } from '@/lib/reading-storage';
@@ -552,12 +555,14 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const [compatAiText, setCompatAiText] = useState('');
   const [compatLoading, setCompatLoading] = useState(false);
   const [compatRelType, setCompatRelType] = useState(0); // 0=연애, 1=혼인, 2=우정, 3=동료, 4=재회/이별, 5=짝사랑/썸
+  const [compatV4Resp, setCompatV4Resp] = useState<CompatV4ResultApi | null>(null);
 
   // Reset compat results when inputs change (requires re-payment)
   function resetCompatResult() {
-    if (compatResult || compatAiText) {
+    if (compatResult || compatAiText || compatV4Resp) {
       setCompatResult(null);
       setCompatAiText('');
+      setCompatV4Resp(null);
       setCompatPaywall(false);
     }
   }
@@ -2771,78 +2776,93 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   /* ===== SCREEN 5: Compatibility ===== */
   function renderCompat() {
 
-    function runCompatAnalysis() {
-      const mySaju = sajuResult || (() => {
-        let y = compatPerson1.year, m = compatPerson1.month, d = compatPerson1.day;
-        if (compatPerson1.isLunar) { const s = lunarToSolar(y, m, d); y = s.year; m = s.month; d = s.day; }
-        return calcSaju(y, m, d, compatPerson1.hour);
-      })();
-      const myName = sajuResult ? (userData.name || (lang === 'en' ? 'Me' : '나')) : (compatPerson1.name || (lang === 'en' ? 'Person 1' : '첫 번째'));
-      const cName = compatPerson2.name || (lang === 'en' ? 'Partner' : '상대방');
-      let cy = compatPerson2.year, cm = compatPerson2.month, cd = compatPerson2.day;
-      if (compatPerson2.isLunar) { const s = lunarToSolar(cy, cm, cd); cy = s.year; cm = s.month; cd = s.day; }
-      const cSaju = calcSaju(cy, cm, cd, compatPerson2.hour);
+    async function runCompatAnalysis() {
+      // ── v4 compat 흐름 ──
+      // 1. preview 호출(즉시) → 명리 카드 노출
+      // 2. report 호출(GPT) → AI 카드 채움
+      const v4TypeMap: Record<number, RelationshipTypeV4> = {
+        0: 'dating', 1: 'married', 2: 'friendship',
+        3: 'coworker', 4: 'reunion_or_breakup', 5: 'crush_or_something',
+      };
+      const inputA: CompatBirthInputV4 = {
+        name: compatPerson1.name || (lang === 'en' ? 'Person 1' : '첫 번째'),
+        gender: 'unknown',
+        calendarType: compatPerson1.isLunar ? 'lunar' : 'solar',
+        birthDate: `${compatPerson1.year}-${String(compatPerson1.month).padStart(2,'0')}-${String(compatPerson1.day).padStart(2,'0')}`,
+        birthTime: compatPerson1.hour >= 0
+          ? `${String(compatPerson1.hour).padStart(2,'0')}:${String(compatExact1.use ? compatExact1.min : 0).padStart(2,'0')}`
+          : undefined,
+        birthTimeConfidence: compatPerson1.hour >= 0 ? 'exact' : 'unknown',
+        timezone: 'Asia/Seoul',
+      };
+      const inputB: CompatBirthInputV4 = {
+        name: compatPerson2.name || (lang === 'en' ? 'Partner' : '상대'),
+        gender: 'unknown',
+        calendarType: compatPerson2.isLunar ? 'lunar' : 'solar',
+        birthDate: `${compatPerson2.year}-${String(compatPerson2.month).padStart(2,'0')}-${String(compatPerson2.day).padStart(2,'0')}`,
+        birthTime: compatPerson2.hour >= 0
+          ? `${String(compatPerson2.hour).padStart(2,'0')}:${String(compatExact2.use ? compatExact2.min : 0).padStart(2,'0')}`
+          : undefined,
+        birthTimeConfidence: compatPerson2.hour >= 0 ? 'exact' : 'unknown',
+        timezone: 'Asia/Seoul',
+      };
+      const relationshipType = v4TypeMap[compatRelType] || 'dating';
 
-      const myDS = mySaju.dStem;
-      const theirDS = cSaju.dStem;
-
-      const myAge = 2026 - compatPerson1.year;
-      const partnerAge = 2026 - compatPerson2.year;
-      const { prompt, analysis } = buildCompatPrompt({
-        p1: {
-          name: myName,
-          gender: 'm',
-          age: myAge,
-          saju: mySaju,
-          exactHour: compatExact1.use && compatExact1.hour >= 0 ? compatExact1.hour : undefined,
-          exactMinute: compatExact1.use && compatExact1.hour >= 0 ? compatExact1.min : undefined,
-        },
-        p2: {
-          name: cName,
-          gender: 'm',
-          age: partnerAge,
-          saju: cSaju,
-          exactHour: compatExact2.use && compatExact2.hour >= 0 ? compatExact2.hour : undefined,
-          exactMinute: compatExact2.use && compatExact2.hour >= 0 ? compatExact2.min : undefined,
-        },
-        relationType: REL_TYPE_BY_IDX[compatRelType] || 'love',
-        lang,
-      });
-
-      setCompatResult({
-        html: JSON.stringify({
-          myName, cName, myDS, theirDS,
-          summaryCards: analysis.summaryCards,
-        }),
-      });
-
-      /* AI compat analysis - accumulate silently, reveal when done */
+      // 결과 화면 진입을 위해 compatResult placeholder 설정
+      setCompatResult({ html: '{}' });
       setCompatLoading(true);
       setCompatAiText('');
-      fetch('/api/saju', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, lang })
-      }).then(async (res) => {
-        if (!res.ok || !res.body) {
-          setCompatLoading(false);
-          setCompatAiText(t('compatAiError', lang));
-          return;
-        }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let full = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          full += decoder.decode(value, { stream: true });
-        }
-        setCompatAiText(full);
-        setCompatLoading(false);
-      }).catch(() => {
+      setCompatV4Resp(null);
+
+      // Phase 1 — preview (즉시)
+      try {
+        const previewRes = await fetch('/api/compat-v4/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputA, inputB, relationshipType }),
+        });
+        if (!previewRes.ok) throw new Error('preview failed: ' + previewRes.status);
+        const preview = await previewRes.json();
+        setCompatV4Resp({
+          relationshipType: preview.relationshipType,
+          personA: preview.personA,
+          personB: preview.personB,
+          compatibilityAnalysis: preview.compatibilityAnalysis,
+          relationshipQuestions: preview.relationshipQuestions,
+          reportText: '',
+        });
+      } catch (err) {
+        console.error('compat v4 preview error:', err);
         setCompatLoading(false);
         setCompatAiText(t('compatAiError', lang));
-      });
+        return;
+      }
+
+      // Phase 2 — report (GPT)
+      try {
+        const reportRes = await fetch('/api/compat-v4', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputA, inputB, relationshipType }),
+        });
+        if (!reportRes.ok) throw new Error('report failed: ' + reportRes.status);
+        const report = await reportRes.json();
+        setCompatV4Resp({
+          relationshipType: report.relationshipType,
+          personA: report.personA,
+          personB: report.personB,
+          compatibilityAnalysis: report.compatibilityAnalysis,
+          relationshipQuestions: report.relationshipQuestions,
+          reportText: report.reportText,
+        });
+        setCompatLoading(false);
+      } catch (err) {
+        console.error('compat v4 report error:', err);
+        setCompatLoading(false);
+        setCompatAiText(t('compatAiError', lang));
+      }
+      // v3 폐기 — 미사용 import 회피
+      void buildCompatPrompt; void REL_TYPE_BY_IDX; void calcSaju; void lunarToSolar; void sajuResult; void userData;
     }
 
     const data = compatResult ? (() => { try { return JSON.parse(compatResult.html); } catch { return null; } })() : null;
@@ -3509,7 +3529,13 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               );
             })()}
 
-            {compatLoading && (
+            {/* v4 compat 결과 — preview 카드 즉시, AI 카드는 reportText 도착 후 자동 표시 */}
+            {compatV4Resp && (
+              <div style={{ marginTop: 12 }}>
+                <CompatV4Report api={compatV4Resp} />
+              </div>
+            )}
+            {!compatV4Resp && compatLoading && (
               <div className="card" style={{ marginTop: '12px', textAlign: 'center', padding: '48px 24px', background: 'rgba(246,135,179,0.08)', border: '1px solid rgba(246,135,179,0.2)', borderRadius: '20px' }}>
                 <div style={{ fontSize: '56px', animation: 'float 2s ease-in-out infinite', marginBottom: '16px' }}>💕</div>
                 <p style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{t('compatReading', lang)}</p>
@@ -3519,7 +3545,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 </div>
               </div>
             )}
-            {!compatLoading && compatAiText && (
+            {!compatV4Resp && !compatLoading && compatAiText && (
               <div className="card" style={{ marginTop: '12px' }}>
                 <h3>{t('aiCompatTitle', lang)}</h3>
                 {renderTOC(compatAiText)}
