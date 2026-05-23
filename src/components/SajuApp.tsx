@@ -2899,6 +2899,33 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         >
           <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
         </button>
+
+        {/* 분석 진행 상태 배너 — 사용자가 결과 영역을 못 봐도 인지 */}
+        {(compatLoading || compatV4Resp || (compatAiText && !compatV4Resp)) && (
+          <div style={{
+            position: 'sticky', top: 8, zIndex: 50, marginBottom: 12,
+            padding: '12px 16px', borderRadius: 12,
+            background: compatV4Resp ? 'linear-gradient(135deg, rgba(120,200,140,0.18), rgba(80,180,120,0.10))'
+              : compatLoading ? 'linear-gradient(135deg, rgba(246,135,179,0.18), rgba(159,122,234,0.10))'
+              : 'linear-gradient(135deg, rgba(255,140,140,0.18), rgba(255,100,100,0.10))',
+            border: '1px solid ' + (compatV4Resp ? 'rgba(120,200,140,0.4)' : compatLoading ? 'rgba(246,135,179,0.4)' : 'rgba(255,140,140,0.4)'),
+            fontSize: 13, color: 'var(--text)', textAlign: 'center', fontFamily: 'var(--orot-font)',
+            cursor: compatV4Resp ? 'pointer' : 'default',
+          }}
+          onClick={() => {
+            if (compatV4Resp && typeof window !== 'undefined') {
+              const el = document.querySelector('[data-compat-v4-result]') as HTMLElement | null;
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }}>
+            {compatV4Resp ? (compatV4Resp.reportText
+              ? '✅ 궁합 분석 완료! 탭하면 결과로 이동 →'
+              : '✨ 명리 카드 준비 완료 · AI 풀이 작성 중... 탭하면 결과로 이동 →')
+              : compatLoading ? '⏳ 궁합 분석 중... 잠시만 기다려주세요'
+              : '⚠ ' + compatAiText.slice(0, 200)}
+          </div>
+        )}
+
         <BleedCard
           image="/images/orot/home-feat-compat.webp"
           framingId="home-feat-compat-hero"
@@ -3323,9 +3350,14 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                   className="paywall-cta"
                   style={{ display: 'block', width: '100%', textAlign: 'center', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '16px', background: 'linear-gradient(135deg, #F687B3, #9F7AEA)' }}
                   onClick={() => {
+                    console.log('[compat v4] paywall unlocked, starting analysis');
                     updateStarBalance(starBalance - 5);
                     setCompatPaywall(false);
-                    runCompatAnalysis();
+                    runCompatAnalysis().catch(err => {
+                      console.error('[compat v4] runCompatAnalysis threw:', err);
+                      setCompatLoading(false);
+                      setCompatAiText('⚠ 시작 실패: ' + (err instanceof Error ? err.message : String(err)));
+                    });
                   }}
                 >
                   {lang === 'en' ? 'Unlock with 5 Stars ⭐' : '별빛 5개로 열기 ⭐'}
