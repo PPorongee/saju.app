@@ -2813,6 +2813,13 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       setCompatAiText('');
       setCompatV4Resp(null);
 
+      // 결과 영역이 페이지 하단이라 자동 스크롤 — 사용자가 분석 시작 인지 가능
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+      }, 80);
+
       // Phase 1 — preview (즉시)
       try {
         const previewRes = await fetch('/api/compat-v4/preview', {
@@ -2820,8 +2827,14 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ inputA, inputB, relationshipType }),
         });
-        if (!previewRes.ok) throw new Error('preview failed: ' + previewRes.status);
+        if (!previewRes.ok) {
+          const detail = await previewRes.text().catch(() => '');
+          throw new Error(`preview ${previewRes.status}: ${detail.slice(0, 200)}`);
+        }
         const preview = await previewRes.json();
+        if (!preview?.compatibilityAnalysis) {
+          throw new Error('preview missing compatibilityAnalysis: ' + JSON.stringify(preview).slice(0, 200));
+        }
         setCompatV4Resp({
           relationshipType: preview.relationshipType,
           personA: preview.personA,
@@ -2830,10 +2843,17 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           relationshipQuestions: preview.relationshipQuestions,
           reportText: '',
         });
+        // 마운트 후 결과 위치로 부드러운 스크롤
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            const el = document.querySelector('[data-compat-v4-result]') as HTMLElement | null;
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
       } catch (err) {
-        console.error('compat v4 preview error:', err);
+        console.error('[compat v4 preview]', err);
         setCompatLoading(false);
-        setCompatAiText(t('compatAiError', lang));
+        setCompatAiText('⚠ 궁합 분석을 시작할 수 없어요. 잠시 후 다시 시도해주세요.\n\n에러: ' + (err instanceof Error ? err.message : String(err)));
         return;
       }
 
@@ -3530,7 +3550,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
             {/* v4 compat 결과 — preview 카드 즉시, AI 카드는 reportText 도착 후 자동 표시 */}
             {compatV4Resp && (
-              <div style={{ marginTop: 12 }}>
+              <div data-compat-v4-result style={{ marginTop: 12 }}>
                 <CompatV4Report api={compatV4Resp} />
               </div>
             )}
