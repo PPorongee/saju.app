@@ -23,8 +23,9 @@ const src = readFileSync(SW_PATH, 'utf8');
 const re = /const\s+CACHE_VERSION\s*=\s*'([^']+)'\s*;/;
 const m = src.match(re);
 if (!m) {
-  console.error('[bump-sw-version] CACHE_VERSION 라인을 찾지 못함 — sw.js 구조 변경?');
-  process.exit(1);
+  // SW가 self-destruct 버전 등으로 바뀌어 CACHE_VERSION이 없을 수 있음 — 정상 skip.
+  console.log('[bump-sw-version] CACHE_VERSION 없음 — sw.js가 캐시를 사용하지 않는 형태로 보임. skip.');
+  process.exit(0);
 }
 const oldVersion = m[1];
 const newVersion = nowVersion();

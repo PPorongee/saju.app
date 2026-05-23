@@ -259,11 +259,24 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const [lang, setLang] = useState<Lang>('ko');
   const [currentScreen, setCurrentScreen] = useState(0);
 
-  /* PWA service worker registration */
+  /* PWA service worker — register self-destruct sw.js + 안전망으로 모든 SW unregister.
+     이전 sw.js 캐싱 버그로 옛 번들이 박혀 있던 사용자도 sw.js 받자마자 자가 unregister 됨. */
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    }
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    (async () => {
+      try {
+        // register는 새 sw.js를 가져오게 함 — 새 sw.js가 self-destruct
+        await navigator.serviceWorker.register('/sw.js').catch(() => {});
+        // 안전망: 어떤 이유로 새 sw.js가 활성화 안 되었더라도 클라이언트 측에서 모두 unregister
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister().catch(() => false)));
+        // 모든 캐시도 비우기
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k).catch(() => false)));
+        }
+      } catch { /* swallow */ }
+    })();
   }, []);
 
   /* Privacy consent */
