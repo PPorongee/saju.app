@@ -1452,8 +1452,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               fontSize: 26, fontWeight: 700, color: 'var(--orot-ink)',
               letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
               whiteSpace: 'pre-line', fontFamily: 'var(--orot-font)',
-            }}>
-              {getTodayHeroLine(lang)}
+            }} suppressHydrationWarning>
+              {hasMounted ? getTodayHeroLine(lang) : (lang === 'en' ? 'A new day begins\nwith small steps' : '오늘도 작은 걸음으로\n좋은 흐름을 만들어요')}
             </h2>
           </div>
         </BleedCard>
