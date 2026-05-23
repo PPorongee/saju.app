@@ -1,57 +1,88 @@
 {
-  "title": "Fix iPhone Safari typing performance lag",
+  "task": "별빛 사주 웹앱 — 핵심 시나리오 0개 오류 도달 (Ralph)",
   "stories": [
     {
       "id": "US-001",
-      "title": "Memoize StarsBackground to prevent re-render on keystroke",
+      "title": "Service Worker 캐시 버그 픽스 — 새 배포가 즉시 반영되도록",
+      "priority": 1,
+      "passes": false,
+      "context": "sw.js의 CACHE_NAME='saju-v3' 고정 + STATIC_ASSETS=['/']로 루트 HTML이 영구 캐싱. 같은 이름 캐시는 무효화 안 됨 → 옛 번들 계속 서빙. 콘솔에 fetch 트레이스 안 보인 진짜 이유.",
       "acceptanceCriteria": [
-        "StarsBackground is wrapped in React.memo",
-        "Typing in name input does NOT re-render 65 star SVG elements",
-        "Build passes with no TypeScript errors"
-      ],
-      "passes": true
+        "sw.js의 CACHE_NAME이 빌드마다 갱신되는 동적 버전 (현재 시각 또는 명시적 버전 문자열)",
+        "STATIC_ASSETS에서 '/'(루트 페이지) 제거",
+        "fetch 핸들러: navigation 요청(mode==='navigate') 또는 HTML accept 요청은 항상 network-only",
+        "activate 핸들러: 모든 기존 saju-* prefix 캐시를 무효화",
+        "sw.js:25 Response clone 에러 해결 — caches.put에 res.clone() 전달, 원본은 그대로 반환",
+        "npm run build 통과"
+      ]
     },
     {
       "id": "US-002",
-      "title": "Extract countdown timer to prevent 1s interval full re-renders",
+      "title": "CSP 정책 정리 — 폰트·CDN·아이콘 차단 제거",
+      "priority": 2,
+      "passes": false,
+      "context": "콘솔에 pretendard CDN, Google Fonts API, /icon-192.png 404 반복. 폰트 깨짐 + 신뢰도 저하.",
       "acceptanceCriteria": [
-        "Timer state and setInterval are in a separate React.memo component",
-        "Timer ticking does not trigger SajuApp re-render",
-        "Timer still displays correctly on loading screens",
-        "Build passes"
-      ],
-      "passes": true
+        "next.config.ts CSP style-src에 https://cdn.jsdelivr.net 추가",
+        "next.config.ts CSP connect-src에 https://fonts.googleapis.com 추가",
+        "manifest.json의 /icon-192.png, /icon-512.png 참조를 favicon.svg로 교체 (PNG 자산 없음)",
+        "npm run build 통과",
+        "curl로 production 응답 헤더의 CSP에 cdn.jsdelivr.net과 fonts.googleapis.com 포함 확인"
+      ]
     },
     {
       "id": "US-003",
-      "title": "Fix Safari backdrop-filter performance",
+      "title": "궁합 v4 시나리오 종단 검증 — 6개 관계 유형",
+      "priority": 3,
+      "passes": false,
+      "context": "compat v4를 6 RelationshipType(dating/married/friendship/coworker/reunion_or_breakup/crush_or_something) 모두 검증.",
       "acceptanceCriteria": [
-        "backdrop-filter: blur() replaced with solid backgrounds on always-visible elements (.card, nav buttons)",
-        "Visual appearance remains acceptable (dark semi-transparent)",
-        "Build passes"
-      ],
-      "passes": true
+        "6 관계 유형 각각 /api/compat-v4/preview POST 200 응답",
+        "각 응답 compatibilityAnalysis.relationshipArchetype.id가 RELATIONSHIP_ARCHETYPE_CATALOG 13 ID 중 하나",
+        "각 응답 relationshipQuestions.length === 10",
+        "각 응답 compatibilityAnalysis.futureFlow.length === 3",
+        "scripts/validate-compat-v4.mjs 작성 + 6/6 통과 확인"
+      ]
     },
     {
       "id": "US-004",
-      "title": "Fix render-time setState causing double renders",
+      "title": "사주 v4 시나리오 종단 검증 — 5개 입력 유형",
+      "priority": 4,
+      "passes": false,
+      "context": "/api/saju-v4/preview를 시간미상/exact/음력/양력/경계시각 5케이스 검증.",
       "acceptanceCriteria": [
-        "compatKey comparison moved from render body to useEffect",
-        "No setState calls during render phase",
-        "Build passes"
-      ],
-      "passes": true
+        "5 입력 케이스 각각 /api/saju-v4/preview POST 200 응답",
+        "각 응답 birthChart.dayMaster가 천간 10자 중 하나",
+        "각 응답 coreAnalysis.usefulGod.primaryUseful.value가 5오행 중 하나",
+        "각 응답 careerSpecificAnalysis.topCareerMatches.length >= 1",
+        "scripts/validate-saju-v4.mjs 작성 + 5/5 통과 확인"
+      ]
     },
     {
       "id": "US-005",
-      "title": "Verify all fixes, test, build, deploy",
+      "title": "TypeScript + 빌드 0 에러 + 핵심 테스트 통과",
+      "priority": 5,
+      "passes": false,
+      "context": "코드베이스 컴파일 0 에러 + 기존 단위 테스트 통과.",
       "acceptanceCriteria": [
-        "npm test passes (all 90 tests)",
-        "npm run build succeeds",
-        "No TypeScript errors",
-        "All previous fixes are intact"
-      ],
-      "passes": true
+        "npx tsc --noEmit -p tsconfig.json 0 에러",
+        "npm run build 성공 + 0 ERROR",
+        "npm test 통과 (실패한 테스트 0개)"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "Production 핵심 페이지 200 응답 + HTML 무결성",
+      "priority": 6,
+      "passes": false,
+      "context": "starlight-saju.com 핵심 페이지 7개 200 응답 + HTML 정상.",
+      "acceptanceCriteria": [
+        "GET /, /payment, /payment/success, /payment/fail, /privacy, /terms, /refund 모두 HTTP 200",
+        "각 페이지 HTML에 <title> 태그 존재",
+        "각 페이지 HTML 사이즈 > 1KB"
+      ]
     }
-  ]
+  ],
+  "createdAt": "2026-05-24",
+  "updatedAt": "2026-05-24"
 }

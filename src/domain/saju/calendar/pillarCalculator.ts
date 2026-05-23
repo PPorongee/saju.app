@@ -96,8 +96,14 @@ export function calculatePillars(
   let monthPillar = parsePillar(ec.getMonth());
 
   // 야자시 정책: 23시 출생 → 다음날 일주 (config.hourBoundaryMode='standard-23')
+  // 월/년 경계 오버플로 안전: JS Date로 다음날을 계산 (12/31 23시 → 1/1 다음해).
   if (!input.hourUnknown && hour === 23 && config.hourBoundaryMode === 'standard-23') {
-    const next = Solar.fromYmdHms(solar.year, solar.month, solar.day + 1, 0, 0, 0)
+    const d = new Date(Date.UTC(solar.year, solar.month - 1, solar.day));
+    d.setUTCDate(d.getUTCDate() + 1);
+    const ny = d.getUTCFullYear();
+    const nm = d.getUTCMonth() + 1;
+    const nd = d.getUTCDate();
+    const next = Solar.fromYmdHms(ny, nm, nd, 0, 0, 0)
       .getLunar().getEightChar();
     dayPillar = parsePillar(next.getDay());
     yearPillar = parsePillar(next.getYear());
