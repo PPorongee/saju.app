@@ -293,6 +293,24 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const [compatUnlocked, setCompatUnlocked] = useState(false);
   const [isLunar, setIsLunar] = useState(false);
 
+  // ── v4 전용 컨텍스트 (saju mode + version='v4'일 때만 사용) ──
+  type V4RelStatus = 'single' | 'dating' | 'married' | 'divorced' | 'widowed' | 'unknown';
+  type V4HasChildren = 'true' | 'false' | 'unknown';
+  type V4Concern = 'career' | 'money' | 'relationship' | 'marriage' | 'family' | 'health' | 'study' | 'business' | 'personality' | 'future';
+  const [v4Ctx, setV4Ctx] = useState<{
+    relationshipStatus: V4RelStatus;
+    hasChildren: V4HasChildren;
+    occupation: string;
+    concerns: V4Concern[];
+  }>({ relationshipStatus: 'unknown', hasChildren: 'unknown', occupation: '', concerns: [] });
+  const updateV4Ctx = <K extends keyof typeof v4Ctx>(k: K, v: typeof v4Ctx[K]) => setV4Ctx(c => ({ ...c, [k]: v }));
+  const toggleV4Concern = (c: V4Concern) => setV4Ctx(prev => ({
+    ...prev, concerns: prev.concerns.includes(c) ? prev.concerns.filter(x => x !== c) : [...prev.concerns, c],
+  }));
+  // v4 API 응답
+  type V4ApiResp = import('./SajuV4Report').SajuV4ApiResponse;
+  const [v4Resp, setV4Resp] = useState<V4ApiResp | null>(null);
+
   /* Refs for cleanup on navigation */
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -1720,6 +1738,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
   /* ===== SCREEN 2: Questions ===== */
   function renderQuestions() {
+    // v4 분기: saju mode + version='v4'면 v4 spec 질문(혼인/자녀/직업/관심사)
+    if (isV4 && appMode === 'saju') return renderV4Questions();
+
     const concernKeys = ['concern_love', 'concern_career', 'concern_money', 'concern_social', 'concern_health', 'concern_study'];
     const stateKeys = ['state_stable', 'state_change', 'state_stress', 'state_challenge', 'state_unknown'];
     const relKeys = ['rel_single', 'rel_talking', 'rel_dating', 'rel_married', 'rel_brokeup'];
@@ -1838,6 +1859,137 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               }
               doCalculation();
             }
+          }}>
+            {questionStep < 3 ? t('next', lang) : t('viewResults', lang)}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ===== SCREEN 2 (v4): Questions — 혼인/자녀/직업/관심사 (v3 디자인 fork) ===== */
+  function renderV4Questions() {
+    const isEn = lang === 'en';
+    const relOptions: Array<{ v: V4RelStatus; label: string }> = [
+      { v: 'single',   label: isEn ? 'Single' : '미혼/싱글' },
+      { v: 'dating',   label: isEn ? 'Dating' : '연애 중' },
+      { v: 'married',  label: isEn ? 'Married' : '기혼' },
+      { v: 'divorced', label: isEn ? 'Divorced' : '이혼' },
+      { v: 'widowed',  label: isEn ? 'Widowed' : '사별' },
+      { v: 'unknown',  label: isEn ? 'Skip' : '선택 안 함' },
+    ];
+    const childOptions: Array<{ v: V4HasChildren; label: string }> = [
+      { v: 'unknown', label: isEn ? 'Skip' : '선택 안 함' },
+      { v: 'false',   label: isEn ? 'No children' : '없음' },
+      { v: 'true',    label: isEn ? 'Have children' : '있음' },
+    ];
+    const concernOptions: Array<{ v: V4Concern; label: string }> = [
+      { v: 'career',       label: isEn ? 'Career' : '직업/커리어' },
+      { v: 'money',        label: isEn ? 'Money' : '돈/재물' },
+      { v: 'relationship', label: isEn ? 'Relationship' : '인간관계' },
+      { v: 'marriage',     label: isEn ? 'Marriage' : '결혼' },
+      { v: 'family',       label: isEn ? 'Family' : '가족' },
+      { v: 'health',       label: isEn ? 'Health' : '건강' },
+      { v: 'study',        label: isEn ? 'Study' : '학업' },
+      { v: 'business',     label: isEn ? 'Business' : '사업' },
+      { v: 'personality',  label: isEn ? 'Personality' : '성격' },
+      { v: 'future',       label: isEn ? 'Future' : '미래' },
+    ];
+    return (
+      <div className="inner screen-enter orot-root orot-form-screen" style={{ paddingTop: '24px' }}>
+        <button onClick={() => setCurrentScreen(1)} aria-label={t('backBtn', lang)}
+          style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+        </button>
+        <div style={{ marginBottom: 16 }}>
+          <div className="orot-eyebrow" style={{ marginBottom: 10 }}>
+            {isEn ? `Question ${questionStep + 1} of 4` : `질문 ${questionStep + 1} / 4`}
+          </div>
+          <div className="progress-dots" style={{ marginTop: 0, marginBottom: 0 }}>
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} className={'dot' + (i < questionStep ? ' done' : '') + (i === questionStep ? ' active' : '')} />
+            ))}
+          </div>
+        </div>
+        <div className="orot-card" style={{ animation: 'fadeInUp 0.4s ease' }}>
+          {questionStep === 0 && (
+            <>
+              <h3>{isEn ? 'What is your current relationship status?' : '현재 혼인 상태가 어떻게 되세요?'}</h3>
+              <div className="option-grid" role="radiogroup" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                {relOptions.map(o => (
+                  <div key={o.v} role="radio" aria-checked={v4Ctx.relationshipStatus === o.v} tabIndex={0}
+                    className={'option-card' + (v4Ctx.relationshipStatus === o.v ? ' selected' : '')}
+                    onClick={() => updateV4Ctx('relationshipStatus', o.v)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); updateV4Ctx('relationshipStatus', o.v); } }}>
+                    {o.label}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {questionStep === 1 && (
+            <>
+              <h3>{isEn ? 'Do you have children?' : '자녀가 있으신가요?'}</h3>
+              <div className="option-grid" role="radiogroup" style={{ gridTemplateColumns: '1fr' }}>
+                {childOptions.map(o => (
+                  <div key={o.v} role="radio" aria-checked={v4Ctx.hasChildren === o.v} tabIndex={0}
+                    className={'option-card' + (v4Ctx.hasChildren === o.v ? ' selected' : '')}
+                    onClick={() => updateV4Ctx('hasChildren', o.v)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); updateV4Ctx('hasChildren', o.v); } }}>
+                    {o.label}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {questionStep === 2 && (
+            <>
+              <h3>{isEn ? 'What is your occupation?' : '직업이 어떻게 되세요?'}<br />
+                <span style={{ fontSize: 13, color: 'var(--orot-ink-soft)', fontWeight: 400, fontFamily: 'var(--orot-font)' }}>
+                  {isEn ? 'Optional — feel free to skip' : '선택 사항 — 비워두셔도 됩니다'}
+                </span>
+              </h3>
+              <input type="text" value={v4Ctx.occupation}
+                onChange={e => updateV4Ctx('occupation', e.target.value)}
+                placeholder={isEn ? 'e.g. Designer, Student, Developer' : '예: 디자이너, 학생, 개발자'}
+                style={{ width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid var(--orot-hair)', background: 'rgba(243,231,207,0.04)', color: 'var(--orot-ink)', boxSizing: 'border-box' }} />
+            </>
+          )}
+          {questionStep === 3 && (
+            <>
+              <h3>{isEn ? 'What are you curious about lately?' : '요즘 어떤 게 궁금하세요?'}<br />
+                <span style={{ fontSize: 13, color: 'var(--orot-ink-soft)', fontWeight: 400, fontFamily: 'var(--orot-font)' }}>
+                  {isEn ? 'Choose any that apply' : '여러 개 선택 가능'}
+                </span>
+              </h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {concernOptions.map(o => {
+                  const active = v4Ctx.concerns.includes(o.v);
+                  return (
+                    <button key={o.v} type="button" onClick={() => toggleV4Concern(o.v)}
+                      style={{
+                        padding: '10px 14px', borderRadius: 999, fontSize: 13, cursor: 'pointer',
+                        border: '1px solid ' + (active ? 'var(--orot-coral)' : 'var(--orot-hair)'),
+                        background: active ? 'rgba(243,160,146,0.12)' : 'transparent',
+                        color: active ? 'var(--orot-coral)' : 'var(--orot-ink)',
+                        fontWeight: active ? 700 : 400,
+                        fontFamily: 'var(--orot-font)',
+                      }}>{o.label}</button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+          {questionStep > 0 && (
+            <button className="orot-btn orot-btn--ghost" style={{ flex: 1 }} onClick={() => setQuestionStep(questionStep - 1)}>
+              {t('prev', lang)}
+            </button>
+          )}
+          <button className="orot-btn orot-btn--primary" style={{ flex: 1 }} onClick={() => {
+            if (questionStep < 3) setQuestionStep(questionStep + 1);
+            else doCalculation();  // Step 3에서 isV4 분기로 v4 fetch 호출 예정
           }}>
             {questionStep < 3 ? t('next', lang) : t('viewResults', lang)}
           </button>
