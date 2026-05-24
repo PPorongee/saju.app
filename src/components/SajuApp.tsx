@@ -2086,8 +2086,34 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             </button>
           )}
           <button className="orot-btn orot-btn--primary" style={{ flex: 1 }} onClick={() => {
-            if (questionStep < 3) setQuestionStep(questionStep + 1);
-            else doCalculation();  // Step 3에서 isV4 분기로 v4 fetch 호출 예정
+            if (questionStep < 3) {
+              setQuestionStep(questionStep + 1);
+              return;
+            }
+            // v4 프로필 자동 저장 — 이름이 있는 경우만, 동일 키 존재 시 업데이트
+            try {
+              const exists = profiles.find(pr => pr.name === userData.name && pr.year === userData.year && pr.month === userData.month && pr.day === userData.day);
+              if (userData.name) {
+                if (!exists) {
+                  const newProfile: SavedProfile = {
+                    name: userData.name, gender: userData.gender,
+                    year: userData.year, month: userData.month, day: userData.day, hour: userData.hour,
+                    concern: userData.concern, state: userData.state,
+                    personality: [...userData.personality], relationship: userData.relationship, wantToKnow: userData.wantToKnow,
+                  };
+                  const updated = [...profiles, newProfile].slice(-10);
+                  saveProfiles(updated);
+                } else {
+                  const updated = profiles.map(pr =>
+                    (pr.name === userData.name && pr.year === userData.year && pr.month === userData.month && pr.day === userData.day)
+                      ? { ...pr, hour: userData.hour, gender: userData.gender }
+                      : pr
+                  );
+                  saveProfiles(updated);
+                }
+              }
+            } catch { /* ignore */ }
+            doCalculation();  // Step 3에서 isV4 분기로 v4 fetch 호출 예정
           }}>
             {questionStep < 3 ? t('next', lang) : t('viewResults', lang)}
           </button>
