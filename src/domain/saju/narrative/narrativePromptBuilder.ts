@@ -407,6 +407,25 @@ const OUTPUT_STRUCTURE = `출력 구조 (2026-05 신구조 — 일/돈/관계 �
 - 같은 단어/문장/조언을 여러 장에서 반복하지 말 것.`;
 
 // ============================================================
+// 영문 오행 key → 한글 치환 (2026-05 prompt-hardening)
+// GPT가 JSON dump에서 영문 오행 키를 그대로 카피하는 경향 차단.
+// LifeWeaponCategory/MoneyMakingStyleKind 같은 영문 enum은 영향 없음
+// (오행과 겹치는 단어 wood/fire/earth/metal/water만 단어 경계 기준 치환).
+// ============================================================
+const ELEMENT_KO: Record<string, string> = {
+  wood: '목', fire: '화', earth: '토', metal: '금', water: '수',
+};
+function sanitizeInputJson(input: PersonalSajuGptInput): string {
+  let s = JSON.stringify(input, null, 2);
+  // "wood" "fire" ... 형태 (key 또는 value 모두) — 단어 경계로 정확 매칭
+  for (const [eng, ko] of Object.entries(ELEMENT_KO)) {
+    const re = new RegExp(`"${eng}"`, 'g');
+    s = s.replace(re, `"${ko}"`);
+  }
+  return s;
+}
+
+// ============================================================
 // 섹션별 maxTokens (2026-05 sectionwise generation)
 // 권장값: opening/final 1200, life/repeat/career/money/rel 1800, future 1500
 // ============================================================
@@ -457,12 +476,18 @@ export function buildSectionPrompt(args: BuildSectionPromptArgs): BuiltNarrative
     }).join('\n');
 
   const sectionwiseGuard = `[이번 호출 전용 규칙 — 섹션별 생성 모드]
+
+⚠ 절대 금지 (위반 시 즉시 실패) ⚠
+1) wood/fire/earth/metal/water 같은 영문 오행 키 출력 금지. 반드시 한글 목/화/토/금/수만.
+2) 2026년/2027년/2028년/앞으로 3년/향후 3년/다음 3년/세운/미래 흐름 같은 미래 단어 금지
+   (이번 호출은 plan에 futureFlowNarrative 섹션이 없는 모드).
+3) 다른 헤더(# 1, # 2, ...) 출력 금지. 오직 "# ${headerIndex}. ${sectionTitle}" 단일 헤더만.
+
 - 이번 호출은 오직 다음 1개 섹션만 작성한다:
   # ${headerIndex}. ${sectionTitle}  (id: ${plan.sectionId})
 - 다른 섹션은 절대 작성하지 말 것:
 ${otherSections}
 - 출력 형식: 정확히 "# ${headerIndex}. ${sectionTitle}" 헤더로 시작, 그 아래 본문(줄글)만.
-- 다른 헤더(# 1, # 2, ...) 어떤 것도 추가 출력 금지.
 - 본문이 다른 섹션 주제로 새어 들어가지 않도록 plan의 mustUseFacts와 topicCoverageTargets만 다룸.`;
 
   const system = [SYSTEM_BASE, ...additions, sectionwiseGuard].join('\n\n');
@@ -477,7 +502,7 @@ ${topicSection}${planBlock}${finalLineBlock}
 
 [원본 분석 JSON — fact 보강 시 참조]
 \`\`\`json
-${JSON.stringify(input, null, 2)}
+${sanitizeInputJson(input)}
 \`\`\`
 
 출력 규칙:
@@ -517,7 +542,7 @@ ${renderFinalLineCandidates()}
 
 [원본 분석 JSON — NarrativePlan에 없는 데이터를 참조할 때만 사용]
 \`\`\`json
-${JSON.stringify(input, null, 2)}
+${sanitizeInputJson(input)}
 \`\`\`
 
 명심 (NarrativePlan 최우선):

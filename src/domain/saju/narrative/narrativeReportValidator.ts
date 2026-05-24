@@ -934,7 +934,9 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
 
   // future-leak — plan에 futureFlow 없는데 미래 콘텐츠가 본문에 등장
   if (!hasFuturePlan) {
-    const futureMarkerRe = /\b202[6-9]년|\b203\d년|앞으로\s*3년|올해\s*하반기/;
+    // 2026-05 강화: "향후 3년 / 다음 3년 / 미래 흐름 / 세운" 추가.
+    // \b는 한국어에 안 통하므로 한글 패턴에서 제거. 숫자 시작 패턴만 \b 유지.
+    const futureMarkerRe = /\b202[6-9]년|\b203\d년|앞으로\s*3년|향후\s*3년|다음\s*3년|미래\s*흐름|올해\s*하반기|세운(?!이라는|을\s*뜻)/;
     for (const b of blocks) {
       if (b.id === 'futureFlowNarrative') continue;
       const m = b.body.match(futureMarkerRe);

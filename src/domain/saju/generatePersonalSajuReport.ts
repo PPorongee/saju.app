@@ -36,6 +36,7 @@ import {
   buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt,
   buildSectionPrompt, SECTION_MAX_TOKENS,
 } from './narrative/narrativePromptBuilder';
+import { sanitizeNarrativeText, applyFinalSanitizers } from './narrative/narrativeSanitizer';
 import { validateNarrativeReport, collectFailingSectionsFromIssues } from './narrative/narrativeReportValidator';
 import { buildNarrativePlans } from './narrative/narrativePlanBuilder';
 import { buildLifeSceneHints } from './narrative/lifeSceneHintBuilder';
@@ -365,7 +366,11 @@ export async function generateNarrativePersonalSajuReport(
   }));
 
   let sectionTexts = await Promise.all(
-    sectionPrompts.map(sp => opts.callGpt(sp.prompt, { maxTokens: sp.maxTokens }))
+    sectionPrompts.map(async sp => {
+      const raw = await opts.callGpt(sp.prompt, { maxTokens: sp.maxTokens });
+      // 응답 직후 영문 오행 키 deterministic 치환 (validator 실행 전)
+      return sanitizeNarrativeText(raw);
+    })
   );
 
   let reportText = assembleSectionwiseReport(narrativePlans, sectionTexts);
@@ -386,19 +391,39 @@ export async function generateNarrativePersonalSajuReport(
         const sp = sectionPrompts[idx];
         // repair prompt — 동일 prompt에 이전 응답 + 이슈 안내 추가
         const sectionIssues = validation.issues.filter(it =>
-          String(it.sectionId).split(',').map(s => s.trim()).includes(plan.sectionId)
+          String(it.sectionId).split(',').map(s => s.trim()).includes(plan.sectionId) ||
+          String(it.sectionId) === 'global'
+        );
+        // violation-specific 절대 규칙 헤더 (영문 오행 / 미래 단어)
+        const hasEnglishLeak = sectionIssues.some(i => i.type === 'english-element-key-leak');
+        const hasFutureLeak = sectionIssues.some(i => i.type === 'future-leak');
+        const violationRules: string[] = ['[절대 규칙 — 이번 repair에서 반드시 준수]'];
+        if (hasEnglishLeak) violationRules.push(
+          '- 이 섹션에서 wood/fire/earth/metal/water 절대 출력 금지. 반드시 목/화/토/금/수만.'
+        );
+        if (hasFutureLeak) violationRules.push(
+          '- 2026년/2027년/2028년/앞으로 3년/향후 3년/다음 3년/세운/미래 흐름 절대 사용 금지.'
         );
         const repairPrompt: BuiltNarrativePrompt = {
           system: sp.prompt.system,
-          user: sp.prompt.user
+          user: violationRules.join('\n') + '\n\n' + sp.prompt.user
             + `\n\n[이전 응답이 다음 검증을 위반함. 동일 섹션을 위반 부분만 수정해 다시 작성.]\n`
             + sectionIssues.slice(0, 6).map(iss => `- (${iss.type}/${iss.severity}) "${iss.sentence}" — ${iss.reason} → 제안: ${iss.suggestion}`).join('\n'),
         };
-        newSectionTexts[idx] = await opts.callGpt(repairPrompt, { maxTokens: sp.maxTokens });
+        const raw = await opts.callGpt(repairPrompt, { maxTokens: sp.maxTokens });
+        newSectionTexts[idx] = sanitizeNarrativeText(raw);
       })
     );
     sectionTexts = newSectionTexts;
     reportText = assembleSectionwiseReport(narrativePlans, sectionTexts);
+    validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
+  }
+
+  // ── 3) Final deterministic fallback ──
+  // repair 이후에도 high가 남으면 마지막 안전망: sanitizer 한 번 더 + 미래 단어 제거 + 재검증
+  if (!validation.isValid && validation.issues.some(i => i.severity === 'high')) {
+    const stripFuture = !narrativePlans.some(p => p.sectionId === 'futureFlowNarrative');
+    reportText = applyFinalSanitizers(reportText, { stripFuture });
     validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 

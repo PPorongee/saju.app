@@ -19,6 +19,10 @@ import { buildNarrativePlans } from '../narrative/narrativePlanBuilder';
 import { buildStarKeywordCard } from '../star/starKeywordCardBuilder';
 import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
 import { validateNarrativeReport } from '../narrative/narrativeReportValidator';
+import { buildSectionPrompt } from '../narrative/narrativePromptBuilder';
+import { sanitizeNarrativeText, stripFutureLeaks, applyFinalSanitizers } from '../narrative/narrativeSanitizer';
+import { buildContextGuard } from '../report/contextGuard';
+import { normalizeBirthInput } from '../calendar/normalizeBirthInput';
 import type { BirthInput } from '../calendar/normalizeBirthInput';
 
 const NOW = new Date('2026-05-24T00:00:00Z');
@@ -207,6 +211,79 @@ describe('validator — cross-leak / future-leak / final-missing / english-key h
     const miss = r.issues.find(i => i.type === 'final-section-missing');
     expect(miss).toBeTruthy();
     expect(miss!.severity).toBe('high');
+  });
+});
+
+// ============================================================
+// 2026-05 prompt-hardening 회귀 — sanitizer + 미래 단어 + input dump
+// ============================================================
+describe('input dump sanitizer — buildSectionPrompt가 영문 오행 키를 한글로 치환한다', () => {
+  it('GPT input JSON dump에 wood/fire/earth/metal/water가 단독 따옴표로 등장하지 않는다', () => {
+    const gptInput = calculateAnalysisOnly(FIXTURES[0].input, NOW);
+    const plans = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false });
+    const normalized = normalizeBirthInput(FIXTURES[0].input, NOW);
+    const guard = buildContextGuard(normalized.context, normalized.hourUnknown);
+    const sp = buildSectionPrompt({
+      plan: plans[0], headerIndex: 1, input: gptInput,
+      contextGuard: guard, allPlans: plans,
+    });
+    // "wood" 같이 quoted 영문 element key가 user 메시지에 등장하면 fail
+    for (const eng of ['wood', 'fire', 'earth', 'metal', 'water']) {
+      expect(sp.user).not.toContain(`"${eng}"`);
+    }
+  });
+});
+
+describe('output sanitizer', () => {
+  it('sanitizeNarrativeText: wood/fire/earth/metal/water를 목/화/토/금/수로 치환', () => {
+    const input = '이 사주는 earth 기운이 강하고 water 흐름이 있어요. wood는 약합니다.';
+    const out = sanitizeNarrativeText(input);
+    expect(out).not.toMatch(/\b(wood|fire|earth|metal|water)\b/i);
+    expect(out).toContain('토 기운');
+    expect(out).toContain('수 흐름');
+    expect(out).toContain('목');
+  });
+  it('sanitizeNarrativeText: 코드 블록 내부는 보호 (raw key 유지)', () => {
+    const input = 'narrative earth 텍스트.\n\n```json\n{ "scores": { "earth": 5 } }\n```\n또 다른 wood 줄.';
+    const out = sanitizeNarrativeText(input);
+    expect(out).toContain('토'); // 본문 치환
+    expect(out).toContain('"earth": 5'); // 코드 블록 내부 보존
+  });
+  it('stripFutureLeaks: 미래 단어 포함 문장 삭제', () => {
+    const input = '이 사주는 안정적입니다. 앞으로 3년 동안 큰 변화가 있어요. 결론은 단단함입니다.';
+    const out = stripFutureLeaks(input);
+    expect(out).not.toContain('앞으로 3년');
+    expect(out).toContain('이 사주는 안정적입니다');
+    expect(out).toContain('결론은 단단함입니다');
+  });
+  it('applyFinalSanitizers: 영문 키 + 미래 단어 동시 정리', () => {
+    const input = 'earth 기운이 강함. 2026년 큰 변화 가능. 안정적인 사주입니다.';
+    const out = applyFinalSanitizers(input, { stripFuture: true });
+    expect(out).not.toMatch(/\bearth\b/i);
+    expect(out).not.toContain('2026년');
+    expect(out).toContain('안정적인 사주입니다');
+  });
+});
+
+describe('미래 단어 확장 패턴 — validator가 high로 잡는다', () => {
+  it('"향후 3년"도 future-leak high', () => {
+    const md = buildMd({ career: '향후 3년 동안 큰 흐름이 ...' });
+    const ref = computed_ref();
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const leak = r.issues.find(i => i.type === 'future-leak');
+    expect(leak).toBeTruthy();
+    expect(leak!.severity).toBe('high');
+  });
+  it('"다음 3년"도 future-leak high', () => {
+    const md = buildMd({ life: '다음 3년에는 ...' });
+    const ref = computed_ref();
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const leak = r.issues.find(i => i.type === 'future-leak');
+    expect(leak).toBeTruthy();
   });
 });
 
