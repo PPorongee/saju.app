@@ -889,30 +889,47 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     setIsLoading(false);
   }
 
-  /* ===== v4 호출 — preview(즉시 명리 데이터) + report(GPT 해석) 두 단계 ===== */
-  async function fetchSajuReadingV4(signal?: AbortSignal) {
+  /* ===== v4 호출 — preview(즉시 명리 데이터) + report(GPT 해석) 두 단계
+     2026-05: 저장 프로필 클릭 같은 비동기 진입점은 setUserData 직후 4.5s 뒤에
+     이 함수를 호출하는데, 함수가 캡처한 userData가 stale일 수 있다(closure 시점).
+     → 호출자가 v4Input을 직접 전달할 수 있도록 override 인자 추가. ===== */
+  type V4InputShape = {
+    name: string; gender: 'male' | 'female' | 'unknown';
+    calendarType: 'lunar' | 'solar'; birthDate: string;
+    birthTime: string | undefined;
+    birthTimeConfidence: 'exact' | 'approximate' | 'unknown';
+    timezone: 'Asia/Seoul'; relationshipStatus: typeof v4Ctx.relationshipStatus;
+    hasChildren: boolean | 'unknown'; occupation: string | undefined;
+    currentConcerns: typeof v4Ctx.concerns;
+  };
+  async function fetchSajuReadingV4(signal?: AbortSignal, overrideInput?: V4InputShape) {
     setIsLoading(true);
     setIsGenerating(true);
     setAiText('');
     setV4Resp(null);
-    const birthTime = useExactTime && exactHour >= 0
-      ? `${String(exactHour).padStart(2, '0')}:${String(exactMinute).padStart(2, '0')}`
-      : userData.hour >= 0 ? `${String((userData.hour * 2) || 0).padStart(2, '0')}:00` : undefined;
-    const birthTimeConfidence = (userData.hour < 0 && !useExactTime) ? 'unknown'
-      : useExactTime ? 'exact' : 'approximate';
-    const v4Input = {
-      name: userData.name || '익명',
-      gender: (userData.gender === 'm' ? 'male' : userData.gender === 'f' ? 'female' : 'unknown') as 'male' | 'female' | 'unknown',
-      calendarType: (isLunar ? 'lunar' : 'solar') as 'lunar' | 'solar',
-      birthDate: `${userData.year}-${String(userData.month).padStart(2, '0')}-${String(userData.day).padStart(2, '0')}`,
-      birthTime,
-      birthTimeConfidence: birthTimeConfidence as 'exact' | 'approximate' | 'unknown',
-      timezone: 'Asia/Seoul' as const,
-      relationshipStatus: v4Ctx.relationshipStatus,
-      hasChildren: (v4Ctx.hasChildren === 'true' ? true : v4Ctx.hasChildren === 'false' ? false : 'unknown') as boolean | 'unknown',
-      occupation: v4Ctx.occupation || undefined,
-      currentConcerns: v4Ctx.concerns,
-    };
+    let v4Input: V4InputShape;
+    if (overrideInput) {
+      v4Input = overrideInput;
+    } else {
+      const birthTime = useExactTime && exactHour >= 0
+        ? `${String(exactHour).padStart(2, '0')}:${String(exactMinute).padStart(2, '0')}`
+        : userData.hour >= 0 ? `${String((userData.hour * 2) || 0).padStart(2, '0')}:00` : undefined;
+      const birthTimeConfidence = (userData.hour < 0 && !useExactTime) ? 'unknown'
+        : useExactTime ? 'exact' : 'approximate';
+      v4Input = {
+        name: userData.name || '익명',
+        gender: (userData.gender === 'm' ? 'male' : userData.gender === 'f' ? 'female' : 'unknown') as 'male' | 'female' | 'unknown',
+        calendarType: (isLunar ? 'lunar' : 'solar') as 'lunar' | 'solar',
+        birthDate: `${userData.year}-${String(userData.month).padStart(2, '0')}-${String(userData.day).padStart(2, '0')}`,
+        birthTime,
+        birthTimeConfidence: birthTimeConfidence as 'exact' | 'approximate' | 'unknown',
+        timezone: 'Asia/Seoul' as const,
+        relationshipStatus: v4Ctx.relationshipStatus,
+        hasChildren: (v4Ctx.hasChildren === 'true' ? true : v4Ctx.hasChildren === 'false' ? false : 'unknown') as boolean | 'unknown',
+        occupation: v4Ctx.occupation || undefined,
+        currentConcerns: v4Ctx.concerns,
+      };
+    }
 
     // ── Phase 1: preview (즉시) ──
     try {
@@ -1704,13 +1721,33 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                     setSajuResult(sj);
                     setCurrentScreen(3);
                     cancelLoading();
+                    // 2026-05: stale closure 방지를 위해 v4Input을 프로필 데이터로
+                    // 직접 빌드해서 override로 전달. setUserData가 비동기라
+                    // setTimeout 4.5s 뒤에도 fetchSajuReadingV4 closure가 OLD userData를
+                    // 읽어 hour=-1로 들어가는 버그 차단.
+                    const profileBirthTime = p.hour >= 0
+                      ? `${String((p.hour * 2) || 0).padStart(2, '0')}:00`
+                      : undefined;
+                    const profileV4Input: V4InputShape = {
+                      name: p.name || '익명',
+                      gender: (p.gender === 'm' ? 'male' : p.gender === 'f' ? 'female' : 'unknown'),
+                      calendarType: 'solar' as const, // 저장 프로필은 양력으로 들어왔다 가정
+                      birthDate: `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`,
+                      birthTime: profileBirthTime,
+                      birthTimeConfidence: p.hour >= 0 ? 'approximate' : 'unknown',
+                      timezone: 'Asia/Seoul' as const,
+                      relationshipStatus: p.v4?.relationshipStatus ?? 'unknown',
+                      hasChildren: p.v4 ? (p.v4.hasChildren === 'true' ? true : p.v4.hasChildren === 'false' ? false : 'unknown') : 'unknown',
+                      occupation: p.v4?.occupation || undefined,
+                      currentConcerns: p.v4?.concerns ?? [],
+                    };
                     const controller = new AbortController();
                     abortControllerRef.current = controller;
                     loadingTimeoutRef.current = setTimeout(() => {
                       loadingTimeoutRef.current = null;
                       if (controller.signal.aborted) return;
                       setCurrentScreen(8); // teaser/paywall first
-                      fetchSajuReadingV4(controller.signal);
+                      fetchSajuReadingV4(controller.signal, profileV4Input);
                     }, 4500);
                     return;
                   }

@@ -9,10 +9,23 @@ import type { SajuResult } from '@/lib/saju-calc';
 import PillarDisplay from '@/components/ui/PillarDisplay';
 import OhaengChart from '@/components/ui/OhaengChart';
 import { t } from '@/lib/i18n';
+import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
 
 interface ChartData {
   saju: SajuResult;
   user: { name?: string; year?: number; month?: number; day?: number; gender?: number; concern?: number; state?: number };
+}
+
+// 2026-05: V4 narrative 포맷 감지 — "# 1. " 같이 단일 hash + 숫자 + 점 헤더
+function isV4Narrative(text: string): boolean {
+  if (!text) return false;
+  // V3는 "##" 헤더, V4는 "# 1.", "# 2.", ... 형식
+  // 첫 200자 안에 "# 1." 패턴 + 단일 # 헤더가 보이면 V4로 판단
+  const headerMatches = text.match(/^#\s+\d+\.\s+/gm);
+  if (!headerMatches) return false;
+  // ##로 시작하는 라인이 많으면 V3
+  const v3HeaderCount = (text.match(/^##\s+\d/gm) ?? []).length;
+  return headerMatches.length >= 3 && v3HeaderCount < headerMatches.length;
 }
 
 function ShareContent() {
@@ -75,6 +88,11 @@ function ShareContent() {
         </div>
       </div>
     );
+  }
+
+  // 2026-05: V4 narrative이면 V3 차트/레이더/오행 UI 대신 책 챕터 스타일로 렌더링.
+  if (isV4Narrative(result)) {
+    return <ShareV4Narrative title={title} text={result} chart={chart} />;
   }
 
   const sj = chart?.saju;
@@ -345,6 +363,99 @@ function ShareContent() {
             background: 'linear-gradient(135deg, #9F7AEA, #6B46C1)', color: '#F5F0E8',
             fontSize: '15px', fontWeight: 800, textDecoration: 'none', border: 'none'
           }}>나도 {new Date().getFullYear()} 올해운세 보러가기 📅</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// 2026-05 — V4 narrative 공유 화면 (책 챕터 스타일)
+// ============================================================
+function ShareV4Narrative({ title, text, chart }: { title: string; text: string; chart: ChartData | null }) {
+  const parsed = parseNarrativeReport(text);
+  const sj = chart?.saju;
+  const user = chart?.user;
+
+  const sections: Array<{ key: string; eyebrow: string; title: string; body: string }> = [
+    { key: 'opening', eyebrow: '✦ 시작', title: '이 사주를 한 문장으로 말하면', body: parsed.openingDefinition },
+    { key: 'structure', eyebrow: '✦ 기질과 내면', title: '당신이 이런 방식으로 살아온 이유', body: parsed.lifeStructureNarrative },
+    { key: 'pattern', eyebrow: '✦ 반복되는 결', title: '반복해서 찾아오는 삶의 패턴', body: parsed.repeatedPatternNarrative },
+    { key: 'career', eyebrow: '✦ 일과 재능', title: '일과 재능: 어떤 역할에서 실력이 살아나는가', body: parsed.careerTalentNarrative },
+    { key: 'money', eyebrow: '✦ 돈과 수익화', title: '돈과 수익화: 어떤 방식으로 돈이 붙는가', body: parsed.moneyMonetizationNarrative },
+    { key: 'rel', eyebrow: '✦ 관계와 연애', title: '관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가', body: parsed.relationshipLoveNarrative },
+    { key: 'final', eyebrow: '✦ 결론', title: '결국 이 사주는 이렇게 써야 해요', body: parsed.finalStrategyNarrative },
+  ];
+
+  return (
+    <div className="app-container" style={{ minHeight: '100vh', padding: '20px 16px 60px' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 20 }}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>🔮</div>
+          <h1 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{title || '사주 결과'}</h1>
+          {user && (
+            <p style={{ fontSize: 13, color: 'var(--text)', opacity: 0.6 }}>
+              {user.name && <span>{user.name} · </span>}
+              {user.year}년 {user.month}월 {user.day}일생
+            </p>
+          )}
+          <p style={{ fontSize: 12, opacity: 0.4, color: 'var(--text)', marginTop: 4 }}>별빛 사주 | Starlight Saju</p>
+        </div>
+
+        {/* 사주 원국 카드 (chart가 있을 때만 — V3 PillarDisplay 재사용) */}
+        {sj && (
+          <>
+            <div className="section-divider">{t('sajuMyeongsik', 'ko')}</div>
+            <PillarDisplay
+              pillars={[
+                { key: '시주', label: t('pillarHour', 'ko'), desc: '자녀·말년운', stem: sj.hStem, branch: sj.hBranch },
+                { key: '일주', label: t('pillarDay', 'ko'), desc: '나 자신·배우자', stem: sj.dStem, branch: sj.dBranch },
+                { key: '월주', label: t('pillarMonth', 'ko'), desc: '부모·사회운', stem: sj.mStem, branch: sj.mBranch },
+                { key: '년주', label: t('pillarYear', 'ko'), desc: '조상·초년운', stem: sj.yStem, branch: sj.yBranch },
+              ]}
+              sipsungMap={{}} unsungMap={{}}
+              dayMasterStem={sj.dStem}
+              lang="ko"
+            />
+          </>
+        )}
+
+        {/* V4 narrative 챕터 */}
+        {sections.map(s => {
+          if (!s.body || !s.body.trim()) return null;
+          return (
+            <section key={s.key} style={{ marginTop: 24 }}>
+              <div className="orot-eyebrow" style={{ marginBottom: 8, fontSize: 12, color: '#9F7AEA', fontWeight: 700 }}>{s.eyebrow}</div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#F0C75E', margin: '0 0 16px', letterSpacing: '-0.01em', lineHeight: 1.35 }}>{s.title}</h2>
+              <div className="llm-text" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: 15, color: 'var(--text)' }}>{s.body}</div>
+            </section>
+          );
+        })}
+
+        {/* 옵션: 미래 3년 */}
+        {parsed.futureFlowNarrative && parsed.futureFlowNarrative.years.length > 0 && (
+          <section style={{ marginTop: 24 }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 8, fontSize: 12, color: '#9F7AEA', fontWeight: 700 }}>✦ 앞으로</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#F0C75E', margin: '0 0 16px' }}>앞으로 3년, 어떤 판이 열릴까</h2>
+            {parsed.futureFlowNarrative.intro && (
+              <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: 15, color: 'var(--text)', marginBottom: 16 }}>{parsed.futureFlowNarrative.intro}</div>
+            )}
+            {parsed.futureFlowNarrative.years.map(y => (
+              <div key={y.year} style={{ marginBottom: 14 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#7DD3FC', margin: '0 0 8px' }}>{y.year}</h3>
+                <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: 15, color: 'var(--text)' }}>{y.body}</div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* CTA */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', marginTop: 36 }}>
+          <a href="/" className="btn" style={{
+            display: 'inline-block', padding: '14px 32px', borderRadius: 50, width: '100%', maxWidth: 360, textAlign: 'center',
+            background: 'linear-gradient(135deg, #F0C75E, #E8B030)', color: '#0A0E2A',
+            fontSize: 15, fontWeight: 800, textDecoration: 'none', border: 'none'
+          }}>나도 개인 사주 보러가기 🔮</a>
         </div>
       </div>
     </div>
