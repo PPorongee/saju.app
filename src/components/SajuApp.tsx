@@ -480,8 +480,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
 
   /* Compat state */
-  const [compatPerson1, setCompatPerson1] = useState({ name: '', year: 1995, month: 1, day: 1, hour: -1, isLunar: false });
-  const [compatPerson2, setCompatPerson2] = useState({ name: '', year: 1995, month: 1, day: 1, hour: -1, isLunar: false });
+  const [compatPerson1, setCompatPerson1] = useState<{ name: string; year: number; month: number; day: number; hour: number; isLunar: boolean; gender: 'm' | 'f' | '' }>({ name: '', year: 1995, month: 1, day: 1, hour: -1, isLunar: false, gender: '' });
+  const [compatPerson2, setCompatPerson2] = useState<{ name: string; year: number; month: number; day: number; hour: number; isLunar: boolean; gender: 'm' | 'f' | '' }>({ name: '', year: 1995, month: 1, day: 1, hour: -1, isLunar: false, gender: '' });
   const [compatExact1, setCompatExact1] = useState({ use: false, hour: -1, min: 0 });
   const [compatExact2, setCompatExact2] = useState({ use: false, hour: -1, min: 0 });
 
@@ -2799,7 +2799,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       };
       const inputA: CompatBirthInputV4 = {
         name: compatPerson1.name || (lang === 'en' ? 'Person 1' : '첫 번째'),
-        gender: 'unknown',
+        gender: compatPerson1.gender === 'm' ? 'male' : compatPerson1.gender === 'f' ? 'female' : 'unknown',
         calendarType: compatPerson1.isLunar ? 'lunar' : 'solar',
         birthDate: `${compatPerson1.year}-${String(compatPerson1.month).padStart(2,'0')}-${String(compatPerson1.day).padStart(2,'0')}`,
         birthTime: compatPerson1.hour >= 0
@@ -2810,7 +2810,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       };
       const inputB: CompatBirthInputV4 = {
         name: compatPerson2.name || (lang === 'en' ? 'Partner' : '상대'),
-        gender: 'unknown',
+        gender: compatPerson2.gender === 'm' ? 'male' : compatPerson2.gender === 'f' ? 'female' : 'unknown',
         calendarType: compatPerson2.isLunar ? 'lunar' : 'solar',
         birthDate: `${compatPerson2.year}-${String(compatPerson2.month).padStart(2,'0')}-${String(compatPerson2.day).padStart(2,'0')}`,
         birthTime: compatPerson2.hour >= 0
@@ -2985,6 +2985,34 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               <input id="compat1-name" type="text" placeholder={t('name', lang)} value={compatPerson1.name} onChange={e => setCompatPerson1(p => ({ ...p, name: e.target.value }))} aria-label={lang === 'en' ? 'Person 1 name' : '첫 번째 사람 이름'} />
             </div>
             <div className="input-group">
+              <label id="compat1-gender-label">{lang === 'en' ? 'Gender' : '성별'}</label>
+              <div role="radiogroup" aria-labelledby="compat1-gender-label" style={{ display: 'flex', gap: 8 }}>
+                {[
+                  { v: 'm' as const, label: lang === 'en' ? 'Male' : '남자' },
+                  { v: 'f' as const, label: lang === 'en' ? 'Female' : '여자' },
+                ].map(opt => {
+                  const selected = compatPerson1.gender === opt.v;
+                  return (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => { setCompatPerson1(p => ({ ...p, gender: opt.v })); resetCompatResult(); }}
+                      style={{
+                        flex: 1, padding: '10px 12px', borderRadius: 10,
+                        background: selected ? 'rgba(243,160,146,0.18)' : 'rgba(243,231,207,0.04)',
+                        border: '1px solid ' + (selected ? 'var(--orot-coral)' : 'var(--orot-hair)'),
+                        color: selected ? 'var(--orot-coral)' : 'var(--orot-ink)',
+                        fontWeight: selected ? 700 : 500, fontSize: 14, cursor: 'pointer',
+                        fontFamily: 'var(--orot-font)',
+                      }}
+                    >{opt.label}</button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="input-group">
               <label id="compat1-birthday-label">{t('birthday', lang)}</label>
               <div className="select-row" role="group" aria-labelledby="compat1-birthday-label">
                 <div className="input-group">
@@ -3092,6 +3120,34 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           <div className="input-group">
             <label htmlFor="compat2-name">{t('name', lang)}</label>
             <input id="compat2-name" type="text" placeholder={t('name', lang)} value={compatPerson2.name} onChange={e => setCompatPerson2(p => ({ ...p, name: e.target.value }))} aria-label={lang === 'en' ? 'Person 2 name' : '두 번째 사람 이름'} />
+          </div>
+          <div className="input-group">
+            <label id="compat2-gender-label">{lang === 'en' ? 'Gender' : '성별'}</label>
+            <div role="radiogroup" aria-labelledby="compat2-gender-label" style={{ display: 'flex', gap: 8 }}>
+              {[
+                { v: 'm' as const, label: lang === 'en' ? 'Male' : '남자' },
+                { v: 'f' as const, label: lang === 'en' ? 'Female' : '여자' },
+              ].map(opt => {
+                const selected = compatPerson2.gender === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => { setCompatPerson2(p => ({ ...p, gender: opt.v })); resetCompatResult(); }}
+                    style={{
+                      flex: 1, padding: '10px 12px', borderRadius: 10,
+                      background: selected ? 'rgba(243,160,146,0.18)' : 'rgba(243,231,207,0.04)',
+                      border: '1px solid ' + (selected ? 'var(--orot-coral)' : 'var(--orot-hair)'),
+                      color: selected ? 'var(--orot-coral)' : 'var(--orot-ink)',
+                      fontWeight: selected ? 700 : 500, fontSize: 14, cursor: 'pointer',
+                      fontFamily: 'var(--orot-font)',
+                    }}
+                  >{opt.label}</button>
+                );
+              })}
+            </div>
           </div>
           <div className="input-group">
             <label id="compat2-birthday-label">{t('birthday', lang)}</label>
