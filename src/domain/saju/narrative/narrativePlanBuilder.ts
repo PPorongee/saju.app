@@ -11,6 +11,27 @@ import type { PersonalSajuGptInput } from '../report/sajuReportSchema';
 import type {
   NarrativePlan, NarrativeMustUseFact, NarrativePlanSet,
 } from './narrativeTypes';
+import type { LifeSceneHint, LifeSceneSectionId, LifeSceneSource } from './lifeSceneHintBuilder';
+
+// ============================================================
+// hint pick — (sectionId, source)로 가장 첫 hint 찾기
+// ============================================================
+function pickHint(
+  hints: LifeSceneHint[] | undefined,
+  sectionId: LifeSceneSectionId,
+  source: LifeSceneSource,
+): NarrativeMustUseFact['lifeSceneHint'] | undefined {
+  if (!hints) return undefined;
+  const found = hints.find(h => h.sectionId === sectionId && h.source === source);
+  if (!found) return undefined;
+  return {
+    situation: found.situation,
+    likelyBehavior: found.likelyBehavior,
+    innerReaction: found.innerReaction,
+    externalMisunderstanding: found.externalMisunderstanding,
+    betterUse: found.betterUse,
+  };
+}
 
 // ============================================================
 // 명리 용어 → 일상어 풀이 시드
@@ -114,10 +135,10 @@ function plainOf(term: string, fallback?: string): string {
 // ============================================================
 // 섹션 1 — openingDefinition
 // ============================================================
-function buildOpeningPlan(input: PersonalSajuGptInput): NarrativePlan {
+function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
 
-  // top 3 identityKeywords
+  // top 3 identityKeywords (첫 fact에 lifeSceneHint 부착)
   input.identityKeywords.slice(0, 3).forEach((k, i) => {
     facts.push({
       id: `identity-${i}`,
@@ -126,6 +147,7 @@ function buildOpeningPlan(input: PersonalSajuGptInput): NarrativePlan {
       plainMeaning: k.shortDescription || k.narrativeHint || k.keyword,
       narrativeHint: '1장 도입~중반 단락 안에 자연스럽게 녹여라 (리스트 X)',
       matchTokens: buildMatchTokens(k.keyword, k.shortDescription),
+      lifeSceneHint: i === 0 ? pickHint(hints, 'openingDefinition', 'identityKeyword') : undefined,
     });
   });
 
@@ -141,6 +163,7 @@ function buildOpeningPlan(input: PersonalSajuGptInput): NarrativePlan {
       plainMeaning: plainOf(p.name, p.narrative?.coreMeaning),
       narrativeHint: '1장 마지막 단락에서 이 사주가 눈에 띄는 이유로 풀어 사용 — 용어 즉시 일상어 풀이 필수',
       matchTokens: buildMatchTokens(p.name, p.shortLabel),
+      lifeSceneHint: i === 0 ? pickHint(hints, 'openingDefinition', 'specialPoint') : undefined,
     });
   });
 
@@ -158,6 +181,7 @@ function buildOpeningPlan(input: PersonalSajuGptInput): NarrativePlan {
   return {
     sectionId: 'openingDefinition',
     sectionGoal: '이 사주의 핵심을 한 문장으로 잡고, 독자가 계속 읽고 싶게 만든다.',
+    topicCoverageTargets: ['oneLineDefinition', 'coreKeywords', 'outerInnerContrast', 'specialPoints'],
     mustUseFacts: facts,
     requiredBeats: [
       '이 사주를 대표하는 한 문장으로 시작한다(겉/속 결 차이나 결정 방식이 드러나야 함).',
@@ -186,10 +210,10 @@ function buildOpeningPlan(input: PersonalSajuGptInput): NarrativePlan {
 // ============================================================
 // 섹션 2 — lifeStructureNarrative
 // ============================================================
-function buildLifeStructurePlan(input: PersonalSajuGptInput): NarrativePlan {
+function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
 
-  // dayMaster (본격 풀이)
+  // dayMaster (본격 풀이) — 일간 비유 + 내면 결 hint 부착
   const dm = input.birthChart.dayMaster;
   facts.push({
     id: 'dayMaster-structure',
@@ -198,6 +222,7 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput): NarrativePlan {
     plainMeaning: plainOf(dm),
     narrativeHint: '쉬운 비유로 풀어 첫 단락에 배치 (큰 산, 곧은 나무 등)',
     matchTokens: buildMatchTokens(dm, dm[0] ?? ''),
+    lifeSceneHint: pickHint(hints, 'lifeStructureNarrative', 'identityKeyword'),
   });
 
   // strongest elements top 2
@@ -239,9 +264,23 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput): NarrativePlan {
     });
   });
 
+  // 가족·초년 흔적 (synthetic fact — 단정 없이 조건부 톤 시드)
+  facts.push({
+    id: 'family-early-structure',
+    source: 'familyEarlyPattern',
+    fact: '초년/가족 안에서의 책임 흔적',
+    plainMeaning: '특정 사건 단정이 아니라, 사주 구조상 책임을 빨리 체감했을 가능성',
+    narrativeHint: '"초년 흐름이나 가족 안에서의 역할이 강하게 작동했다면..." 같은 조건부 한 단락',
+    matchTokens: ['가족', '초년', '어릴 때', '부모', '집안'],
+  });
+
   return {
     sectionId: 'lifeStructureNarrative',
     sectionGoal: '왜 이 사람이 이런 방식으로 생각하고 반응하는지 설명한다.',
+    topicCoverageTargets: [
+      'personality', 'innerWorld', 'emotionalProcessing', 'socialMask',
+      'selfProtectionPattern', 'outerInnerContrast', 'familyEarlyPattern',
+    ],
     mustUseFacts: facts,
     requiredBeats: [
       '일간을 쉬운 비유로 설명한다 (예: "무토 일간은 쉽게 말하면 큰 산처럼...").',
@@ -270,13 +309,14 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput): NarrativePlan {
 // ============================================================
 // 섹션 3 — repeatedPatternNarrative
 // ============================================================
-function buildRepeatedPatternPlan(input: PersonalSajuGptInput): NarrativePlan {
+function buildRepeatedPatternPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
 
-  // top 2~3 lifeTraps (riskScore 내림차순)
+  // top 2~3 lifeTraps (riskScore 내림차순) — 첫 두 trap에 hint 부착
   const sortedTraps = [...input.lifeTraps]
     .sort((a, b) => (b.riskScore ?? 0) - (a.riskScore ?? 0))
     .slice(0, 3);
+  const trapHints = hints?.filter(h => h.sectionId === 'repeatedPatternNarrative' && h.source === 'lifeTrap') ?? [];
   sortedTraps.forEach((t, i) => {
     facts.push({
       id: `lifeTrap-${i}`,
@@ -285,6 +325,13 @@ function buildRepeatedPatternPlan(input: PersonalSajuGptInput): NarrativePlan {
       plainMeaning: t.patternDescription || t.realLifeScene || t.name,
       narrativeHint: '함정 이름을 직접 카드처럼 노출하지 말고 "반복되기 쉬운 패턴은 ..." 식으로 줄글로',
       matchTokens: buildMatchTokens(t.name, t.patternDescription),
+      lifeSceneHint: trapHints[i] ? {
+        situation: trapHints[i].situation,
+        likelyBehavior: trapHints[i].likelyBehavior,
+        innerReaction: trapHints[i].innerReaction,
+        externalMisunderstanding: trapHints[i].externalMisunderstanding,
+        betterUse: trapHints[i].betterUse,
+      } : undefined,
     });
   });
 
@@ -320,9 +367,40 @@ function buildRepeatedPatternPlan(input: PersonalSajuGptInput): NarrativePlan {
     });
   }
 
+  // 관계·연애·가족 synthetic facts — V4 분석에 직접 매핑 없는 주제지만 본문에 반드시 다뤄야
+  facts.push({
+    id: 'relationship-pattern',
+    source: 'relationshipPattern',
+    fact: '인간관계에서 반복되는 결',
+    plainMeaning: '편한 사람 vs 지치는 사람의 구분이 분명, 참다가 거리 조절을 시작하는 패턴',
+    narrativeHint: '"관계에서는 ..." 한 단락 줄글로. 편한 사람·지치는 사람 결도 포함',
+    matchTokens: ['관계에서는', '관계에서도', '인간관계', '사람과의'],
+    lifeSceneHint: pickHint(hints, 'repeatedPatternNarrative', 'relationshipPattern'),
+  });
+  facts.push({
+    id: 'love-marriage-pattern',
+    source: 'relationshipPattern',
+    fact: '연애·장기 관계에서 반복되는 결',
+    plainMeaning: '뜨겁게 다가오는 사람보다 행동이 꾸준한 사람에게 신뢰가 열림',
+    narrativeHint: '"연애나 가까운 관계에서도..." 식 한 단락. 결혼 여부 단정 금지(userContext 참고)',
+    matchTokens: ['연애', '결혼', '연인', '파트너', '장기 관계', '가까운 관계'],
+  });
+  facts.push({
+    id: 'family-early-repeated',
+    source: 'familyEarlyPattern',
+    fact: '가족 안에서 맡기 쉬운 역할',
+    plainMeaning: '먼저 알아차리고 움직이는 사람 역할이 굳어질 가능성',
+    narrativeHint: '"가족 안에서는..." 한두 문장. 단정 금지, 조건부 톤',
+    matchTokens: ['가족 안에서는', '가족', '집안'],
+  });
+
   return {
     sectionId: 'repeatedPatternNarrative',
     sectionGoal: '삶에서 반복되는 패턴을 구체적인 장면으로 보여준다.',
+    topicCoverageTargets: [
+      'repeatedPattern', 'workPattern', 'relationshipPattern',
+      'loveMarriageStyle', 'familyEarlyPattern', 'pastTimingAnchor',
+    ],
     mustUseFacts: facts,
     requiredBeats: [
       '가장 큰 반복 패턴을 하나의 문장으로 잡는다.',
@@ -352,11 +430,12 @@ function buildRepeatedPatternPlan(input: PersonalSajuGptInput): NarrativePlan {
 // ============================================================
 // 섹션 4 — realityActivationNarrative
 // ============================================================
-function buildRealityActivationPlan(input: PersonalSajuGptInput): NarrativePlan {
+function buildRealityActivationPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
   const c = input.careerSpecificAnalysis;
 
-  // top 2~3 lifeWeapons
+  // top 2~3 lifeWeapons (첫 2개에 hint 부착)
+  const weaponHints = hints?.filter(h => h.sectionId === 'realityActivationNarrative' && h.source === 'lifeWeapon') ?? [];
   const sortedWeapons = [...input.lifeWeapons]
     .sort((a, b) => (b.strengthScore ?? 0) - (a.strengthScore ?? 0))
     .slice(0, 3);
@@ -368,10 +447,17 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput): NarrativePlan 
       plainMeaning: w.realLifeScene || w.howToUse || w.name,
       narrativeHint: '핵심 능력 한 줄로 정리 후, 그 능력의 적용처(직업군)로 자연스럽게 연결',
       matchTokens: buildMatchTokens(w.name, w.category),
+      lifeSceneHint: weaponHints[i] ? {
+        situation: weaponHints[i].situation,
+        likelyBehavior: weaponHints[i].likelyBehavior,
+        innerReaction: weaponHints[i].innerReaction,
+        externalMisunderstanding: weaponHints[i].externalMisunderstanding,
+        betterUse: weaponHints[i].betterUse,
+      } : undefined,
     });
   });
 
-  // top 3 careerMatches — 산업/역할 둘 다 fact화
+  // top 3 careerMatches — 첫 번째에 hint 부착
   c.topCareerMatches.slice(0, 3).forEach((match, i) => {
     const indHead = match.industry.split('/')[0]?.trim() ?? match.industry;
     facts.push({
@@ -381,6 +467,7 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput): NarrativePlan 
       plainMeaning: match.whyFits?.[0] || match.howItShowsInLife || match.industry,
       narrativeHint: '"~처럼 ~를 ~하는 일과 잘 맞습니다" 식 문장 속에 녹이기 (리스트 X)',
       matchTokens: buildMatchTokens(indHead, ...match.roles),
+      lifeSceneHint: i === 0 ? pickHint(hints, 'realityActivationNarrative', 'careerSpecificAnalysis') : undefined,
     });
   });
 
@@ -410,7 +497,7 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput): NarrativePlan 
     });
   }
 
-  // moneyMakingStyle top 2
+  // moneyMakingStyle top 2 — 첫 번째에 hint 부착
   c.moneyMakingStyle.slice(0, 2).forEach((m, i) => {
     facts.push({
       id: `money-${i}`,
@@ -419,7 +506,38 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput): NarrativePlan 
       plainMeaning: m.description || m.title,
       narrativeHint: '수익화 구조/보상 방식 중심으로. 투자/거래/시장 타이밍 톤 금지',
       matchTokens: buildMatchTokens(m.title, m.description),
+      lifeSceneHint: i === 0 ? pickHint(hints, 'realityActivationNarrative', 'moneyMakingStyle') : undefined,
     });
+  });
+
+  // 돈이 새는 패턴 (synthetic — 능력 vs 보상 미스매치)
+  facts.push({
+    id: 'money-leak',
+    source: 'moneyMakingStyle',
+    fact: '돈이 새는 패턴',
+    plainMeaning: '능력을 자연스럽게 써주는데 그걸 서비스/상품/계약 범위로 만들지 않아 보상이 약해짐',
+    narrativeHint: '"반대로 돈이 새는 패턴은 ..." 한 단락',
+    matchTokens: ['돈이 새', '무료로', '능력을', '서비스로'],
+  });
+
+  // 독립/프리랜서/사업 가능성 (synthetic — 조건부)
+  facts.push({
+    id: 'independence-potential',
+    source: 'careerSpecificAnalysis',
+    fact: '독립/프리랜서/사업 성향',
+    plainMeaning: '감각형보다 자기 기준·경험을 상품화하는 방향(컨설팅, 강의, 콘텐츠, 1인 전문)이 잘 맞음',
+    narrativeHint: '"독립적으로 일한다면..." 조건부 한 단락. 단정 금지',
+    matchTokens: ['프리랜서', '독립', '사업', '컨설팅', '1인', '나만의'],
+  });
+
+  // 관계 스타일 (synthetic — relationshipStyle 토픽)
+  facts.push({
+    id: 'relationship-style',
+    source: 'relationshipPattern',
+    fact: '관계에서 편해지는 사람 vs 지치는 사람',
+    plainMeaning: '말이 많은 사람보다 행동이 꾸준한 사람에게 마음이 열림, 기준 없이 부탁만 쌓이는 관계에서 지침',
+    narrativeHint: '"관계에서는 ..." 한 단락. 편함/지침 결을 같이',
+    matchTokens: ['관계에서', '편한 사람', '지치는', '말이 많은', '행동이'],
   });
 
   // userContext.relationshipStatus 반영 힌트
@@ -438,6 +556,11 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput): NarrativePlan 
   return {
     sectionId: 'realityActivationNarrative',
     sectionGoal: '이 사주가 일·돈·관계에서 어떻게 강해지는지 구체적으로 설명한다.',
+    topicCoverageTargets: [
+      'career', 'workEnvironment', 'avoidWorkEnvironment',
+      'moneyStyle', 'moneyLeakPattern', 'independenceOrBusinessPotential',
+      'relationshipStyle', 'loveMarriageStyle',
+    ],
     mustUseFacts: facts,
     requiredBeats: [
       '이 사주가 현실에서 강해지는 핵심 능력을 설명한다 (lifeWeapons 흡수).',
@@ -445,7 +568,8 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput): NarrativePlan 
       '구체 직업군을 여러 갈래로 자연스럽게 제시한다 (3개 이상, 산업 2개 이상).',
       '피해야 할 업무 환경을 설명한다 (avoidCareerEnvironment).',
       '돈이 붙는 방식과 돈이 새는 패턴을 설명한다 (moneyMakingStyle, 투자 권유 X).',
-      '관계에서 편해지는 구조와 지치는 구조를 설명한다 (relationshipStatus 반영).',
+      '독립/프리랜서/사업 가능성을 조건부로 설명한다.',
+      '관계와 연애에서 편해지는 구조와 지치는 구조를 설명한다 (relationshipStatus 반영).',
     ],
     avoidRepeating: [
       '추천 직업군:',
@@ -467,10 +591,10 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput): NarrativePlan 
 // ============================================================
 // 섹션 5 — futureFlowNarrative (연도별 fact 분리)
 // ============================================================
-function buildFutureFlowPlan(input: PersonalSajuGptInput): NarrativePlan {
+function buildFutureFlowPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
 
-  input.futureTimingAnalysis.years.forEach(y => {
+  input.futureTimingAnalysis.years.forEach((y, i) => {
     const themeKeys = y.strongestThemes.flatMap(t => THEME_KEYWORDS[t] ?? []);
     facts.push({
       id: `year-${y.year}`,
@@ -483,12 +607,14 @@ function buildFutureFlowPlan(input: PersonalSajuGptInput): NarrativePlan {
         (y.avoidActions?.length ? ` 조심할 것: ${y.avoidActions.slice(0, 2).join(', ')}.` : ''),
       narrativeHint: `### ${y.year} 헤더로 분리. 핵심 주제, 생길 수 있는 사건 유형, 잡아야 할 것, 조심할 것, 전년/다음 연도와의 차이를 줄글로`,
       matchTokens: buildMatchTokens(String(y.year), y.headline, ...themeKeys),
+      lifeSceneHint: i === 0 ? pickHint(hints, 'futureFlowNarrative', 'futureTimingAnalysis') : undefined,
     });
   });
 
   return {
     sectionId: 'futureFlowNarrative',
     sectionGoal: '앞으로 3년의 흐름을 연도별로 다르게 보여준다.',
+    topicCoverageTargets: ['futureThreeYears', 'career', 'moneyStyle', 'relationshipStyle', 'practicalStrategy'],
     mustUseFacts: facts,
     requiredBeats: [
       '3년 전체 흐름을 먼저 한 단락으로 잡는다(짧게).',
@@ -515,10 +641,10 @@ function buildFutureFlowPlan(input: PersonalSajuGptInput): NarrativePlan {
 // ============================================================
 // 섹션 6 — finalStrategyNarrative
 // ============================================================
-function buildFinalStrategyPlan(input: PersonalSajuGptInput): NarrativePlan {
+function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
 
-  // top 2 activating choices
+  // top 2 activating choices (첫 번째에 hint)
   input.fortuneTriggers.fortuneActivatingChoices.slice(0, 2).forEach((a, i) => {
     facts.push({
       id: `activating-${i}`,
@@ -527,6 +653,7 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput): NarrativePlan {
       plainMeaning: a.reason || a.practicalAction || a.title,
       narrativeHint: '결론 본문에 행동 가이드로 자연스럽게',
       matchTokens: buildMatchTokens(a.title, a.practicalAction),
+      lifeSceneHint: i === 0 ? pickHint(hints, 'finalStrategyNarrative', 'identityKeyword') : undefined,
     });
   });
 
@@ -571,6 +698,7 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput): NarrativePlan {
   return {
     sectionId: 'finalStrategyNarrative',
     sectionGoal: '이 사주를 어떻게 써야 하는지 결론을 낸다.',
+    topicCoverageTargets: ['practicalStrategy', 'career', 'moneyStyle', 'relationshipStyle', 'loveMarriageStyle'],
     mustUseFacts: facts,
     requiredBeats: [
       '이 사주의 핵심 사용법을 한 단락으로 정리한다.',
@@ -598,15 +726,18 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput): NarrativePlan {
 }
 
 // ============================================================
-// 메인 — 6개 plan 빌드
+// 메인 — 6개 plan 빌드 (lifeSceneHints는 optional; 있으면 각 plan에 부착)
 // ============================================================
-export function buildNarrativePlans(input: PersonalSajuGptInput): NarrativePlanSet {
+export function buildNarrativePlans(
+  input: PersonalSajuGptInput,
+  lifeSceneHints?: LifeSceneHint[],
+): NarrativePlanSet {
   return [
-    buildOpeningPlan(input),
-    buildLifeStructurePlan(input),
-    buildRepeatedPatternPlan(input),
-    buildRealityActivationPlan(input),
-    buildFutureFlowPlan(input),
-    buildFinalStrategyPlan(input),
+    buildOpeningPlan(input, lifeSceneHints),
+    buildLifeStructurePlan(input, lifeSceneHints),
+    buildRepeatedPatternPlan(input, lifeSceneHints),
+    buildRealityActivationPlan(input, lifeSceneHints),
+    buildFutureFlowPlan(input, lifeSceneHints),
+    buildFinalStrategyPlan(input, lifeSceneHints),
   ];
 }

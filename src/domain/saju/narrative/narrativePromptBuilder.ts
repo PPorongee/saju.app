@@ -5,6 +5,8 @@
 
 import type { PersonalSajuGptInput, ContextGuardResult } from '../report/sajuReportSchema';
 import type { NarrativePlan, NarrativePlanSet } from './narrativeTypes';
+import type { TopicCoverageMap, NarrativeTopicKey } from './topicCoverageTypes';
+import { FINAL_LINE_CANDIDATES } from './topicCoverageTypes';
 
 export interface BuiltNarrativePrompt {
   system: string;
@@ -24,15 +26,29 @@ const SECTION_HEADER_INDEX: Record<string, number> = {
 function renderPlan(plan: NarrativePlan): string {
   const headerIdx = SECTION_HEADER_INDEX[plan.sectionId] ?? '?';
   const factLines = plan.mustUseFacts.map(f => {
-    return `  - [${f.id} / ${f.source}] fact: "${f.fact}"\n      쉬운 풀이: ${f.plainMeaning}\n      흡수 힌트: ${f.narrativeHint}`;
+    const base = `  - [${f.id} / ${f.source}] fact: "${f.fact}"\n      쉬운 풀이: ${f.plainMeaning}\n      흡수 힌트: ${f.narrativeHint}`;
+    if (!f.lifeSceneHint) return base;
+    const h = f.lifeSceneHint;
+    const sceneParts = [
+      `상황: ${h.situation}`,
+      `행동 가능성: ${h.likelyBehavior}`,
+      `내면 반응: ${h.innerReaction}`,
+      h.externalMisunderstanding ? `외부 오해: ${h.externalMisunderstanding}` : '',
+      h.betterUse ? `더 잘 쓰는 방향: ${h.betterUse}` : '',
+    ].filter(Boolean);
+    return base + `\n      ▷ 실제 장면 시드 (줄글 안에 자연스럽게 녹임):\n        ` + sceneParts.join('\n        ');
   }).join('\n');
   const beatLines = plan.requiredBeats.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
   const avoidLines = plan.avoidRepeating.length > 0
     ? plan.avoidRepeating.map(a => `  - "${a}"`).join('\n')
     : '  (없음)';
+  const topicLine = plan.topicCoverageTargets && plan.topicCoverageTargets.length > 0
+    ? plan.topicCoverageTargets.join(', ')
+    : '(없음)';
   return [
     `### 섹션 ${headerIdx}: ${plan.sectionId}`,
     `목표: ${plan.sectionGoal}`,
+    `이 섹션이 흡수해야 할 토픽 (TopicCoverageMap 키): ${topicLine}`,
     ``,
     `반드시 본문에 흡수해야 할 사실 (mustUseFacts — 빠지면 missing-narrative-fact로 실패):`,
     factLines || '  (없음)',
@@ -56,6 +72,29 @@ function renderAllPlans(plans: NarrativePlanSet): string {
     '[NarrativePlan — 섹션별 이야기 계획. GPT는 이 plan을 따라 본문을 작성한다.]',
     '',
     plans.map(renderPlan).join('\n\n────────────────────────────\n\n'),
+  ].join('\n');
+}
+
+function renderTopicCoverageMap(map: TopicCoverageMap): string {
+  const required = (Object.entries(map) as [NarrativeTopicKey, boolean][])
+    .filter(([, v]) => v === true)
+    .map(([k]) => `  - ${k}`)
+    .join('\n');
+  return [
+    '[TopicCoverageMap — 본문 어딘가에 자연스럽게 반영되어야 할 핵심 주제]',
+    '섹션을 추가하지 말고, 기존 섹션 안에 줄글로 녹여라.',
+    '아래 토픽들 중 하나라도 본문에 없으면 missing-topic-coverage로 실패.',
+    '',
+    required,
+  ].join('\n');
+}
+
+function renderFinalLineCandidates(): string {
+  return [
+    '[Final Line — 7장 마지막 한 문장 톤·구조 시드]',
+    '아래 후보를 그대로 복사하지 말고, 사주 결에 맞게 새로 쓰되 이 톤·임팩트를 모방하라:',
+    '',
+    FINAL_LINE_CANDIDATES.map(c => `  - "${c}"`).join('\n'),
   ].join('\n');
 }
 
@@ -328,8 +367,9 @@ export function buildNarrativePersonalSajuPrompt(args: {
   input: PersonalSajuGptInput;
   contextGuard: ContextGuardResult;
   narrativePlans: NarrativePlanSet;
+  topicCoverageMap?: TopicCoverageMap;
 }): BuiltNarrativePrompt {
-  const { input, contextGuard, narrativePlans } = args;
+  const { input, contextGuard, narrativePlans, topicCoverageMap } = args;
 
   const additions: string[] = [];
   if (contextGuard.restrictedTopics.length > 0) {
@@ -341,9 +381,12 @@ export function buildNarrativePersonalSajuPrompt(args: {
 
   const system = [SYSTEM_BASE, ...additions, OUTPUT_STRUCTURE].join('\n\n');
 
-  const user = `아래 NarrativePlan과 분석 JSON을 바탕으로 7개 섹션 구조 그대로, 줄글 중심의 이야기형 사주 풀이를 작성하라.
+  const topicSection = topicCoverageMap ? renderTopicCoverageMap(topicCoverageMap) + '\n\n' : '';
+  const user = `아래 NarrativePlan + TopicCoverageMap + 분석 JSON을 바탕으로 7개 섹션 구조 그대로, 줄글 중심의 이야기형 사주 풀이를 작성하라.
 
-${renderAllPlans(narrativePlans)}
+${topicSection}${renderAllPlans(narrativePlans)}
+
+${renderFinalLineCandidates()}
 
 [원본 분석 JSON — NarrativePlan에 없는 데이터를 참조할 때만 사용]
 \`\`\`json

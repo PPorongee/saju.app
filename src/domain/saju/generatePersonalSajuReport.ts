@@ -35,7 +35,10 @@ import { validateReport } from './report/reportValidator';
 import { buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt } from './narrative/narrativePromptBuilder';
 import { validateNarrativeReport, collectFailingSectionsFromIssues } from './narrative/narrativeReportValidator';
 import { buildNarrativePlans } from './narrative/narrativePlanBuilder';
+import { buildLifeSceneHints } from './narrative/lifeSceneHintBuilder';
+import { buildTopicCoverageMap } from './narrative/topicCoverageBuilder';
 import type { NarrativeValidationResult, NarrativePlanSet } from './narrative/narrativeTypes';
+import type { TopicCoverageMap } from './narrative/topicCoverageTypes';
 import { DEFAULT_RULE_CONFIG } from './rules/ruleConfig';
 import type { PersonalSajuGptInput, ReportValidationResult, SpecialPoint } from './report/sajuReportSchema';
 
@@ -287,6 +290,7 @@ export interface NarrativeGenerateOptions {
 export interface NarrativeGenerateResult {
   gptInput: PersonalSajuGptInput;
   narrativePlans: NarrativePlanSet;
+  topicCoverageMap: TopicCoverageMap;
   prompt: BuiltNarrativePrompt;
   reportText: string;
   validation: NarrativeValidationResult;
@@ -313,13 +317,15 @@ export async function generateNarrativePersonalSajuReport(
   // 기존 결정론 분석 그대로 재사용
   const gptInput = calculateAnalysisOnly(input, now);
 
-  // 섹션별 이야기 계획 (결정론적 — gptInput만으로 plan 6개)
-  const narrativePlans = buildNarrativePlans(gptInput);
+  // 2026-05: TopicCoverageMap + LifeSceneHint → NarrativePlan
+  const topicCoverageMap = buildTopicCoverageMap(gptInput);
+  const lifeSceneHints = buildLifeSceneHints(gptInput);
+  const narrativePlans = buildNarrativePlans(gptInput, lifeSceneHints);
 
   // contextGuard 입력에는 NormalizedBirth.context(ageYears 등) 필요 — 다시 normalize
   const normalized = normalizeBirthInput(input, now);
   const contextGuard = buildContextGuard(normalized.context, normalized.hourUnknown);
-  const prompt = buildNarrativePersonalSajuPrompt({ input: gptInput, contextGuard, narrativePlans });
+  const prompt = buildNarrativePersonalSajuPrompt({ input: gptInput, contextGuard, narrativePlans, topicCoverageMap });
 
   let attempts = 0;
   const repairedSections = new Set<string>();
@@ -329,7 +335,7 @@ export async function generateNarrativePersonalSajuReport(
   // 1) 초기 전체 호출
   attempts++;
   reportText = await opts.callGpt(prompt);
-  validation = validateNarrativeReport({ reportText, gptInput, narrativePlans });
+  validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
 
   // 2) 섹션별 repair loop
   for (let i = 0; !validation.isValid && i < maxAttempts; i++) {
@@ -345,7 +351,7 @@ export async function generateNarrativePersonalSajuReport(
           + validation.issues.slice(0, 12).map(iss => `- (${iss.type}, ${iss.severity}) "${iss.sentence}" — ${iss.reason} → 제안: ${iss.suggestion}`).join('\n'),
       };
       reportText = await opts.callGpt(repaired);
-      validation = validateNarrativeReport({ reportText, gptInput, narrativePlans });
+      validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
       continue;
     }
 
@@ -359,10 +365,10 @@ export async function generateNarrativePersonalSajuReport(
       narrativePlans,
     });
     reportText = await opts.callGpt(repairPrompt);
-    validation = validateNarrativeReport({ reportText, gptInput, narrativePlans });
+    validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 
-  return { gptInput, narrativePlans, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections) };
+  return { gptInput, narrativePlans, topicCoverageMap, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections) };
 }
 
 /**

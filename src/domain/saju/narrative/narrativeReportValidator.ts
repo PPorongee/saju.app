@@ -17,12 +17,62 @@ import type {
   NarrativePlanSet,
 } from './narrativeTypes';
 import { buildNarrativeCoverageRequirements } from './narrativeContentLedger';
+import type { TopicCoverageMap, NarrativeTopicKey } from './topicCoverageTypes';
+import { TOPIC_KEYWORDS, REQUIRED_TOPICS_HARD } from './topicCoverageTypes';
 
 interface Args {
   reportText: string;
   gptInput: PersonalSajuGptInput;
   /** 섹션별 NarrativePlan. mustUseFacts.matchTokens 흡수 여부 검사. */
   narrativePlans?: NarrativePlanSet;
+  /** TopicCoverageMap. true 토픽이 본문에 흡수됐는지 검사. */
+  topicCoverageMap?: TopicCoverageMap;
+}
+
+// ============================================================
+// 토픽 흡수 검사 — TOPIC_KEYWORDS의 패턴 중 하나라도 매칭되면 true
+// ============================================================
+function topicMatched(body: string, topic: NarrativeTopicKey, gptInput: PersonalSajuGptInput): boolean {
+  // 특수 케이스: coreKeywords는 identityKeyword strings로
+  if (topic === 'coreKeywords') {
+    let hit = 0;
+    for (const k of gptInput.identityKeywords.slice(0, 5)) {
+      if (k.keyword && body.includes(k.keyword)) hit++;
+      else {
+        // chunk match
+        for (const chunk of k.keyword.split(/[\s]+/)) {
+          if (chunk.length >= 2 && body.includes(chunk)) { hit++; break; }
+        }
+      }
+    }
+    return hit >= 1;
+  }
+  if (topic === 'specialPoints') {
+    return gptInput.specialPoints.some(p => p.name && body.includes(p.name));
+  }
+  const patterns = TOPIC_KEYWORDS[topic] ?? [];
+  for (const p of patterns) {
+    if (typeof p === 'string') {
+      if (body.includes(p)) return true;
+    } else {
+      if (p.test(body)) return true;
+    }
+  }
+  return false;
+}
+
+// 본문에서 "실제 장면" 마커 수 — missing-life-scene 검사용
+const LIFE_SCENE_MARKERS = [
+  '회의', '팀', '직장', '회사', '프로젝트',
+  '가족', '부모', '형제', '집안',
+  '연인', '파트너', '연애', '관계에서는',
+  '주말', '저녁', '출근', '퇴근', '식사 자리',
+];
+
+function countLifeSceneMarkers(text: string): number {
+  let n = 0;
+  for (const m of LIFE_SCENE_MARKERS) if (text.includes(m)) n++;
+  return n;
 }
 
 // 7섹션 헤더 (# 1. ~ # 7.) → narrative section id 매핑
@@ -332,7 +382,7 @@ function pushIssue(arr: NarrativeValidationIssue[], i: NarrativeValidationIssue)
   arr.push(i);
 }
 
-export function validateNarrativeReport({ reportText, gptInput, narrativePlans }: Args): NarrativeValidationResult {
+export function validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap }: Args): NarrativeValidationResult {
   const blocks = splitSections(reportText);
   const byId = new Map(blocks.map(b => [b.id, b]));
   const coverage = buildNarrativeCoverageRequirements();
@@ -702,12 +752,116 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans }
   }
 
   // ─────────────────────────────────────────────
-  // 종합 — NarrativePlan 도입으로 missing-narrative-fact가 추가됐으므로 threshold 상향
+  // 16. missing-topic-coverage — TopicCoverageMap 필수 토픽이 본문에 없으면 fail
+  // ─────────────────────────────────────────────
+  if (topicCoverageMap) {
+    const checkedTopics = new Set<NarrativeTopicKey>();
+    // (a) REQUIRED_TOPICS_HARD는 무조건 검사 (map에서 false여도 무시 안 함)
+    for (const topic of REQUIRED_TOPICS_HARD) {
+      checkedTopics.add(topic);
+      if (!topicMatched(reportText, topic, gptInput)) {
+        pushIssue(issues, {
+          type: 'missing-topic-coverage', sectionId: 'global',
+          sentence: topic,
+          reason: `필수 토픽 "${topic}"이 본문 어디에도 흡수되지 않음`,
+          severity: 'high',
+          suggestion: `해당 토픽을 가장 자연스러운 섹션에 줄글로 녹여라 (섹션 추가 X, 본문 안에)`,
+        });
+      }
+    }
+    // (b) topicCoverageMap에서 true인 나머지 토픽
+    for (const [key, required] of Object.entries(topicCoverageMap) as [NarrativeTopicKey, boolean][]) {
+      if (!required || checkedTopics.has(key)) continue;
+      if (!topicMatched(reportText, key, gptInput)) {
+        pushIssue(issues, {
+          type: 'missing-topic-coverage', sectionId: 'global',
+          sentence: key,
+          reason: `TopicCoverageMap의 "${key}"가 본문에 흡수되지 않음`,
+          severity: 'medium',
+          suggestion: `해당 토픽을 가장 자연스러운 섹션에 줄글로 녹여라`,
+        });
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // 17. missing-life-scene — 본문 전체에 실제 장면 마커 < 3개면 fail
+  // ─────────────────────────────────────────────
+  const sceneCount = countLifeSceneMarkers(reportText);
+  if (sceneCount < 3) {
+    pushIssue(issues, {
+      type: 'missing-life-scene', sectionId: 'global',
+      sentence: `life-scene-markers=${sceneCount}`,
+      reason: `해석은 있는데 실제 삶의 장면(회의/가족/연인/직장 등) 마커가 ${sceneCount}개로 부족 (3개 이상 필요)`,
+      severity: 'medium',
+      suggestion: 'NarrativePlan의 lifeSceneHint를 줄글 흐름 안에 자연스럽게 녹여라',
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // 18. relationship-topic-missing / family-early-topic-missing
+  // ─────────────────────────────────────────────
+  if (!topicMatched(reportText, 'relationshipStyle', gptInput)
+      && !topicMatched(reportText, 'loveMarriageStyle', gptInput)
+      && !topicMatched(reportText, 'relationshipPattern', gptInput)) {
+    pushIssue(issues, {
+      type: 'relationship-topic-missing', sectionId: 'global',
+      sentence: 'relationship/love',
+      reason: '개인사주 본문에 관계/연애/장기 관계 스타일이 전혀 없음 — 궁합 기능이 따로 있어도 개인사주는 "나의 관계 스타일"이 필요',
+      severity: 'high',
+      suggestion: '4장 또는 3장에 "관계에서는 ..." / "연애나 가까운 관계에서도 ..." 한 단락 줄글로',
+    });
+  }
+  if (!topicMatched(reportText, 'familyEarlyPattern', gptInput)) {
+    pushIssue(issues, {
+      type: 'family-early-topic-missing', sectionId: 'global',
+      sentence: 'family/early',
+      reason: '가족/초년 흐름이 전혀 없음. 단정 없이 조건부로라도 한 단락 필요',
+      severity: 'medium',
+      suggestion: '2장 또는 3장에 "초년 흐름이나 가족 안에서의 역할이 강했다면 ..." 식 조건부 단락',
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // 19. unsupported-user-context — userContext에 없는 정보 단정
+  // ─────────────────────────────────────────────
+  const uctx = gptInput.userContext;
+  if (uctx.relationshipStatus !== 'married') {
+    const forbid = ['배우자', '결혼한 사용자', '남편', '아내', '결혼 생활', '신혼'];
+    for (const w of forbid) {
+      if (reportText.includes(w)) {
+        pushIssue(issues, {
+          type: 'unsupported-user-context', sectionId: 'global',
+          sentence: w,
+          reason: `userContext.relationshipStatus=${uctx.relationshipStatus}인데 "${w}" 표현 사용 — 기혼 단정 금지`,
+          severity: 'high',
+          suggestion: '"장기 관계를 생각한다면" / "가까운 관계에서는" / "연애나 결혼으로 이어질 관계에서는" 조건부 표현으로',
+        });
+      }
+    }
+  }
+  if (uctx.hasChildren !== true) {
+    const forbid = ['자녀와', '아이와', '자녀 양육', '자녀 교육'];
+    for (const w of forbid) {
+      if (reportText.includes(w)) {
+        pushIssue(issues, {
+          type: 'unsupported-user-context', sectionId: 'global',
+          sentence: w,
+          reason: `userContext.hasChildren=${String(uctx.hasChildren)}인데 "${w}" 표현 사용 — 자녀 보유 단정 금지`,
+          severity: 'high',
+          suggestion: '"가족 안에서" / "가까운 가족과" 조건부 표현으로',
+        });
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // 종합 — 검사 항목 증가로 threshold 추가 상향
   // ─────────────────────────────────────────────
   const high = issues.filter(i => i.severity === 'high').length;
   const medium = issues.filter(i => i.severity === 'medium').length;
   return {
-    isValid: high === 0 && medium < 12,
+    isValid: high === 0 && medium < 16,
     issues,
   };
 }

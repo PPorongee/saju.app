@@ -63,7 +63,13 @@ export type NarrativeValidationIssueType =
   | 'career-recommendation-too-narrow' // 직업군이 너무 좁거나 이유 부족
   | 'financial-advice-risk'          // 투자/거래 권유 톤
   | 'missing-narrative-fact'         // NarrativePlan.mustUseFacts가 본문에 흡수되지 않음
-  | 'required-beat-missing';         // requiredBeats 중 검사 가능한 비트가 누락
+  | 'required-beat-missing'          // requiredBeats 중 검사 가능한 비트가 누락
+  // 2026-05 (밀도/주제 커버리지 강화)
+  | 'missing-topic-coverage'         // TopicCoverageMap의 필수 주제가 본문에 없음
+  | 'missing-life-scene'             // 해석은 있는데 실제 장면이 부족
+  | 'relationship-topic-missing'     // 관계/연애/장기 관계 스타일이 전혀 없음
+  | 'family-early-topic-missing'     // 가족/초년 흐름이 전혀 없음
+  | 'unsupported-user-context';      // userContext에 없는 혼인/자녀/직업/건강을 단정
 
 export interface NarrativeValidationIssue {
   type: NarrativeValidationIssueType;
@@ -117,6 +123,8 @@ export type NarrativeFactSource =
   | 'bestWorkStyle'
   | 'avoidCareerEnvironment'
   | 'moneyMakingStyle'
+  | 'relationshipPattern'
+  | 'familyEarlyPattern'
   | 'timingAnchor'
   | 'futureTimingAnalysis'
   | 'fortuneTrigger'
@@ -142,6 +150,14 @@ export interface NarrativeMustUseFact {
   narrativeHint: string;
   /** validator가 본문에서 흡수 여부를 검사할 토큰들. 하나라도 부분 매칭되면 OK */
   matchTokens: string[];
+  /** 이 fact에 묶인 실제 장면 힌트 (있으면 GPT가 줄글로 풀어서 흡수) */
+  lifeSceneHint?: {
+    situation: string;
+    likelyBehavior: string;
+    innerReaction: string;
+    externalMisunderstanding?: string;
+    betterUse?: string;
+  };
 }
 
 export interface NarrativePlanStyleExamples {
@@ -162,6 +178,8 @@ export interface NarrativePlan {
   avoidRepeating: string[];
   /** 좋은 예/나쁜 예/변환 규칙 — GPT가 스타일 모방용으로 참고 */
   styleExamples: NarrativePlanStyleExamples;
+  /** 이 섹션이 흡수해야 할 TopicCoverageMap 키들 (validator의 missing-topic-coverage 시드) */
+  topicCoverageTargets?: string[];
 }
 
 export type NarrativePlanSet = NarrativePlan[];
