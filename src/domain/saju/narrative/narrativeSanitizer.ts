@@ -34,21 +34,31 @@ export function sanitizeNarrativeText(text: string): string {
 }
 
 // ============================================================
-// 미래 단어 leak 제거 — 패턴이 들어있는 문장 단위 삭제
-// 너무 공격적이지 않게: 패턴이 들어있는 "한 문장"(마침표·물음표·줄바꿈 기준)만 삭제
+// 미래 단어 leak 제거 — 문장 단위 삭제하되 paragraph 줄바꿈(\n\n) 보존
+// 2026-05 hotfix: 이전 버전은 split 후 join(' ')로 모든 \n을 공백으로 합쳐
+// reportText 구조(헤더·문단 구분)를 망가뜨림. 문단 단위로 처리 + 문장 split 시
+// 구분자도 함께 capture해서 join 시 원형 보존.
 // ============================================================
 export function stripFutureLeaks(text: string): string {
   return mapOutsideCodeBlocks(text, body => {
-    // 문장 분할: . ! ? 또는 두 줄 이상 줄바꿈
-    const parts = body.split(/(?<=[.!?])\s+|\n{2,}/);
-    const kept = parts.filter(s => {
-      for (const re of FUTURE_LEAK_PATTERNS) {
-        re.lastIndex = 0;
-        if (re.test(s)) return false;
+    // 문단 분할 (\n\n 보존)
+    const paragraphs = body.split(/\n{2,}/);
+    return paragraphs.map(para => {
+      // 문장 단위 split + 구분자(공백·줄바꿈) capture
+      const tokens = para.split(/(?<=[.!?])(\s+)/);
+      const kept: string[] = [];
+      for (let i = 0; i < tokens.length; i += 2) {
+        const s = tokens[i] ?? '';
+        const sep = tokens[i + 1] ?? '';
+        let hasLeak = false;
+        for (const re of FUTURE_LEAK_PATTERNS) {
+          re.lastIndex = 0;
+          if (re.test(s)) { hasLeak = true; break; }
+        }
+        if (!hasLeak) kept.push(s + sep);
       }
-      return true;
-    });
-    return kept.join(' ');
+      return kept.join('');
+    }).join('\n\n');
   });
 }
 
