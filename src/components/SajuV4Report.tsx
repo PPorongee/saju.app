@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import type { ParsedReport } from '@/lib/saju-v4-report-parser';
 import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
 import { StarShareCardWithDownload } from '@/components/star/StarShareCard';
+import { EasyEvidenceView } from '@/components/evidence/EasyEvidenceView';
 import type {
   SpecialPoint,
   TenGodAnalysis,
@@ -178,19 +179,32 @@ export function SajuV4Report({ api, birthSummary }: Props) {
         </div>
       )}
 
-      {/* ── 명리 근거 보기 (접힘) ── */}
+      {/* ── 명리 근거 보기 — 2026-05: 쉬운 설명형으로 재구성 ── */}
       <details className="card" style={{ marginTop: 18, padding: 14 }}>
         <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--orot-ink-mute)' }}>
-          📜 명리 근거 보기 (계산 데이터)
+          📜 명리 근거 보기
         </summary>
         <div style={{ marginTop: 14 }}>
-          <SectionCoreOverview api={api} />
-          <SectionWuxing elements={api.coreAnalysis.elementStrength} />
-          <SectionUsefulGodDetail useful={api.coreAnalysis.usefulGod} />
-          <SectionStructure api={api} />
-          <SectionDayMasterStrengthCard dm={api.coreAnalysis.dayMasterStrength} />
-          <SectionSpecialStarsDetail stars={api.coreAnalysis.specialStars} />
-          <SectionCombConflictDetail cc={api.coreAnalysis.combinationsAndConflicts} />
+          <EasyEvidenceView
+            dayMaster={api.birthChart.dayMaster}
+            elementStrength={api.coreAnalysis.elementStrength}
+            tenGods={api.coreAnalysis.tenGods}
+            dayMasterStrength={api.coreAnalysis.dayMasterStrength}
+            usefulGod={api.coreAnalysis.usefulGod}
+            combinationsAndConflicts={api.coreAnalysis.combinationsAndConflicts}
+            specialStars={api.coreAnalysis.specialStars}
+            rawDataChildren={(
+              <>
+                <SectionCoreOverview api={api} />
+                <SectionWuxing elements={api.coreAnalysis.elementStrength} />
+                <SectionUsefulGodDetail useful={api.coreAnalysis.usefulGod} />
+                <SectionStructure api={api} />
+                <SectionDayMasterStrengthCard dm={api.coreAnalysis.dayMasterStrength} />
+                <SectionSpecialStarsDetail stars={api.coreAnalysis.specialStars} />
+                <SectionCombConflictDetail cc={api.coreAnalysis.combinationsAndConflicts} />
+              </>
+            )}
+          />
         </div>
       </details>
 
