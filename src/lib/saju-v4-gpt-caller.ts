@@ -11,9 +11,10 @@ import type { GptCaller } from '@/domain/saju/generatePersonalSajuReport';
 
 const DEFAULT_MODEL = process.env.SAJU_V4_GPT_MODEL ?? 'gpt-4o-mini';
 const DEFAULT_TEMPERATURE = Number(process.env.SAJU_V4_GPT_TEMPERATURE ?? '0.6');
-// 서사형 V4(2026-05) — 일/돈/관계 분리 7섹션 + 각 장 deep 풀이 + 옵션 미래까지.
-// 7000 → 10000으로 추가 상향. gpt-4o-mini 출력 한도(16k) 안에서 안전.
-const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.SAJU_V4_GPT_MAX_TOKENS ?? '10000');
+// 서사형 V4(2026-05 hotfix) — 10000으로 올렸더니 응답 생성에 60s+ 소요되어
+// Vercel maxDuration=90s 안에서 timeout 빈발. 5500으로 축소.
+// gpt-4o-mini 출력 속도 ~150 token/s 기준: 5500 token = ~37s. repair 1회 추가해도 ~75s 이내.
+const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.SAJU_V4_GPT_MAX_TOKENS ?? '5500');
 
 let _client: OpenAI | null = null;
 function client(): OpenAI {
