@@ -1,7 +1,15 @@
 // 실제 production API에 3 fixture 호출 → 6개 안정화 항목 자동 검증.
 // 새 기능/문장 품질 평가 X. 안정화 회귀만.
 //
-// 실행: node scripts/verify-narrative-fixtures.mjs
+// 이 스크립트는 실제 OpenAI 호출 비용/시간이 들고 외부 환경에 의존하므로
+// 기본 CI/test에서 절대 실행되지 않아야 한다.
+// 실행: RUN_LLM_INTEGRATION_TESTS=true node scripts/verify-narrative-fixtures.mjs
+
+if (process.env.RUN_LLM_INTEGRATION_TESTS !== 'true') {
+  console.log('[verify-narrative-fixtures] skipped — 이 스크립트는 실제 production GPT를 호출합니다.');
+  console.log('의도적으로 실행하려면: RUN_LLM_INTEGRATION_TESTS=true node scripts/verify-narrative-fixtures.mjs');
+  process.exit(0);
+}
 
 const API = process.env.SAJU_V4_API ?? 'https://www.starlight-saju.com/api/saju-v4';
 

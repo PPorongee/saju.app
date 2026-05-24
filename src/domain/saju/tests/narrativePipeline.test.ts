@@ -1,5 +1,13 @@
 // narrative pipeline 회귀 테스트 (2026-05 stabilize).
-// GPT 호출 없이 deterministic 부분만 검증:
+//
+// 정책 (절대):
+//   - 이 파일에서는 실제 GPT/OpenAI API를 호출하지 않는다.
+//   - 모든 검증은 deterministic 함수(calculateAnalysisOnly + buildNarrativePlans +
+//     parseNarrativeReport + validateNarrativeReport)와 hand-crafted markdown으로만.
+//   - 실제 GPT 호출이 필요한 회귀는 scripts/verify-narrative-fixtures.mjs
+//     (RUN_LLM_INTEGRATION_TESTS=true 일 때만 실행)에서 별도로 수행.
+//
+// 이 파일이 검증하는 것:
 //   - 3명 fixture(서로 다른 사주) → 서로 다른 starArchetype
 //   - plan.mustUseFacts 중 dayMaster fact의 plainMeaning이 dictionary와 일치
 //   - parser가 8섹션(futureFlow 옵션) 헤더 자동 감지
