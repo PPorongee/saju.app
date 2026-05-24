@@ -240,6 +240,13 @@ interface SavedProfile {
   personality: number[];
   relationship: number;
   wantToKnow: number;
+  // v4 컨텍스트 — V4 모드에서 저장 시에만 채워짐. 로드 시 V4면 이걸로 v4Ctx 복원.
+  v4?: {
+    relationshipStatus: 'single' | 'dating' | 'married' | 'divorced' | 'widowed' | 'unknown';
+    hasChildren: 'true' | 'false' | 'unknown';
+    occupation: string;
+    concerns: Array<'career' | 'money' | 'relationship' | 'marriage' | 'family' | 'health' | 'study' | 'business' | 'personality' | 'future'>;
+  };
 }
 
 function getDaysInMonth(year: number, month: number): number {
@@ -1680,7 +1687,33 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                   background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)',
                   color: 'var(--orot-coral)', cursor: 'pointer', fontFamily: 'var(--orot-font)',
                 }} onClick={() => {
+                  // 2026-05: V4 분기 추가. 기존엔 항상 V3 흐름으로 떨어져서 저장된 프로필 클릭 시
+                  // V4 모드여도 V3 결과 페이지가 나오는 버그가 있었음. isV4면 v4Ctx 복원 후 V4 fetch.
                   setUserData({ name: p.name, gender: p.gender, year: p.year, month: p.month, day: p.day, hour: p.hour, concern: p.concern, state: p.state, personality: [...p.personality], relationship: p.relationship, wantToKnow: p.wantToKnow });
+                  if (isV4 && appMode === 'saju') {
+                    // V4 컨텍스트 복원 (저장돼 있으면 그대로, 없으면 'unknown' 기본값 유지)
+                    if (p.v4) {
+                      setV4Ctx({
+                        relationshipStatus: p.v4.relationshipStatus,
+                        hasChildren: p.v4.hasChildren,
+                        occupation: p.v4.occupation,
+                        concerns: [...p.v4.concerns],
+                      });
+                    }
+                    const sj = calcSaju(p.year, p.month, p.day, p.hour);
+                    setSajuResult(sj);
+                    setCurrentScreen(3);
+                    cancelLoading();
+                    const controller = new AbortController();
+                    abortControllerRef.current = controller;
+                    loadingTimeoutRef.current = setTimeout(() => {
+                      loadingTimeoutRef.current = null;
+                      if (controller.signal.aborted) return;
+                      setCurrentScreen(8); // teaser/paywall first
+                      fetchSajuReadingV4(controller.signal);
+                    }, 4500);
+                    return;
+                  }
                   if (p.concern >= 0 && p.state >= 0) {
                     const sj = calcSaju(p.year, p.month, p.day, p.hour);
                     setSajuResult(sj);
@@ -2091,7 +2124,14 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               return;
             }
             // v4 프로필 자동 저장 — 이름이 있는 경우만, 동일 키 존재 시 업데이트
+            // 2026-05: v4Ctx도 저장해서 다음에 같은 프로필 클릭 시 V4 결과로 복원되도록
             try {
+              const v4Snapshot = {
+                relationshipStatus: v4Ctx.relationshipStatus,
+                hasChildren: v4Ctx.hasChildren,
+                occupation: v4Ctx.occupation,
+                concerns: [...v4Ctx.concerns],
+              };
               const exists = profiles.find(pr => pr.name === userData.name && pr.year === userData.year && pr.month === userData.month && pr.day === userData.day);
               if (userData.name) {
                 if (!exists) {
@@ -2100,13 +2140,14 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                     year: userData.year, month: userData.month, day: userData.day, hour: userData.hour,
                     concern: userData.concern, state: userData.state,
                     personality: [...userData.personality], relationship: userData.relationship, wantToKnow: userData.wantToKnow,
+                    v4: v4Snapshot,
                   };
                   const updated = [...profiles, newProfile].slice(-10);
                   saveProfiles(updated);
                 } else {
                   const updated = profiles.map(pr =>
                     (pr.name === userData.name && pr.year === userData.year && pr.month === userData.month && pr.day === userData.day)
-                      ? { ...pr, hour: userData.hour, gender: userData.gender }
+                      ? { ...pr, hour: userData.hour, gender: userData.gender, v4: v4Snapshot }
                       : pr
                   );
                   saveProfiles(updated);
