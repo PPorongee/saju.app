@@ -406,6 +406,90 @@ const OUTPUT_STRUCTURE = `출력 구조 (2026-05 신구조 — 일/돈/관계 �
 - 새 사주/십성/신살을 만들지 말고 NarrativePlan의 fact만 사용.
 - 같은 단어/문장/조언을 여러 장에서 반복하지 말 것.`;
 
+// ============================================================
+// 섹션별 maxTokens (2026-05 sectionwise generation)
+// 권장값: opening/final 1200, life/repeat/career/money/rel 1800, future 1500
+// ============================================================
+export const SECTION_MAX_TOKENS: Record<string, number> = {
+  openingDefinition: 1200,
+  lifeStructureNarrative: 1800,
+  repeatedPatternNarrative: 1800,
+  careerTalentNarrative: 1800,
+  moneyMonetizationNarrative: 1800,
+  relationshipLoveNarrative: 1800,
+  futureFlowNarrative: 1500,
+  finalStrategyNarrative: 1200,
+};
+
+// ============================================================
+// 섹션 단일 호출용 prompt builder (2026-05 sectionwise)
+// 전체 리포트가 아니라 1개 섹션만 생성하도록 좁힌 prompt.
+// 다른 섹션 영역은 "이번 호출에서 작성 X — 다른 호출이 처리"로 명시.
+// ============================================================
+export interface BuildSectionPromptArgs {
+  plan: NarrativePlan;
+  /** 이 plan이 전체 plans 중 몇 번째인지 (1-based) — 헤더 번호 */
+  headerIndex: number;
+  input: PersonalSajuGptInput;
+  contextGuard: ContextGuardResult;
+  allPlans: NarrativePlanSet;
+  topicCoverageMap?: TopicCoverageMap;
+}
+
+export function buildSectionPrompt(args: BuildSectionPromptArgs): BuiltNarrativePrompt {
+  const { plan, headerIndex, input, contextGuard, allPlans, topicCoverageMap } = args;
+  const sectionTitle = SECTION_TITLES[plan.sectionId] ?? plan.sectionId;
+
+  const additions: string[] = [];
+  if (contextGuard.restrictedTopics.length > 0) {
+    additions.push('컨텍스트 제한 (이 사용자에게 금지):\n' + contextGuard.restrictedTopics.map(t => `- ${t}`).join('\n'));
+  }
+  if (contextGuard.warnings.length > 0) {
+    additions.push('주의:\n' + contextGuard.warnings.map(w => `- ${w}`).join('\n'));
+  }
+
+  // 다른 섹션 목록 안내 — cross-section leak 방지
+  const otherSections = allPlans
+    .filter(p => p.sectionId !== plan.sectionId)
+    .map((p, i) => {
+      const idx = allPlans.indexOf(p) + 1;
+      return `  # ${idx}. ${SECTION_TITLES[p.sectionId] ?? p.sectionId} — 이번 호출에서 작성 X (다른 호출이 처리)`;
+    }).join('\n');
+
+  const sectionwiseGuard = `[이번 호출 전용 규칙 — 섹션별 생성 모드]
+- 이번 호출은 오직 다음 1개 섹션만 작성한다:
+  # ${headerIndex}. ${sectionTitle}  (id: ${plan.sectionId})
+- 다른 섹션은 절대 작성하지 말 것:
+${otherSections}
+- 출력 형식: 정확히 "# ${headerIndex}. ${sectionTitle}" 헤더로 시작, 그 아래 본문(줄글)만.
+- 다른 헤더(# 1, # 2, ...) 어떤 것도 추가 출력 금지.
+- 본문이 다른 섹션 주제로 새어 들어가지 않도록 plan의 mustUseFacts와 topicCoverageTargets만 다룸.`;
+
+  const system = [SYSTEM_BASE, ...additions, sectionwiseGuard].join('\n\n');
+
+  const topicSection = topicCoverageMap ? renderTopicCoverageMap(topicCoverageMap) + '\n\n' : '';
+  const planBlock = renderPlan(plan, headerIndex - 1);
+  const finalLineBlock = plan.sectionId === 'finalStrategyNarrative' ? '\n\n' + renderFinalLineCandidates() : '';
+
+  const user = `[섹션별 호출] 이번 호출에서는 단 한 섹션만 작성한다.
+
+${topicSection}${planBlock}${finalLineBlock}
+
+[원본 분석 JSON — fact 보강 시 참조]
+\`\`\`json
+${JSON.stringify(input, null, 2)}
+\`\`\`
+
+출력 규칙:
+- 헤더는 "# ${headerIndex}. ${sectionTitle}" 정확히 한 줄.
+- 그 아래 본문(줄글). 본문 안에 다른 섹션 주제 침범 금지.
+- plan.mustUseFacts를 빠짐없이 흡수, requiredBeats 순서대로 풀어쓸 것.
+- styleExamples.badExample 따라하지 말고 goodExample 톤 모방.
+- ${plan.sectionId === 'finalStrategyNarrative' ? '본문 마지막에 기억에 남는 한 문장으로 마무리.' : '다른 섹션은 작성 X.'}`;
+
+  return { system, user };
+}
+
 export function buildNarrativePersonalSajuPrompt(args: {
   input: PersonalSajuGptInput;
   contextGuard: ContextGuardResult;

@@ -7,7 +7,7 @@
 
 import 'server-only';
 import OpenAI from 'openai';
-import type { GptCaller } from '@/domain/saju/generatePersonalSajuReport';
+import type { GptCaller, NarrativeGptCaller } from '@/domain/saju/generatePersonalSajuReport';
 
 const DEFAULT_MODEL = process.env.SAJU_V4_GPT_MODEL ?? 'gpt-4o-mini';
 const DEFAULT_TEMPERATURE = Number(process.env.SAJU_V4_GPT_TEMPERATURE ?? '0.6');
@@ -42,6 +42,31 @@ export function createOpenAiGptCaller(opts: CallerOptions = {}): GptCaller {
     const model = opts.model ?? DEFAULT_MODEL;
     const temperature = opts.temperature ?? DEFAULT_TEMPERATURE;
     const maxTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+    const res = await client().chat.completions.create({
+      model,
+      temperature,
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user',   content: user   },
+      ],
+    });
+    const text = res.choices[0]?.message?.content;
+    if (!text) throw new Error('OpenAI returned empty response');
+    return text;
+  };
+}
+
+/**
+ * 2026-05: 섹션별 생성용 caller. 호출마다 maxTokens override 가능.
+ * 단일 reportText를 한 번에 만드는 게 아니라 섹션별로 호출 → Promise.all 병렬.
+ */
+export function createOpenAiNarrativeGptCaller(opts: CallerOptions = {}): NarrativeGptCaller {
+  return async ({ system, user }, callOpts) => {
+    const model = opts.model ?? DEFAULT_MODEL;
+    const temperature = opts.temperature ?? DEFAULT_TEMPERATURE;
+    // call-level maxTokens 우선 (섹션별), 없으면 caller-level default
+    const maxTokens = callOpts?.maxTokens ?? opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
     const res = await client().chat.completions.create({
       model,
       temperature,

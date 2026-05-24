@@ -6,7 +6,7 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { generateNarrativePersonalSajuReport } from '@/domain/saju/generatePersonalSajuReport';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
-import { createOpenAiGptCaller } from '@/lib/saju-v4-gpt-caller';
+import { createOpenAiNarrativeGptCaller } from '@/lib/saju-v4-gpt-caller';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,10 +32,10 @@ export async function POST(req: Request) {
 
   try {
     const result = await generateNarrativePersonalSajuReport(body.input, {
-      callGpt: createOpenAiGptCaller(),
-      // 2026-05 hotfix: 한 번 호출이 ~40s. 1회 repair 추가하면 90s timeout 위험.
-      // 0으로 비활성화 — validator 결과는 무시하고 첫 응답 반환.
-      maxRepairAttempts: body.maxRepairAttempts ?? 0,
+      callGpt: createOpenAiNarrativeGptCaller(),
+      // 2026-05 sectionwise: 섹션별 병렬 호출(~12s) + repair는 실패 섹션만 단일 호출.
+      // 90s 안에 1회 repair 안전. 기본 1 복원.
+      maxRepairAttempts: body.maxRepairAttempts ?? 1,
     });
 
     return NextResponse.json({

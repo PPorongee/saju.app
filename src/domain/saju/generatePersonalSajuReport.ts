@@ -32,7 +32,10 @@ import { buildPersonalSajuPrompt, type BuiltPrompt } from './report/personalSaju
 import { buildContextGuard } from './report/contextGuard';
 import { buildContentLedger } from './report/contentLedgerBuilder';
 import { validateReport } from './report/reportValidator';
-import { buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt } from './narrative/narrativePromptBuilder';
+import {
+  buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt,
+  buildSectionPrompt, SECTION_MAX_TOKENS,
+} from './narrative/narrativePromptBuilder';
 import { validateNarrativeReport, collectFailingSectionsFromIssues } from './narrative/narrativeReportValidator';
 import { buildNarrativePlans } from './narrative/narrativePlanBuilder';
 import { buildLifeSceneHints } from './narrative/lifeSceneHintBuilder';
@@ -47,8 +50,15 @@ import type { PersonalSajuGptInput, ReportValidationResult, SpecialPoint } from 
 /** 외부 LLM 호출 어댑터 — OpenAI/Claude 등 wire-up은 외부. */
 export type GptCaller = (prompt: BuiltPrompt) => Promise<string>;
 
-/** 서사형(narrative) LLM 호출 어댑터 — 같은 {system,user} 구조 사용. */
-export type NarrativeGptCaller = (prompt: BuiltNarrativePrompt) => Promise<string>;
+/** 서사형(narrative) LLM 호출 어댑터 — 같은 {system,user} 구조 + 호출당 maxTokens override. */
+export interface NarrativeGptCallOptions {
+  /** 이 호출 한정 maxTokens (섹션별 호출에 사용) */
+  maxTokens?: number;
+}
+export type NarrativeGptCaller = (
+  prompt: BuiltNarrativePrompt,
+  callOpts?: NarrativeGptCallOptions,
+) => Promise<string>;
 
 export interface GenerateOptions {
   callGpt: GptCaller;
@@ -317,69 +327,109 @@ export async function generateNarrativePersonalSajuReport(
   opts: NarrativeGenerateOptions,
 ): Promise<NarrativeGenerateResult> {
   const now = opts.now ?? new Date();
-  // 2026-05 hotfix: maxDuration 90s + 1 GPT call ~40s, repair 1 call 추가하면 80s 근접.
-  // 2회로 올리면 timeout 발생. 1회로 유지하되 high severity가 있어도 결과는 반환.
+  // 2026-05 sectionwise: 단일 호출 → 7섹션 병렬 호출로 전환.
+  // 각 섹션 ~1.2k~1.8k tokens (8~12s) → Promise.all로 ~12s 내 완료.
+  // 90s maxDuration 안에 repair 1회 추가해도 여유.
   const maxAttempts = opts.maxRepairAttempts ?? 1;
 
   // 기존 결정론 분석 그대로 재사용
   const gptInput = calculateAnalysisOnly(input, now);
 
-  // 2026-05: TopicCoverageMap + LifeSceneHint → NarrativePlan
+  // TopicCoverageMap + LifeSceneHint → NarrativePlan
   const topicCoverageMap = buildTopicCoverageMap(gptInput);
   const lifeSceneHints = buildLifeSceneHints(gptInput);
   const narrativePlans = buildNarrativePlans(gptInput, lifeSceneHints, {
     includeFutureFlow: opts.includeFutureFlow ?? false,
   });
-  // 별빛 키워드 카드 (deterministic — 같은 사주는 같은 별)
   const starKeywordCard = buildStarKeywordCard(gptInput);
 
-  // contextGuard 입력에는 NormalizedBirth.context(ageYears 등) 필요 — 다시 normalize
   const normalized = normalizeBirthInput(input, now);
   const contextGuard = buildContextGuard(normalized.context, normalized.hourUnknown);
+
+  // 디버깅·호환용 — 기존 전체 prompt 한 번 빌드(섹션별 호출에 직접 사용하지 않음)
   const prompt = buildNarrativePersonalSajuPrompt({ input: gptInput, contextGuard, narrativePlans, topicCoverageMap });
 
-  let attempts = 0;
   const repairedSections = new Set<string>();
-  let reportText = '';
-  let validation: NarrativeValidationResult = { isValid: true, issues: [] };
+  let attempts = 0;
 
-  // 1) 초기 전체 호출
+  // ── 1) 섹션별 병렬 호출 ──
   attempts++;
-  reportText = await opts.callGpt(prompt);
-  validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
+  const sectionPrompts = narrativePlans.map((plan, i) => ({
+    plan, headerIndex: i + 1,
+    prompt: buildSectionPrompt({
+      plan, headerIndex: i + 1,
+      input: gptInput, contextGuard,
+      allPlans: narrativePlans, topicCoverageMap,
+    }),
+    maxTokens: SECTION_MAX_TOKENS[plan.sectionId] ?? 1500,
+  }));
 
-  // 2) 섹션별 repair loop
+  let sectionTexts = await Promise.all(
+    sectionPrompts.map(sp => opts.callGpt(sp.prompt, { maxTokens: sp.maxTokens }))
+  );
+
+  let reportText = assembleSectionwiseReport(narrativePlans, sectionTexts);
+  let validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
+
+  // ── 2) 섹션별 repair (실패 섹션만 재호출) ──
   for (let i = 0; !validation.isValid && i < maxAttempts; i++) {
     attempts++;
     const failingSections = collectFailingSectionsFromIssues(validation.issues);
+    if (failingSections.size === 0) break; // global-only 이슈 → repair 불가능, 결과 그대로 반환
 
-    // 섹션 격리가 불가능한 (global only) 케이스 → 기존 whole-report repair fallback
-    if (failingSections.size === 0) {
-      const repaired: BuiltNarrativePrompt = {
-        system: prompt.system,
-        user: prompt.user
-          + `\n\n[이전 응답이 다음 검증을 위반했다. 같은 7섹션 구조 유지하면서 위반 부분만 수정해 다시 작성하라.]\n`
-          + validation.issues.slice(0, 12).map(iss => `- (${iss.type}, ${iss.severity}) "${iss.sentence}" — ${iss.reason} → 제안: ${iss.suggestion}`).join('\n'),
-      };
-      reportText = await opts.callGpt(repaired);
-      validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
-      continue;
-    }
-
-    // 섹션 격리 가능 → buildSectionRepairPrompt로 실패 섹션만 타겟 재작성
-    for (const sid of failingSections) repairedSections.add(sid);
-    const repairPrompt = buildSectionRepairPrompt({
-      basePrompt: prompt,
-      previousReport: reportText,
-      failingSectionIds: Array.from(failingSections),
-      issues: validation.issues,
-      narrativePlans,
-    });
-    reportText = await opts.callGpt(repairPrompt);
+    // 실패 섹션을 plan index와 매칭하여 그 섹션만 단일 호출 재실행
+    const newSectionTexts = [...sectionTexts];
+    await Promise.all(
+      narrativePlans.map(async (plan, idx) => {
+        if (!failingSections.has(plan.sectionId)) return;
+        repairedSections.add(plan.sectionId);
+        const sp = sectionPrompts[idx];
+        // repair prompt — 동일 prompt에 이전 응답 + 이슈 안내 추가
+        const sectionIssues = validation.issues.filter(it =>
+          String(it.sectionId).split(',').map(s => s.trim()).includes(plan.sectionId)
+        );
+        const repairPrompt: BuiltNarrativePrompt = {
+          system: sp.prompt.system,
+          user: sp.prompt.user
+            + `\n\n[이전 응답이 다음 검증을 위반함. 동일 섹션을 위반 부분만 수정해 다시 작성.]\n`
+            + sectionIssues.slice(0, 6).map(iss => `- (${iss.type}/${iss.severity}) "${iss.sentence}" — ${iss.reason} → 제안: ${iss.suggestion}`).join('\n'),
+        };
+        newSectionTexts[idx] = await opts.callGpt(repairPrompt, { maxTokens: sp.maxTokens });
+      })
+    );
+    sectionTexts = newSectionTexts;
+    reportText = assembleSectionwiseReport(narrativePlans, sectionTexts);
     validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 
   return { gptInput, narrativePlans, topicCoverageMap, starKeywordCard, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections) };
+}
+
+// ============================================================
+// 섹션별 응답을 reportText로 조립
+// GPT가 응답 시작에 # N. 헤더를 출력하도록 prompt에 지시했지만,
+// 누락 시 자동 prepend로 정합성 보장.
+// ============================================================
+function assembleSectionwiseReport(plans: NarrativePlanSet, texts: string[]): string {
+  const SECTION_TITLES_LOCAL: Record<string, string> = {
+    openingDefinition: '이 사주를 한 문장으로 말하면',
+    lifeStructureNarrative: '당신이 이런 방식으로 살아온 이유',
+    repeatedPatternNarrative: '반복해서 찾아오는 삶의 패턴',
+    careerTalentNarrative: '일과 재능: 어떤 역할에서 실력이 살아나는가',
+    moneyMonetizationNarrative: '돈과 수익화: 어떤 방식으로 돈이 붙는가',
+    relationshipLoveNarrative: '관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가',
+    futureFlowNarrative: '앞으로 3년, 어떤 판이 열릴까',
+    finalStrategyNarrative: '결국 이 사주는 이렇게 써야 해요',
+  };
+  return plans.map((p, i) => {
+    const body = (texts[i] ?? '').trim();
+    if (!body) {
+      // 빈 응답이면 placeholder 헤더만 두어 parser가 정렬 유지
+      return `# ${i + 1}. ${SECTION_TITLES_LOCAL[p.sectionId] ?? p.sectionId}\n\n`;
+    }
+    if (/^#\s*\d/.test(body)) return body;
+    return `# ${i + 1}. ${SECTION_TITLES_LOCAL[p.sectionId] ?? p.sectionId}\n\n${body}`;
+  }).join('\n\n');
 }
 
 /**
