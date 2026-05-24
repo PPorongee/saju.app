@@ -100,7 +100,7 @@ export function SajuV4Report({ api, birthSummary }: Props) {
       {/* ── 1. 사주 원국 카드 (표지) ── */}
       <SectionPalja api={api} birthSummary={birthSummary} />
 
-      {/* ── 본문: GPT narrative 7섹션. reportText 없으면 로딩. ── */}
+      {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩. ── */}
       {!api.reportText ? (
         <SectionAiLoading />
       ) : narrative && (
@@ -121,19 +121,28 @@ export function SajuV4Report({ api, birthSummary }: Props) {
             eyebrow="✦ 반복되는 결"
           />
           <NarrativeSection
-            title="일·돈·관계에서 운이 살아나는 방식"
-            body={narrative.realityActivationNarrative}
-            eyebrow="✦ 현실 작동"
+            title="일과 재능: 어떤 역할에서 실력이 살아나는가"
+            body={narrative.careerTalentNarrative}
+            eyebrow="✦ 일과 재능"
           />
-          <NarrativeFutureFlow data={narrative.futureFlowNarrative} />
+          <NarrativeSection
+            title="돈과 수익화: 어떤 방식으로 돈이 붙는가"
+            body={narrative.moneyMonetizationNarrative}
+            eyebrow="✦ 돈과 수익화"
+          />
+          <NarrativeSection
+            title="관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가"
+            body={narrative.relationshipLoveNarrative}
+            eyebrow="✦ 관계와 연애"
+          />
+          {narrative.futureFlowNarrative && (
+            <NarrativeFutureFlow data={narrative.futureFlowNarrative} />
+          )}
           <NarrativeSection
             title="결국 이 사주는 이렇게 써야 해요"
             body={narrative.finalStrategyNarrative}
             eyebrow="✦ 결론"
           />
-          {narrative.finalLine && (
-            <NarrativeFinalLine text={narrative.finalLine} />
-          )}
         </div>
       )}
 
@@ -153,9 +162,7 @@ export function SajuV4Report({ api, birthSummary }: Props) {
         </div>
       </details>
 
-      {api.reportText && !api.validation.isValid && (
-        <SectionValidationWarning issues={api.validation.issues} />
-      )}
+      {/* 2026-05: validation 로그는 사용자에게 절대 노출하지 않는다 (내부 repair 전용). */}
     </div>
   );
 }

@@ -412,7 +412,9 @@ export type LedgerSectionId =
   | 'futureThreeYears' | 'practicalGuide'
   // narrative 모드 섹션 id (카드형 ID와 분리)
   | 'birthChartCard' | 'openingDefinition' | 'lifeStructureNarrative'
-  | 'repeatedPatternNarrative' | 'realityActivationNarrative'
+  | 'repeatedPatternNarrative'
+  // 2026-05 — 일/돈/관계 분리
+  | 'careerTalentNarrative' | 'moneyMonetizationNarrative' | 'relationshipLoveNarrative'
   | 'futureFlowNarrative' | 'finalStrategyNarrative' | 'evidenceView';
 
 export interface ContentLedgerEntry {

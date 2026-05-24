@@ -428,14 +428,14 @@ function buildRepeatedPatternPlan(input: PersonalSajuGptInput, hints?: LifeScene
 }
 
 // ============================================================
-// 섹션 4 — realityActivationNarrative
+// 섹션 4 — careerTalentNarrative (일과 재능: 독립 장)
 // ============================================================
-function buildRealityActivationPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
+function buildCareerTalentPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
   const c = input.careerSpecificAnalysis;
 
-  // top 2~3 lifeWeapons (첫 2개에 hint 부착)
-  const weaponHints = hints?.filter(h => h.sectionId === 'realityActivationNarrative' && h.source === 'lifeWeapon') ?? [];
+  // lifeWeapons 상위 3개 (첫 2개에 hint)
+  const weaponHints = hints?.filter(h => h.sectionId === 'careerTalentNarrative' && h.source === 'lifeWeapon') ?? [];
   const sortedWeapons = [...input.lifeWeapons]
     .sort((a, b) => (b.strengthScore ?? 0) - (a.strengthScore ?? 0))
     .slice(0, 3);
@@ -445,7 +445,7 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput, hints?: LifeSce
       source: 'lifeWeapon',
       fact: w.name,
       plainMeaning: w.realLifeScene || w.howToUse || w.name,
-      narrativeHint: '핵심 능력 한 줄로 정리 후, 그 능력의 적용처(직업군)로 자연스럽게 연결',
+      narrativeHint: '핵심 재능 한 줄로 정리 후, 그 능력의 적용처(직업군)로 연결',
       matchTokens: buildMatchTokens(w.name, w.category),
       lifeSceneHint: weaponHints[i] ? {
         situation: weaponHints[i].situation,
@@ -457,7 +457,7 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput, hints?: LifeSce
     });
   });
 
-  // top 3 careerMatches — 첫 번째에 hint 부착
+  // topCareerMatches 3개 (첫 번째에 hint)
   c.topCareerMatches.slice(0, 3).forEach((match, i) => {
     const indHead = match.industry.split('/')[0]?.trim() ?? match.industry;
     facts.push({
@@ -465,125 +465,337 @@ function buildRealityActivationPlan(input: PersonalSajuGptInput, hints?: LifeSce
       source: 'careerSpecificAnalysis',
       fact: `${match.industry} — ${match.roles.slice(0, 3).join(', ')}`,
       plainMeaning: match.whyFits?.[0] || match.howItShowsInLife || match.industry,
-      narrativeHint: '"~처럼 ~를 ~하는 일과 잘 맞습니다" 식 문장 속에 녹이기 (리스트 X)',
+      narrativeHint: '직업군은 문장 속에 자연스럽게 (리스트 X). 산업 2개 이상',
       matchTokens: buildMatchTokens(indHead, ...match.roles),
-      lifeSceneHint: i === 0 ? pickHint(hints, 'realityActivationNarrative', 'careerSpecificAnalysis') : undefined,
+      lifeSceneHint: i === 0 ? pickHint(hints, 'careerTalentNarrative', 'careerSpecificAnalysis') : undefined,
     });
   });
 
-  // bestWorkStyle top 1
-  const ws = c.bestWorkStyle[0];
-  if (ws) {
+  // bestWorkStyle 2개
+  c.bestWorkStyle.slice(0, 2).forEach((ws, i) => {
     facts.push({
-      id: 'workStyle-0',
+      id: `workStyle-${i}`,
       source: 'bestWorkStyle',
       fact: ws.title,
       plainMeaning: ws.description || ws.title,
-      narrativeHint: '직업군 제시 전에 "어떤 환경에서 잘 맞는지" 한 줄로 배치',
+      narrativeHint: '직업군 제시 전에 "어떤 환경에서 잘 맞는지" 단락으로',
       matchTokens: buildMatchTokens(ws.title, ws.description),
     });
-  }
+  });
 
-  // avoidEnvironment top 1
-  const av = c.avoidCareerEnvironments[0];
-  if (av) {
+  // avoidEnvironment 1~2개
+  c.avoidCareerEnvironments.slice(0, 2).forEach((av, i) => {
     facts.push({
-      id: 'avoid-0',
+      id: `avoid-${i}`,
       source: 'avoidCareerEnvironment',
       fact: av.environment,
       plainMeaning: av.reason || av.environment,
-      narrativeHint: '"반대로 ~한 환경에서는 쉽게 지칠 수 있어요" 식 한 단락',
+      narrativeHint: '"반대로 ~한 환경에서는 쉽게 지칠 수 있어요" 한 단락',
       matchTokens: buildMatchTokens(av.environment, av.reason),
     });
-  }
+  });
 
-  // moneyMakingStyle top 2 — 첫 번째에 hint 부착
-  c.moneyMakingStyle.slice(0, 2).forEach((m, i) => {
+  // 리더십·동료·독립 (synthetic)
+  facts.push({
+    id: 'leadership-style',
+    source: 'careerSpecificAnalysis',
+    fact: '리더십 스타일',
+    plainMeaning: '강하게 밀어붙이기보다 기준을 세우고 흐름을 정리하는 리더십',
+    narrativeHint: '리더십 한 단락 — 잘 맞는 동료 유형도 함께',
+    matchTokens: ['리더십', '리더', '이끌', '주도'],
+  });
+  facts.push({
+    id: 'coworker-fit',
+    source: 'careerSpecificAnalysis',
+    fact: '같이 일하면 좋은 사람',
+    plainMeaning: '감정적 의지보다 역할을 나눌 줄 알고 약속을 지키는 사람',
+    narrativeHint: '"같이 일할 때 편한 사람은 ..." 한 문장',
+    matchTokens: ['동료', '같이 일', '함께 일', '팀원'],
+  });
+  facts.push({
+    id: 'independence-potential',
+    source: 'careerSpecificAnalysis',
+    fact: '독립/이직 가능성',
+    plainMeaning: '자유롭지만 기준 없는 곳보다, 책임·권한·성과가 분명한 판이 잘 맞음 (조건부)',
+    narrativeHint: '"독립이나 이직을 생각한다면..." 조건부 한 단락',
+    matchTokens: ['독립', '이직', '프리랜서', '1인'],
+  });
+
+  return {
+    sectionId: 'careerTalentNarrative',
+    sectionGoal: '이 사주의 재능과 직업 방향을 깊게 설명한다 — 왜 그 일이 맞는지까지.',
+    topicCoverageTargets: [
+      'career', 'talent', 'workEnvironment', 'avoidWorkEnvironment',
+      'leadershipStyle', 'coworkerFit', 'independenceOrBusinessPotential',
+    ],
+    suggestionTargets: [
+      '결과가 보이는 환경 선택',
+      '책임-권한 합의',
+      '역할을 나눌 줄 아는 동료',
+      '독립 시 서비스형 구조',
+    ],
+    mustUseFacts: facts,
+    requiredBeats: [
+      '이 사주의 핵심 재능을 한 줄로 정의 (lifeWeapons 흡수)',
+      '그 능력이 잘 발휘되는 업무 환경 설명 (bestWorkStyle)',
+      '구체 직업군을 산업 2개 이상, 직무 3개 이상 자연스럽게',
+      '피해야 할 업무 환경 (avoidCareerEnvironments)',
+      '리더십 스타일과 같이 일하면 좋은 동료 유형',
+      '독립/이직/프리랜서 가능성을 조건부로',
+      '다음 장(돈)으로 자연스럽게 이어주는 마무리',
+    ],
+    avoidRepeating: [
+      '추천 직업군:', '피해야 할 환경:',
+    ],
+    styleExamples: {
+      badExample: '운영 개선, 프로세스, SCM 분야에서 두각을 나타냅니다.',
+      goodExample:
+        '이 사주의 재능은 단순히 성실하다는 말로 끝나지 않습니다. 더 정확히 말하면, 복잡하게 얽힌 상황에서 기준을 세우고, 흐름이 막힌 지점을 찾아내고, 다시 굴러가게 만드는 능력에 가깝습니다.\n\n' +
+        '그래서 운영 개선, 프로세스 관리, SCM, 프로젝트 매니징, PM, 서비스 기획, 전략기획 같은 역할이 잘 맞을 수 있어요. 공통점은 "흐름이 막힌 것을 정리해서 다시 움직이게 만드는 일"입니다.\n\n' +
+        '반대로 결과물보다 눈치·보고가 더 중요한 조직, 책임은 많은데 권한은 적은 자리에서는 쉽게 지칠 수 있습니다. 리더십도 강하게 밀어붙이는 방식보다 기준을 세우고 흐름을 정리하는 방식이 더 잘 맞아요.',
+      transformationRule: '직업군을 말하기 전 반드시 핵심 능력을 설명하고, 직업군은 그 능력의 적용처로 제시하라.',
+    },
+  };
+}
+
+// ============================================================
+// 섹션 5 — moneyMonetizationNarrative (돈과 수익화: 독립 장)
+// ============================================================
+function buildMoneyMonetizationPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
+  const facts: NarrativeMustUseFact[] = [];
+  const c = input.careerSpecificAnalysis;
+
+  // moneyMakingStyle 2~3개
+  c.moneyMakingStyle.slice(0, 3).forEach((m, i) => {
     facts.push({
       id: `money-${i}`,
       source: 'moneyMakingStyle',
       fact: m.title,
       plainMeaning: m.description || m.title,
-      narrativeHint: '수익화 구조/보상 방식 중심으로. 투자/거래/시장 타이밍 톤 금지',
+      narrativeHint: '"돈이 붙는 방식은 ..." 식 줄글로. 투자/거래/타이밍 톤 금지',
       matchTokens: buildMatchTokens(m.title, m.description),
-      lifeSceneHint: i === 0 ? pickHint(hints, 'realityActivationNarrative', 'moneyMakingStyle') : undefined,
+      lifeSceneHint: i === 0 ? pickHint(hints, 'moneyMonetizationNarrative', 'moneyMakingStyle') : undefined,
     });
   });
 
-  // 돈이 새는 패턴 (synthetic — 능력 vs 보상 미스매치)
+  // 돈 새는 패턴 (synthetic)
   facts.push({
     id: 'money-leak',
     source: 'moneyMakingStyle',
     fact: '돈이 새는 패턴',
-    plainMeaning: '능력을 자연스럽게 써주는데 그걸 서비스/상품/계약 범위로 만들지 않아 보상이 약해짐',
+    plainMeaning: '능력을 자연스럽게 써주는데 서비스/상품/계약 범위로 만들지 않아 보상이 약해짐',
     narrativeHint: '"반대로 돈이 새는 패턴은 ..." 한 단락',
     matchTokens: ['돈이 새', '무료로', '능력을', '서비스로'],
   });
 
-  // 독립/프리랜서/사업 가능성 (synthetic — 조건부)
+  // 수익 구조 유형 (synthetic)
   facts.push({
-    id: 'independence-potential',
-    source: 'careerSpecificAnalysis',
-    fact: '독립/프리랜서/사업 성향',
-    plainMeaning: '감각형보다 자기 기준·경험을 상품화하는 방향(컨설팅, 강의, 콘텐츠, 1인 전문)이 잘 맞음',
-    narrativeHint: '"독립적으로 일한다면..." 조건부 한 단락. 단정 금지',
-    matchTokens: ['프리랜서', '독립', '사업', '컨설팅', '1인', '나만의'],
+    id: 'monetization-style',
+    source: 'moneyMakingStyle',
+    fact: '월급형/전문성형/프로젝트형/사업형 성향',
+    plainMeaning: '책임·역할이 분명하고 기준이 성과로 인정되는 자리에서 만족도가 올라감',
+    narrativeHint: '본인 성향에 가까운 수익 구조 1~2개를 줄글로 권장',
+    matchTokens: ['월급형', '전문성형', '프로젝트형', '사업형', '수익화', '컨설팅', '강의'],
   });
 
-  // 관계 스타일 (synthetic — relationshipStyle 토픽)
+  // 가격표·계약·정산 (synthetic)
+  facts.push({
+    id: 'pricing-contract',
+    source: 'moneyMakingStyle',
+    fact: '가격표·작업 범위·정산 기준',
+    plainMeaning: '잘하는 것을 유료 구조로 바꾸려면 가격·범위·결과물 형태를 먼저 정해야 함',
+    narrativeHint: '구체 조언: 가격, 작업 범위, 보상 기준 명문화',
+    matchTokens: ['가격', '계약', '정산', '작업 범위', '보상 기준'],
+  });
+
+  // 상품화 (synthetic)
+  facts.push({
+    id: 'productization',
+    source: 'moneyMakingStyle',
+    fact: '능력을 상품화하는 방식',
+    plainMeaning: '제안서·포트폴리오·템플릿·교육 콘텐츠처럼 결과물이 외부에서 확인 가능해야 함',
+    narrativeHint: '예시 형태(제안서/포트폴리오/템플릿/콘텐츠/컨설팅) 자연스럽게 나열',
+    matchTokens: ['포트폴리오', '제안서', '템플릿', '콘텐츠', '결과물'],
+  });
+
+  // 프리랜서/1인 사업 (synthetic, 조건부)
+  facts.push({
+    id: 'freelance-business',
+    source: 'careerSpecificAnalysis',
+    fact: '프리랜서/1인 사업 권장 구조',
+    plainMeaning: '감각만으로 승부하는 방식보다 문제 정리해주는 서비스형 구조가 안정적',
+    narrativeHint: '"만약 프리랜서나 1인 사업을 생각한다면..." 조건부 한 단락',
+    matchTokens: ['프리랜서', '1인', '서비스형', '사업'],
+  });
+
+  return {
+    sectionId: 'moneyMonetizationNarrative',
+    sectionGoal: '재물운을 좋다/나쁘다가 아니라 돈이 붙는 구조와 새는 패턴으로 설명한다.',
+    topicCoverageTargets: [
+      'moneyStyle', 'monetizationStyle', 'moneyLeakPattern',
+      'pricingAndContractAdvice', 'productizationAdvice',
+    ],
+    suggestionTargets: [
+      '가격표 만들기',
+      '작업 범위·정산 기준 명문화',
+      '능력의 상품화 (포트폴리오·콘텐츠·컨설팅)',
+      '작은 단위 검증 → 반복 가능 수익',
+    ],
+    mustUseFacts: facts,
+    requiredBeats: [
+      '돈이 붙는 방식을 한 단락',
+      '돈이 새는 패턴을 한 단락',
+      '월급형/전문성형/프로젝트형/사업형 중 어떤 성향에 가까운지',
+      '가격표·작업 범위·정산 기준 같은 운영 조언',
+      '능력을 상품화하는 구체 방식',
+      '프리랜서/1인 사업은 조건부로',
+    ],
+    avoidRepeating: [
+      '시장 타이밍에 맞춰 거래', '가격 흐름을 보고 매매', '트레이딩이 잘 맞', '주식 투자에 적합',
+    ],
+    styleExamples: {
+      badExample: '시장 변화와 가격 흐름을 보고 타이밍에 맞춰 거래하는 방식이 잘 맞습니다.',
+      goodExample:
+        '이 사주는 돈이 한 번에 크게 터지는 방식보다, 신뢰와 기준이 쌓이면서 점점 커지는 구조가 더 잘 맞습니다.\n\n' +
+        '반대로 돈이 새는 패턴은 능력을 너무 자연스럽게 써주는 데서 시작될 수 있습니다. 남이 막힌 일을 풀어주고, 정리해주고, 기준을 잡아주는데 정작 그걸 서비스나 상품, 계약 범위로 만들지 않으면 실력은 쓰이지만 보상은 약해질 수 있어요.\n\n' +
+        '그래서 이 사주는 "잘하는 것"을 "유료로 제공되는 구조"로 바꾸는 감각이 중요합니다. 예를 들면 업무 프로세스 정리, 실무 강의, 컨설팅, 체크리스트나 템플릿 판매, 교육 콘텐츠처럼 내가 정리한 기준이 상품이 되는 방식이 좋습니다.',
+      transformationRule: '돈은 수익화 구조·계약 기준 중심으로. 투자/거래/시장 타이밍 표현은 절대 금지.',
+    },
+  };
+}
+
+// ============================================================
+// 섹션 6 — relationshipLoveNarrative (관계와 연애: 독립 장)
+// ============================================================
+function buildRelationshipLovePlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
+  const facts: NarrativeMustUseFact[] = [];
+  const relHints = hints?.filter(h => h.sectionId === 'relationshipLoveNarrative') ?? [];
+
+  // 인간관계 스타일 (synthetic)
   facts.push({
     id: 'relationship-style',
     source: 'relationshipPattern',
-    fact: '관계에서 편해지는 사람 vs 지치는 사람',
-    plainMeaning: '말이 많은 사람보다 행동이 꾸준한 사람에게 마음이 열림, 기준 없이 부탁만 쌓이는 관계에서 지침',
-    narrativeHint: '"관계에서는 ..." 한 단락. 편함/지침 결을 같이',
-    matchTokens: ['관계에서', '편한 사람', '지치는', '말이 많은', '행동이'],
+    fact: '인간관계 스타일',
+    plainMeaning: '말의 빈도보다 행동의 일관성으로 신뢰를 본다',
+    narrativeHint: '도입 한 단락으로 관계 스타일 핵심',
+    matchTokens: ['관계에서', '행동의 일관성', '말보다 행동', '신뢰'],
   });
 
-  // userContext.relationshipStatus 반영 힌트
+  // 편한 사람 (synthetic)
+  facts.push({
+    id: 'easy-people',
+    source: 'relationshipPattern',
+    fact: '편한 사람 유형',
+    plainMeaning: '말과 행동이 일치하고 약속을 지키며 책임을 나눌 줄 아는 사람',
+    narrativeHint: '"당신에게 편한 사람은 ..." 식 한두 문장',
+    matchTokens: ['편한 사람', '약속을 지', '행동이 꾸준', '책임을 나'],
+    lifeSceneHint: relHints[0] ? {
+      situation: relHints[0].situation, likelyBehavior: relHints[0].likelyBehavior,
+      innerReaction: relHints[0].innerReaction,
+      externalMisunderstanding: relHints[0].externalMisunderstanding, betterUse: relHints[0].betterUse,
+    } : undefined,
+  });
+
+  // 지치는 사람 (synthetic)
+  facts.push({
+    id: 'draining-people',
+    source: 'relationshipPattern',
+    fact: '지치는 사람 유형',
+    plainMeaning: '말은 많은데 행동이 따르지 않고 기준 없이 부탁만 쌓는 사람',
+    narrativeHint: '"반대로 지치는 사람은 ..." 식 한두 문장',
+    matchTokens: ['지치는 사람', '말은 많', '기준 없이', '감정적으로 기'],
+  });
+
+  // 마음이 열리는 방식 (synthetic)
+  facts.push({
+    id: 'heart-opening',
+    source: 'relationshipPattern',
+    fact: '연애에서 마음이 열리는 방식',
+    plainMeaning: '뜨겁게 다가오는 사람보다 생활 리듬이 안정적이고 말·행동이 맞는 사람',
+    narrativeHint: '연애 단락 도입',
+    matchTokens: ['마음이 열', '신뢰가 열', '뜨겁게', '생활 리듬', '믿을 만한'],
+  });
+
+  // 마음이 닫히는 방식 (synthetic)
+  facts.push({
+    id: 'heart-closing',
+    source: 'relationshipPattern',
+    fact: '마음이 닫히는 방식',
+    plainMeaning: '서운함을 바로 말하지 않고 쌓아두다 신뢰가 깎이는 장면',
+    narrativeHint: '"가까운 관계에서 조심해야 할 점은 ..." 한 단락',
+    matchTokens: ['마음이 닫', '서운', '거리 조절', '신뢰가 깎'],
+    lifeSceneHint: relHints[1] ? {
+      situation: relHints[1].situation, likelyBehavior: relHints[1].likelyBehavior,
+      innerReaction: relHints[1].innerReaction,
+      externalMisunderstanding: relHints[1].externalMisunderstanding, betterUse: relHints[1].betterUse,
+    } : undefined,
+  });
+
+  // 결혼/장기 관계 (synthetic, 조건부)
+  facts.push({
+    id: 'marriage-long-term',
+    source: 'relationshipPattern',
+    fact: '장기 관계/결혼 조건',
+    plainMeaning: '다정함만큼 역할 분담·생활 기준·갈등 해소 방식의 합의가 중요',
+    narrativeHint: '"장기 관계나 결혼을 생각한다면..." 조건부 단락 (relationshipStatus 반영)',
+    matchTokens: ['장기 관계', '결혼', '역할 분담', '생활의 기준', '오래 가는'],
+  });
+
+  // 갈등 패턴 (synthetic)
+  facts.push({
+    id: 'conflict-pattern',
+    source: 'relationshipPattern',
+    fact: '갈등이 생기는 방식',
+    plainMeaning: '오래 보고 오래 참다가 어느 순간 조용히 마음을 닫는 쪽',
+    narrativeHint: '갈등 신호와 회복 가이드 함께',
+    matchTokens: ['갈등', '서운함', '오래 참', '조용히 마음'],
+  });
+
+  // userContext
   facts.push({
     id: 'relationship-context',
     source: 'userContext',
-    fact: `relationshipStatus=${input.userContext.relationshipStatus}, age=${input.userContext.age}`,
+    fact: `relationshipStatus=${input.userContext.relationshipStatus}`,
     plainMeaning:
-      input.userContext.relationshipStatus === 'married' ? '기혼자 — 새 인연 금지' :
+      input.userContext.relationshipStatus === 'married' ? '기혼자 — 새 인연/배우자 표현 단정 주의' :
       input.userContext.relationshipStatus === 'single' ? '미혼 — 결혼 단정 금지' :
       '관계 상태 unknown — 일반 관계 결로',
-    narrativeHint: '관계 단락에서 편해지는 관계 vs 지치는 관계 결을 풀되 컨텍스트 충돌 금지',
+    narrativeHint: 'userContext 위반 금지 (배우자/남편/아내/자녀와 등)',
     matchTokens: ['관계'],
   });
 
   return {
-    sectionId: 'realityActivationNarrative',
-    sectionGoal: '이 사주가 일·돈·관계에서 어떻게 강해지는지 구체적으로 설명한다.',
+    sectionId: 'relationshipLoveNarrative',
+    sectionGoal: '나의 관계 스타일과 연애/장기 관계 패턴을 깊게 설명한다.',
     topicCoverageTargets: [
-      'career', 'workEnvironment', 'avoidWorkEnvironment',
-      'moneyStyle', 'moneyLeakPattern', 'independenceOrBusinessPotential',
-      'relationshipStyle', 'loveMarriageStyle',
+      'relationshipStyle', 'loveStyle', 'marriageLongTermStyle',
+      'heartOpeningPattern', 'heartClosingPattern', 'conflictPattern',
+    ],
+    suggestionTargets: [
+      '서운함이 작을 때 신호 보내기',
+      '약속을 지키는 사람에 시간 두기',
+      '장기 관계는 역할 분담·생활 기준 합의',
     ],
     mustUseFacts: facts,
     requiredBeats: [
-      '이 사주가 현실에서 강해지는 핵심 능력을 설명한다 (lifeWeapons 흡수).',
-      '그 능력이 어떤 업무 환경에서 잘 발휘되는지 설명한다 (bestWorkStyle).',
-      '구체 직업군을 여러 갈래로 자연스럽게 제시한다 (3개 이상, 산업 2개 이상).',
-      '피해야 할 업무 환경을 설명한다 (avoidCareerEnvironment).',
-      '돈이 붙는 방식과 돈이 새는 패턴을 설명한다 (moneyMakingStyle, 투자 권유 X).',
-      '독립/프리랜서/사업 가능성을 조건부로 설명한다.',
-      '관계와 연애에서 편해지는 구조와 지치는 구조를 설명한다 (relationshipStatus 반영).',
+      '인간관계 스타일 한 단락 도입',
+      '편한 사람 유형',
+      '지치는 사람 유형',
+      '연애에서 마음이 열리는 방식',
+      '마음이 닫히는 방식',
+      '장기 관계/결혼 조건 (조건부, 단정 금지)',
+      '갈등 생기는 방식과 회복 가이드',
     ],
     avoidRepeating: [
-      '추천 직업군:',
-      '피해야 할 환경:',
-      '시장 타이밍에 맞춰 거래',
-      '가격 흐름을 보고 매매',
+      '소통이 중요합니다', '서로를 이해해야', '배우자', '남편', '아내',
     ],
     styleExamples: {
-      badExample: '운영 개선, 프로세스, SCM 분야에서 두각을 나타냅니다.',
+      badExample: '인간관계에서는 소통이 중요합니다.',
       goodExample:
-        '이 사주는 복잡한 흐름을 정리하고, 어디서 막히는지 찾아내고, 다시 굴러가게 만드는 일에서 강해질 수 있어요. 그래서 운영 개선, 프로세스 관리, SCM, 프로젝트 매니징처럼 시스템의 병목을 찾는 일과 잘 맞습니다.\n\n' +
-        '조금 더 넓게 보면 서비스 기획, PM, 운영 매니저, 전략기획, 데이터 기반 의사결정, 조직 내 프로세스 개선 같은 역할도 잘 맞아요.\n\n' +
-        '돈은 큰돈을 한 번에 움직이는 방식보다, 작은 단위로 검증하고 흐름을 보면서 키워가는 방식이 더 잘 맞습니다. 이 사주에서 돈이 붙는 방식은 "내가 정리한 가치"가 보일 때입니다.',
-      transformationRule: '직업군을 말하기 전에 반드시 핵심 능력을 설명하고, 직업군은 그 능력의 적용처로 제시하라.',
+        '관계에서 이 사주는 말보다 행동의 일관성을 더 중요하게 볼 가능성이 큽니다. 누가 얼마나 다정한 말을 하는지보다, 실제로 약속을 지키는지, 힘든 순간에 태도가 달라지지 않는지를 더 오래 봅니다.\n\n' +
+        '연애에서도 처음부터 뜨겁게 다가오는 사람보다, 생활 리듬이 안정적이고 말과 행동이 맞는 사람에게 마음이 열리기 쉬워요.\n\n' +
+        '다만 가까운 관계에서 조심해야 할 점은 서운함을 바로 말하지 않고 쌓아둘 수 있다는 것입니다. 비슷한 장면이 반복되면 어느 순간 마음이 조용히 닫힐 수 있어요. 상대는 그때서야 문제가 생겼다고 느끼지만, 본인 입장에서는 이미 오래전부터 신호를 보내고 있었을 가능성이 큽니다.',
+      transformationRule: '관계는 다정함이 아니라 신뢰 형성·열림/닫힘 방식으로 풀어라. userContext 단정 금지.',
     },
   };
 }
@@ -726,18 +938,29 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
 }
 
 // ============================================================
-// 메인 — 6개 plan 빌드 (lifeSceneHints는 optional; 있으면 각 plan에 부착)
+// 메인 — 7~8개 plan 빌드 (2026-05: 일/돈/관계 분리, futureFlow는 옵션)
 // ============================================================
+export interface BuildNarrativePlansOptions {
+  /** 앞으로 3년 장 포함 여부 (기본 false — 별도 기능으로 분리 가능) */
+  includeFutureFlow?: boolean;
+}
+
 export function buildNarrativePlans(
   input: PersonalSajuGptInput,
   lifeSceneHints?: LifeSceneHint[],
+  options: BuildNarrativePlansOptions = {},
 ): NarrativePlanSet {
-  return [
+  const plans: NarrativePlanSet = [
     buildOpeningPlan(input, lifeSceneHints),
     buildLifeStructurePlan(input, lifeSceneHints),
     buildRepeatedPatternPlan(input, lifeSceneHints),
-    buildRealityActivationPlan(input, lifeSceneHints),
-    buildFutureFlowPlan(input, lifeSceneHints),
-    buildFinalStrategyPlan(input, lifeSceneHints),
+    buildCareerTalentPlan(input, lifeSceneHints),
+    buildMoneyMonetizationPlan(input, lifeSceneHints),
+    buildRelationshipLovePlan(input, lifeSceneHints),
   ];
+  if (options.includeFutureFlow) {
+    plans.push(buildFutureFlowPlan(input, lifeSceneHints));
+  }
+  plans.push(buildFinalStrategyPlan(input, lifeSceneHints));
+  return plans;
 }

@@ -5,8 +5,12 @@ import type { ReportValidationResult } from '../report/sajuReportSchema';
 
 export type NarrativeSectionId =
   | 'birthChartCard' | 'openingDefinition' | 'lifeStructureNarrative'
-  | 'repeatedPatternNarrative' | 'realityActivationNarrative'
-  | 'futureFlowNarrative' | 'finalStrategyNarrative' | 'evidenceView';
+  | 'repeatedPatternNarrative'
+  // 2026-05: 일/돈/관계 분리 (기존 realityActivationNarrative → 3장)
+  | 'careerTalentNarrative' | 'moneyMonetizationNarrative' | 'relationshipLoveNarrative'
+  // 옵션
+  | 'futureFlowNarrative'
+  | 'finalStrategyNarrative' | 'evidenceView';
 
 export interface NarrativeBirthChartCard {
   pillars: string;             // "을해년 임오월 무술일 무오시"
@@ -69,7 +73,12 @@ export type NarrativeValidationIssueType =
   | 'missing-life-scene'             // 해석은 있는데 실제 장면이 부족
   | 'relationship-topic-missing'     // 관계/연애/장기 관계 스타일이 전혀 없음
   | 'family-early-topic-missing'     // 가족/초년 흐름이 전혀 없음
-  | 'unsupported-user-context';      // userContext에 없는 혼인/자녀/직업/건강을 단정
+  | 'unsupported-user-context'       // userContext에 없는 혼인/자녀/직업/건강을 단정
+  // 2026-05 (일/돈/관계 분리)
+  | 'career-section-too-thin'        // 4장 직업·재능이 너무 얕음
+  | 'money-section-too-thin'         // 5장 돈·수익화가 너무 얕음
+  | 'relationship-section-too-thin'  // 6장 관계·연애가 너무 얕음
+  | 'suggestion-coverage-missing';   // 구체 제안/조언이 부족 (설명만 있고 적용 가이드 없음)
 
 export interface NarrativeValidationIssue {
   type: NarrativeValidationIssueType;
@@ -92,7 +101,9 @@ export type NarrativeCoverageSectionId =
   | 'openingDefinition'
   | 'lifeStructureNarrative'
   | 'repeatedPatternNarrative'
-  | 'realityActivationNarrative'
+  | 'careerTalentNarrative'
+  | 'moneyMonetizationNarrative'
+  | 'relationshipLoveNarrative'
   | 'futureFlowNarrative'
   | 'finalStrategyNarrative';
 
@@ -180,6 +191,8 @@ export interface NarrativePlan {
   styleExamples: NarrativePlanStyleExamples;
   /** 이 섹션이 흡수해야 할 TopicCoverageMap 키들 (validator의 missing-topic-coverage 시드) */
   topicCoverageTargets?: string[];
+  /** 이 섹션에서 GPT가 제안/조언으로 풀어야 할 항목들 (suggestion-coverage-missing 시드) */
+  suggestionTargets?: string[];
 }
 
 export type NarrativePlanSet = NarrativePlan[];

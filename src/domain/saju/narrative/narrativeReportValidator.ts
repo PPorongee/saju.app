@@ -75,20 +75,23 @@ function countLifeSceneMarkers(text: string): number {
   return n;
 }
 
-// 7섹션 헤더 (# 1. ~ # 7.) → narrative section id 매핑
-const SECTION_IDS = [
+// 섹션 id 매핑 — 2026-05: plan 순서로 동적 매핑. plan이 없으면 기본 7섹션 가정.
+const DEFAULT_SECTION_IDS = [
   'openingDefinition',
   'lifeStructureNarrative',
   'repeatedPatternNarrative',
-  'realityActivationNarrative',
-  'futureFlowNarrative',
+  'careerTalentNarrative',
+  'moneyMonetizationNarrative',
+  'relationshipLoveNarrative',
   'finalStrategyNarrative',
-  'finalLine',
 ] as const;
 
 interface SectionBlock { id: string; index: number; title: string; body: string; }
 
-function splitSections(text: string): SectionBlock[] {
+function splitSections(text: string, plans?: NarrativePlanSet): SectionBlock[] {
+  const sectionIds: string[] = plans && plans.length > 0
+    ? plans.map(p => p.sectionId)
+    : [...DEFAULT_SECTION_IDS];
   const re = /^#\s+(\d+)\.\s+(.+)$/gm;
   const matches: Array<{ start: number; index: number; title: string }> = [];
   let m: RegExpExecArray | null;
@@ -100,8 +103,8 @@ function splitSections(text: string): SectionBlock[] {
     const cur = matches[i];
     const next = matches[i + 1];
     const body = text.slice(cur.start + cur.title.length, next ? next.start : text.length);
-    if (cur.index < 1 || cur.index > 7) continue;
-    blocks.push({ id: SECTION_IDS[cur.index - 1], index: cur.index, title: cur.title, body });
+    if (cur.index < 1 || cur.index > sectionIds.length) continue;
+    blocks.push({ id: sectionIds[cur.index - 1], index: cur.index, title: cur.title, body });
   }
   return blocks;
 }
@@ -140,10 +143,10 @@ const HIDDEN_QUESTIONS = [
   { qNum: 1, keywords: ['기질', '타고난', '성향'], expectIn: ['lifeStructureNarrative'] },
   { qNum: 2, keywords: ['남들이 보는', '겉모습', '겉으로', '내면', '실제 안'], expectIn: ['lifeStructureNarrative'] },
   { qNum: 3, keywords: ['반복', '패턴'], expectIn: ['repeatedPatternNarrative'] },
-  { qNum: 4, keywords: ['돈', '수익', '벌'], expectIn: ['realityActivationNarrative'] },
-  { qNum: 5, keywords: ['업계', '직무', '직업', '일하는'], expectIn: ['realityActivationNarrative'] },
-  { qNum: 6, keywords: ['관계', '인간관계', '사람'], expectIn: ['repeatedPatternNarrative', 'realityActivationNarrative'] },
-  { qNum: 7, keywords: ['연애', '결혼', '연인', '파트너'], expectIn: ['realityActivationNarrative'] },
+  { qNum: 4, keywords: ['돈', '수익', '벌'], expectIn: ['moneyMonetizationNarrative'] },
+  { qNum: 5, keywords: ['업계', '직무', '직업', '일하는'], expectIn: ['careerTalentNarrative'] },
+  { qNum: 6, keywords: ['관계', '인간관계', '사람'], expectIn: ['repeatedPatternNarrative', 'relationshipLoveNarrative'] },
+  { qNum: 7, keywords: ['연애', '결혼', '연인', '파트너'], expectIn: ['relationshipLoveNarrative'] },
   { qNum: 8, keywords: ['가족', '초년', '어린', '부모'], expectIn: ['lifeStructureNarrative', 'repeatedPatternNarrative'] },
   { qNum: 9, keywords: ['앞으로 3년', '내년', '올해', '2026', '2027', '2028'], expectIn: ['futureFlowNarrative'] },
   { qNum: 10, keywords: ['결국', '이렇게', '잘 쓰', '활용', '현실 전략'], expectIn: ['finalStrategyNarrative'] },
@@ -383,7 +386,7 @@ function pushIssue(arr: NarrativeValidationIssue[], i: NarrativeValidationIssue)
 }
 
 export function validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap }: Args): NarrativeValidationResult {
-  const blocks = splitSections(reportText);
+  const blocks = splitSections(reportText, narrativePlans);
   const byId = new Map(blocks.map(b => [b.id, b]));
   const coverage = buildNarrativeCoverageRequirements();
   const issues: NarrativeValidationIssue[] = [];
@@ -511,13 +514,15 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   // 6. underdeveloped-section — 본문 너무 짧음
   // ─────────────────────────────────────────────
   const MIN_BODY_LEN: Record<string, number> = {
-    openingDefinition: 220,
-    lifeStructureNarrative: 500,
-    repeatedPatternNarrative: 500,
-    realityActivationNarrative: 600,
+    openingDefinition: 350,
+    lifeStructureNarrative: 600,
+    repeatedPatternNarrative: 600,
+    // 2026-05: 일/돈/관계 독립 장 — 각 600자 이상 권장
+    careerTalentNarrative: 700,
+    moneyMonetizationNarrative: 600,
+    relationshipLoveNarrative: 600,
     futureFlowNarrative: 500,
-    finalStrategyNarrative: 450,
-    finalLine: 40,
+    finalStrategyNarrative: 600,
   };
   for (const b of blocks) {
     const compactLen = b.body.replace(/\s+/g, '').length;
@@ -579,13 +584,18 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   // ─────────────────────────────────────────────
   // 9. weak-final-message — 7장 마지막 한 문장
   // ─────────────────────────────────────────────
-  const finalLine = byId.get('finalLine');
-  if (finalLine) {
-    const trimmed = finalLine.body.trim();
+  // 2026-05: finalLine은 별도 섹션이 아니라 finalStrategyNarrative 본문 마지막에 포함됨.
+  const finalStrategyForLine = byId.get('finalStrategyNarrative');
+  if (finalStrategyForLine) {
+    const trimmedBody = finalStrategyForLine.body.trim();
+    // 본문 마지막 한 문장 추출 (마침표/물음표 기준)
+    const sentences = trimmedBody.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const lastSentence = sentences[sentences.length - 1] ?? trimmedBody;
+    const trimmed = lastSentence.trim();
     for (const pat of WEAK_FINAL_PATTERNS) {
       if (pat.test(trimmed)) {
         pushIssue(issues, {
-          type: 'weak-final-message', sectionId: 'finalLine',
+          type: 'weak-final-message', sectionId: 'finalStrategyNarrative',
           sentence: trimmed.slice(0, 80),
           reason: `7장 마무리가 약함/일반론 (${pat})`,
           severity: 'high',
@@ -648,8 +658,9 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   // ─────────────────────────────────────────────
   // 11. career-recommendation-too-narrow & 기존 concreteness-misplaced
   // ─────────────────────────────────────────────
-  const reality = byId.get('realityActivationNarrative');
-  if (reality) {
+  // 2026-05: 직업/업계 검사는 careerTalentNarrative 섹션 기준
+  const careerSection = byId.get('careerTalentNarrative');
+  if (careerSection) {
     const careerWords = new Set<string>();
     const industries = new Set<string>();
     for (const c of gptInput.careerSpecificAnalysis.topCareerMatches) {
@@ -659,26 +670,87 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
       for (const r of c.roles) careerWords.add(r);
     }
     let found = 0;
-    for (const w of careerWords) if (w && reality.body.includes(w)) found++;
+    for (const w of careerWords) if (w && careerSection.body.includes(w)) found++;
     if (found < 3) {
       pushIssue(issues, {
-        type: 'concreteness-misplaced', sectionId: 'realityActivationNarrative',
-        sentence: '일·돈·관계 섹션',
+        type: 'career-section-too-thin', sectionId: 'careerTalentNarrative',
+        sentence: '일과 재능 섹션',
         reason: `직업/업계 단어가 ${found}개로 부족 (3개 이상 필요) — careerSpecificAnalysis에서 가져와 문장에 녹이기`,
         severity: 'medium',
         suggestion: '"서비스 기획, PM, 컨설팅처럼 ..." 형식으로 자연스럽게',
       });
     }
-    // 산업 한 갈래만 등장 → too-narrow
     let industryHit = 0;
-    for (const ind of industries) if (ind && reality.body.includes(ind)) industryHit++;
+    for (const ind of industries) if (ind && careerSection.body.includes(ind)) industryHit++;
     if (industries.size >= 2 && industryHit <= 1) {
       pushIssue(issues, {
-        type: 'career-recommendation-too-narrow', sectionId: 'realityActivationNarrative',
+        type: 'career-recommendation-too-narrow', sectionId: 'careerTalentNarrative',
         sentence: '직업군 범위',
         reason: `직업 분야가 한 갈래만 노출됨 (가용 산업 ${industries.size}개 중 ${industryHit}개) — 핵심 능력 → 환경 → 여러 갈래 → 피할 환경 흐름으로 보강 필요`,
         severity: 'medium',
         suggestion: 'careerSpecificAnalysis.topCareerMatches에 있는 다른 산업/직무도 문장 속에 녹이고, 공통 핵심 능력으로 묶어 설명',
+      });
+    }
+    // 환경/리더십/동료/독립 — 4개 키워드 중 2개 이상 보이는지
+    const careerKeywords = ['환경', '리더십', '동료', '같이 일', '독립', '프리랜서', '이직'];
+    const hitKw = careerKeywords.filter(k => careerSection.body.includes(k)).length;
+    if (hitKw < 2) {
+      pushIssue(issues, {
+        type: 'career-section-too-thin', sectionId: 'careerTalentNarrative',
+        sentence: '환경·리더십·동료·독립',
+        reason: `일·재능 섹션에 환경/리더십/동료/독립 관련 단어가 ${hitKw}개로 부족 (2개 이상 필요)`,
+        severity: 'medium',
+        suggestion: '잘 맞는 업무 환경, 리더십 스타일, 같이 일하면 좋은 동료, 독립 가능성을 줄글로 보강',
+      });
+    }
+  }
+
+  // 2026-05: 돈/수익화 thin 검사
+  const moneySection = byId.get('moneyMonetizationNarrative');
+  if (moneySection) {
+    const moneyMustHave = ['돈이 붙', '돈이 새', '수익', '가격', '계약', '범위', '상품', '포트폴리오', '컨설팅', '강의', '월급', '프로젝트', '사업'];
+    const moneyHits = moneyMustHave.filter(k => moneySection.body.includes(k)).length;
+    if (moneyHits < 5) {
+      pushIssue(issues, {
+        type: 'money-section-too-thin', sectionId: 'moneyMonetizationNarrative',
+        sentence: '돈·수익화 섹션',
+        reason: `돈/수익화 섹션에 핵심 키워드(돈이 붙/새, 가격, 계약, 상품, 포트폴리오, 컨설팅 등) ${moneyHits}개로 부족 (5개 이상 권장)`,
+        severity: 'medium',
+        suggestion: '돈이 붙는 방식, 새는 패턴, 수익화 구조(월급/전문성/프로젝트/사업), 가격표·작업 범위·정산 기준, 상품화 형태를 줄글로',
+      });
+    }
+  }
+
+  // 2026-05: 관계/연애 thin 검사
+  const relSection = byId.get('relationshipLoveNarrative');
+  if (relSection) {
+    const relMustHave = ['편한 사람', '지치는', '마음이 열', '마음이 닫', '신뢰', '약속을 지', '서운', '갈등', '장기 관계'];
+    const relHits = relMustHave.filter(k => relSection.body.includes(k)).length;
+    if (relHits < 4) {
+      pushIssue(issues, {
+        type: 'relationship-section-too-thin', sectionId: 'relationshipLoveNarrative',
+        sentence: '관계·연애 섹션',
+        reason: `관계/연애 섹션에 핵심 키워드(편한 사람, 지치는, 마음이 열/닫, 신뢰, 서운, 갈등 등) ${relHits}개로 부족 (4개 이상 권장)`,
+        severity: 'medium',
+        suggestion: '편한 사람/지치는 사람 유형, 마음이 열리는·닫히는 방식, 신뢰 형성, 갈등 패턴, 장기 관계 조건을 줄글로',
+      });
+    }
+  }
+
+  // 2026-05: suggestion-coverage — 핵심 장에 "어떻게 하면 좋다" 가이드가 있는지
+  const SUGGESTION_MARKERS = ['좋습니다', '필요합니다', '먼저 정', '먼저 확인', '연습', '먼저 보여', '먼저 말', '권장', '추천하'];
+  const CRITICAL_SECTIONS = ['careerTalentNarrative', 'moneyMonetizationNarrative', 'relationshipLoveNarrative', 'finalStrategyNarrative'];
+  for (const sid of CRITICAL_SECTIONS) {
+    const block = byId.get(sid);
+    if (!block) continue;
+    const hits = SUGGESTION_MARKERS.filter(m => block.body.includes(m)).length;
+    if (hits < 2) {
+      pushIssue(issues, {
+        type: 'suggestion-coverage-missing', sectionId: sid,
+        sentence: sid,
+        reason: `${sid} 섹션에 구체 제안/조언 마커가 ${hits}개로 부족 (2개 이상 필요) — 설명만 있고 적용 가이드가 약함`,
+        severity: 'medium',
+        suggestion: '"~하는 게 좋습니다", "~를 먼저 확인해야 합니다", "~ 연습이 필요합니다" 같은 가이드 문장을 자연스럽게',
       });
     }
   }
@@ -690,7 +762,7 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
     const m = reportText.match(pat);
     if (m) {
       pushIssue(issues, {
-        type: 'financial-advice-risk', sectionId: 'realityActivationNarrative',
+        type: 'financial-advice-risk', sectionId: 'moneyMonetizationNarrative',
         sentence: m[0],
         reason: `투자/거래/시장 타이밍 권유처럼 들리는 표현 — moneyMakingStyle은 수익화 구조·보상 방식으로 바꿔야`,
         severity: 'high',
@@ -861,7 +933,8 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   const high = issues.filter(i => i.severity === 'high').length;
   const medium = issues.filter(i => i.severity === 'medium').length;
   return {
-    isValid: high === 0 && medium < 16,
+    // 2026-05: 일/돈/관계 분리 + thin/suggestion 체크 추가로 medium 상한 추가 상향
+    isValid: high === 0 && medium < 22,
     issues,
   };
 }
@@ -873,7 +946,7 @@ export function collectFailingSectionsFromIssues(
   issues: NarrativeValidationIssue[],
 ): Set<string> {
   const out = new Set<string>();
-  // 섹션 단위로 격리 가능한 이슈 타입만 — global/finalLine 외
+  // 섹션 단위로 격리 가능한 이슈 타입 (global은 제외)
   const SECTIONAL_TYPES = new Set([
     'missing-narrative-fact',
     'missing-required-data-source',
@@ -885,6 +958,11 @@ export function collectFailingSectionsFromIssues(
     'generic-opening',
     'weak-final-message',
     'hidden-question-uncovered',
+    // 2026-05
+    'career-section-too-thin',
+    'money-section-too-thin',
+    'relationship-section-too-thin',
+    'suggestion-coverage-missing',
   ]);
   for (const iss of issues) {
     if (!SECTIONAL_TYPES.has(iss.type)) continue;

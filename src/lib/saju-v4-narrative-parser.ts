@@ -1,27 +1,38 @@
-// 서사형 GPT 응답(markdown) 파서 — 7섹션 (# 1. ~ # 7.).
-// 각 섹션은 줄글 본문. 5번 섹션만 연도별 sub-header(### 2026 등) 분리.
+// 서사형 GPT 응답(markdown) 파서 — 2026-05 신구조.
+// 7섹션 + 옵션 미래 흐름.
+//   # 1. openingDefinition           - 이 사주를 한 문장으로 말하면
+//   # 2. lifeStructureNarrative      - 당신이 이런 방식으로 살아온 이유
+//   # 3. repeatedPatternNarrative    - 반복해서 찾아오는 삶의 패턴
+//   # 4. careerTalentNarrative       - 일과 재능
+//   # 5. moneyMonetizationNarrative  - 돈과 수익화
+//   # 6. relationshipLoveNarrative   - 관계와 연애
+//   # 7. finalStrategyNarrative      - 결국 이 사주는 이렇게 써야 해요
+// includeFutureFlow=true이면 미래 장(### 2026 / ### 2027 / ### 2028) 헤더가
+// 어느 본문 섹션 안에 ### 헤더로 등장할 수 있으므로 별도 추출 처리.
 
 export interface ParsedNarrativeReport {
-  openingDefinition: string;          // # 1
-  lifeStructureNarrative: string;     // # 2
-  repeatedPatternNarrative: string;   // # 3
-  realityActivationNarrative: string; // # 4
-  futureFlowNarrative: {              // # 5
-    intro: string;                    // 연도 헤더 전 본문
+  openingDefinition: string;
+  lifeStructureNarrative: string;
+  repeatedPatternNarrative: string;
+  careerTalentNarrative: string;
+  moneyMonetizationNarrative: string;
+  relationshipLoveNarrative: string;
+  finalStrategyNarrative: string;
+  /** 옵션 — 미래 3년 장 (별 헤더 ### 20XX로 분리) */
+  futureFlowNarrative?: {
+    intro: string;
     years: Array<{ year: number; body: string }>;
   };
-  finalStrategyNarrative: string;     // # 6
-  finalLine: string;                  // # 7
 }
 
 const SECTION_KEYS = [
   'openingDefinition',
   'lifeStructureNarrative',
   'repeatedPatternNarrative',
-  'realityActivationNarrative',
-  'futureFlowNarrative',
+  'careerTalentNarrative',
+  'moneyMonetizationNarrative',
+  'relationshipLoveNarrative',
   'finalStrategyNarrative',
-  'finalLine',
 ] as const;
 
 export function parseNarrativeReport(markdown: string): ParsedNarrativeReport {
@@ -43,19 +54,38 @@ export function parseNarrativeReport(markdown: string): ParsedNarrativeReport {
     sections[SECTION_KEYS[cur.idx - 1]] = body;
   }
 
-  // 5번 — 연도별 분리
-  const futureRaw = sections['futureFlowNarrative'] ?? '';
-  const futureFlowNarrative = splitYearItems(futureRaw);
+  // futureFlow 옵션 — 본문 어디에 ### 20XX 헤더가 있으면 별도 추출
+  const futureFlow = extractFutureFlow(markdown);
 
   return {
     openingDefinition: sections['openingDefinition'] ?? '',
     lifeStructureNarrative: sections['lifeStructureNarrative'] ?? '',
     repeatedPatternNarrative: sections['repeatedPatternNarrative'] ?? '',
-    realityActivationNarrative: sections['realityActivationNarrative'] ?? '',
-    futureFlowNarrative,
+    careerTalentNarrative: sections['careerTalentNarrative'] ?? '',
+    moneyMonetizationNarrative: sections['moneyMonetizationNarrative'] ?? '',
+    relationshipLoveNarrative: sections['relationshipLoveNarrative'] ?? '',
     finalStrategyNarrative: sections['finalStrategyNarrative'] ?? '',
-    finalLine: sections['finalLine'] ?? '',
+    futureFlowNarrative: futureFlow,
   };
+}
+
+/** futureFlow 별도 추출 — "# N. 앞으로 3년..." 또는 "### 20XX" 헤더로 인식 */
+function extractFutureFlow(markdown: string): ParsedNarrativeReport['futureFlowNarrative'] | undefined {
+  // (a) # N. 앞으로 ... 헤더가 있으면 그 섹션 본문에서 연도 추출
+  const futureHeader = /^#\s+\d+\.\s+(?:앞으로|3년|미래).+$/m.exec(markdown);
+  let chunk = '';
+  if (futureHeader) {
+    const start = futureHeader.index;
+    const after = markdown.slice(start);
+    const nextHeader = /\n#\s+\d+\.\s+/m.exec(after);
+    chunk = nextHeader ? after.slice(0, nextHeader.index) : after;
+  } else {
+    // (b) ### 20XX 헤더가 본문 어딘가에 있으면 그 영역만
+    const yearMatch = /^#{2,}\s*(20\d{2})/m.exec(markdown);
+    if (!yearMatch) return undefined;
+    chunk = markdown.slice(yearMatch.index);
+  }
+  return splitYearItems(chunk);
 }
 
 function splitYearItems(text: string): ParsedNarrativeReport['futureFlowNarrative'] {

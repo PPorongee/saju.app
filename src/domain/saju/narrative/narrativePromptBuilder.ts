@@ -13,18 +13,21 @@ export interface BuiltNarrativePrompt {
   user: string;
 }
 
-// 섹션 id → "# N. 한글 제목" 매핑 (출력 헤더 인덱스)
-const SECTION_HEADER_INDEX: Record<string, number> = {
-  openingDefinition: 1,
-  lifeStructureNarrative: 2,
-  repeatedPatternNarrative: 3,
-  realityActivationNarrative: 4,
-  futureFlowNarrative: 5,
-  finalStrategyNarrative: 6,
+// 섹션 id → 한글 제목 매핑 (헤더 번호는 plan 순서에서 동적으로 계산)
+const SECTION_TITLES: Record<string, string> = {
+  openingDefinition: '이 사주를 한 문장으로 말하면',
+  lifeStructureNarrative: '당신이 이런 방식으로 살아온 이유',
+  repeatedPatternNarrative: '반복해서 찾아오는 삶의 패턴',
+  careerTalentNarrative: '일과 재능: 어떤 역할에서 실력이 살아나는가',
+  moneyMonetizationNarrative: '돈과 수익화: 어떤 방식으로 돈이 붙는가',
+  relationshipLoveNarrative: '관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가',
+  futureFlowNarrative: '앞으로 3년, 어떤 판이 열릴까',
+  finalStrategyNarrative: '결국 이 사주는 이렇게 써야 해요',
 };
 
-function renderPlan(plan: NarrativePlan): string {
-  const headerIdx = SECTION_HEADER_INDEX[plan.sectionId] ?? '?';
+function renderPlan(plan: NarrativePlan, idx: number): string {
+  const headerIdx = idx + 1;
+  const title = SECTION_TITLES[plan.sectionId] ?? plan.sectionId;
   const factLines = plan.mustUseFacts.map(f => {
     const base = `  - [${f.id} / ${f.source}] fact: "${f.fact}"\n      쉬운 풀이: ${f.plainMeaning}\n      흡수 힌트: ${f.narrativeHint}`;
     if (!f.lifeSceneHint) return base;
@@ -45,10 +48,15 @@ function renderPlan(plan: NarrativePlan): string {
   const topicLine = plan.topicCoverageTargets && plan.topicCoverageTargets.length > 0
     ? plan.topicCoverageTargets.join(', ')
     : '(없음)';
+  const suggestionLine = plan.suggestionTargets && plan.suggestionTargets.length > 0
+    ? plan.suggestionTargets.map(s => `  - ${s}`).join('\n')
+    : '  (없음)';
   return [
-    `### 섹션 ${headerIdx}: ${plan.sectionId}`,
+    `### 섹션 ${headerIdx}: ${plan.sectionId} — "${title}"`,
     `목표: ${plan.sectionGoal}`,
     `이 섹션이 흡수해야 할 토픽 (TopicCoverageMap 키): ${topicLine}`,
+    `이 섹션이 본문에 풀어야 할 구체 제안/조언 (suggestionTargets):`,
+    suggestionLine,
     ``,
     `반드시 본문에 흡수해야 할 사실 (mustUseFacts — 빠지면 missing-narrative-fact로 실패):`,
     factLines || '  (없음)',
@@ -71,7 +79,7 @@ function renderAllPlans(plans: NarrativePlanSet): string {
   return [
     '[NarrativePlan — 섹션별 이야기 계획. GPT는 이 plan을 따라 본문을 작성한다.]',
     '',
-    plans.map(renderPlan).join('\n\n────────────────────────────\n\n'),
+    plans.map((p, i) => renderPlan(p, i)).join('\n\n────────────────────────────\n\n'),
   ].join('\n');
 }
 
@@ -269,7 +277,28 @@ const SYSTEM_BASE = [
   YEARLY_DIFFERENTIATION_RULES, FINAL_MESSAGE_RULES,
 ].join('\n\n');
 
-const OUTPUT_STRUCTURE = `출력 구조 (정확히 # 1 ~ # 7, 그리고 명리 근거는 별도 데이터). 헤더 그대로 사용:
+const OUTPUT_STRUCTURE = `출력 구조 (2026-05 신구조 — 일/돈/관계 분리). 헤더 그대로 사용:
+
+기본 7섹션 (futureFlow 미포함 시): # 1 ~ # 7
+- # 1. 이 사주를 한 문장으로 말하면
+- # 2. 당신이 이런 방식으로 살아온 이유
+- # 3. 반복해서 찾아오는 삶의 패턴
+- # 4. 일과 재능: 어떤 역할에서 실력이 살아나는가
+- # 5. 돈과 수익화: 어떤 방식으로 돈이 붙는가
+- # 6. 관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가
+- # 7. 결국 이 사주는 이렇게 써야 해요
+
+옵션 8섹션 (futureFlow 포함 시):
+- # 1 ~ # 6 동일
+- # 7. 앞으로 3년, 어떤 판이 열릴까
+- # 8. 결국 이 사주는 이렇게 써야 해요
+
+각 장은 "요약"이 아니라 "해설"이어야 한다. 단순 분량이 아니라 다음 블록을 충분히 포함:
+1) 핵심 해석  2) 명리적 이유를 쉬운 말로  3) 실제 삶의 장면 2개 이상
+4) 장점으로 쓰이는 경우  5) 꼬이는 경우  6) 사용자가 적용할 구체 조언
+7) 피해야 할 선택  8) 다음 장으로 자연스럽게 이어주는 마무리.
+
+설명:제안 비율은 60:40 정도. "이렇게 됩니다"만 있고 "그래서 어떻게 하면 좋다"가 없으면 실패.
 
 # 1. 사주를 한 문장으로 말하면
 [Coverage 필수]
@@ -316,52 +345,57 @@ const OUTPUT_STRUCTURE = `출력 구조 (정확히 # 1 ~ # 7, 그리고 명리 �
 
 ※ "함정 1, 함정 2" 카드 X. "실제 장면:", "벗어나는 방법:" 항목 X.
 
-# 4. 일·돈·관계에서 운이 살아나는 방식
-[Coverage 필수 — 이 장이 가장 밀도 있어야]
-- (직업 추천 작성 순서 반드시 준수)
-  1) lifeWeapons 흡수: 사주 구조상 강한 능력 한 줄
-  2) bestWorkStyle 흡수: 그 능력이 발휘되는 업무 환경
-  3) careerSpecificAnalysis.topCareerMatches·conditionalCareerMatches 안의 단어로 구체 직업군 3개 이상 자연스럽게(문장 속에 녹임)
-  4) avoidCareerEnvironments: 피해야 할 환경 한두 가지
-  5) 왜 그런지 명리 근거를 쉬운 한 줄로
-- 돈: moneyMakingStyle을 "수익화 구조 + 보상 방식" 중심으로 줄글로. 투자/거래/타이밍 권유 톤 금지.
-- 관계: "당신이 계속 감당해야 하는 관계 vs 역할과 기준을 같이 나누는 관계" 결을 흡수. relationshipStatus 반영(기혼자에게 새 인연 X, 미혼자에게도 결혼 단정 X).
-- 일 → 돈 → 관계 순서로 한 흐름으로 이어주기.
+# 4. 일과 재능: 어떤 역할에서 실력이 살아나는가
+[Coverage 필수 — 독립 장. 단순 직업명 나열 X]
+- (작성 순서 준수)
+  1) 핵심 재능 한 줄(lifeWeapons)
+  2) 그 능력이 잘 발휘되는 업무 환경(bestWorkStyle)
+  3) 구체 직업군 3개 이상 자연스럽게 문장 속에 (산업 2개 이상)
+  4) 피해야 할 업무 환경(avoidCareerEnvironments)
+  5) 리더십 스타일과 같이 일하면 좋은 동료 유형
+  6) 독립/이직/프리랜서 가능성을 조건부로
+- 직업군은 careerSpecificAnalysis 안의 단어만 사용. 카드/리스트 X.
 
-※ "추천 직업군: …" 리스트 형식 절대 X. 문장 속에 녹이기.
+# 5. 돈과 수익화: 어떤 방식으로 돈이 붙는가
+[Coverage 필수 — 독립 장. 투자/거래/시장 타이밍 권유 절대 금지]
+- 돈이 붙는 방식, 돈이 새는 패턴 각각 한 단락
+- 월급형/전문성형/프로젝트형/사업형 중 어느 성향에 가까운지
+- 가격표·작업 범위·정산 기준 같은 구체 운영 조언
+- 능력을 상품화하는 방식(제안서/포트폴리오/템플릿/콘텐츠/컨설팅)
+- 프리랜서/1인 사업은 조건부 ("만약 ... 생각한다면")
+- "시장 타이밍에 맞춰 거래", "가격 흐름을 보고 매매" 같은 표현 절대 금지.
 
-# 5. 앞으로 3년, 어떤 판이 열릴까
-[Coverage 필수]
+# 6. 관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가
+[Coverage 필수 — 독립 장. 궁합 기능과 별개로 "나의 관계 스타일"이 들어가야]
+- 인간관계 스타일 (말의 빈도보다 행동의 일관성)
+- 편한 사람 유형 / 지치는 사람 유형
+- 연애에서 마음이 열리는 방식 / 닫히는 방식
+- 장기 관계/결혼 조건 (단정 금지, "장기 관계를 생각한다면" 조건부)
+- 갈등이 생기는 방식 + 회복 가이드
+- userContext.relationshipStatus 위반 금지 — 미혼에게 "배우자/남편/아내" 표현 금지.
+
+[옵션: futureFlow가 plan에 포함된 경우만] # 7. 앞으로 3년, 어떤 판이 열릴까
 - futureTimingAnalysis.years 배열만 근거.
 - 연도 구분(### 2026 / ### 2027 / ### 2028) 사용. 각 연도 본문은 줄글.
-- 각 연도마다: 핵심 주제 / 생길 수 있는 사건 유형 / 이 사주에게 어떤 의미인지 / 잡아야 할 것 / 조심할 것 / 전년도·다음 연도와의 차이.
+- 각 연도: 핵심 주제 / 생길 수 있는 사건 유형 / 잡아야 할 것 / 조심할 것 / 전년·다음 연도와의 차이.
 - 같은 표현("학습과 자격이 누적되는 해")이 두 연도에 반복되면 실패.
 - 사건 단정 X — "~로 나타날 수 있어요" 톤.
 
-좋은 미래 사건 표현 예:
-- "이직, 부서 이동, 팀 개편, 생활권 변화처럼 내가 머무는 판이 달라지는 방식으로 나타날 수 있습니다."
-- "자격증, 포트폴리오, 강의안, 콘텐츠, 실무 결과물처럼 밖에서 확인 가능한 형태로 남기는 것이 좋습니다."
-- "소개, 협업, 작은 프로젝트, 외부 제안처럼 사람을 통해 기회가 연결될 수 있습니다."
-
-※ "기회/주의/행동" 표 X — 줄글로 풀어쓰기. 분량은 글자 수로 강제하지 않지만 너무 짧으면 underdeveloped로 잡힘.
-
-# 6. 결국 이 사주는 이렇게 써야 해요
-[Coverage 필수]
-- fortuneTriggers.fortuneActivatingChoices + fortuneBlockingChoices 종합.
-- 일·돈·관계·멘탈·선택 기준을 줄글로 압축. 앞 내용을 그대로 반복 X — 결론으로 응축.
-- "혼자 다 해야 한다 → 내가 기준을 잡고 역할을 나눈다" 같은 핵심 사용법으로 마무리.
-- 일에서 책임 범위·권한, 돈에서 작업 범위·보상 기준, 관계에서 초반 기준 말하기 같은 결을 자연스럽게 흡수.
-- 체크리스트·하위 소제목 가능한 줄이기.
-
-# 7. 한 문장으로 마무리하면
-- 사용자가 캡처·저장하고 싶을 정도로 기억에 남는 한 문장.
-- 앞 6장의 핵심 사용법을 응축하되, 일반론·운명론 금지.
+# 7(또는 # 8 — futureFlow 있을 시). 결국 이 사주는 이렇게 써야 해요
+[Coverage 필수 — 단순 요약이 아니라 사주의 사용법]
+- fortuneActivatingChoices + fortuneBlockingChoices 종합.
+- 일·돈·관계·연애·멘탈·선택 기준을 줄글로 압축. 앞 내용 그대로 반복 X — 결론으로 응축.
+- "혼자 다 해야 한다 → 내가 기준을 잡고 역할을 나눈다" 같은 핵심 사용법.
+- 일에서 책임 범위·권한, 돈에서 작업 범위·보상 기준, 관계에서 초반 기준 말하기 같은 결을 자연스럽게.
+- 시작을 미루는 패턴(완벽주의)에 대한 70% 공개 조언 같은 구체 가이드 포함.
+- 본문 마지막에 사용자가 캡처·저장하고 싶을 정도로 기억에 남는 한 문장으로 끝.
+- 별도 # 7. 한 문장으로 마무리하면 섹션은 만들지 말 것 (본 섹션 본문 마지막에 포함).
 
 ★ 출력 형식 명심:
-- 위 7개 헤더(# 1. ~ # 7.) 정확히 사용
-- 사주 원국 카드와 명리 근거 보기는 본문 출력에 포함하지 않는다 (UI 측에서 별도 렌더)
-- identityKeywords/specialPoints/lifeWeapons/lifeTraps/fortuneTriggers/careerSpecificAnalysis/timingAnchors/futureTimingAnalysis 배열은 코드가 명리 데이터로 미리 생성한 결과. 새 항목 만들지 말고 본문 속에 자연스럽게 흡수만.
-- 같은 단어/문장/조언을 여러 장에서 반복하지 마.`;
+- 헤더는 plan 순서대로 # 1. ~ # 7. (또는 futureFlow 포함 시 # 1. ~ # 8.).
+- 사주 원국 카드와 명리 근거 보기는 본문 출력에 포함하지 않는다 (UI 측에서 별도 렌더).
+- 새 사주/십성/신살을 만들지 말고 NarrativePlan의 fact만 사용.
+- 같은 단어/문장/조언을 여러 장에서 반복하지 말 것.`;
 
 export function buildNarrativePersonalSajuPrompt(args: {
   input: PersonalSajuGptInput;

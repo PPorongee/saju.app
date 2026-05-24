@@ -27,7 +27,7 @@ export function buildTopicCoverageMap(input: PersonalSajuGptInput): TopicCoverag
     coreKeywords: has.identityKeywords,
     outerInnerContrast: true,
     specialPoints: has.specialPoints,
-    // 기질·내면 (항상 필수)
+    // 기질·내면
     personality: true,
     innerWorld: true,
     emotionalProcessing: true,
@@ -40,15 +40,28 @@ export function buildTopicCoverageMap(input: PersonalSajuGptInput): TopicCoverag
     relationshipStyle: true,
     loveMarriageStyle: true,
     familyEarlyPattern: true,
-    // 현실 작동
+    pastTimingAnchor: has.timingAnchors,
+    // 일·재능 (4장)
     career: has.careerMatches,
+    talent: has.lifeWeapons,
     workEnvironment: has.careerMatches,
     avoidWorkEnvironment: has.avoidEnvironments,
-    moneyStyle: has.moneyStyle,
-    moneyLeakPattern: has.moneyStyle || has.lifeTraps,
+    leadershipStyle: true,
+    coworkerFit: true,
     independenceOrBusinessPotential: has.careerMatches,
+    // 돈·수익화 (5장)
+    moneyStyle: has.moneyStyle,
+    monetizationStyle: true,
+    moneyLeakPattern: has.moneyStyle || has.lifeTraps,
+    pricingAndContractAdvice: true,
+    productizationAdvice: true,
+    // 관계·연애 (6장)
+    loveStyle: true,
+    marriageLongTermStyle: true,
+    heartOpeningPattern: true,
+    heartClosingPattern: true,
+    conflictPattern: true,
     // 타이밍·미래·전략
-    pastTimingAnchor: has.timingAnchors,
     futureThreeYears: has.futureYears,
     practicalStrategy: true,
   };

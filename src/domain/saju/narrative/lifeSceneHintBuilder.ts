@@ -16,7 +16,9 @@ export type LifeSceneSectionId =
   | 'openingDefinition'
   | 'lifeStructureNarrative'
   | 'repeatedPatternNarrative'
-  | 'realityActivationNarrative'
+  | 'careerTalentNarrative'
+  | 'moneyMonetizationNarrative'
+  | 'relationshipLoveNarrative'
   | 'futureFlowNarrative'
   | 'finalStrategyNarrative';
 
@@ -248,7 +250,7 @@ export function buildLifeSceneHints(input: PersonalSajuGptInput): LifeSceneHint[
     betterUse: '작은 기준은 그때그때 부드럽게 말하기',
   });
 
-  // 4) realityActivationNarrative — lifeWeapon + career + money
+  // 4) careerTalentNarrative — lifeWeapon + career (일과 재능 독립 장)
   const sortedWeapons: LifeWeapon[] = [...input.lifeWeapons]
     .sort((a, b) => (b.strengthScore ?? 0) - (a.strengthScore ?? 0))
     .slice(0, 2);
@@ -256,7 +258,7 @@ export function buildLifeSceneHints(input: PersonalSajuGptInput): LifeSceneHint[
     const seed = WEAPON_SCENE_BY_CATEGORY[w.category];
     if (seed) {
       hints.push({
-        sectionId: 'realityActivationNarrative',
+        sectionId: 'careerTalentNarrative',
         source: 'lifeWeapon',
         situation: seed.situation ?? w.realLifeScene ?? '능력이 발휘되는 순간',
         likelyBehavior: seed.likelyBehavior ?? w.howToUse ?? '자연스럽게 정리',
@@ -268,7 +270,7 @@ export function buildLifeSceneHints(input: PersonalSajuGptInput): LifeSceneHint[
   const topCareer: CareerMatch | undefined = pickFirst(input.careerSpecificAnalysis.topCareerMatches);
   if (topCareer) {
     hints.push({
-      sectionId: 'realityActivationNarrative',
+      sectionId: 'careerTalentNarrative',
       source: 'careerSpecificAnalysis',
       situation: '흐름이 막혀 누군가 정리해야 하는 자리',
       likelyBehavior: '병목을 찾고 다음 단계로 굴림',
@@ -276,10 +278,12 @@ export function buildLifeSceneHints(input: PersonalSajuGptInput): LifeSceneHint[
       betterUse: '결과를 외부에서 확인 가능한 형태로 남기기',
     });
   }
+
+  // 5) moneyMonetizationNarrative — 돈/수익화 독립 장
   const topMoney: MoneyMakingStyleItem | undefined = pickFirst(input.careerSpecificAnalysis.moneyMakingStyle);
   if (topMoney) {
     hints.push({
-      sectionId: 'realityActivationNarrative',
+      sectionId: 'moneyMonetizationNarrative',
       source: 'moneyMakingStyle',
       situation: '실력을 외부에 제안해야 할 때',
       likelyBehavior: '먼저 도와주고 가격은 나중에 얘기',
@@ -288,6 +292,33 @@ export function buildLifeSceneHints(input: PersonalSajuGptInput): LifeSceneHint[
       betterUse: '작업 범위·기간·보상 기준을 먼저 명문화',
     });
   }
+  hints.push({
+    sectionId: 'moneyMonetizationNarrative',
+    source: 'moneyMakingStyle',
+    situation: '능력을 한 번에 크게 굴리고 싶은 유혹',
+    likelyBehavior: '작은 단위로 검증하고 반복 가능한 구조 만들기',
+    innerReaction: '큰 한방보다 신뢰가 쌓이는 흐름이 더 편함',
+    betterUse: '검증된 작은 상품을 점진 확장',
+  });
+
+  // 6) relationshipLoveNarrative — 관계/연애 독립 장
+  hints.push({
+    sectionId: 'relationshipLoveNarrative',
+    source: 'relationshipPattern',
+    situation: '관계 초반 신뢰 형성 시점',
+    likelyBehavior: '뜨거운 말보다 행동의 일관성을 본다',
+    innerReaction: '말과 행동이 맞는지 오래 관찰',
+    betterUse: '약속을 지키는 사람을 시간 두고 가까이',
+  });
+  hints.push({
+    sectionId: 'relationshipLoveNarrative',
+    source: 'relationshipPattern',
+    situation: '서운함이 작게 쌓이는 순간',
+    likelyBehavior: '한번 더 참고 신호를 안 줌',
+    innerReaction: '안에서는 기준선이 깎이는 게 보임',
+    externalMisunderstanding: '상대는 별일 아니라고 느낌',
+    betterUse: '마음이 닫히기 전 짧게 신호',
+  });
 
   // 5) futureFlowNarrative — 첫 연도 시나리오
   const firstYear = input.futureTimingAnalysis.years[0];

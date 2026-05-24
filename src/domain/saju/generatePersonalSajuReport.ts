@@ -285,6 +285,8 @@ export interface NarrativeGenerateOptions {
   callGpt: NarrativeGptCaller;
   maxRepairAttempts?: number;
   now?: Date;
+  /** 앞으로 3년 장 포함 여부 (기본 false — 별도 기능으로 분리될 수 있음) */
+  includeFutureFlow?: boolean;
 }
 
 export interface NarrativeGenerateResult {
@@ -320,7 +322,9 @@ export async function generateNarrativePersonalSajuReport(
   // 2026-05: TopicCoverageMap + LifeSceneHint → NarrativePlan
   const topicCoverageMap = buildTopicCoverageMap(gptInput);
   const lifeSceneHints = buildLifeSceneHints(gptInput);
-  const narrativePlans = buildNarrativePlans(gptInput, lifeSceneHints);
+  const narrativePlans = buildNarrativePlans(gptInput, lifeSceneHints, {
+    includeFutureFlow: opts.includeFutureFlow ?? false,
+  });
 
   // contextGuard 입력에는 NormalizedBirth.context(ageYears 등) 필요 — 다시 normalize
   const normalized = normalizeBirthInput(input, now);

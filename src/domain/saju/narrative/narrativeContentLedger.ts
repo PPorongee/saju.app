@@ -42,16 +42,38 @@ export function buildNarrativeContentLedger(): ContentLedgerEntry[] {
     '"이건 내 얘기 같다" 공감을 만드는 장'
   );
 
-  push(e, 'realityActivationNarrative',
-    '일·돈·관계에서 이 사주가 강해지는 방식 — 현실 연결',
-    ['잘 맞는 직업군 (careerSpecificAnalysis 구체 단어)',
-     '잘 맞는 일하는 환경', '피해야 할 업무 환경',
-     '돈이 붙는 방식 (moneyMakingStyle)', '돈이 새는 패턴',
-     '편해지는 관계와 지치는 관계',
-     '직업·돈·관계를 끊지 말고 한 흐름으로 이어 설명'],
-    ['앞에서 설명한 기질 반복', '3년 연도별 흐름 상세'],
-    ['lifeStructureNarrative에서 다룬 성격 결을 같은 표현으로 반복 금지'],
-    '현실 작동 방식 — 카드 나열이 아니라 문장 속에 직업군 녹이기'
+  push(e, 'careerTalentNarrative',
+    '일과 재능 — 어떤 역할에서 실력이 살아나는가 (독립 장)',
+    ['핵심 재능 (lifeWeapons)', '잘 맞는 역할/직무', '잘 맞는 조직 환경 (bestWorkStyle)',
+     '피해야 할 업무 환경 (avoidCareerEnvironments)', '리더십 스타일',
+     '같이 일하면 좋은 동료', '이직/독립/프리랜서 가능성',
+     '구체 직업군 (3개 이상, 산업 2개 이상)', '왜 그 일이 맞는지 핵심 능력과 연결'],
+    ['돈 상세', '관계/연애 상세', '미래 3년'],
+    ['lifeStructureNarrative의 기질 설명을 같은 표현으로 반복 금지'],
+    '재능과 일 — 직업군을 나열하지 말고 핵심 능력의 적용처로 풀어쓰기'
+  );
+
+  push(e, 'moneyMonetizationNarrative',
+    '돈과 수익화 — 어떤 방식으로 돈이 붙는가 (독립 장)',
+    ['돈이 붙는 방식 (moneyMakingStyle)', '돈이 새는 패턴',
+     '월급형/전문성형/프로젝트형/사업형 성향', '프리랜서·1인 사업 가능성',
+     '가격표/계약/정산 기준', '능력을 상품화하는 방식',
+     '피해야 할 돈 패턴 (계약 없이 능력 흘려보내기 등)'],
+    ['직업군 상세 (4장 영역)', '관계/연애 (6장 영역)',
+     '투자/거래/시장 타이밍 권유 표현 절대 금지'],
+    ['careerTalentNarrative의 직업군 설명을 같은 표현으로 반복 금지'],
+    '돈 — 수익화 구조·보상 방식·계약 기준 중심. 투자 조언처럼 들리면 실패'
+  );
+
+  push(e, 'relationshipLoveNarrative',
+    '관계와 연애 — 어떤 사람에게 마음이 열리고 닫히는가 (독립 장)',
+    ['인간관계 스타일', '편한 사람 유형 / 지치는 사람 유형',
+     '연애에서 마음이 열리는 방식', '마음이 닫히는 방식',
+     '결혼/장기 관계에서 중요한 조건', '갈등이 생기는 방식',
+     '잘 맞는 관계 운영법', '단정 금지 (relationshipStatus 반영)'],
+    ['직업/돈 상세', '미래 3년'],
+    ['repeatedPatternNarrative의 관계 패턴을 같은 표현으로 반복 금지 — 여긴 스타일'],
+    '관계와 연애 — 마음의 결, 신뢰가 만들어지는 방식 중심'
   );
 
   push(e, 'futureFlowNarrative',
@@ -188,32 +210,74 @@ export function buildNarrativeCoverageRequirements(): NarrativeCoverageRequireme
       ],
     },
     {
-      sectionId: 'realityActivationNarrative',
+      sectionId: 'careerTalentNarrative',
       requiredDataSources: [
         'lifeWeapons',
         'careerSpecificAnalysis.topCareerMatches',
         'careerSpecificAnalysis.bestWorkStyle',
         'careerSpecificAnalysis.avoidCareerEnvironments',
-        'careerSpecificAnalysis.moneyMakingStyle',
       ],
       requiredNarrativeElements: [
-        '핵심 능력(이 사주의 강점) 한 줄',
+        '핵심 재능(이 사주의 강점) 한 줄',
         '그 능력이 잘 발휘되는 업무 환경',
-        '구체 직업군 3개 이상 자연스럽게(문장 속에)',
-        '피해야 할 환경 한두 가지',
-        '돈이 붙는 방식(보상 구조 중심, 투자 권유 X)',
-        '편해지는 관계 vs 지치는 관계',
+        '구체 직업군 3개 이상 자연스럽게(문장 속에, 산업 2개 이상)',
+        '피해야 할 업무 환경 한두 가지',
+        '리더십 스타일',
+        '같이 일하면 좋은 사람 유형',
+        '이직/독립/프리랜서 가능성 조건부 언급',
       ],
       optionalNarrativeElements: [
-        '연애/결혼은 userContext.relationshipStatus 반영',
+        '결과로 인정받는 환경 vs 보고/눈치 중심 환경',
       ],
       forbiddenShortcuts: [
         '추천 직업군:',
         '피해야 할 환경:',
+      ],
+    },
+    {
+      sectionId: 'moneyMonetizationNarrative',
+      requiredDataSources: [
+        'careerSpecificAnalysis.moneyMakingStyle',
+        'lifeWeapons',
+      ],
+      requiredNarrativeElements: [
+        '돈이 붙는 방식 (월급형/전문성형/프로젝트형/사업형 중 어디에 가까운지)',
+        '돈이 새는 패턴 (능력 무료 제공, 계약 부재 등)',
+        '수익화 방식 (서비스/상품/콘텐츠/컨설팅 등 구체)',
+        '가격표·작업 범위·정산 기준 같은 운영 가이드',
+        '프리랜서/1인 사업 가능성 조건부',
+      ],
+      optionalNarrativeElements: [
+        '작은 단위 검증 → 반복 가능한 수익 구조',
+      ],
+      forbiddenShortcuts: [
         '시장 타이밍에 맞춰 거래',
         '가격 흐름을 보고 매매',
         '트레이딩이 잘 맞',
         '주식 투자에 적합',
+        '빠른 수익을 노리',
+      ],
+    },
+    {
+      sectionId: 'relationshipLoveNarrative',
+      requiredDataSources: [
+        'relationshipPattern',
+        'userContext',
+      ],
+      requiredNarrativeElements: [
+        '인간관계 스타일 (편한 사람 vs 지치는 사람)',
+        '연애에서 마음이 열리는 방식',
+        '마음이 닫히는 방식',
+        '장기 관계/결혼에서 중요한 조건 (단정 금지)',
+        '갈등이 생기는 방식',
+        '잘 맞는 관계 운영법 (서운함 작을 때 신호 등)',
+      ],
+      optionalNarrativeElements: [
+        '말의 빈도보다 행동의 일관성 결',
+      ],
+      forbiddenShortcuts: [
+        '소통이 중요합니다',
+        '서로를 이해해야',
       ],
     },
     {
