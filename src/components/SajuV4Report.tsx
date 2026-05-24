@@ -9,6 +9,7 @@
 import React, { useState } from 'react';
 import type { ParsedReport } from '@/lib/saju-v4-report-parser';
 import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
+import { StarShareCardWithDownload } from '@/components/star/StarShareCard';
 import type {
   SpecialPoint,
   TenGodAnalysis,
@@ -83,6 +84,18 @@ export interface SajuV4ApiResponse {
   reportText: string;
   validation: { isValid: boolean; issues: Array<{ type: string; sentence: string; reason: string }> };
   attempts: number;
+  // 2026-05: 별빛 키워드 카드
+  starKeywordCard?: {
+    serviceName: string;
+    label: string;
+    titleLead: string;
+    displayTitle: string;
+    shortDescription: string;
+    brightSide: string;
+    shadowSide: string;
+    keywords: string[];
+    hashtag: string;
+  };
 }
 
 export interface Props {
@@ -99,6 +112,25 @@ export function SajuV4Report({ api, birthSummary }: Props) {
     <div className="inner orot-root" style={{ paddingTop: 16, paddingBottom: 32 }}>
       {/* ── 1. 사주 원국 카드 (표지) ── */}
       <SectionPalja api={api} birthSummary={birthSummary} />
+
+      {/* ── 1.5 별빛 키워드 카드 (SNS 공유용 + 저장 버튼) ── */}
+      {api.starKeywordCard && (
+        <div style={{ marginTop: 20, marginBottom: 8 }}>
+          <StarShareCardWithDownload
+            serviceName={api.starKeywordCard.serviceName}
+            label={api.starKeywordCard.label}
+            titleLead={api.starKeywordCard.titleLead}
+            archetypeTitle={api.starKeywordCard.displayTitle}
+            shortDescription={api.starKeywordCard.shortDescription}
+            brightSide={api.starKeywordCard.brightSide}
+            shadowSide={api.starKeywordCard.shadowSide}
+            keywords={api.starKeywordCard.keywords}
+            hashtag={api.starKeywordCard.hashtag}
+            theme="midnight"
+            ratio="feed"
+          />
+        </div>
+      )}
 
       {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩. ── */}
       {!api.reportText ? (

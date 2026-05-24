@@ -37,8 +37,10 @@ import { validateNarrativeReport, collectFailingSectionsFromIssues } from './nar
 import { buildNarrativePlans } from './narrative/narrativePlanBuilder';
 import { buildLifeSceneHints } from './narrative/lifeSceneHintBuilder';
 import { buildTopicCoverageMap } from './narrative/topicCoverageBuilder';
+import { buildStarKeywordCard } from './star/starKeywordCardBuilder';
 import type { NarrativeValidationResult, NarrativePlanSet } from './narrative/narrativeTypes';
 import type { TopicCoverageMap } from './narrative/topicCoverageTypes';
+import type { StarKeywordCardData } from './star/starArchetypeTypes';
 import { DEFAULT_RULE_CONFIG } from './rules/ruleConfig';
 import type { PersonalSajuGptInput, ReportValidationResult, SpecialPoint } from './report/sajuReportSchema';
 
@@ -293,11 +295,12 @@ export interface NarrativeGenerateResult {
   gptInput: PersonalSajuGptInput;
   narrativePlans: NarrativePlanSet;
   topicCoverageMap: TopicCoverageMap;
+  /** 2026-05: 별빛 키워드 카드 (개인사주 최상단 + SNS 공유) */
+  starKeywordCard: StarKeywordCardData;
   prompt: BuiltNarrativePrompt;
   reportText: string;
   validation: NarrativeValidationResult;
   attempts: number;
-  /** 섹션별 repair가 일어났다면 어떤 섹션들이 재작성됐는지 (디버깅용) */
   repairedSections: string[];
 }
 
@@ -325,6 +328,8 @@ export async function generateNarrativePersonalSajuReport(
   const narrativePlans = buildNarrativePlans(gptInput, lifeSceneHints, {
     includeFutureFlow: opts.includeFutureFlow ?? false,
   });
+  // 별빛 키워드 카드 (deterministic — 같은 사주는 같은 별)
+  const starKeywordCard = buildStarKeywordCard(gptInput);
 
   // contextGuard 입력에는 NormalizedBirth.context(ageYears 등) 필요 — 다시 normalize
   const normalized = normalizeBirthInput(input, now);
@@ -372,7 +377,7 @@ export async function generateNarrativePersonalSajuReport(
     validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 
-  return { gptInput, narrativePlans, topicCoverageMap, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections) };
+  return { gptInput, narrativePlans, topicCoverageMap, starKeywordCard, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections) };
 }
 
 /**

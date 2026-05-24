@@ -1699,8 +1699,11 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--orot-ink-mute)', marginBottom: 8, fontFamily: 'var(--orot-font)' }}>{t('savedProfiles', lang)}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {profiles.map((p, i) => (
-                <button key={i} style={{
-                  padding: '8px 14px', borderRadius: '999px', fontSize: 13, fontWeight: 500,
+                <span key={i} style={{
+                  position: 'relative', display: 'inline-flex', alignItems: 'stretch',
+                }}>
+                <button style={{
+                  padding: '8px 28px 8px 14px', borderRadius: '999px', fontSize: 13, fontWeight: 500,
                   background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)',
                   color: 'var(--orot-coral)', cursor: 'pointer', fontFamily: 'var(--orot-font)',
                 }} onClick={() => {
@@ -1771,6 +1774,28 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 }}>
                   {p.name} ({p.year}.{p.month}.{p.day})
                 </button>
+                <button
+                  type="button"
+                  aria-label={`${p.name} 프로필 삭제`}
+                  title="프로필 삭제"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!confirm(`${p.name} 프로필을 삭제할까?`)) return;
+                    const next = profiles.filter((_, idx) => idx !== i);
+                    saveProfiles(next);
+                  }}
+                  style={{
+                    position: 'absolute', top: '50%', right: 6, transform: 'translateY(-50%)',
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: 'rgba(243, 160, 146, 0.15)',
+                    border: '1px solid var(--orot-coral-faint)',
+                    color: 'var(--orot-coral)',
+                    fontSize: 11, lineHeight: 1, fontWeight: 700,
+                    cursor: 'pointer', padding: 0,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >×</button>
+                </span>
               ))}
             </div>
           </div>

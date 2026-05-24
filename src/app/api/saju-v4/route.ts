@@ -52,6 +52,8 @@ export async function POST(req: Request) {
       reportText: result.reportText, // 7섹션 markdown
       validation: result.validation,
       attempts: result.attempts,
+      // 별빛 키워드 카드 (개인사주 최상단 + SNS 공유용)
+      starKeywordCard: result.starKeywordCard,
       narrative: true,
     });
   } catch (err: unknown) {
