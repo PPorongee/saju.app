@@ -6,8 +6,9 @@
 //
 // 디자인은 v3 Orot 시스템(card, orot-eyebrow, orot-coral, var(--orot-*))에 자연스럽게 맞춤.
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import type { ParsedReport } from '@/lib/saju-v4-report-parser';
+import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
 import type {
   SpecialPoint,
   TenGodAnalysis,
@@ -86,42 +87,179 @@ export interface SajuV4ApiResponse {
 
 export interface Props {
   api: SajuV4ApiResponse;
-  parsed: ParsedReport;
+  /** @deprecated narrative 모드에서는 사용하지 않음 — api.reportText에서 직접 파싱 */
+  parsed?: ParsedReport;
   birthSummary: string;  // 표시용 — "1995년 7월 6일 오시 (양력)"
 }
 
-export function SajuV4Report({ api, parsed, birthSummary }: Props) {
+export function SajuV4Report({ api, birthSummary }: Props) {
+  // narrative 모드 — 7섹션 줄글
+  const narrative = api.reportText ? parseNarrativeReport(api.reportText) : null;
   return (
     <div className="inner orot-root" style={{ paddingTop: 16, paddingBottom: 32 }}>
-      {/* ── 명리 데이터 카드 (v3 톤) ── */}
+      {/* ── 1. 사주 원국 카드 (표지) ── */}
       <SectionPalja api={api} birthSummary={birthSummary} />
-      <SectionCoreOverview api={api} />
-      <SectionWuxing elements={api.coreAnalysis.elementStrength} />
-      <SectionUsefulGodDetail useful={api.coreAnalysis.usefulGod} />
-      <SectionStructure api={api} />
-      <SectionDayMasterStrengthCard dm={api.coreAnalysis.dayMasterStrength} />
-      <SectionSpecialStarsDetail stars={api.coreAnalysis.specialStars} />
-      <SectionCombConflictDetail cc={api.coreAnalysis.combinationsAndConflicts} />
 
-      {/* ── AI 분석 (GPT 응답) — reportText 있을 때만 표시. 없으면 로딩 카드. ── */}
+      {/* ── 본문: GPT narrative 7섹션. reportText 없으면 로딩. ── */}
       {!api.reportText ? (
         <SectionAiLoading />
-      ) : (
-        <>
-          <SectionSummary text={parsed.summary} />
-          <SectionIdentityKeywords keywords={api.identityKeywords} parsedItems={parsed.identityKeywords} />
-          <SectionSpecialPoints points={api.specialPoints} parsedReasons={parsed.specialReasons} />
-          <SectionLifeWeapons weapons={api.lifeWeapons} parsedItems={parsed.lifeWeapons} />
-          <SectionLifeTraps traps={api.lifeTraps} parsedItems={parsed.lifeTraps} />
-          <SectionFortuneTriggers triggers={api.fortuneTriggers} parsedAct={parsed.fortuneActivating} parsedBlk={parsed.fortuneBlocking} />
-          <SectionQuestions questions={parsed.questions} />
-          <SectionNextYears fortune={api.fortune} parsedYears={parsed.nextThreeYears} />
-          <SectionPracticalGuide text={parsed.practicalGuide} finalMessage={parsed.finalMessage} />
-          {!api.validation.isValid && <SectionValidationWarning issues={api.validation.issues} />}
-        </>
+      ) : narrative && (
+        <div style={{ marginTop: 18 }}>
+          <NarrativeSection
+            title="이 사주를 한 문장으로 말하면"
+            body={narrative.openingDefinition}
+            eyebrow="✦ 시작"
+          />
+          <NarrativeSection
+            title="당신이 이런 방식으로 살아온 이유"
+            body={narrative.lifeStructureNarrative}
+            eyebrow="✦ 기질과 내면"
+          />
+          <NarrativeSection
+            title="반복해서 찾아오는 삶의 패턴"
+            body={narrative.repeatedPatternNarrative}
+            eyebrow="✦ 반복되는 결"
+          />
+          <NarrativeSection
+            title="일·돈·관계에서 운이 살아나는 방식"
+            body={narrative.realityActivationNarrative}
+            eyebrow="✦ 현실 작동"
+          />
+          <NarrativeFutureFlow data={narrative.futureFlowNarrative} />
+          <NarrativeSection
+            title="결국 이 사주는 이렇게 써야 해요"
+            body={narrative.finalStrategyNarrative}
+            eyebrow="✦ 결론"
+          />
+          {narrative.finalLine && (
+            <NarrativeFinalLine text={narrative.finalLine} />
+          )}
+        </div>
+      )}
+
+      {/* ── 명리 근거 보기 (접힘) ── */}
+      <details className="card" style={{ marginTop: 18, padding: 14 }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--orot-ink-mute)' }}>
+          📜 명리 근거 보기 (계산 데이터)
+        </summary>
+        <div style={{ marginTop: 14 }}>
+          <SectionCoreOverview api={api} />
+          <SectionWuxing elements={api.coreAnalysis.elementStrength} />
+          <SectionUsefulGodDetail useful={api.coreAnalysis.usefulGod} />
+          <SectionStructure api={api} />
+          <SectionDayMasterStrengthCard dm={api.coreAnalysis.dayMasterStrength} />
+          <SectionSpecialStarsDetail stars={api.coreAnalysis.specialStars} />
+          <SectionCombConflictDetail cc={api.coreAnalysis.combinationsAndConflicts} />
+        </div>
+      </details>
+
+      {api.reportText && !api.validation.isValid && (
+        <SectionValidationWarning issues={api.validation.issues} />
       )}
     </div>
   );
+}
+
+// ============================================================
+// Narrative 섹션 — 책 챕터처럼 큰 제목 + 줄글 본문
+// ============================================================
+function NarrativeSection({ title, body, eyebrow }: { title: string; body: string; eyebrow?: string }) {
+  if (!body || !body.trim()) return null;
+  return (
+    <section style={{ marginTop: 24 }}>
+      {eyebrow && (
+        <div className="orot-eyebrow" style={{ marginBottom: 8 }}>{eyebrow}</div>
+      )}
+      <h2 style={{
+        fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)',
+        margin: '0 0 16px', letterSpacing: '-0.01em', lineHeight: 1.35,
+        fontFamily: 'var(--orot-font)',
+      }}>{title}</h2>
+      <NarrativeBody text={body} />
+    </section>
+  );
+}
+
+function NarrativeFutureFlow({ data }: { data: { intro: string; years: Array<{ year: number; body: string }> } }) {
+  if (!data.intro && data.years.length === 0) return null;
+  return (
+    <section style={{ marginTop: 24 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 8 }}>✦ 앞으로</div>
+      <h2 style={{
+        fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)',
+        margin: '0 0 16px', letterSpacing: '-0.01em', lineHeight: 1.35,
+        fontFamily: 'var(--orot-font)',
+      }}>앞으로 3년, 어떤 판이 열릴까</h2>
+      {data.intro && <NarrativeBody text={data.intro} />}
+      <div style={{ marginTop: 16 }}>
+        {data.years.map(y => (
+          <div key={y.year} style={{ marginTop: 18 }}>
+            <h3 style={{
+              fontSize: 17, fontWeight: 700, color: 'var(--orot-ink)',
+              margin: '0 0 10px', display: 'inline-block',
+              paddingBottom: 4, borderBottom: '2px solid var(--orot-coral-faint)',
+              fontFamily: 'var(--orot-font)',
+            }}>{y.year}</h3>
+            <NarrativeBody text={y.body} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function NarrativeFinalLine({ text }: { text: string }) {
+  return (
+    <section style={{ marginTop: 28, marginBottom: 12 }}>
+      <div className="card" style={{
+        padding: '20px 18px',
+        background: 'linear-gradient(135deg, rgba(243,160,146,0.10), rgba(240,199,94,0.05))',
+        border: '1px solid var(--orot-coral-faint)',
+        textAlign: 'center',
+      }}>
+        <div className="orot-eyebrow" style={{ marginBottom: 8 }}>마지막 한 문장</div>
+        <NarrativeBody text={text} />
+      </div>
+    </section>
+  );
+}
+
+// 본문 — 줄글 위주 렌더 (단락·짧은 하위 헤더·간단 리스트만 처리)
+function NarrativeBody({ text }: { text: string }) {
+  const lines = text.split('\n');
+  const out: React.ReactElement[] = [];
+  let para: string[] = [];
+  const flush = (k: string) => {
+    if (para.length === 0) return;
+    out.push(
+      <p key={k} style={{ margin: '10px 0', fontSize: 15, lineHeight: 1.85, color: 'var(--orot-ink)' }}>
+        {para.join(' ')}
+      </p>
+    );
+    para = [];
+  };
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed) { flush('p-' + i); return; }
+    if (/^#{3,4}\s+/.test(trimmed)) {
+      flush('p-' + i);
+      out.push(<div key={'h-' + i} style={{
+        fontSize: 14, fontWeight: 700, color: 'var(--orot-coral)',
+        marginTop: 14, marginBottom: 4, fontFamily: 'var(--orot-font)',
+      }}>{trimmed.replace(/^#+\s+/, '')}</div>);
+      return;
+    }
+    if (/^[-*]\s+/.test(trimmed)) {
+      flush('p-' + i);
+      out.push(<div key={'li-' + i} style={{
+        fontSize: 15, lineHeight: 1.85, marginLeft: 12, color: 'var(--orot-ink)',
+      }}>· {trimmed.replace(/^[-*]\s+/, '')}</div>);
+      return;
+    }
+    para.push(trimmed);
+  });
+  flush('p-final');
+  return <>{out}</>;
 }
 
 // ============================================================

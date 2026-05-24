@@ -32,11 +32,17 @@ import { buildPersonalSajuPrompt, type BuiltPrompt } from './report/personalSaju
 import { buildContextGuard } from './report/contextGuard';
 import { buildContentLedger } from './report/contentLedgerBuilder';
 import { validateReport } from './report/reportValidator';
+import { buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt } from './narrative/narrativePromptBuilder';
+import { validateNarrativeReport } from './narrative/narrativeReportValidator';
+import type { NarrativeValidationResult } from './narrative/narrativeTypes';
 import { DEFAULT_RULE_CONFIG } from './rules/ruleConfig';
 import type { PersonalSajuGptInput, ReportValidationResult, SpecialPoint } from './report/sajuReportSchema';
 
 /** 외부 LLM 호출 어댑터 — OpenAI/Claude 등 wire-up은 외부. */
 export type GptCaller = (prompt: BuiltPrompt) => Promise<string>;
+
+/** 서사형(narrative) LLM 호출 어댑터 — 같은 {system,user} 구조 사용. */
+export type NarrativeGptCaller = (prompt: BuiltNarrativePrompt) => Promise<string>;
 
 export interface GenerateOptions {
   callGpt: GptCaller;
@@ -262,6 +268,67 @@ export async function generatePersonalSajuReport(
     };
     // 다음 루프에서 repairPrompt 사용
     Object.assign(prompt, repairPrompt);
+  }
+
+  return { gptInput, prompt, reportText, validation, attempts };
+}
+
+// ============================================================
+// 서사형(narrative) 리포트 — 카드형 대신 책처럼 읽히는 7섹션 줄글
+// ============================================================
+
+export interface NarrativeGenerateOptions {
+  callGpt: NarrativeGptCaller;
+  maxRepairAttempts?: number;
+  now?: Date;
+}
+
+export interface NarrativeGenerateResult {
+  gptInput: PersonalSajuGptInput;
+  prompt: BuiltNarrativePrompt;
+  reportText: string;
+  validation: NarrativeValidationResult;
+  attempts: number;
+}
+
+/**
+ * 서사형 개인사주 리포트 생성.
+ * 분석 데이터(계산 + careerSpecificAnalysis + timingAnchors + futureTimingAnalysis 등)는
+ * calculateAnalysisOnly가 만든 PersonalSajuGptInput을 그대로 재사용한다.
+ * 다른 점은 prompt(narrative)와 validator(narrative)뿐.
+ */
+export async function generateNarrativePersonalSajuReport(
+  input: BirthInput,
+  opts: NarrativeGenerateOptions,
+): Promise<NarrativeGenerateResult> {
+  const now = opts.now ?? new Date();
+  const maxAttempts = opts.maxRepairAttempts ?? 1;
+
+  // 기존 결정론 분석 그대로 재사용
+  const gptInput = calculateAnalysisOnly(input, now);
+
+  // contextGuard 입력에는 NormalizedBirth.context(ageYears 등) 필요 — 다시 normalize
+  const normalized = normalizeBirthInput(input, now);
+  const contextGuard = buildContextGuard(normalized.context, normalized.hourUnknown);
+  const prompt = buildNarrativePersonalSajuPrompt({ input: gptInput, contextGuard });
+
+  let attempts = 0;
+  let reportText = '';
+  let validation: NarrativeValidationResult = { isValid: true, issues: [] };
+  let currentPrompt = prompt;
+
+  for (let i = 0; i <= maxAttempts; i++) {
+    attempts++;
+    reportText = await opts.callGpt(currentPrompt);
+    validation = validateNarrativeReport({ reportText, gptInput });
+    if (validation.isValid) break;
+    // repair: 같은 system 유지, user에 위반 issue 추가하여 재호출
+    currentPrompt = {
+      system: prompt.system,
+      user: prompt.user
+        + `\n\n[이전 응답이 다음 narrative 검증을 위반했다. 같은 7섹션 구조 유지하면서 위반 부분만 수정해 다시 작성하라. 카드/리스트로 회귀 금지, 항목형 표현 줄이기, 같은 조언 반복 금지.]\n`
+        + validation.issues.slice(0, 12).map(iss => `- (${iss.type}, ${iss.severity}) "${iss.sentence}" — ${iss.reason} → 제안: ${iss.suggestion}`).join('\n'),
+    };
   }
 
   return { gptInput, prompt, reportText, validation, attempts };

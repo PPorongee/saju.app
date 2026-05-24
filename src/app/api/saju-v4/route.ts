@@ -1,14 +1,16 @@
-// v4 API route — 결정론적 계산 + GPT 해석.
-// v3 /api/saju 는 그대로 유지. v4는 새 endpoint.
+// v4 API route — 결정론적 계산 + GPT 서사형(narrative) 해석.
+// 기존 카드형 generatePersonalSajuReport는 코드에 남아 있으나 호출하지 않음.
+// 출력은 책처럼 읽히는 7섹션 줄글 (사주원국 카드 + 명리 근거 보기는 UI에서 별도 렌더).
 
 import 'server-only';
 import { NextResponse } from 'next/server';
-import { generatePersonalSajuReport } from '@/domain/saju/generatePersonalSajuReport';
+import { generateNarrativePersonalSajuReport } from '@/domain/saju/generatePersonalSajuReport';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import { createOpenAiGptCaller } from '@/lib/saju-v4-gpt-caller';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 90;
 
 interface RequestBody {
   input: BirthInput;
@@ -29,7 +31,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await generatePersonalSajuReport(body.input, {
+    const result = await generateNarrativePersonalSajuReport(body.input, {
       callGpt: createOpenAiGptCaller(),
       maxRepairAttempts: body.maxRepairAttempts ?? 1,
     });
@@ -43,10 +45,14 @@ export async function POST(req: Request) {
       lifeWeapons: result.gptInput.lifeWeapons,
       lifeTraps: result.gptInput.lifeTraps,
       fortuneTriggers: result.gptInput.fortuneTriggers,
+      careerSpecificAnalysis: result.gptInput.careerSpecificAnalysis,
+      timingAnchors: result.gptInput.timingAnchors,
+      futureTimingAnalysis: result.gptInput.futureTimingAnalysis,
       fortune: result.gptInput.fortune,
-      reportText: result.reportText,
+      reportText: result.reportText, // 7섹션 markdown
       validation: result.validation,
       attempts: result.attempts,
+      narrative: true,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'unknown_error';

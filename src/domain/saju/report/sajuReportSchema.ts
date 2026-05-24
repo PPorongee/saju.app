@@ -409,7 +409,11 @@ export interface FutureTimingAnalysis {
 export type LedgerSectionId =
   | 'summary' | 'keywords' | 'specialPoints' | 'lifeWeapons'
   | 'lifeTraps' | 'fortuneChoices' | 'questions'
-  | 'futureThreeYears' | 'practicalGuide';
+  | 'futureThreeYears' | 'practicalGuide'
+  // narrative 모드 섹션 id (카드형 ID와 분리)
+  | 'birthChartCard' | 'openingDefinition' | 'lifeStructureNarrative'
+  | 'repeatedPatternNarrative' | 'realityActivationNarrative'
+  | 'futureFlowNarrative' | 'finalStrategyNarrative' | 'evidenceView';
 
 export interface ContentLedgerEntry {
   sectionId: LedgerSectionId;
