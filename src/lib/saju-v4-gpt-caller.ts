@@ -11,7 +11,9 @@ import type { GptCaller } from '@/domain/saju/generatePersonalSajuReport';
 
 const DEFAULT_MODEL = process.env.SAJU_V4_GPT_MODEL ?? 'gpt-4o-mini';
 const DEFAULT_TEMPERATURE = Number(process.env.SAJU_V4_GPT_TEMPERATURE ?? '0.6');
-const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.SAJU_V4_GPT_MAX_TOKENS ?? '4000');
+// 서사형 V4(2026-05) — 6장 밀도 보강 + 명리 풀이 + 직업 다갈래 흡수로 본문이 길어짐.
+// 4000 → 7000으로 상향. gpt-4o-mini 출력 한도(16k) 안에서 안전.
+const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.SAJU_V4_GPT_MAX_TOKENS ?? '7000');
 
 let _client: OpenAI | null = null;
 function client(): OpenAI {

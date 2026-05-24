@@ -42,18 +42,29 @@ export interface NarrativePersonalSajuReport {
 }
 
 // Validator 결과
+export type NarrativeValidationIssueType =
+  | 'checklist-overuse'              // 항목형 표현 남발
+  | 'repeated-theme-no-development'  // 같은 주제 반복만, 발전 없음
+  | 'narrative-flow-break'           // 갑자기 카드/리스트로 튐
+  | 'hidden-question-uncovered'      // 10가지 질문 중 누락된 답
+  | 'concreteness-misplaced'         // 구체성이 잘못된 섹션에
+  | 'generic'                        // 일반론
+  | 'context-conflict'               // 사용자 상태 충돌
+  | 'invented-claim'                 // JSON에 없는 명리 정보
+  | 'fake-rarity'                    // 허위 희소성
+  | 'tone-broken'                    // 친근 존댓말 위반
+  // 2026-05 추가 — V4 정보량·구체성·명리 풀이 복원용
+  | 'underdeveloped-section'         // 섹션이 너무 요약처럼 끝남
+  | 'missing-required-data-source'   // requiredDataSources 누락
+  | 'unexplained-technical-term'     // 명리 용어 등장 + 쉬운 풀이 없음
+  | 'generic-opening'                // 1장 첫 문장이 일반론
+  | 'weak-final-message'             // 7장 마지막 한 문장이 일반론
+  | 'yearly-flow-too-similar'        // 2026/2027/2028 차이 없음
+  | 'career-recommendation-too-narrow' // 직업군이 너무 좁거나 이유 부족
+  | 'financial-advice-risk';         // 투자/거래 권유 톤
+
 export interface NarrativeValidationIssue {
-  type:
-    | 'checklist-overuse'        // 항목형 표현 남발
-    | 'repeated-theme-no-development' // 같은 주제 반복만, 발전 없음
-    | 'narrative-flow-break'     // 갑자기 카드/리스트로 튐
-    | 'hidden-question-uncovered' // 10가지 질문 중 누락된 답
-    | 'concreteness-misplaced'   // 구체성이 잘못된 섹션에
-    | 'generic'                  // 일반론
-    | 'context-conflict'         // 사용자 상태 충돌
-    | 'invented-claim'           // JSON에 없는 명리 정보
-    | 'fake-rarity'              // 허위 희소성
-    | 'tone-broken';             // 친근 존댓말 위반
+  type: NarrativeValidationIssueType;
   sectionId: string;
   sentence: string;
   reason: string;
@@ -64,4 +75,27 @@ export interface NarrativeValidationIssue {
 export interface NarrativeValidationResult {
   isValid: boolean;
   issues: NarrativeValidationIssue[];
+}
+
+// ============================================================
+// Coverage Rule — "몇 자 이상"이 아니라 "무엇이 빠지면 안 되는지"
+// ============================================================
+export type NarrativeCoverageSectionId =
+  | 'openingDefinition'
+  | 'lifeStructureNarrative'
+  | 'repeatedPatternNarrative'
+  | 'realityActivationNarrative'
+  | 'futureFlowNarrative'
+  | 'finalStrategyNarrative';
+
+export interface NarrativeCoverageRequirement {
+  sectionId: NarrativeCoverageSectionId;
+  /** 본문에 반드시 흡수되어야 할 V4 분석 데이터 키들 */
+  requiredDataSources: string[];
+  /** 본문이 다뤄야 할 서사 요소 (예: 겉모습과 내면의 차이, 패턴의 일/관계 양면) */
+  requiredNarrativeElements: string[];
+  /** 가능하면 다루는 게 좋은 요소 (있으면 가산점, 없어도 통과) */
+  optionalNarrativeElements: string[];
+  /** 사용하면 안 되는 손쉬운 표현들 (체크리스트화 회귀 방지) */
+  forbiddenShortcuts: string[];
 }

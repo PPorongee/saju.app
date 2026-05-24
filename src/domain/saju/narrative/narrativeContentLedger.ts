@@ -2,6 +2,7 @@
 // 각 섹션의 narrativeRole, 흡수 소스, 허용/금지 주제, 중복 금지 규칙 정의.
 
 import type { ContentLedgerEntry, LedgerSectionId } from '../report/sajuReportSchema';
+import type { NarrativeCoverageRequirement } from './narrativeTypes';
 
 export function buildNarrativeContentLedger(): ContentLedgerEntry[] {
   const e: ContentLedgerEntry[] = [];
@@ -103,4 +104,162 @@ function push(
     mustNotRepeatFromPreviousSections: mustNotRepeat,
     keyMessage,
   });
+}
+
+// ============================================================
+// Coverage Rule — 각 장이 반드시 흡수해야 할 V4 데이터/서사 요소
+// 분량(글자 수)을 강제하지 않고 "무엇이 빠지면 안 되는지"만 강제.
+// validator가 이 규칙을 보고 missing-required-data-source / underdeveloped-section 판정.
+// ============================================================
+export function buildNarrativeCoverageRequirements(): NarrativeCoverageRequirement[] {
+  return [
+    {
+      sectionId: 'openingDefinition',
+      requiredDataSources: [
+        'identityKeywords',
+        'specialPoints',
+        'dayMaster',
+      ],
+      requiredNarrativeElements: [
+        '한 줄 정의(너무 일반적이지 않게)',
+        '핵심 키워드 3~5개를 문장 안에 자연스럽게',
+        '이 사주가 눈에 띄는 짧은 이유(가장 강한 specialPoint 1~2개 흡수)',
+        '겉과 속의 결 차이가 드러나는 도입',
+      ],
+      optionalNarrativeElements: [
+        '대표 십성/오행을 일상어로 한 줄 풀이',
+      ],
+      forbiddenShortcuts: [
+        '위기에서 쉽게 꺾이지 않는 힘',
+        '안정성과 신뢰를 중시하는',
+        '강한 사람입니다',
+        '특별한 사주를 타고난',
+        '상위 1%',
+        '키워드 1.', '키워드 2.',
+      ],
+    },
+    {
+      sectionId: 'lifeStructureNarrative',
+      requiredDataSources: [
+        'dayMaster',
+        'elementStrength',
+        'tenGods',
+        'specialPoints',
+      ],
+      requiredNarrativeElements: [
+        '일간을 쉬운 비유로 풀이(예: 무토 → 큰 산/넓은 땅)',
+        '강한 오행/십성이 성격에 어떻게 나타나는지',
+        '겉으로 보이는 모습과 실제 내면의 차이',
+        '주변이 오해하기 쉬운 부분',
+        '본인이 스스로 힘들어할 가능성',
+      ],
+      optionalNarrativeElements: [
+        '지장간/숨은 결의 가벼운 비유 풀이',
+        '초년·가족 흔적(단정 금지, "~였을 가능성")',
+      ],
+      forbiddenShortcuts: [
+        '어린 시절부터 책임감이 강했던',
+        '특별한 재능을 가지고 태어난',
+        '함정 1.', '함정 2.',
+        '실제 장면:', '벗어나는 방법:',
+      ],
+    },
+    {
+      sectionId: 'repeatedPatternNarrative',
+      requiredDataSources: [
+        'lifeTraps',
+        'timingAnchors',
+        'combinationsAndConflicts',
+      ],
+      requiredNarrativeElements: [
+        '반복되는 핵심 패턴 2가지 이상을 이야기처럼',
+        '일·관계·가족·돈 중 최소 2개 영역에서 어떻게 나타나는지',
+        '특정 시기(timingAnchors)는 "~였을 수 있어요" 톤으로 짧게',
+        '"당신이 나쁘다"가 아니라 "이 구조가 이렇게 작동한다"',
+      ],
+      optionalNarrativeElements: [
+        '벗어나는 방향(체크리스트 X, 줄글)',
+      ],
+      forbiddenShortcuts: [
+        '2015년에 반드시',
+        '2024년에 무조건',
+        '조언을 구하세요',
+        '도움을 요청하세요',
+      ],
+    },
+    {
+      sectionId: 'realityActivationNarrative',
+      requiredDataSources: [
+        'lifeWeapons',
+        'careerSpecificAnalysis.topCareerMatches',
+        'careerSpecificAnalysis.bestWorkStyle',
+        'careerSpecificAnalysis.avoidCareerEnvironments',
+        'careerSpecificAnalysis.moneyMakingStyle',
+      ],
+      requiredNarrativeElements: [
+        '핵심 능력(이 사주의 강점) 한 줄',
+        '그 능력이 잘 발휘되는 업무 환경',
+        '구체 직업군 3개 이상 자연스럽게(문장 속에)',
+        '피해야 할 환경 한두 가지',
+        '돈이 붙는 방식(보상 구조 중심, 투자 권유 X)',
+        '편해지는 관계 vs 지치는 관계',
+      ],
+      optionalNarrativeElements: [
+        '연애/결혼은 userContext.relationshipStatus 반영',
+      ],
+      forbiddenShortcuts: [
+        '추천 직업군:',
+        '피해야 할 환경:',
+        '시장 타이밍에 맞춰 거래',
+        '가격 흐름을 보고 매매',
+        '트레이딩이 잘 맞',
+        '주식 투자에 적합',
+      ],
+    },
+    {
+      sectionId: 'futureFlowNarrative',
+      requiredDataSources: [
+        'futureTimingAnalysis.years',
+        'fortuneTriggers',
+      ],
+      requiredNarrativeElements: [
+        '각 연도(20XX)의 핵심 주제가 명확히 다름',
+        '연도마다 실제로 생길 수 있는 사건 유형',
+        '연도마다 잡아야 할 것과 조심할 것',
+        '전년도/다음 연도와의 차이가 본문에서 드러남',
+      ],
+      optionalNarrativeElements: [
+        '도입/마무리 한 단락(3년 흐름 요약)',
+      ],
+      forbiddenShortcuts: [
+        '기회/주의/행동',
+        '학습과 자격이 누적되는 해',
+        '학습과 자격이 누적됩니다',
+      ],
+    },
+    {
+      sectionId: 'finalStrategyNarrative',
+      requiredDataSources: [
+        'fortuneTriggers.fortuneActivatingChoices',
+        'fortuneTriggers.fortuneBlockingChoices',
+        'lifeWeapons',
+        'lifeTraps',
+      ],
+      requiredNarrativeElements: [
+        '앞 장들을 결론으로 압축(반복 X)',
+        '일·돈·관계·멘탈·선택 기준이 자연스럽게 들어감',
+        '마지막 한 문장은 저장하고 싶을 정도로 기억에 남게',
+      ],
+      optionalNarrativeElements: [
+        '선택 기준(어떤 자리/관계에 OK를 할지)',
+      ],
+      forbiddenShortcuts: [
+        '긍정적인 결과를 가져올',
+        '행복한 삶을 살게',
+        '잘 살아갈 수 있을',
+        '협업을 통해 더 나은 결과',
+        '항상 최선을 다하면',
+      ],
+    },
+  ];
 }
