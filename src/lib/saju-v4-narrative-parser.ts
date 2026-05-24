@@ -37,7 +37,9 @@ const SECTION_KEYS = [
 
 export function parseNarrativeReport(markdown: string): ParsedNarrativeReport {
   const sections: Record<string, string> = Object.fromEntries(SECTION_KEYS.map(k => [k, '']));
-  const re = /^#\s+(\d+)\.\s+(.+)$/gm;
+  // 2026-05 hotfix: GPT가 가끔 ##/### 또는 "# 1:" 형태로 헤더를 출력 — 더 관대하게 매칭.
+  // # 또는 ## 시작 + 숫자 + (. : ) 중 하나
+  const re = /^#{1,3}\s*(\d+)\s*[.:)]\s+(.+)$/gm;
   const matches: Array<{ start: number; idx: number }> = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(markdown)) !== null) {

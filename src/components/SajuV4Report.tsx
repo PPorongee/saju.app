@@ -133,10 +133,12 @@ export function SajuV4Report({ api, birthSummary }: Props) {
         </div>
       )}
 
-      {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩. ── */}
+      {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩.
+            2026-05 hotfix: parser가 헤더를 못 잡았으면(7섹션 모두 비어있음)
+            reportText 원문을 fallback으로 보여줘 사용자에 빈 화면 노출 방지. ── */}
       {!api.reportText ? (
         <SectionAiLoading />
-      ) : narrative && (
+      ) : narrative && hasAnyNarrativeBody(narrative) ? (
         <div style={{ marginTop: 18 }}>
           <NarrativeSection
             title="이 사주를 한 문장으로 말하면"
@@ -177,6 +179,11 @@ export function SajuV4Report({ api, birthSummary }: Props) {
             eyebrow="✦ 결론"
           />
         </div>
+      ) : (
+        // parser가 7섹션 헤더를 못 잡았으면 fallback — 원문 그대로 한 덩어리로
+        <div style={{ marginTop: 18, padding: '20px 16px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: 15, color: 'var(--text)' }}>
+          {api.reportText}
+        </div>
       )}
 
       {/* ── 명리 근거 보기 — 2026-05: 쉬운 설명형으로 재구성 ── */}
@@ -216,6 +223,19 @@ export function SajuV4Report({ api, birthSummary }: Props) {
 // ============================================================
 // Narrative 섹션 — 책 챕터처럼 큰 제목 + 줄글 본문
 // ============================================================
+// 2026-05 hotfix: 7섹션 모두 비어있는지 검사 — parser가 헤더를 못 잡았으면 fallback 트리거
+function hasAnyNarrativeBody(narrative: ReturnType<typeof parseNarrativeReport>): boolean {
+  return !!(
+    narrative.openingDefinition?.trim() ||
+    narrative.lifeStructureNarrative?.trim() ||
+    narrative.repeatedPatternNarrative?.trim() ||
+    narrative.careerTalentNarrative?.trim() ||
+    narrative.moneyMonetizationNarrative?.trim() ||
+    narrative.relationshipLoveNarrative?.trim() ||
+    narrative.finalStrategyNarrative?.trim()
+  );
+}
+
 function NarrativeSection({ title, body, eyebrow }: { title: string; body: string; eyebrow?: string }) {
   if (!body || !body.trim()) return null;
   return (

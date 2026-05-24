@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   try {
     const result = await generateNarrativePersonalSajuReport(body.input, {
       callGpt: createOpenAiGptCaller(),
-      maxRepairAttempts: body.maxRepairAttempts ?? 2,
+      maxRepairAttempts: body.maxRepairAttempts ?? 1,
     });
 
     return NextResponse.json({
