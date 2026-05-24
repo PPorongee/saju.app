@@ -185,12 +185,28 @@ function CoreEvidenceSummary({
 // 3. ElementDistributionBarChart
 // ============================================================
 function ElementDistributionBarChart({ elements }: { elements: ElementStrengthAnalysis }) {
-  const total = Object.values(elements.scores).reduce((a, b) => a + b, 0) || 1;
-  const items = (['수', '금', '화', '목', '토'] as const).map(el => ({
-    el,
-    percent: Math.round(((elements.scores[el as keyof typeof elements.scores] ?? 0) / total) * 100),
-  })).sort((a, b) => b.percent - a.percent);
-
+  // 2026-05 fix: elements.scores의 key는 영문(wood/fire/earth/metal/water)임.
+  // 한글로 직접 접근하면 전부 undefined → 0% 버그. 영문 → 한글 매핑으로 수정.
+  const ENG_TO_KO: Record<string, string> = {
+    wood: '목', fire: '화', earth: '토', metal: '금', water: '수',
+  };
+  const rawTotal = Object.values(elements.scores).reduce((a, b) => a + Math.max(0, b), 0) || 1;
+  // 5오행 합이 100%가 되도록 정수 반올림 + 잔여 조정
+  const raw = (['wood', 'fire', 'earth', 'metal', 'water'] as const).map(engKey => ({
+    el: ENG_TO_KO[engKey],
+    rawPct: Math.max(0, (elements.scores[engKey] ?? 0)) / rawTotal * 100,
+  }));
+  let rounded = raw.map(r => ({ el: r.el, percent: Math.floor(r.rawPct) }));
+  // 잔여 percent 분배 (가장 큰 소수점부터)
+  const used = rounded.reduce((a, b) => a + b.percent, 0);
+  let remainder = 100 - used;
+  const residuals = raw
+    .map((r, i) => ({ i, frac: r.rawPct - Math.floor(r.rawPct) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; k < residuals.length && remainder > 0; k++, remainder--) {
+    rounded[residuals[k].i] = { ...rounded[residuals[k].i], percent: rounded[residuals[k].i].percent + 1 };
+  }
+  const items = rounded.sort((a, b) => b.percent - a.percent);
   const max = items[0]?.percent ?? 0;
 
   return (
