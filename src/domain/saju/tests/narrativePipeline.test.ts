@@ -20,7 +20,7 @@ import { buildStarKeywordCard } from '../star/starKeywordCardBuilder';
 import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
 import { validateNarrativeReport } from '../narrative/narrativeReportValidator';
 import { buildSectionPrompt } from '../narrative/narrativePromptBuilder';
-import { sanitizeNarrativeText, stripFutureLeaks, applyFinalSanitizers } from '../narrative/narrativeSanitizer';
+import { sanitizeNarrativeText, stripFutureLeaks, applyFinalSanitizers, sanitizeUnsupportedUserContext } from '../narrative/narrativeSanitizer';
 import { buildContextGuard } from '../report/contextGuard';
 import { normalizeBirthInput } from '../calendar/normalizeBirthInput';
 import type { BirthInput } from '../calendar/normalizeBirthInput';
@@ -284,6 +284,102 @@ describe('미래 단어 확장 패턴 — validator가 high로 잡는다', () =>
     });
     const leak = r.issues.find(i => i.type === 'future-leak');
     expect(leak).toBeTruthy();
+  });
+});
+
+// ============================================================
+// 2026-05 audit — severity taxonomy + unsupported-user-context
+// ============================================================
+describe('severity taxonomy — high는 사용자 노출 blocking issue 한정', () => {
+  it('missing-topic-coverage (REQUIRED_HARD)는 high가 아니라 medium', () => {
+    // 일부러 본문에 specialPoints 토큰을 안 넣으면 missing-topic-coverage 발동.
+    // 그 issue가 medium severity여야 함.
+    const ref = computed_ref();
+    // 본문에 specialPoints 이름이 들어가지 않도록 짧은 본문만
+    const md = buildMd({});
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+      topicCoverageMap: { specialPoints: true } as any,
+    });
+    const topicIssues = r.issues.filter(i => i.type === 'missing-topic-coverage');
+    // medium만 있어야 함 (high는 안 됨)
+    expect(topicIssues.length).toBeGreaterThan(0);
+    expect(topicIssues.every(i => i.severity === 'medium')).toBe(true);
+  });
+});
+
+describe('unsupported-user-context validator — relationshipStatus=unknown', () => {
+  const ref = computed_ref();
+  // FIXTURES[0] = unknown
+  it('"아내" 단어 → high', () => {
+    const md = buildMd({ relation: '관계에서는 아내와의 균형이 중요합니다.' });
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue = r.issues.find(i => i.type === 'unsupported-user-context' && i.sentence.includes('아내'));
+    expect(issue?.severity).toBe('high');
+  });
+  it('"남편" 단어 → high', () => {
+    const md = buildMd({ relation: '남편과의 대화 패턴이 중요합니다.' });
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue = r.issues.find(i => i.type === 'unsupported-user-context' && i.sentence.includes('남편'));
+    expect(issue?.severity).toBe('high');
+  });
+  it('"자녀와" 단어 → high', () => {
+    const md = buildMd({ life: '자녀와의 관계가 깊어집니다.' });
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue = r.issues.find(i => i.type === 'unsupported-user-context' && i.sentence.includes('자녀'));
+    expect(issue?.severity).toBe('high');
+  });
+  it('"배우자" 단정형 → high, "배우자궁"은 통과', () => {
+    const md1 = buildMd({ relation: '배우자와의 관계는 ...' });
+    const r1 = validateNarrativeReport({
+      reportText: md1, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue1 = r1.issues.find(i => i.type === 'unsupported-user-context' && i.sentence.includes('배우자'));
+    expect(issue1?.severity).toBe('high');
+    // 배우자궁 명리용어는 통과
+    const md2 = buildMd({ life: '일지는 배우자궁으로 본인 자리와 관련된 결입니다.' });
+    const r2 = validateNarrativeReport({
+      reportText: md2, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue2 = r2.issues.find(i => i.type === 'unsupported-user-context' && i.sentence === '배우자');
+    expect(issue2).toBeUndefined();
+  });
+});
+
+describe('sanitizeUnsupportedUserContext — 단정 표현 중립 치환', () => {
+  it('relationshipStatus=unknown → "아내/남편/배우자" 치환', () => {
+    const input = '아내와 대화를 하고, 남편의 입장을 듣고, 배우자와 갈등이 ...';
+    const out = sanitizeUnsupportedUserContext(input, { relationshipStatus: 'unknown', hasChildren: 'unknown' });
+    expect(out).not.toMatch(/아내/);
+    expect(out).not.toMatch(/남편/);
+    expect(out).not.toContain('배우자');
+    expect(out).toContain('가까운 관계의 상대');
+    expect(out).toContain('장기적인 관계의 상대');
+  });
+  it('"배우자궁" 명리용어는 보존', () => {
+    const input = '일지는 배우자궁이라 본인 자리.';
+    const out = sanitizeUnsupportedUserContext(input, { relationshipStatus: 'unknown', hasChildren: 'unknown' });
+    expect(out).toContain('배우자궁');
+  });
+  it('hasChildren=unknown → "자녀/아이" 치환', () => {
+    const input = '자녀와 함께 시간을 보내거나 아이를 가르치는 ...';
+    const out = sanitizeUnsupportedUserContext(input, { relationshipStatus: 'unknown', hasChildren: 'unknown' });
+    expect(out).not.toMatch(/자녀(?=[를는이가와과에도]|$|\s)/);
+    expect(out).not.toMatch(/아이(?=[를는이가와과에도]|$|\s)/);
+    expect(out).toContain('후배·제자·돌봄이 필요한 대상');
+    expect(out).toContain('돌봄이 필요한 대상');
+  });
+  it('relationshipStatus=married + hasChildren=true → 치환 X (원형 유지)', () => {
+    const input = '아내와 깊은 대화를 나누고 자녀와 함께 시간을 보냅니다.';
+    const out = sanitizeUnsupportedUserContext(input, { relationshipStatus: 'married', hasChildren: true });
+    expect(out).toContain('아내');
+    expect(out).toContain('자녀');
   });
 });
 

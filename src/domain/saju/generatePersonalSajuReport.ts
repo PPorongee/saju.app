@@ -36,7 +36,7 @@ import {
   buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt,
   buildSectionPrompt, SECTION_MAX_TOKENS,
 } from './narrative/narrativePromptBuilder';
-import { sanitizeNarrativeText, applyFinalSanitizers } from './narrative/narrativeSanitizer';
+import { sanitizeNarrativeText, sanitizeUnsupportedUserContext, applyFinalSanitizers } from './narrative/narrativeSanitizer';
 import { validateNarrativeReport, collectFailingSectionsFromIssues } from './narrative/narrativeReportValidator';
 import { buildNarrativePlans } from './narrative/narrativePlanBuilder';
 import { buildLifeSceneHints } from './narrative/lifeSceneHintBuilder';
@@ -365,11 +365,18 @@ export async function generateNarrativePersonalSajuReport(
     maxTokens: SECTION_MAX_TOKENS[plan.sectionId] ?? 1500,
   }));
 
+  const uctx = {
+    relationshipStatus: gptInput.userContext.relationshipStatus as string,
+    hasChildren: gptInput.userContext.hasChildren,
+  };
   let sectionTexts = await Promise.all(
     sectionPrompts.map(async sp => {
       const raw = await opts.callGpt(sp.prompt, { maxTokens: sp.maxTokens });
-      // 응답 직후 영문 오행 키 deterministic 치환 (validator 실행 전)
-      return sanitizeNarrativeText(raw);
+      // 응답 직후 sanitize 체인 (validator 실행 전)
+      // 1) 영문 오행 키 → 한글  2) unsupported user-context 단정 표현 → 중립
+      let out = sanitizeNarrativeText(raw);
+      out = sanitizeUnsupportedUserContext(out, uctx);
+      return out;
     })
   );
 
@@ -411,7 +418,9 @@ export async function generateNarrativePersonalSajuReport(
             + sectionIssues.slice(0, 6).map(iss => `- (${iss.type}/${iss.severity}) "${iss.sentence}" — ${iss.reason} → 제안: ${iss.suggestion}`).join('\n'),
         };
         const raw = await opts.callGpt(repairPrompt, { maxTokens: sp.maxTokens });
-        newSectionTexts[idx] = sanitizeNarrativeText(raw);
+        let out = sanitizeNarrativeText(raw);
+        out = sanitizeUnsupportedUserContext(out, uctx);
+        newSectionTexts[idx] = out;
       })
     );
     sectionTexts = newSectionTexts;
@@ -423,7 +432,8 @@ export async function generateNarrativePersonalSajuReport(
   // repair 이후에도 high가 남으면 마지막 안전망: sanitizer 한 번 더 + 미래 단어 제거 + 재검증
   if (!validation.isValid && validation.issues.some(i => i.severity === 'high')) {
     const stripFuture = !narrativePlans.some(p => p.sectionId === 'futureFlowNarrative');
-    reportText = applyFinalSanitizers(reportText, { stripFuture });
+    // 2026-05 audit: user-context sanitize도 final fallback에 포함
+    reportText = applyFinalSanitizers(reportText, { stripFuture, userContext: uctx });
     validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 

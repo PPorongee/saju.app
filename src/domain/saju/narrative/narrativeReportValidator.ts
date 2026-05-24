@@ -573,7 +573,8 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
           type: 'generic-opening', sectionId: 'openingDefinition',
           sentence: firstSentence.slice(0, 80),
           reason: `1장 첫 문장이 일반론 패턴(${pat}) — 누구에게나 적용 가능한 표현`,
-          severity: 'high',
+          // 2026-05 audit: 품질 issue로 분류 (사용자 노출 구조 오류 아님). high → medium.
+          severity: 'medium',
           suggestion: '겉/속 결 차이, 결정 방식, 사람을 대하는 자세 중 하나가 드러나도록 구체화',
         });
         break;
@@ -598,7 +599,8 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
           type: 'weak-final-message', sectionId: 'finalStrategyNarrative',
           sentence: trimmed.slice(0, 80),
           reason: `7장 마무리가 약함/일반론 (${pat})`,
-          severity: 'high',
+          // 2026-05 audit: 품질 issue. high → medium.
+          severity: 'medium',
           suggestion: '사주의 핵심 사용법을 응축한 한 문장으로 (저장하고 싶은 한 문장)',
         });
         break;
@@ -777,7 +779,8 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   for (const pat of GENERIC_PATTERNS) {
     const m = reportText.match(pat);
     if (m) {
-      pushIssue(issues, { type: 'generic', sectionId: 'global', sentence: m[0], reason: '일반론 표현', severity: 'high', suggestion: '구체적 결로 재작성' });
+      // 2026-05 audit: 일반론은 품질 issue. high → medium.
+      pushIssue(issues, { type: 'generic', sectionId: 'global', sentence: m[0], reason: '일반론 표현', severity: 'medium', suggestion: '구체적 결로 재작성' });
     }
   }
   for (const pat of FEAR_PATTERNS) {
@@ -836,7 +839,8 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
           type: 'missing-topic-coverage', sectionId: 'global',
           sentence: topic,
           reason: `필수 토픽 "${topic}"이 본문 어디에도 흡수되지 않음`,
-          severity: 'high',
+          // 2026-05 audit: 본문 어디에도 안 흡수 = 품질 coverage 부족. 사용자 노출 leak 아님. high → medium.
+          severity: 'medium',
           suggestion: `해당 토픽을 가장 자연스러운 섹션에 줄글로 녹여라 (섹션 추가 X, 본문 안에)`,
         });
       }
@@ -880,7 +884,9 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
       type: 'relationship-topic-missing', sectionId: 'global',
       sentence: 'relationship/love',
       reason: '개인사주 본문에 관계/연애/장기 관계 스타일이 전혀 없음 — 궁합 기능이 따로 있어도 개인사주는 "나의 관계 스타일"이 필요',
-      severity: 'high',
+      // 2026-05 audit: 단순 coverage 부족은 품질 issue. high → medium.
+      // (섹션 자체가 비어있거나 다른 섹션이 침범한 경우는 cross-section-leak/final-section-missing이 high로 별도 잡음)
+      severity: 'medium',
       suggestion: '4장 또는 3장에 "관계에서는 ..." / "연애나 가까운 관계에서도 ..." 한 단락 줄글로',
     });
   }
@@ -899,8 +905,9 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   // ─────────────────────────────────────────────
   const uctx = gptInput.userContext;
   if (uctx.relationshipStatus !== 'married') {
-    const forbid = ['배우자', '결혼한 사용자', '남편', '아내', '결혼 생활', '신혼'];
-    for (const w of forbid) {
+    // 2026-05 audit 확장: 부부/기혼자/결혼한 상태 추가. "배우자"는 "배우자궁" 명리용어 제외.
+    const forbidExact = ['결혼한 사용자', '결혼한 상태', '남편', '아내', '결혼 생활', '신혼', '기혼자', '부부'];
+    for (const w of forbidExact) {
       if (reportText.includes(w)) {
         pushIssue(issues, {
           type: 'unsupported-user-context', sectionId: 'global',
@@ -911,9 +918,21 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
         });
       }
     }
+    // "배우자"는 "배우자궁" 제외하고 본문에서 잡음
+    const spouseRe = /배우자(?!궁)/;
+    if (spouseRe.test(reportText)) {
+      pushIssue(issues, {
+        type: 'unsupported-user-context', sectionId: 'global',
+        sentence: '배우자',
+        reason: `userContext.relationshipStatus=${uctx.relationshipStatus}인데 "배우자" 단정 표현 사용 (배우자궁 명리용어 제외)`,
+        severity: 'high',
+        suggestion: '"장기적인 관계의 상대" / "연인·파트너를 생각한다면" 조건부로',
+      });
+    }
   }
   if (uctx.hasChildren !== true) {
-    const forbid = ['자녀와', '아이와', '자녀 양육', '자녀 교육'];
+    // 2026-05 audit 확장: "자녀"·"아이" 단독 단정 표현도 추가 (단, 명리용어 풀이는 제외)
+    const forbid = ['자녀와', '아이와', '자녀 양육', '자녀 교육', '자녀를', '자녀가', '자녀의'];
     for (const w of forbid) {
       if (reportText.includes(w)) {
         pushIssue(issues, {
@@ -921,7 +940,7 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
           sentence: w,
           reason: `userContext.hasChildren=${String(uctx.hasChildren)}인데 "${w}" 표현 사용 — 자녀 보유 단정 금지`,
           severity: 'high',
-          suggestion: '"가족 안에서" / "가까운 가족과" 조건부 표현으로',
+          suggestion: '"후배·제자·돌봄이 필요한 대상" / "장기적으로 책임지는 대상" 조건부로',
         });
       }
     }

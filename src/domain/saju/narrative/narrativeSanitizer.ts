@@ -66,10 +66,51 @@ export function stripFutureLeaks(text: string): string {
 // 최종 deterministic fallback — sanitize + future strip 동시 적용
 // repair 이후에도 high가 남으면 이 fallback으로 사용자 노출 직전 한 번 더 정리.
 // ============================================================
-export function applyFinalSanitizers(text: string, opts: { stripFuture: boolean }): string {
+export function applyFinalSanitizers(
+  text: string,
+  opts: { stripFuture: boolean; userContext?: UnsupportedContextInput },
+): string {
   let out = sanitizeNarrativeText(text);
   if (opts.stripFuture) out = stripFutureLeaks(out);
+  if (opts.userContext) out = sanitizeUnsupportedUserContext(out, opts.userContext);
   return out;
+}
+
+// ============================================================
+// unsupported-user-context sanitizer (2026-05 audit)
+// relationshipStatus가 married가 아니거나 hasChildren이 true가 아닌 경우
+// 본문에서 "아내/남편/배우자/자녀/아이/기혼/부부" 단정 표현을 중립 표현으로 치환.
+// 명리 용어 "배우자궁"은 제외.
+// ============================================================
+export interface UnsupportedContextInput {
+  relationshipStatus: string;
+  hasChildren: boolean | 'unknown';
+}
+export function sanitizeUnsupportedUserContext(text: string, ctx: UnsupportedContextInput): string {
+  const isMarried = ctx.relationshipStatus === 'married';
+  const hasKids = ctx.hasChildren === true;
+  return mapOutsideCodeBlocks(text, body => {
+    let out = body;
+    if (!isMarried) {
+      // 단정 표현 → 중립 표현
+      out = out.replace(/아내(?=[를는이가와과에도의]|$|\s)/g, '가까운 관계의 상대');
+      out = out.replace(/남편(?=[를는이가와과에도의]|$|\s)/g, '가까운 관계의 상대');
+      // "배우자궁" 명리 용어는 제외
+      out = out.replace(/배우자(?!궁)/g, '장기적인 관계의 상대');
+      out = out.replace(/기혼자/g, '관계를 길게 보는 사람');
+      out = out.replace(/부부/g, '가까운 두 사람');
+      out = out.replace(/결혼한\s*상태/g, '장기 관계를 생각한다면');
+      out = out.replace(/결혼\s*생활/g, '장기 관계');
+      out = out.replace(/신혼/g, '관계 초반');
+    }
+    if (!hasKids) {
+      out = out.replace(/자녀(?=[를는이가와과에도의]|$|\s)/g, '후배·제자·돌봄이 필요한 대상');
+      out = out.replace(/아이(?=[를는이가와과에도의]|$|\s)/g, '돌봄이 필요한 대상');
+      out = out.replace(/자녀\s*양육/g, '책임지는 대상의 성장 지원');
+      out = out.replace(/자녀\s*교육/g, '후배·제자의 성장 지원');
+    }
+    return out;
+  });
 }
 
 // ============================================================
