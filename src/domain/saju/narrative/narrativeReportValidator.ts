@@ -905,40 +905,47 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   // ─────────────────────────────────────────────
   const uctx = gptInput.userContext;
   if (uctx.relationshipStatus !== 'married') {
-    // 2026-05 audit 확장: 부부/기혼자/결혼한 상태 추가. "배우자"는 "배우자궁" 명리용어 제외.
-    const forbidExact = ['결혼한 사용자', '결혼한 상태', '남편', '아내', '결혼 생활', '신혼', '기혼자', '부부'];
-    for (const w of forbidExact) {
-      if (reportText.includes(w)) {
+    // 2026-05 audit: substring 매칭은 false positive 발생 ("찾아내어"에 "아내" 등).
+    // 단정형은 한글 조사 뒤에 오는 경우(또는 단어 끝)만 매칭하는 regex 사용.
+    const KO_PARTICLES = '[를는이가와과에도의]';
+    const spouseRules: Array<{ name: string; re: RegExp }> = [
+      { name: '아내', re: new RegExp(`아내(?=${KO_PARTICLES}|\\s|$)`) },
+      { name: '남편', re: new RegExp(`남편(?=${KO_PARTICLES}|\\s|$)`) },
+      { name: '결혼한 사용자', re: /결혼한\s*사용자/ },
+      { name: '결혼한 상태', re: /결혼한\s*상태/ },
+      { name: '결혼 생활', re: /결혼\s*생활/ },
+      { name: '신혼', re: new RegExp(`신혼(?=${KO_PARTICLES}|\\s|$|\\.)`) },
+      { name: '기혼자', re: new RegExp(`기혼자(?=${KO_PARTICLES}|\\s|$)`) },
+      { name: '부부', re: new RegExp(`부부(?=${KO_PARTICLES}|\\s|$|\\.)`) },
+      // "배우자"는 "배우자궁" 명리용어 제외
+      { name: '배우자', re: /배우자(?!궁)/ },
+    ];
+    for (const rule of spouseRules) {
+      if (rule.re.test(reportText)) {
         pushIssue(issues, {
           type: 'unsupported-user-context', sectionId: 'global',
-          sentence: w,
-          reason: `userContext.relationshipStatus=${uctx.relationshipStatus}인데 "${w}" 표현 사용 — 기혼 단정 금지`,
+          sentence: rule.name,
+          reason: `userContext.relationshipStatus=${uctx.relationshipStatus}인데 "${rule.name}" 표현 사용 — 기혼 단정 금지`,
           severity: 'high',
           suggestion: '"장기 관계를 생각한다면" / "가까운 관계에서는" / "연애나 결혼으로 이어질 관계에서는" 조건부 표현으로',
         });
       }
     }
-    // "배우자"는 "배우자궁" 제외하고 본문에서 잡음
-    const spouseRe = /배우자(?!궁)/;
-    if (spouseRe.test(reportText)) {
-      pushIssue(issues, {
-        type: 'unsupported-user-context', sectionId: 'global',
-        sentence: '배우자',
-        reason: `userContext.relationshipStatus=${uctx.relationshipStatus}인데 "배우자" 단정 표현 사용 (배우자궁 명리용어 제외)`,
-        severity: 'high',
-        suggestion: '"장기적인 관계의 상대" / "연인·파트너를 생각한다면" 조건부로',
-      });
-    }
   }
   if (uctx.hasChildren !== true) {
-    // 2026-05 audit 확장: "자녀"·"아이" 단독 단정 표현도 추가 (단, 명리용어 풀이는 제외)
-    const forbid = ['자녀와', '아이와', '자녀 양육', '자녀 교육', '자녀를', '자녀가', '자녀의'];
-    for (const w of forbid) {
-      if (reportText.includes(w)) {
+    const KO_PARTICLES = '[를는이가와과에도의]';
+    const childRules: Array<{ name: string; re: RegExp }> = [
+      { name: '자녀(조사)', re: new RegExp(`자녀(?=${KO_PARTICLES}|\\s)`) },
+      { name: '아이와', re: /아이와\s/ },
+      { name: '자녀 양육', re: /자녀\s*양육/ },
+      { name: '자녀 교육', re: /자녀\s*교육/ },
+    ];
+    for (const rule of childRules) {
+      if (rule.re.test(reportText)) {
         pushIssue(issues, {
           type: 'unsupported-user-context', sectionId: 'global',
-          sentence: w,
-          reason: `userContext.hasChildren=${String(uctx.hasChildren)}인데 "${w}" 표현 사용 — 자녀 보유 단정 금지`,
+          sentence: rule.name,
+          reason: `userContext.hasChildren=${String(uctx.hasChildren)}인데 "${rule.name}" 표현 사용 — 자녀 보유 단정 금지`,
           severity: 'high',
           suggestion: '"후배·제자·돌봄이 필요한 대상" / "장기적으로 책임지는 대상" 조건부로',
         });
