@@ -928,13 +928,92 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   }
 
   // ─────────────────────────────────────────────
-  // 종합 — 검사 항목 증가로 threshold 추가 상향
+  // 20. cross-section / future / final / english-key leak (2026-05 stabilize)
+  // ─────────────────────────────────────────────
+  const hasFuturePlan = !!narrativePlans?.some(p => p.sectionId === 'futureFlowNarrative');
+
+  // future-leak — plan에 futureFlow 없는데 미래 콘텐츠가 본문에 등장
+  if (!hasFuturePlan) {
+    const futureMarkerRe = /\b202[6-9]년|\b203\d년|앞으로\s*3년|올해\s*하반기/;
+    for (const b of blocks) {
+      if (b.id === 'futureFlowNarrative') continue;
+      const m = b.body.match(futureMarkerRe);
+      if (m) {
+        pushIssue(issues, {
+          type: 'future-leak', sectionId: b.id,
+          sentence: m[0],
+          reason: `${b.id} 본문에 미래 표현 "${m[0]}" 등장 — plan에 futureFlow가 없는데 GPT가 자발적으로 미래 단어 사용`,
+          severity: 'high',
+          suggestion: '해당 섹션에서 미래 연도/타임라인 제거. 본문은 현재·과거·일반 가이드만',
+        });
+      }
+    }
+  }
+
+  // cross-section leak — money 본문에 결론조, relationship 본문에 결론조
+  const moneyBlock = byId.get('moneyMonetizationNarrative');
+  if (moneyBlock) {
+    const finalLikeInMoney = /결국\s*이\s*사주는|사주의\s*사용법|핵심\s*사용법|마지막으로\s*당부/;
+    const m = moneyBlock.body.match(finalLikeInMoney);
+    if (m) {
+      pushIssue(issues, {
+        type: 'cross-section-leak', sectionId: 'moneyMonetizationNarrative',
+        sentence: m[0],
+        reason: `5장(돈) 본문에 결론조 "${m[0]}" 침범 — 결론은 마지막 섹션에서`,
+        severity: 'high',
+        suggestion: '결론 톤 문장을 제거하고 돈/수익화 주제로 한정',
+      });
+    }
+  }
+  const relBlock = byId.get('relationshipLoveNarrative');
+  if (relBlock) {
+    const finalLikeInRel = /결국\s*이\s*사주는|사주의\s*사용법|핵심\s*사용법|마지막으로\s*당부|이\s*사주를\s*어떻게\s*써야/;
+    const m = relBlock.body.match(finalLikeInRel);
+    if (m) {
+      pushIssue(issues, {
+        type: 'cross-section-leak', sectionId: 'relationshipLoveNarrative',
+        sentence: m[0],
+        reason: `6장(관계) 본문에 결론조 "${m[0]}" 침범 — 결론은 마지막 섹션에서`,
+        severity: 'high',
+        suggestion: '결론 톤 문장을 제거하고 관계/연애 주제로 한정',
+      });
+    }
+  }
+
+  // final-section-missing — 결론 본문이 비었거나 너무 짧음
+  const finalBlock = byId.get('finalStrategyNarrative');
+  const finalCompactLen = finalBlock ? finalBlock.body.replace(/\s+/g, '').length : 0;
+  if (finalCompactLen < 200) {
+    pushIssue(issues, {
+      type: 'final-section-missing', sectionId: 'finalStrategyNarrative',
+      sentence: `compactLen=${finalCompactLen}`,
+      reason: `결론 섹션(finalStrategyNarrative)이 비어있거나 너무 짧음 — 헤더 누락 또는 다른 섹션에 결론이 흡수된 가능성`,
+      severity: 'high',
+      suggestion: 'plan의 마지막 헤더 번호로 결론 섹션 본문 작성 (앞 섹션에 결론 침범 금지)',
+    });
+  }
+
+  // english-element-key-leak — 본문에 wood/fire/earth/metal/water 단독 단어 등장
+  const englishKeyRe = /\b(wood|fire|earth|metal|water)\b/i;
+  const fullMatch = reportText.match(englishKeyRe);
+  if (fullMatch) {
+    pushIssue(issues, {
+      type: 'english-element-key-leak', sectionId: 'global',
+      sentence: fullMatch[0],
+      reason: `본문에 영문 오행 키 "${fullMatch[0]}" 노출 — 반드시 한글(목/화/토/금/수)로`,
+      severity: 'high',
+      suggestion: `"${fullMatch[0]}"를 한글 오행으로 치환`,
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // 종합 — 2026-05 stabilize: cross-leak 등이 high로 잡히면 repair 발동
+  // medium 임계 강화 22 → 12
   // ─────────────────────────────────────────────
   const high = issues.filter(i => i.severity === 'high').length;
   const medium = issues.filter(i => i.severity === 'medium').length;
   return {
-    // 2026-05: 일/돈/관계 분리 + thin/suggestion 체크 추가로 medium 상한 추가 상향
-    isValid: high === 0 && medium < 22,
+    isValid: high === 0 && medium < 12,
     issues,
   };
 }

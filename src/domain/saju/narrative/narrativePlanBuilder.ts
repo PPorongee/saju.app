@@ -220,7 +220,7 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
     source: 'dayMaster',
     fact: dm,
     plainMeaning: plainOf(dm),
-    narrativeHint: '쉬운 비유로 풀어 첫 단락에 배치 (큰 산, 곧은 나무 등)',
+    narrativeHint: '이 fact의 plainMeaning을 그대로 첫 단락 비유로 사용. prompt 본문의 다른 일간 예시(큰 산/넓은 땅 등)를 카피해 적용 금지.',
     matchTokens: buildMatchTokens(dm, dm[0] ?? ''),
     lifeSceneHint: pickHint(hints, 'lifeStructureNarrative', 'identityKeyword'),
   });
@@ -283,7 +283,7 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
     ],
     mustUseFacts: facts,
     requiredBeats: [
-      '일간을 쉬운 비유로 설명한다 (예: "무토 일간은 쉽게 말하면 큰 산처럼...").',
+      '일간을 쉬운 비유로 설명한다 (이 plan의 dayMaster fact plainMeaning을 그대로 사용. 다른 일간 비유 카피 금지).',
       '강한 오행/십성이 성격에 어떻게 나타나는지 줄글로 설명한다.',
       '겉으로 보이는 모습과 실제 내면의 차이를 설명한다(반전 포인트).',
       '주변이 오해하기 쉬운 지점을 말한다.',
@@ -296,12 +296,12 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
       '함정 1.', '함정 2.',
     ],
     styleExamples: {
-      badExample: '이 사주는 무토 일간이라 안정성과 신뢰를 중시합니다.',
+      badExample: '이 사주는 강한 일간이라 안정성과 신뢰를 중시합니다.',
       goodExample:
-        '무토 일간은 쉽게 말하면 큰 산이나 넓은 땅처럼, 한 번 중심이 잡히면 쉽게 흔들리지 않으려는 기질을 뜻합니다. 그래서 이 사주는 상황이 불안정할수록 오히려 "내가 중심을 잡아야 한다"는 감각이 올라오기 쉬워요.\n\n' +
-        '다만 무토가 강하다고 해서 감정이 없는 사람이라는 뜻은 아닙니다. 오히려 속으로는 상황을 오래 곱씹고, 사람의 태도나 말투를 꽤 세밀하게 기억하는 쪽일 수 있어요.\n\n' +
+        '[일간 비유는 이 plan의 dayMaster fact plainMeaning을 그대로 첫 단락에 사용하라. 아래는 일간 무관 톤 예시.]\n\n' +
+        '겉으로는 차분해 보여도 속으로는 상황을 오래 곱씹고, 사람의 태도나 말투를 세밀하게 기억하는 쪽일 수 있어요. 가까운 사람은 "말을 안 하니까 괜찮은 줄 알았다"고 느끼기 쉽지만, 사실 안쪽에서는 이미 여러 번 선을 넘었는지 판단하고 있었을 수 있습니다.\n\n' +
         '비겁은 자기 힘·독립성·버티는 힘과 관련된 기운입니다. 이 기운이 강하면 스스로 해결하려는 힘은 커지지만, 반대로 도움을 받는 타이밍이 늦어질 수 있습니다.',
-      transformationRule: '명리 용어를 말한 뒤 반드시 쉬운 뜻과 실제 반응 방식까지 연결하라.',
+      transformationRule: '명리 용어를 말한 뒤 반드시 쉬운 뜻과 실제 반응 방식까지 연결하라. 일간 비유는 plan dayMaster fact plainMeaning만 사용.',
     },
   };
 }

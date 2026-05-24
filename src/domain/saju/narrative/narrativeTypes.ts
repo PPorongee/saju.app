@@ -78,7 +78,12 @@ export type NarrativeValidationIssueType =
   | 'career-section-too-thin'        // 4장 직업·재능이 너무 얕음
   | 'money-section-too-thin'         // 5장 돈·수익화가 너무 얕음
   | 'relationship-section-too-thin'  // 6장 관계·연애가 너무 얕음
-  | 'suggestion-coverage-missing';   // 구체 제안/조언이 부족 (설명만 있고 적용 가이드 없음)
+  | 'suggestion-coverage-missing'    // 구체 제안/조언이 부족 (설명만 있고 적용 가이드 없음)
+  // 2026-05 stabilization
+  | 'future-leak'                    // 미래 콘텐츠(2026/앞으로 3년)가 plan에 없는데 본문 등장
+  | 'cross-section-leak'             // 한 섹션 본문에 다른 섹션 전용 결론조/주제 침범
+  | 'final-section-missing'          // 결론 섹션이 비어있거나 너무 짧음
+  | 'english-element-key-leak';      // 본문에 wood/fire/earth/metal/water 영문 노출
 
 export interface NarrativeValidationIssue {
   type: NarrativeValidationIssueType;

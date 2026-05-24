@@ -43,19 +43,42 @@ export function parseNarrativeReport(markdown: string): ParsedNarrativeReport {
   while ((m = re.exec(markdown)) !== null) {
     matches.push({ start: m.index, idx: Number(m[1]) });
   }
+  // 2026-05 stabilize: 8섹션(옵션 미래 포함) 자동 감지.
+  // # 8 헤더가 있으면 plan에 futureFlow 포함된 경우 → # 7=future, # 8=final
+  // 없으면 기본 7섹션 → # 7=final
+  const maxIdx = matches.reduce((a, b) => Math.max(a, b.idx), 0);
+  const hasFutureSlot = maxIdx >= 8;
+  // 위치별 sectionId 매핑 (7 또는 8개)
+  const POSITIONAL_KEYS: string[] = hasFutureSlot
+    ? ['openingDefinition', 'lifeStructureNarrative', 'repeatedPatternNarrative',
+       'careerTalentNarrative', 'moneyMonetizationNarrative', 'relationshipLoveNarrative',
+       '__futureSlot', 'finalStrategyNarrative']
+    : ['openingDefinition', 'lifeStructureNarrative', 'repeatedPatternNarrative',
+       'careerTalentNarrative', 'moneyMonetizationNarrative', 'relationshipLoveNarrative',
+       'finalStrategyNarrative'];
+  const maxValidIdx = POSITIONAL_KEYS.length;
+  let futureBodyFromHeader: string | null = null;
+
   for (let i = 0; i < matches.length; i++) {
     const cur = matches[i];
     const next = matches[i + 1];
-    if (cur.idx < 1 || cur.idx > 7) continue;
+    if (cur.idx < 1 || cur.idx > maxValidIdx) continue;
     const headerEnd = markdown.indexOf('\n', cur.start);
     const bodyStart = headerEnd >= 0 ? headerEnd + 1 : cur.start;
     const bodyEnd = next ? next.start : markdown.length;
     const body = markdown.slice(bodyStart, bodyEnd).trim();
-    sections[SECTION_KEYS[cur.idx - 1]] = body;
+    const key = POSITIONAL_KEYS[cur.idx - 1];
+    if (key === '__futureSlot') {
+      futureBodyFromHeader = body;
+    } else {
+      sections[key] = body;
+    }
   }
 
-  // futureFlow 옵션 — 본문 어디에 ### 20XX 헤더가 있으면 별도 추출
-  const futureFlow = extractFutureFlow(markdown);
+  // futureFlow 옵션 — # N 헤더로 미래 섹션이 잡혔으면 그 body로, 아니면 본문 ### 20XX 탐색
+  const futureFlow = futureBodyFromHeader
+    ? splitYearItems(futureBodyFromHeader)
+    : extractFutureFlow(markdown);
 
   return {
     openingDefinition: sections['openingDefinition'] ?? '',

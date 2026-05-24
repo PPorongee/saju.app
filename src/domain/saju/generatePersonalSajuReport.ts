@@ -317,7 +317,9 @@ export async function generateNarrativePersonalSajuReport(
   opts: NarrativeGenerateOptions,
 ): Promise<NarrativeGenerateResult> {
   const now = opts.now ?? new Date();
-  const maxAttempts = opts.maxRepairAttempts ?? 1;
+  // 2026-05 stabilize: 기본 repair 1회 → 2회. cross-leak/future-leak/final-missing/english-key가
+  // high로 잡히면 첫 응답에 자주 걸리므로 2회는 필요.
+  const maxAttempts = opts.maxRepairAttempts ?? 2;
 
   // 기존 결정론 분석 그대로 재사용
   const gptInput = calculateAnalysisOnly(input, now);

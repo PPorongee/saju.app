@@ -169,7 +169,7 @@ export function buildNarrativeCoverageRequirements(): NarrativeCoverageRequireme
         'specialPoints',
       ],
       requiredNarrativeElements: [
-        '일간을 쉬운 비유로 풀이(예: 무토 → 큰 산/넓은 땅)',
+        '일간을 쉬운 비유로 풀이 (NarrativePlan의 dayMaster fact plainMeaning 사용, 다른 일간 비유 카피 금지)',
         '강한 오행/십성이 성격에 어떻게 나타나는지',
         '겉으로 보이는 모습과 실제 내면의 차이',
         '주변이 오해하기 쉬운 부분',
