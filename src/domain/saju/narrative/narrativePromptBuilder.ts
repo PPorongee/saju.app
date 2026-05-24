@@ -1,11 +1,62 @@
 // 서사형 개인사주 GPT 프롬프트.
 // 카드/리스트가 아니라 책처럼 읽히는 8섹션 줄글 중심 리포트.
+// 2026-05 추가: NarrativePlan[]을 받아 섹션별 mustUseFacts/requiredBeats/styleExamples를
+// 프롬프트에 박아넣음으로써 V4 분석 데이터가 본문에 반드시 흡수되도록 강제.
 
 import type { PersonalSajuGptInput, ContextGuardResult } from '../report/sajuReportSchema';
+import type { NarrativePlan, NarrativePlanSet } from './narrativeTypes';
 
 export interface BuiltNarrativePrompt {
   system: string;
   user: string;
+}
+
+// 섹션 id → "# N. 한글 제목" 매핑 (출력 헤더 인덱스)
+const SECTION_HEADER_INDEX: Record<string, number> = {
+  openingDefinition: 1,
+  lifeStructureNarrative: 2,
+  repeatedPatternNarrative: 3,
+  realityActivationNarrative: 4,
+  futureFlowNarrative: 5,
+  finalStrategyNarrative: 6,
+};
+
+function renderPlan(plan: NarrativePlan): string {
+  const headerIdx = SECTION_HEADER_INDEX[plan.sectionId] ?? '?';
+  const factLines = plan.mustUseFacts.map(f => {
+    return `  - [${f.id} / ${f.source}] fact: "${f.fact}"\n      쉬운 풀이: ${f.plainMeaning}\n      흡수 힌트: ${f.narrativeHint}`;
+  }).join('\n');
+  const beatLines = plan.requiredBeats.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
+  const avoidLines = plan.avoidRepeating.length > 0
+    ? plan.avoidRepeating.map(a => `  - "${a}"`).join('\n')
+    : '  (없음)';
+  return [
+    `### 섹션 ${headerIdx}: ${plan.sectionId}`,
+    `목표: ${plan.sectionGoal}`,
+    ``,
+    `반드시 본문에 흡수해야 할 사실 (mustUseFacts — 빠지면 missing-narrative-fact로 실패):`,
+    factLines || '  (없음)',
+    ``,
+    `전개 순서 (requiredBeats — 이 흐름대로):`,
+    beatLines,
+    ``,
+    `피해야 할 표현 (avoidRepeating):`,
+    avoidLines,
+    ``,
+    `스타일 예시:`,
+    `  [나쁜 예] ${plan.styleExamples.badExample}`,
+    `  [좋은 예]`,
+    plan.styleExamples.goodExample.split('\n').map(l => `    ${l}`).join('\n'),
+    `  [변환 규칙] ${plan.styleExamples.transformationRule}`,
+  ].join('\n');
+}
+
+function renderAllPlans(plans: NarrativePlanSet): string {
+  return [
+    '[NarrativePlan — 섹션별 이야기 계획. GPT는 이 plan을 따라 본문을 작성한다.]',
+    '',
+    plans.map(renderPlan).join('\n\n────────────────────────────\n\n'),
+  ].join('\n');
 }
 
 const PERSONA = `너는 30년 이상 명리학을 연구한 상담가이자, 어려운 명리학 개념을 일반인 — 특히 20~40대 사용자 — 가 자기 이야기로 받아들일 수 있게 풀어내는 전문 작가다.
@@ -276,8 +327,9 @@ const OUTPUT_STRUCTURE = `출력 구조 (정확히 # 1 ~ # 7, 그리고 명리 �
 export function buildNarrativePersonalSajuPrompt(args: {
   input: PersonalSajuGptInput;
   contextGuard: ContextGuardResult;
+  narrativePlans: NarrativePlanSet;
 }): BuiltNarrativePrompt {
-  const { input, contextGuard } = args;
+  const { input, contextGuard, narrativePlans } = args;
 
   const additions: string[] = [];
   if (contextGuard.restrictedTopics.length > 0) {
@@ -289,14 +341,21 @@ export function buildNarrativePersonalSajuPrompt(args: {
 
   const system = [SYSTEM_BASE, ...additions, OUTPUT_STRUCTURE].join('\n\n');
 
-  const user = `아래 JSON을 바탕으로 위 7개 섹션 구조 그대로, 줄글 중심의 이야기형 사주 풀이를 작성하라.
+  const user = `아래 NarrativePlan과 분석 JSON을 바탕으로 7개 섹션 구조 그대로, 줄글 중심의 이야기형 사주 풀이를 작성하라.
 
+${renderAllPlans(narrativePlans)}
+
+[원본 분석 JSON — NarrativePlan에 없는 데이터를 참조할 때만 사용]
 \`\`\`json
 ${JSON.stringify(input, null, 2)}
 \`\`\`
 
-명심 (Coverage 최우선):
-- 분량은 글자 수로 강제하지 않지만, 각 장이 흡수해야 할 데이터(identityKeywords / specialPoints / dayMaster / elementStrength / tenGods / lifeTraps / timingAnchors / careerSpecificAnalysis 전체 / moneyMakingStyle / futureTimingAnalysis.years 각 연도 / fortuneTriggers)가 빠지면 검증에서 missing-required-data-source로 실패한다.
+명심 (NarrativePlan 최우선):
+- 각 섹션의 NarrativePlan.mustUseFacts에 있는 모든 fact는 plainMeaning대로 풀어서 본문에 반드시 등장해야 한다. 빠지면 missing-narrative-fact로 실패.
+- requiredBeats의 순서대로 본문을 전개하라. 한 비트라도 누락되면 underdeveloped-section으로 잡힌다.
+- styleExamples.badExample은 절대 따라 쓰지 말고, goodExample의 톤·구조를 모방하되 사주 결에 맞게 새로 작성하라.
+- avoidRepeating에 있는 표현은 그 섹션에서 쓰지 말 것.
+- 분량은 글자 수로 강제하지 않지만, mustUseFacts가 빠지거나 본문이 너무 짧으면 검증 실패.
 - 한 장이 너무 요약처럼 끝나면(3~4문장 짜리) underdeveloped-section으로 실패한다. 정보가 많아져도 체크리스트로 늘리지 말고 이야기처럼 자연스럽게 풀어쓴다.
 - 명리 용어(무토/비겁/양인/괴강/지장간/용신/기신/식상/재성/관성/인성 등)는 등장 즉시 일상어로 풀어준다. 풀이 없으면 unexplained-technical-term으로 실패.
 - 1장 첫 문장은 너무 일반적이면 안 된다("위기에서 쉽게 꺾이지 않는 힘"류 금지). 겉/속 차이 또는 결정·태도의 결이 드러나야 한다.

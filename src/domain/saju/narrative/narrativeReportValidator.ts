@@ -14,13 +14,15 @@
 import type { PersonalSajuGptInput } from '../report/sajuReportSchema';
 import type {
   NarrativeValidationIssue, NarrativeValidationResult,
-  NarrativeCoverageRequirement,
+  NarrativePlanSet,
 } from './narrativeTypes';
 import { buildNarrativeCoverageRequirements } from './narrativeContentLedger';
 
 interface Args {
   reportText: string;
   gptInput: PersonalSajuGptInput;
+  /** 섹션별 NarrativePlan. mustUseFacts.matchTokens 흡수 여부 검사. */
+  narrativePlans?: NarrativePlanSet;
 }
 
 // 7섹션 헤더 (# 1. ~ # 7.) → narrative section id 매핑
@@ -330,11 +332,36 @@ function pushIssue(arr: NarrativeValidationIssue[], i: NarrativeValidationIssue)
   arr.push(i);
 }
 
-export function validateNarrativeReport({ reportText, gptInput }: Args): NarrativeValidationResult {
+export function validateNarrativeReport({ reportText, gptInput, narrativePlans }: Args): NarrativeValidationResult {
   const blocks = splitSections(reportText);
   const byId = new Map(blocks.map(b => [b.id, b]));
   const coverage = buildNarrativeCoverageRequirements();
   const issues: NarrativeValidationIssue[] = [];
+
+  // ─────────────────────────────────────────────
+  // 0. NarrativePlan.mustUseFacts — matchTokens 흡수 검사
+  //    각 fact는 matchTokens 중 하나라도 본문에 포함되면 통과.
+  //    빠지면 missing-narrative-fact로 실패 (섹션별 repair 시드).
+  // ─────────────────────────────────────────────
+  if (narrativePlans && narrativePlans.length > 0) {
+    for (const plan of narrativePlans) {
+      const block = byId.get(plan.sectionId);
+      if (!block) continue;
+      for (const fact of plan.mustUseFacts) {
+        if (!fact.matchTokens || fact.matchTokens.length === 0) continue;
+        const matched = fact.matchTokens.some(t => t.length >= 2 && block.body.includes(t));
+        if (!matched) {
+          pushIssue(issues, {
+            type: 'missing-narrative-fact', sectionId: plan.sectionId,
+            sentence: `[${fact.id}/${fact.source}] ${fact.fact}`,
+            reason: `${plan.sectionId} 섹션에 mustUseFact "${fact.fact}" 흡수되지 않음 (matchTokens=${fact.matchTokens.slice(0, 4).join('|')})`,
+            severity: 'medium',
+            suggestion: `${fact.narrativeHint} — 쉬운 풀이: "${fact.plainMeaning}"`,
+          });
+        }
+      }
+    }
+  }
 
   // ─────────────────────────────────────────────
   // 1. 항목형 표현 남발
@@ -675,12 +702,45 @@ export function validateNarrativeReport({ reportText, gptInput }: Args): Narrati
   }
 
   // ─────────────────────────────────────────────
-  // 종합 — repair loop가 과부하 걸리지 않게 threshold 완화
+  // 종합 — NarrativePlan 도입으로 missing-narrative-fact가 추가됐으므로 threshold 상향
   // ─────────────────────────────────────────────
   const high = issues.filter(i => i.severity === 'high').length;
   const medium = issues.filter(i => i.severity === 'medium').length;
   return {
-    isValid: high === 0 && medium < 8,
+    isValid: high === 0 && medium < 12,
     issues,
   };
+}
+
+// ============================================================
+// 외부 공개 헬퍼 — 섹션별 repair flow에서 실패 섹션 목록 추출용
+// ============================================================
+export function collectFailingSectionsFromIssues(
+  issues: NarrativeValidationIssue[],
+): Set<string> {
+  const out = new Set<string>();
+  // 섹션 단위로 격리 가능한 이슈 타입만 — global/finalLine 외
+  const SECTIONAL_TYPES = new Set([
+    'missing-narrative-fact',
+    'missing-required-data-source',
+    'underdeveloped-section',
+    'checklist-overuse',
+    'concreteness-misplaced',
+    'yearly-flow-too-similar',
+    'career-recommendation-too-narrow',
+    'generic-opening',
+    'weak-final-message',
+    'hidden-question-uncovered',
+  ]);
+  for (const iss of issues) {
+    if (!SECTIONAL_TYPES.has(iss.type)) continue;
+    // sectionId가 "a,b" 콤마 결합 형태일 수 있음 → 각각 추가
+    for (const sid of String(iss.sectionId).split(',')) {
+      const trimmed = sid.trim();
+      if (!trimmed || trimmed === 'global') continue;
+      // finalLine은 7번 섹션 — 따로 표시
+      out.add(trimmed);
+    }
+  }
+  return out;
 }

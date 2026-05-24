@@ -33,8 +33,9 @@ import { buildContextGuard } from './report/contextGuard';
 import { buildContentLedger } from './report/contentLedgerBuilder';
 import { validateReport } from './report/reportValidator';
 import { buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt } from './narrative/narrativePromptBuilder';
-import { validateNarrativeReport } from './narrative/narrativeReportValidator';
-import type { NarrativeValidationResult } from './narrative/narrativeTypes';
+import { validateNarrativeReport, collectFailingSectionsFromIssues } from './narrative/narrativeReportValidator';
+import { buildNarrativePlans } from './narrative/narrativePlanBuilder';
+import type { NarrativeValidationResult, NarrativePlanSet } from './narrative/narrativeTypes';
 import { DEFAULT_RULE_CONFIG } from './rules/ruleConfig';
 import type { PersonalSajuGptInput, ReportValidationResult, SpecialPoint } from './report/sajuReportSchema';
 
@@ -285,17 +286,22 @@ export interface NarrativeGenerateOptions {
 
 export interface NarrativeGenerateResult {
   gptInput: PersonalSajuGptInput;
+  narrativePlans: NarrativePlanSet;
   prompt: BuiltNarrativePrompt;
   reportText: string;
   validation: NarrativeValidationResult;
   attempts: number;
+  /** 섹션별 repair가 일어났다면 어떤 섹션들이 재작성됐는지 (디버깅용) */
+  repairedSections: string[];
 }
 
 /**
  * 서사형 개인사주 리포트 생성.
- * 분석 데이터(계산 + careerSpecificAnalysis + timingAnchors + futureTimingAnalysis 등)는
- * calculateAnalysisOnly가 만든 PersonalSajuGptInput을 그대로 재사용한다.
- * 다른 점은 prompt(narrative)와 validator(narrative)뿐.
+ * 흐름: 분석 데이터 → 섹션별 NarrativePlan → 본문 생성 → coverage 검증 → 섹션별 repair.
+ *
+ * NarrativePlan은 결정론적으로 생성된다 (코드 단). GPT는 plan을 따라 본문을 작성하고,
+ * validator는 plan.mustUseFacts.matchTokens가 본문에 흡수됐는지 검사.
+ * 흡수되지 않은 fact가 있으면 그 섹션만 타겟팅해서 재작성.
  */
 export async function generateNarrativePersonalSajuReport(
   input: BirthInput,
@@ -307,29 +313,106 @@ export async function generateNarrativePersonalSajuReport(
   // 기존 결정론 분석 그대로 재사용
   const gptInput = calculateAnalysisOnly(input, now);
 
+  // 섹션별 이야기 계획 (결정론적 — gptInput만으로 plan 6개)
+  const narrativePlans = buildNarrativePlans(gptInput);
+
   // contextGuard 입력에는 NormalizedBirth.context(ageYears 등) 필요 — 다시 normalize
   const normalized = normalizeBirthInput(input, now);
   const contextGuard = buildContextGuard(normalized.context, normalized.hourUnknown);
-  const prompt = buildNarrativePersonalSajuPrompt({ input: gptInput, contextGuard });
+  const prompt = buildNarrativePersonalSajuPrompt({ input: gptInput, contextGuard, narrativePlans });
 
   let attempts = 0;
+  const repairedSections = new Set<string>();
   let reportText = '';
   let validation: NarrativeValidationResult = { isValid: true, issues: [] };
-  let currentPrompt = prompt;
 
-  for (let i = 0; i <= maxAttempts; i++) {
+  // 1) 초기 전체 호출
+  attempts++;
+  reportText = await opts.callGpt(prompt);
+  validation = validateNarrativeReport({ reportText, gptInput, narrativePlans });
+
+  // 2) 섹션별 repair loop
+  for (let i = 0; !validation.isValid && i < maxAttempts; i++) {
     attempts++;
-    reportText = await opts.callGpt(currentPrompt);
-    validation = validateNarrativeReport({ reportText, gptInput });
-    if (validation.isValid) break;
-    // repair: 같은 system 유지, user에 위반 issue 추가하여 재호출
-    currentPrompt = {
-      system: prompt.system,
-      user: prompt.user
-        + `\n\n[이전 응답이 다음 narrative 검증을 위반했다. 같은 7섹션 구조 유지하면서 위반 부분만 수정해 다시 작성하라. 카드/리스트로 회귀 금지, 항목형 표현 줄이기, 같은 조언 반복 금지.]\n`
-        + validation.issues.slice(0, 12).map(iss => `- (${iss.type}, ${iss.severity}) "${iss.sentence}" — ${iss.reason} → 제안: ${iss.suggestion}`).join('\n'),
-    };
+    const failingSections = collectFailingSectionsFromIssues(validation.issues);
+
+    // 섹션 격리가 불가능한 (global only) 케이스 → 기존 whole-report repair fallback
+    if (failingSections.size === 0) {
+      const repaired: BuiltNarrativePrompt = {
+        system: prompt.system,
+        user: prompt.user
+          + `\n\n[이전 응답이 다음 검증을 위반했다. 같은 7섹션 구조 유지하면서 위반 부분만 수정해 다시 작성하라.]\n`
+          + validation.issues.slice(0, 12).map(iss => `- (${iss.type}, ${iss.severity}) "${iss.sentence}" — ${iss.reason} → 제안: ${iss.suggestion}`).join('\n'),
+      };
+      reportText = await opts.callGpt(repaired);
+      validation = validateNarrativeReport({ reportText, gptInput, narrativePlans });
+      continue;
+    }
+
+    // 섹션 격리 가능 → buildSectionRepairPrompt로 실패 섹션만 타겟 재작성
+    for (const sid of failingSections) repairedSections.add(sid);
+    const repairPrompt = buildSectionRepairPrompt({
+      basePrompt: prompt,
+      previousReport: reportText,
+      failingSectionIds: Array.from(failingSections),
+      issues: validation.issues,
+      narrativePlans,
+    });
+    reportText = await opts.callGpt(repairPrompt);
+    validation = validateNarrativeReport({ reportText, gptInput, narrativePlans });
   }
 
-  return { gptInput, prompt, reportText, validation, attempts };
+  return { gptInput, narrativePlans, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections) };
+}
+
+/**
+ * 섹션별 repair 프롬프트 빌더 — 실패 섹션만 다시 쓰고 나머지는 verbatim 유지.
+ * 같은 7-섹션 구조를 그대로 출력하되 failing 섹션은 mustUseFacts를 다시 흡수하도록 강제.
+ */
+function buildSectionRepairPrompt(args: {
+  basePrompt: BuiltNarrativePrompt;
+  previousReport: string;
+  failingSectionIds: string[];
+  issues: NarrativeValidationResult['issues'];
+  narrativePlans: NarrativePlanSet;
+}): BuiltNarrativePrompt {
+  const { basePrompt, previousReport, failingSectionIds, issues } = args;
+
+  // 섹션별로 이슈 그룹핑
+  const issuesBySection = new Map<string, typeof issues>();
+  for (const iss of issues) {
+    for (const sid of String(iss.sectionId).split(',').map(s => s.trim())) {
+      if (!sid) continue;
+      const arr = issuesBySection.get(sid) ?? [];
+      arr.push(iss);
+      issuesBySection.set(sid, arr);
+    }
+  }
+
+  const sectionIssueBlocks = failingSectionIds.map(sid => {
+    const list = issuesBySection.get(sid) ?? [];
+    if (list.length === 0) return `### ${sid}\n(이슈 없음 — coverage 강화)`;
+    const lines = list.slice(0, 10).map(iss =>
+      `  - (${iss.type}/${iss.severity}) "${iss.sentence}" — ${iss.reason}\n      제안: ${iss.suggestion}`
+    ).join('\n');
+    return `### ${sid}\n${lines}`;
+  }).join('\n\n');
+
+  const repairUser =
+    `[섹션별 repair — 이전 응답을 다시 작성한다]\n\n` +
+    `규칙:\n` +
+    `1) 7개 섹션 헤더(# 1. ~ # 7.) 구조를 정확히 같게 유지.\n` +
+    `2) 아래 "다시 써야 할 섹션" 목록의 섹션만 본문을 다시 작성. 그 섹션은 NarrativePlan.mustUseFacts를 빠짐없이 흡수하고 requiredBeats 순서대로 풀어쓸 것.\n` +
+    `3) 그 외 섹션의 본문은 이전 응답에서 그대로 가져와 출력 (글자 한 자라도 바꾸지 말 것).\n` +
+    `4) 카드/리스트로 회귀 금지. 항목형 표현("실제 장면:", "추천 직업군:" 등) 금지.\n` +
+    `5) 새 사주/십성/신살을 만들어내지 말 것. NarrativePlan의 fact만 사용.\n\n` +
+    `다시 써야 할 섹션:\n` +
+    sectionIssueBlocks + `\n\n` +
+    `[이전 응답 전체 — 위 섹션만 다시 작성하고 나머지는 그대로]\n` +
+    '```\n' + previousReport + '\n```';
+
+  return {
+    system: basePrompt.system,
+    user: basePrompt.user + '\n\n' + repairUser,
+  };
 }

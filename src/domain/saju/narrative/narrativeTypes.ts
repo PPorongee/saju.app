@@ -61,7 +61,9 @@ export type NarrativeValidationIssueType =
   | 'weak-final-message'             // 7장 마지막 한 문장이 일반론
   | 'yearly-flow-too-similar'        // 2026/2027/2028 차이 없음
   | 'career-recommendation-too-narrow' // 직업군이 너무 좁거나 이유 부족
-  | 'financial-advice-risk';         // 투자/거래 권유 톤
+  | 'financial-advice-risk'          // 투자/거래 권유 톤
+  | 'missing-narrative-fact'         // NarrativePlan.mustUseFacts가 본문에 흡수되지 않음
+  | 'required-beat-missing';         // requiredBeats 중 검사 가능한 비트가 누락
 
 export interface NarrativeValidationIssue {
   type: NarrativeValidationIssueType;
@@ -99,3 +101,67 @@ export interface NarrativeCoverageRequirement {
   /** 사용하면 안 되는 손쉬운 표현들 (체크리스트화 회귀 방지) */
   forbiddenShortcuts: string[];
 }
+
+// ============================================================
+// NarrativePlan — "섹션별 이야기 계획" (2026-05 추가)
+// 분석 데이터 → 섹션별 plan → 본문 생성 → coverage 검증 → 섹션별 repair 흐름.
+// GPT가 본문을 작성하기 전, 어떤 fact가 어떤 plainMeaning으로 어떻게 들어가야 하는지를
+// 코드가 결정론적으로 미리 정해둔다.
+// ============================================================
+export type NarrativeFactSource =
+  | 'identityKeyword'
+  | 'specialPoint'
+  | 'lifeWeapon'
+  | 'lifeTrap'
+  | 'careerSpecificAnalysis'
+  | 'bestWorkStyle'
+  | 'avoidCareerEnvironment'
+  | 'moneyMakingStyle'
+  | 'timingAnchor'
+  | 'futureTimingAnalysis'
+  | 'fortuneTrigger'
+  | 'userContext'
+  | 'dayMaster'
+  | 'elementStrength'
+  | 'tenGod'
+  | 'specialStar';
+
+/**
+ * 한 섹션에 반드시 흡수되어야 하는 단일 데이터 조각.
+ * matchTokens로 validator가 본문 흡수 여부를 검사.
+ */
+export interface NarrativeMustUseFact {
+  /** plan 내 고유 id (예: "identity-0", "specialPoint-1", "year-2026") */
+  id: string;
+  source: NarrativeFactSource;
+  /** raw fact — GPT에 그대로 전달되는 원본 데이터 */
+  fact: string;
+  /** 일상어 풀이 — GPT가 본문에 풀어쓸 때의 시드 (이미 코드가 풀어둔 형태) */
+  plainMeaning: string;
+  /** 이 fact를 본문에 녹일 때의 위치/방법 힌트 */
+  narrativeHint: string;
+  /** validator가 본문에서 흡수 여부를 검사할 토큰들. 하나라도 부분 매칭되면 OK */
+  matchTokens: string[];
+}
+
+export interface NarrativePlanStyleExamples {
+  badExample: string;
+  goodExample: string;
+  transformationRule: string;
+}
+
+export interface NarrativePlan {
+  sectionId: NarrativeCoverageSectionId;
+  /** 이 섹션이 무엇을 달성해야 하는지 한 줄 */
+  sectionGoal: string;
+  /** 반드시 본문에 흡수되어야 할 사실들 (validator 검사 대상) */
+  mustUseFacts: NarrativeMustUseFact[];
+  /** 본문이 따라야 할 전개 순서 (1, 2, 3, ... 단계) */
+  requiredBeats: string[];
+  /** 이 섹션에서 피해야 할 표현 (앞 섹션 표현 반복 회피) */
+  avoidRepeating: string[];
+  /** 좋은 예/나쁜 예/변환 규칙 — GPT가 스타일 모방용으로 참고 */
+  styleExamples: NarrativePlanStyleExamples;
+}
+
+export type NarrativePlanSet = NarrativePlan[];
