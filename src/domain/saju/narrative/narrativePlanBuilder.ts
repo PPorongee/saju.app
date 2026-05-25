@@ -7,10 +7,12 @@
 // GPT는 이 plan을 받아 본문을 작성하고, validator는 mustUseFacts.matchTokens가
 // 본문에 흡수됐는지 검사. 흡수되지 않으면 missing-narrative-fact로 실패 → 섹션별 repair.
 
-import type { PersonalSajuGptInput } from '../report/sajuReportSchema';
+import type { PersonalSajuGptInput, DayMasterStrengthAnalysis, UsefulGodAnalysis, SpecialStarInfo } from '../report/sajuReportSchema';
 import type {
   NarrativePlan, NarrativeMustUseFact, NarrativePlanSet,
+  NarrativeDepthOptions,
 } from './narrativeTypes';
+import { DEFAULT_NARRATIVE_DEPTH_OPTIONS } from './narrativeTypes';
 import type { LifeSceneHint, LifeSceneSectionId, LifeSceneSource } from './lifeSceneHintBuilder';
 
 // ============================================================
@@ -133,9 +135,266 @@ function plainOf(term: string, fallback?: string): string {
 }
 
 // ============================================================
+// 2026-05 Narrative Depth v1 — 신강/신약·신살·용신 fact helpers
+// 모든 helper는 feature flag on일 때만 호출됨 (default 호출 X).
+// 미신적 개운법 금지, 행동·구조화·역할 중심.
+// ============================================================
+
+// ── 신강/신약 ──────────────────────────────────────────────
+function strengthCoreLabel(level: DayMasterStrengthAnalysis['level']): '신강' | '중화' | '신약' {
+  if (level === 'very-strong' || level === 'strong') return '신강';
+  if (level === 'weak' || level === 'very-weak') return '신약';
+  return '중화';
+}
+
+function strengthPlainMeaning(level: DayMasterStrengthAnalysis['level']): string {
+  const core = strengthCoreLabel(level);
+  if (core === '신강') {
+    return '신강은 사람이 강하다는 뜻이라기보다, 자기 기준과 버티는 힘이 쉽게 꺾이지 않는 구조라는 뜻. 좋게 쓰이면 추진력·책임감으로, 과해지면 혼자 밀고 가거나 타협이 늦어지는 패턴으로 나타날 수 있음.';
+  }
+  if (core === '신약') {
+    return '신약은 사람이 약하다는 뜻이 아니라, 사주 안에서 나를 직접 도와주는 힘이 상대적으로 부족하다는 뜻. 혼자 밀어붙이는 방식보다 좋은 정보·환경·조언·협업을 잘 붙였을 때 훨씬 안정적으로 움직이는 구조.';
+  }
+  return '중화에 가까운 구조는 한쪽으로 극단적으로 쏠리기보다 환경에 따라 힘의 방향이 달라지는 구조. 어떤 환경·어떤 사람과 함께하느냐에 따라 장점이 다르게 드러남.';
+}
+
+function strengthAdviceHint(level: DayMasterStrengthAnalysis['level']): { actionable: string; avoidPattern: string; activatePattern: string } {
+  const core = strengthCoreLabel(level);
+  if (core === '신강') {
+    return {
+      actionable: '책임 범위·권한을 먼저 확인하고, 역할을 나누고, 기준을 문서화하는 방식이 운을 편하게 만듦.',
+      avoidPattern: '도움이 와도 혼자 끌고 가며 지치는 패턴, 결정권 없는 자리에서 책임만 떠안는 패턴.',
+      activatePattern: '내가 세운 기준을 사람들과 공유하고 구조로 남기는 선택.',
+    };
+  }
+  if (core === '신약') {
+    return {
+      actionable: '혼자 버티기보다 정보·조언·문서·공부·믿을 만한 사람을 통해 중심을 잡는 방식이 운을 편하게 함.',
+      avoidPattern: '혼자 다 알아내고 혼자 결정하려는 패턴, 도움 요청을 미루는 패턴.',
+      activatePattern: '막힐 때 상황을 정리해서 묻고 협업으로 보완하는 선택.',
+    };
+  }
+  return {
+    actionable: '환경의 결을 먼저 보고, 그 결에 맞춰 강점을 다르게 활용하는 유연함이 운을 편하게 함.',
+    avoidPattern: '한 가지 방식만 고집하다 환경 변화에 늦게 대응하는 패턴.',
+    activatePattern: '판이 바뀔 때 빠르게 결을 읽고 역할·접근을 조정하는 선택.',
+  };
+}
+
+function strengthLifeSceneHint(level: DayMasterStrengthAnalysis['level']): { situation: string; likelyBehavior: string; innerReaction: string; externalMisunderstanding?: string; betterUse?: string } {
+  const core = strengthCoreLabel(level);
+  if (core === '신강') {
+    return {
+      situation: '업무에서 누가 결정을 미루고 책임이 흐려지는 순간',
+      likelyBehavior: '"그럼 내가 정리해야지" 쪽으로 몸이 먼저 움직임',
+      innerReaction: '이미 안쪽에서는 여러 번 기준을 넘었는지 판단하고 있었음',
+      externalMisunderstanding: '주변은 갑자기 차가워졌다고 느낄 수 있음',
+      betterUse: '기준을 말로 나누고 역할을 분명히 하면 단단함이 부담이 아니라 신뢰로 바뀜',
+    };
+  }
+  if (core === '신약') {
+    return {
+      situation: '판단이 어려운 일이 몰리거나 환경이 빠르게 바뀌는 순간',
+      likelyBehavior: '혼자 다 알아내려다 결정이 늦어질 수 있음',
+      innerReaction: '도움을 요청해도 되는지 망설임이 길어지는 결',
+      externalMisunderstanding: '주변은 조용히 처리하는 줄 알지만 실제론 정보·조언 접점이 부족한 상태',
+      betterUse: '막힐 때 상황을 짧게 정리해서 묻는 습관이 운을 훨씬 편하게 만듦',
+    };
+  }
+  return {
+    situation: '환경이나 사람·역할이 바뀌는 전환 시점',
+    likelyBehavior: '새 결에 맞춰 접근을 다시 조정하려는 결',
+    innerReaction: '한쪽으로 단정 짓기보다 결을 더 보려는 결',
+    externalMisunderstanding: '결정이 늦다고 보일 수 있지만 실제로는 결을 읽고 있음',
+    betterUse: '환경별 강점을 다르게 활용하는 유연함이 가장 큰 자산',
+  };
+}
+
+// ── 대표 신살 선정 + 깊이 풀이 ─────────────────────────────
+const STAR_DEEP_MEANING: Record<string, { plain: string; sceneSeed: string; advice: string; cautionTone?: string }> = {
+  '천을귀인': {
+    plain: '결정적인 순간에 도움·정보·조언이 붙기 쉬운 결. 도움은 가만히 있어도 무조건 오는 것이 아니라, 상황을 정리해서 말할 때 더 잘 연결됨.',
+    sceneSeed: '막힌 일이 생겼을 때 혼자 버티지 않고 짧게 정리해서 믿을 만한 사람에게 묻는 장면',
+    advice: '구조화해서 묻는 습관을 들이면 운이 훨씬 편하게 흐름.',
+    cautionTone: '"무조건 도움 받음"·"천운" 같은 과장 금지',
+  },
+  '문창귀인': {
+    plain: '학문·문서·표현이 잘 통하는 결. 머리에 있는 것을 문서·자료·결과물로 만들었을 때 인정으로 이어지는 결.',
+    sceneSeed: '아이디어를 머릿속에만 두지 않고 문서·강의안·콘텐츠로 남기는 장면',
+    advice: '말로만 끝내지 말고 결과물로 남기는 습관이 운을 살림.',
+  },
+  '학당귀인': {
+    plain: '배움이 자산이 되는 결. 단순 공부가 아니라 배운 것을 자기 기준으로 정리할 때 진짜 자산이 됨.',
+    sceneSeed: '새로 배운 것을 자기 언어로 정리해 다른 사람에게 풀어주는 장면',
+    advice: '배움을 정리·전달까지 가져가면 보상으로 이어짐.',
+  },
+  '월덕귀인': {
+    plain: '주변에서 따뜻하게 받쳐주는 결. 관계의 결을 망가뜨리지 않으면 위기에서 풀려나는 힘이 됨.',
+    sceneSeed: '오래 알고 지낸 사람들이 결정적 순간에 자연스럽게 받쳐주는 장면',
+    advice: '관계의 결을 깨지 않는 선택이 운을 편하게 함.',
+  },
+  '천덕귀인': {
+    plain: '하늘의 덕처럼 위기에서 풀려나는 결. 결정적 순간 한 발 늦지 않는 흐름.',
+    sceneSeed: '벼랑 끝에서 예상치 못한 도움이나 풀림이 들어오는 장면',
+    advice: '바른 선택을 누적하면 위기에서 풀림이 잘 들어옴.',
+  },
+  '양인': {
+    plain: '위기에서 물러서지 않으려는 힘. 평소에는 조용해 보여도 결정적인 순간에 단호해질 수 있음.',
+    sceneSeed: '책임이 흐려지거나 기준이 무너지는 장면에서 단호하게 정리에 들어가는 결',
+    advice: '가까운 관계에서는 마음이 닫히기 전에 기준을 말로 나누는 것이 중요.',
+    cautionTone: '"백호라서 사고" 같은 공포 해석 금지',
+  },
+  '괴강': {
+    plain: '기준이 강하게 서는 기운. 한 번 기준이 서면 쉽게 흔들리지 않음.',
+    sceneSeed: '여러 사람의 의견이 흩어질 때 결국 본인이 기준을 잡아 끌고 가는 장면',
+    advice: '단단함을 부담이 아닌 신뢰로 바꾸려면 기준을 공유하고 문서로 남기는 것이 중요.',
+  },
+  '백호': {
+    plain: '강하고 격렬한 추진력. 큰 변화에 노출되는 결.',
+    sceneSeed: '판이 한 번 크게 바뀌는 시점에 정면으로 부딪히는 장면',
+    advice: '강한 추진력은 방향을 정하고 쓰면 큰 결과로 이어지지만, 방향 없이 쓰면 소모가 큼.',
+    cautionTone: '"백호=사고/불행" 식 단정 금지',
+  },
+  '도화': {
+    plain: '사람을 끄는 매력·주목받는 자리. 억지로 눈에 띄려 하지 않아도 분위기로 기억되는 힘.',
+    sceneSeed: '특별히 애쓰지 않아도 사람들의 시선이 모이는 장면',
+    advice: '모든 관계에 반응하려 하기보다 오래 남길 관계를 고르는 감각이 필요.',
+  },
+  '홍염': {
+    plain: '사람과 가까워지는 매력·감정의 결. 가까이 다가오는 사람이 많아짐.',
+    sceneSeed: '말 한마디·태도 하나로 상대의 마음이 가까워지는 장면',
+    advice: '가까운 거리에서 신호를 더 받기 쉬우니, 관계의 결을 본인이 먼저 정리하는 습관이 중요.',
+  },
+  '화개': {
+    plain: '내면·예술·고요함을 향한 결. 혼자 정리하고 몰입할 때 깊어짐.',
+    sceneSeed: '사람들과 떨어져 혼자 생각을 숙성시키고 결과물로 남기는 장면',
+    advice: '바로 드러나는 힘보다 결과물로 남기는 힘이 큼 — 결과물을 외부에서 확인 가능한 형태로 정리하는 것이 운을 살림.',
+  },
+  '역마': {
+    plain: '이동·변화·확장의 흐름. 한 자리에 묶이지 않고 움직일 때 자기 결이 더 잘 살아남.',
+    sceneSeed: '환경·자리·접점을 바꾸는 선택이 일·관계의 결을 풀어주는 장면',
+    advice: '이동·환경 변화를 도망이 아니라 구조의 변경으로 활용하면 운이 편해짐.',
+  },
+};
+
+interface RepresentativeStar {
+  star: SpecialStarInfo;
+  priority: number; // 낮을수록 우선 (1 = 최우선)
+  reason: string;
+}
+
+/**
+ * 대표 신살 1~3개 선정.
+ * 우선순위 (낮은 수가 우선):
+ *   1 — lifeWeapons 또는 lifeTraps의 name과 부분 일치 (성향/패턴과 직접 연결)
+ *   2 — interpretationHint가 충분히 있음 (해석이 가능한 신살)
+ *   3 — strengthScore 높음
+ *   4 — 그 외
+ */
+function pickRepresentativeStars(input: PersonalSajuGptInput): RepresentativeStar[] {
+  const stars = input.coreAnalysis.specialStars;
+  if (!stars || stars.length === 0) return [];
+
+  const weaponNames = (input.lifeWeapons ?? []).map(w => w.name);
+  const trapNames = (input.lifeTraps ?? []).map(t => t.name);
+  const archetypeRelated = new Set<string>();
+  for (const w of weaponNames) for (const k of Object.keys(STAR_DEEP_MEANING)) if (w.includes(k)) archetypeRelated.add(k);
+  for (const t of trapNames) for (const k of Object.keys(STAR_DEEP_MEANING)) if (t.includes(k)) archetypeRelated.add(k);
+
+  const scored: RepresentativeStar[] = stars.map(s => {
+    if (archetypeRelated.has(s.name)) return { star: s, priority: 1, reason: 'archetype/lifeWeapons·lifeTraps와 직접 연결' };
+    if (s.interpretationHint && s.interpretationHint.trim().length >= 6) return { star: s, priority: 2, reason: 'interpretationHint 충분' };
+    if ((s.strengthScore ?? 0) >= 60) return { star: s, priority: 3, reason: 'strengthScore 높음' };
+    return { star: s, priority: 4, reason: '기타' };
+  });
+
+  // 우선순위 → strengthScore 내림차순으로 정렬, 최대 3개
+  scored.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return (b.star.strengthScore ?? 0) - (a.star.strengthScore ?? 0);
+  });
+
+  return scored.slice(0, 3);
+}
+
+// ── 용신·기신 → 행동 조언 시드 ────────────────────────────
+function usefulGodPlainMeaning(u: UsefulGodAnalysis): string {
+  const primaryStr = u.primaryUseful ? `${String(u.primaryUseful.value)}(${u.primaryUseful.type === 'element' ? '오행' : '십성'})` : '주요 균형 결';
+  const favorables = u.favorable && u.favorable.length > 0 ? u.favorable.slice(0, 3).map(String).join('·') : '';
+  const unfavorables = u.unfavorable && u.unfavorable.length > 0 ? u.unfavorable.slice(0, 3).map(String).join('·') : '';
+  const parts: string[] = [];
+  parts.push(`용신은 이 사주를 편하게 살려주는 방향 — 주요하게는 ${primaryStr}.`);
+  if (favorables) parts.push(`함께 도와주는 결(희신): ${favorables}.`);
+  if (unfavorables) parts.push(`반대로 과해지면 운이 막히는 결(기신): ${unfavorables}.`);
+  parts.push('이 방향은 물건·색상·방향 같은 미신적 개운법이 아니라, 그 결의 행동·환경·구조를 생활에 더 붙이는 방식으로 푸는 것이 핵심.');
+  return parts.join(' ');
+}
+
+function usefulGodAdviceHint(u: UsefulGodAnalysis): { actionable: string; avoidPattern: string; activatePattern: string } {
+  const favorables = u.favorable && u.favorable.length > 0 ? u.favorable.slice(0, 2).map(String).join('·') : '';
+  const unfavorables = u.unfavorable && u.unfavorable.length > 0 ? u.unfavorable.slice(0, 2).map(String).join('·') : '';
+  return {
+    actionable: favorables
+      ? `${favorables} 결의 환경·습관·관계를 생활에 더 자주 붙이는 선택이 운을 편하게 만듦.`
+      : '이 사주를 편하게 만드는 결을 생활에 더 자주 붙이는 선택이 운을 살림.',
+    avoidPattern: unfavorables
+      ? `${unfavorables} 결이 과해지는 환경·반응·습관을 오래 끌고 가지 않는 것이 중요.`
+      : '과해진 결을 그대로 끌고 가는 패턴을 피해야 함.',
+    activatePattern: '용신/기신을 "물건"이 아니라 "행동의 결"로 바꿔 생활 속 선택으로 적용.',
+  };
+}
+
+// ── 개운 방향 (synthetic — 신강/신약 + 용신 종합) ──────────
+function buildGaewoonDirectionFact(input: PersonalSajuGptInput): NarrativeMustUseFact {
+  const dm = input.coreAnalysis.dayMasterStrength;
+  const ug = input.coreAnalysis.usefulGod;
+  const core = strengthCoreLabel(dm.level);
+  const ugSummary = usefulGodPlainMeaning(ug);
+  const strengthFlavor = core === '신강'
+    ? '이미 강한 힘을 더 키우는 쪽이 아니라, 그 힘을 어디까지 쓰고 어디서 나눌지 정하는 쪽이 개운 방향.'
+    : core === '신약'
+      ? '혼자 버티는 힘을 키우는 쪽이 아니라, 좋은 정보·환경·협업을 잘 붙여 중심을 잡는 쪽이 개운 방향.'
+      : '한쪽으로 힘을 몰지 않고 환경의 결을 빠르게 읽어 강점을 다르게 활용하는 쪽이 개운 방향.';
+  return {
+    id: 'gaewoon-direction',
+    source: 'gaewoonDirection',
+    fact: `개운 방향 (신강/신약=${core}, 용신=${ug.primaryUseful ? String(ug.primaryUseful.value) : '균형'})`,
+    plainMeaning: `${strengthFlavor} ${ugSummary}`,
+    narrativeHint: '결론 본문 안에 "이 사주의 개운 방향은 ..." 단락 1개로 자연스럽게. 별도 헤더 X. 부적·색상·방향 같은 미신적 개운법 금지. 행동·구조화·역할 분담·문서화 중심으로.',
+    matchTokens: ['개운', '운을 편하게', '운이 살아나', '운을 막는'],
+    adviceHint: {
+      actionable: '용신 결을 생활 속 행동·습관·환경·관계로 자주 붙이고, 기신 결이 과해지지 않도록 선택을 다듬는 방식.',
+      avoidPattern: '부적·색상·방향 맹신, "특정 물건을 사면 운이 좋아진다" 식의 미신적 표현.',
+      activatePattern: '책임을 혼자 떠안지 않고 역할·권한·보상 기준을 문서화하고 나누는 선택.',
+    },
+  };
+}
+
+// ── 운이 열리는 방식 (opening 짧은 시드, 2~3문장) ─────────
+function buildLuckOpeningConditionFact(input: PersonalSajuGptInput): NarrativeMustUseFact {
+  const core = strengthCoreLabel(input.coreAnalysis.dayMasterStrength.level);
+  const seed = core === '신강'
+    ? '이 사주의 운은 더 강하게 버틸 때 열리는 구조가 아니라, 이미 강한 힘을 혼자 쓰지 않고 구조로 바꿀 때 살아남.'
+    : core === '신약'
+      ? '이 사주의 운은 혼자 다 알아내려 할 때보다, 좋은 정보·환경·협업을 잘 붙여 중심을 잡을 때 살아남.'
+      : '이 사주의 운은 한쪽 방식만 고집할 때보다, 환경의 결에 따라 강점을 유연하게 바꿀 때 살아남.';
+  return {
+    id: 'luck-opening-condition',
+    source: 'luckOpeningCondition',
+    fact: '운이 열리는 방식 (한 줄 정의 후반 짧은 시드)',
+    plainMeaning: seed,
+    narrativeHint: '1장 마지막 단락에서 2~3문장으로만 짧게. 구체 개운법·행동 조언은 절대 여기서 풀지 말고 결론(finalStrategyNarrative)으로 미룸.',
+    matchTokens: ['운이 열리', '운이 살아나', '구조로 바꿀', '구조로 바꾸', '구조로 정리'],
+    adviceHint: {
+      actionable: '짧은 마무리만. 결론 섹션에서 구체화.',
+    },
+  };
+}
+
+// ============================================================
 // 섹션 1 — openingDefinition
 // ============================================================
-function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
+function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], depth: NarrativeDepthOptions = DEFAULT_NARRATIVE_DEPTH_OPTIONS): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
 
   // top 3 identityKeywords (첫 fact에 lifeSceneHint 부착)
@@ -178,19 +437,29 @@ function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]):
     matchTokens: buildMatchTokens(dm, dm[0] ?? ''),
   });
 
+  // 2026-05 Depth v1: 운이 열리는 방식 짧은 시드 (flag on일 때만, 2~3문장 제한)
+  if (depth.useSajuOpeningLuckCondition) {
+    facts.push(buildLuckOpeningConditionFact(input));
+  }
+
+  const requiredBeats: string[] = [
+    '이 사주를 대표하는 한 문장으로 시작한다(겉/속 결 차이나 결정 방식이 드러나야 함).',
+    '그 한 문장이 실제 삶에서 어떻게 나타나는지 1~2단락 설명한다.',
+    '핵심 키워드 3~5개를 문장 속에 녹인다(리스트 X).',
+    'specialPoints를 일상어로 풀어준다 (예: "양인은 쉽게 말해 ...").',
+    '이 힘이 장점이 되는 상황과 부담이 되는 상황을 함께 말한다.',
+  ];
+  if (depth.useSajuOpeningLuckCondition) {
+    requiredBeats.push('마지막 단락에서 2~3문장 이하로 "운이 열리는 방식"을 짧게만 시드. 구체 개운법은 결론 섹션에서 다룸.');
+  }
+  requiredBeats.push('다음 장으로 자연스럽게 이어지는 문장으로 끝낸다.');
+
   return {
     sectionId: 'openingDefinition',
     sectionGoal: '이 사주의 핵심을 한 문장으로 잡고, 독자가 계속 읽고 싶게 만든다.',
     topicCoverageTargets: ['oneLineDefinition', 'coreKeywords', 'outerInnerContrast', 'specialPoints'],
     mustUseFacts: facts,
-    requiredBeats: [
-      '이 사주를 대표하는 한 문장으로 시작한다(겉/속 결 차이나 결정 방식이 드러나야 함).',
-      '그 한 문장이 실제 삶에서 어떻게 나타나는지 1~2단락 설명한다.',
-      '핵심 키워드 3~5개를 문장 속에 녹인다(리스트 X).',
-      'specialPoints를 일상어로 풀어준다 (예: "양인은 쉽게 말해 ...").',
-      '이 힘이 장점이 되는 상황과 부담이 되는 상황을 함께 말한다.',
-      '다음 장으로 자연스럽게 이어지는 문장으로 끝낸다.',
-    ],
+    requiredBeats,
     avoidRepeating: [
       '위기에서 쉽게 꺾이지 않는',
       '안정성과 신뢰를 중시',
@@ -210,7 +479,7 @@ function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]):
 // ============================================================
 // 섹션 2 — lifeStructureNarrative
 // ============================================================
-function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
+function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], depth: NarrativeDepthOptions = DEFAULT_NARRATIVE_DEPTH_OPTIONS): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
 
   // dayMaster (본격 풀이) — 일간 비유 + 내면 결 hint 부착
@@ -264,6 +533,56 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
     });
   });
 
+  // 2026-05 Depth v1: 신강/신약 fact + 대표 신살 fact (flag on일 때만)
+  if (depth.useEvidenceNarrativeBlocks) {
+    const dms = input.coreAnalysis.dayMasterStrength;
+    const core = strengthCoreLabel(dms.level);
+    facts.push({
+      id: 'dayMasterStrength',
+      source: 'dayMasterStrength',
+      fact: `${core} (level=${dms.level})`,
+      plainMeaning: strengthPlainMeaning(dms.level),
+      narrativeHint:
+        `일간 비유 뒤 단락에서 "${core}은(는) ..." 식으로 짧게 풀어 1~2문장 안에 흡수. ` +
+        `반드시 일간 비유와 묶어 "원인(${core} 구조) → 결과(성향) → 현실 장면 → 조언" 흐름으로. ` +
+        '운명론적 단정("강하다"=좋다 / "약하다"=나쁘다) 금지. 사주 구조 설명으로만.',
+      matchTokens: [core, '기준', '버티는 힘', '도와주는 힘', '환경에 따라'],
+      lifeSceneHint: strengthLifeSceneHint(dms.level),
+      adviceHint: strengthAdviceHint(dms.level),
+    });
+
+    // 대표 신살 1~3개 (선정 기준은 pickRepresentativeStars 주석 참고)
+    const repStars = pickRepresentativeStars(input);
+    repStars.forEach((rs, i) => {
+      const meaning = STAR_DEEP_MEANING[rs.star.name];
+      const plainBase = meaning?.plain ?? (rs.star.interpretationHint || plainOf(rs.star.name));
+      const sceneSeed = meaning?.sceneSeed ?? '';
+      const adviceBase = meaning?.advice ?? '';
+      facts.push({
+        id: `representative-star-${i}`,
+        source: 'specialStar',
+        fact: `${rs.star.name} (대표 신살, 선정사유=${rs.reason})`,
+        plainMeaning: plainBase,
+        narrativeHint:
+          `신살 이름만 나열하지 말고 "${rs.star.name}은(는) ..." 식으로 즉시 일상어로 풀이. ` +
+          `반드시 다른 명리 근거(일간/신강신약/십성 중 하나)와 묶어 해석. ` +
+          `${meaning?.cautionTone ? meaning.cautionTone + '. ' : ''}` +
+          '단순 단어 언급으로 끝나면 special-star-too-shallow medium issue.',
+        matchTokens: [rs.star.name],
+        lifeSceneHint: sceneSeed ? {
+          situation: sceneSeed,
+          likelyBehavior: '이 결이 자연스럽게 작동하는 행동 방식',
+          innerReaction: '안쪽에서는 이미 결이 잡혀 있는 상태',
+          betterUse: adviceBase,
+        } : undefined,
+        adviceHint: {
+          actionable: adviceBase || '이 신살의 결을 자기 강점으로 자연스럽게 활용.',
+          avoidPattern: meaning?.cautionTone ? `${meaning.cautionTone}, 공포·운명 단정으로 풀지 않음.` : undefined,
+        },
+      });
+    });
+  }
+
   // 가족·초년 흔적 (synthetic fact — 단정 없이 조건부 톤 시드)
   facts.push({
     id: 'family-early-structure',
@@ -274,6 +593,29 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
     matchTokens: ['가족', '초년', '어릴 때', '부모', '집안'],
   });
 
+  const requiredBeats: string[] = [
+    '일간을 쉬운 비유로 설명한다 (이 plan의 dayMaster fact plainMeaning을 그대로 사용. 다른 일간 비유 카피 금지).',
+  ];
+  if (depth.useEvidenceNarrativeBlocks) {
+    requiredBeats.push(
+      '신강/신약/중화 구조를 1~2문장으로 풀어 일간 설명과 묶어 흡수 (운명론 단정 금지, 사주 구조 설명으로만).',
+    );
+  }
+  requiredBeats.push(
+    '강한 오행/십성이 성격에 어떻게 나타나는지 줄글로 설명한다.',
+  );
+  if (depth.useEvidenceNarrativeBlocks) {
+    requiredBeats.push(
+      '대표 신살 1~3개를 일간/신강신약/십성과 묶어 깊이 풀이 — 단어 나열 금지, 반드시 현실 장면이나 조언으로 연결.',
+    );
+  }
+  requiredBeats.push(
+    '겉으로 보이는 모습과 실제 내면의 차이를 설명한다(반전 포인트).',
+    '주변이 오해하기 쉬운 지점을 말한다.',
+    '본인이 스스로 힘들어할 수 있는 지점을 말한다.',
+    '초년/가족 관련 내용은 단정하지 않고 "사주 구조상 ~할 가능성"으로 조건부 표현.',
+  );
+
   return {
     sectionId: 'lifeStructureNarrative',
     sectionGoal: '왜 이 사람이 이런 방식으로 생각하고 반응하는지 설명한다.',
@@ -282,14 +624,7 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
       'selfProtectionPattern', 'outerInnerContrast', 'familyEarlyPattern',
     ],
     mustUseFacts: facts,
-    requiredBeats: [
-      '일간을 쉬운 비유로 설명한다 (이 plan의 dayMaster fact plainMeaning을 그대로 사용. 다른 일간 비유 카피 금지).',
-      '강한 오행/십성이 성격에 어떻게 나타나는지 줄글로 설명한다.',
-      '겉으로 보이는 모습과 실제 내면의 차이를 설명한다(반전 포인트).',
-      '주변이 오해하기 쉬운 지점을 말한다.',
-      '본인이 스스로 힘들어할 수 있는 지점을 말한다.',
-      '초년/가족 관련 내용은 단정하지 않고 "사주 구조상 ~할 가능성"으로 조건부 표현.',
-    ],
+    requiredBeats,
     avoidRepeating: [
       '안정성과 신뢰를 중시',
       '어린 시절부터 책임감이 강했던',
@@ -853,7 +1188,7 @@ function buildFutureFlowPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[
 // ============================================================
 // 섹션 6 — finalStrategyNarrative
 // ============================================================
-function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
+function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], depth: NarrativeDepthOptions = DEFAULT_NARRATIVE_DEPTH_OPTIONS): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
 
   // top 2 activating choices (첫 번째에 hint)
@@ -907,19 +1242,51 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
     });
   }
 
+  // 2026-05 Depth v1: 용신/기신 행동 조언 fact (Evidence flag) + 개운 방향 fact (Gaewoon flag)
+  if (depth.useEvidenceNarrativeBlocks) {
+    const ug = input.coreAnalysis.usefulGod;
+    facts.push({
+      id: 'useful-god-advice',
+      source: 'usefulGod',
+      fact: `용신=${ug.primaryUseful ? String(ug.primaryUseful.value) : '균형'}, 희신=${(ug.favorable ?? []).slice(0, 2).map(String).join('·') || '-'}, 기신=${(ug.unfavorable ?? []).slice(0, 2).map(String).join('·') || '-'}`,
+      plainMeaning: usefulGodPlainMeaning(ug),
+      narrativeHint:
+        '용신/기신을 명리 용어로만 끝내지 말고, 결론 본문에서 "용신은 이 사주를 편하게 살려주는 방향, 기신은 과해지면 운이 막히는 결" 식으로 풀어, 그 결을 어떤 행동·환경·선택으로 적용할지로 연결. ' +
+        '미신적 개운법(부적·색상·방향) 절대 금지. 행동·구조화·역할 중심.',
+      matchTokens: ['용신', '기신', '편하게 살려', '과해지면', '도와주는 결'],
+      adviceHint: usefulGodAdviceHint(ug),
+    });
+  }
+  if (depth.useFinalGaewoonDirection) {
+    facts.push(buildGaewoonDirectionFact(input));
+  }
+
+  const requiredBeats: string[] = [
+    '이 사주의 핵심 사용법을 한 단락으로 정리한다.',
+    '일에서의 사용법을 말한다 (책임 범위·권한 결).',
+    '돈에서의 사용법을 말한다 (작업 범위·보상 기준 결).',
+    '관계에서의 사용법을 말한다 (초반 기준 말하기 결).',
+    '멘탈/선택 기준을 말한다.',
+  ];
+  if (depth.useEvidenceNarrativeBlocks) {
+    requiredBeats.push(
+      '용신/기신을 명리 용어로만 끝내지 말고, 그 결을 어떤 행동·환경·선택으로 적용할지(행동 조언)로 연결.',
+    );
+  }
+  if (depth.useFinalGaewoonDirection) {
+    requiredBeats.push(
+      '"이 사주의 개운 방향" 단락 1개 — 부적/색상/방향 같은 미신 개운법 금지, 행동·구조화·역할 분담·문서화 중심.',
+      '운을 막는 선택 1~2개와 운을 살리는 선택 1~2개를 줄글로 자연스럽게.',
+    );
+  }
+  requiredBeats.push('마지막 한 문장은 기억에 남게 쓴다 (저장하고 싶은 한 문장).');
+
   return {
     sectionId: 'finalStrategyNarrative',
     sectionGoal: '이 사주를 어떻게 써야 하는지 결론을 낸다.',
     topicCoverageTargets: ['practicalStrategy', 'career', 'moneyStyle', 'relationshipStyle', 'loveMarriageStyle'],
     mustUseFacts: facts,
-    requiredBeats: [
-      '이 사주의 핵심 사용법을 한 단락으로 정리한다.',
-      '일에서의 사용법을 말한다 (책임 범위·권한 결).',
-      '돈에서의 사용법을 말한다 (작업 범위·보상 기준 결).',
-      '관계에서의 사용법을 말한다 (초반 기준 말하기 결).',
-      '멘탈/선택 기준을 말한다.',
-      '마지막 한 문장은 기억에 남게 쓴다 (저장하고 싶은 한 문장).',
-    ],
+    requiredBeats,
     avoidRepeating: [
       '협업을 통해 더 나은 결과',
       '긍정적인 결과를 가져올',
@@ -943,6 +1310,11 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
 export interface BuildNarrativePlansOptions {
   /** 앞으로 3년 장 포함 여부 (기본 false — 별도 기능으로 분리 가능) */
   includeFutureFlow?: boolean;
+  /**
+   * 2026-05 Narrative Depth v1 — 명리 구조 깊이 (신강/신약·신살·용신·개운 방향).
+   * 미지정 시 모두 false (안정화 v0 plan 그대로 — rollback 안전망).
+   */
+  depthOptions?: NarrativeDepthOptions;
 }
 
 export function buildNarrativePlans(
@@ -950,9 +1322,10 @@ export function buildNarrativePlans(
   lifeSceneHints?: LifeSceneHint[],
   options: BuildNarrativePlansOptions = {},
 ): NarrativePlanSet {
+  const depth = options.depthOptions ?? DEFAULT_NARRATIVE_DEPTH_OPTIONS;
   const plans: NarrativePlanSet = [
-    buildOpeningPlan(input, lifeSceneHints),
-    buildLifeStructurePlan(input, lifeSceneHints),
+    buildOpeningPlan(input, lifeSceneHints, depth),
+    buildLifeStructurePlan(input, lifeSceneHints, depth),
     buildRepeatedPatternPlan(input, lifeSceneHints),
     buildCareerTalentPlan(input, lifeSceneHints),
     buildMoneyMonetizationPlan(input, lifeSceneHints),
@@ -961,6 +1334,6 @@ export function buildNarrativePlans(
   if (options.includeFutureFlow) {
     plans.push(buildFutureFlowPlan(input, lifeSceneHints));
   }
-  plans.push(buildFinalStrategyPlan(input, lifeSceneHints));
+  plans.push(buildFinalStrategyPlan(input, lifeSceneHints, depth));
   return plans;
 }

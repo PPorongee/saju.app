@@ -36,13 +36,14 @@ import {
   buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt,
   buildSectionPrompt, SECTION_MAX_TOKENS,
 } from './narrative/narrativePromptBuilder';
-import { sanitizeNarrativeText, sanitizeUnsupportedUserContext, applyFinalSanitizers } from './narrative/narrativeSanitizer';
+import { sanitizeNarrativeText, sanitizeUnsupportedUserContext, sanitizeFinancialAdviceRisk, applyFinalSanitizers } from './narrative/narrativeSanitizer';
 import { validateNarrativeReport, collectFailingSectionsFromIssues } from './narrative/narrativeReportValidator';
 import { buildNarrativePlans } from './narrative/narrativePlanBuilder';
 import { buildLifeSceneHints } from './narrative/lifeSceneHintBuilder';
 import { buildTopicCoverageMap } from './narrative/topicCoverageBuilder';
 import { buildStarKeywordCard } from './star/starKeywordCardBuilder';
-import type { NarrativeValidationResult, NarrativePlanSet } from './narrative/narrativeTypes';
+import type { NarrativeValidationResult, NarrativePlanSet, NarrativeDepthOptions } from './narrative/narrativeTypes';
+import { DEFAULT_NARRATIVE_DEPTH_OPTIONS } from './narrative/narrativeTypes';
 import type { TopicCoverageMap } from './narrative/topicCoverageTypes';
 import type { StarKeywordCardData } from './star/starArchetypeTypes';
 import { DEFAULT_RULE_CONFIG } from './rules/ruleConfig';
@@ -300,6 +301,11 @@ export interface NarrativeGenerateOptions {
   now?: Date;
   /** 앞으로 3년 장 포함 여부 (기본 false — 별도 기능으로 분리될 수 있음) */
   includeFutureFlow?: boolean;
+  /**
+   * 2026-05 Narrative Depth v1 — 명리 구조 깊이 (신강/신약·신살·용신·개운).
+   * 미지정 시 모두 false → 안정화 v0 결과와 동일 (rollback 안전망).
+   */
+  depthOptions?: NarrativeDepthOptions;
 }
 
 export interface NarrativeGenerateResult {
@@ -341,6 +347,7 @@ export async function generateNarrativePersonalSajuReport(
   const lifeSceneHints = buildLifeSceneHints(gptInput);
   const narrativePlans = buildNarrativePlans(gptInput, lifeSceneHints, {
     includeFutureFlow: opts.includeFutureFlow ?? false,
+    depthOptions: opts.depthOptions ?? DEFAULT_NARRATIVE_DEPTH_OPTIONS,
   });
   const starKeywordCard = buildStarKeywordCard(gptInput);
 
@@ -373,9 +380,14 @@ export async function generateNarrativePersonalSajuReport(
     sectionPrompts.map(async sp => {
       const raw = await opts.callGpt(sp.prompt, { maxTokens: sp.maxTokens });
       // 응답 직후 sanitize 체인 (validator 실행 전)
-      // 1) 영문 오행 키 → 한글  2) unsupported user-context 단정 표현 → 중립
+      // 1) 영문 오행 키 → 한글
+      // 2) unsupported user-context 단정 표현 → 중립
+      // 3) (money 섹션 한정) financial-advice-risk 표현 → 안전한 수익화 표현
       let out = sanitizeNarrativeText(raw);
       out = sanitizeUnsupportedUserContext(out, uctx);
+      if (sp.plan.sectionId === 'moneyMonetizationNarrative') {
+        out = sanitizeFinancialAdviceRisk(out);
+      }
       return out;
     })
   );
@@ -401,9 +413,10 @@ export async function generateNarrativePersonalSajuReport(
           String(it.sectionId).split(',').map(s => s.trim()).includes(plan.sectionId) ||
           String(it.sectionId) === 'global'
         );
-        // violation-specific 절대 규칙 헤더 (영문 오행 / 미래 단어)
+        // violation-specific 절대 규칙 헤더 (영문 오행 / 미래 단어 / 금융 조언 등)
         const hasEnglishLeak = sectionIssues.some(i => i.type === 'english-element-key-leak');
         const hasFutureLeak = sectionIssues.some(i => i.type === 'future-leak');
+        const hasFinancialRisk = sectionIssues.some(i => i.type === 'financial-advice-risk');
         const violationRules: string[] = ['[절대 규칙 — 이번 repair에서 반드시 준수]'];
         if (hasEnglishLeak) violationRules.push(
           '- 이 섹션에서 wood/fire/earth/metal/water 절대 출력 금지. 반드시 목/화/토/금/수만.'
@@ -411,6 +424,14 @@ export async function generateNarrativePersonalSajuReport(
         if (hasFutureLeak) violationRules.push(
           '- 2026년/2027년/2028년/앞으로 3년/향후 3년/다음 3년/세운/미래 흐름 절대 사용 금지.'
         );
+        // money 섹션은 financial-advice-risk 발생 여부와 무관하게 항상 절대규칙 prepend
+        if (hasFinancialRisk || plan.sectionId === 'moneyMonetizationNarrative') {
+          violationRules.push(
+            '- 투자/거래/매수/매도/시세/수익률/시장 타이밍/가격 흐름/큰돈을 굴린다/트레이딩/단기 투자/주식/코인/베팅/레버리지처럼 금융 조언으로 읽히는 표현 절대 금지.',
+            '- 돈 파트는 투자 조언이 아니라 수익화 구조·가격 정책·계약 조건·작업 범위·정산 기준 중심으로 작성할 것.',
+            '- 사용자의 자산 운용 결정을 유도하지 말 것.',
+          );
+        }
         const repairPrompt: BuiltNarrativePrompt = {
           system: sp.prompt.system,
           user: violationRules.join('\n') + '\n\n' + sp.prompt.user
@@ -420,6 +441,9 @@ export async function generateNarrativePersonalSajuReport(
         const raw = await opts.callGpt(repairPrompt, { maxTokens: sp.maxTokens });
         let out = sanitizeNarrativeText(raw);
         out = sanitizeUnsupportedUserContext(out, uctx);
+        if (plan.sectionId === 'moneyMonetizationNarrative') {
+          out = sanitizeFinancialAdviceRisk(out);
+        }
         newSectionTexts[idx] = out;
       })
     );
@@ -432,8 +456,8 @@ export async function generateNarrativePersonalSajuReport(
   // repair 이후에도 high가 남으면 마지막 안전망: sanitizer 한 번 더 + 미래 단어 제거 + 재검증
   if (!validation.isValid && validation.issues.some(i => i.severity === 'high')) {
     const stripFuture = !narrativePlans.some(p => p.sectionId === 'futureFlowNarrative');
-    // 2026-05 audit: user-context sanitize도 final fallback에 포함
-    reportText = applyFinalSanitizers(reportText, { stripFuture, userContext: uctx });
+    // 2026-05 audit: user-context sanitize + financial-advice-risk sanitize도 final fallback에 포함
+    reportText = applyFinalSanitizers(reportText, { stripFuture, userContext: uctx, sanitizeFinancial: true });
     validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 

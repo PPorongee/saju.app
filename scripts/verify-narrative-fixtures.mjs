@@ -1,9 +1,11 @@
-// 실제 production API에 3 fixture 호출 → 6개 안정화 항목 자동 검증.
-// 새 기능/문장 품질 평가 X. 안정화 회귀만.
+// 실제 production API에 3 fixture 호출 → 안정화 + Narrative Depth v1 자동 검증.
+// 새 기능/문장 품질 평가 X. 안정화 회귀 + depth 흡수만.
 //
 // 이 스크립트는 실제 OpenAI 호출 비용/시간이 들고 외부 환경에 의존하므로
 // 기본 CI/test에서 절대 실행되지 않아야 한다.
-// 실행: RUN_LLM_INTEGRATION_TESTS=true node scripts/verify-narrative-fixtures.mjs
+// 실행:
+//   기본(off): RUN_LLM_INTEGRATION_TESTS=true node scripts/verify-narrative-fixtures.mjs
+//   depth on:  RUN_LLM_INTEGRATION_TESTS=true SAJU_DEPTH=on node scripts/verify-narrative-fixtures.mjs
 
 if (process.env.RUN_LLM_INTEGRATION_TESTS !== 'true') {
   console.log('[verify-narrative-fixtures] skipped — 이 스크립트는 실제 production GPT를 호출합니다.');
@@ -12,6 +14,16 @@ if (process.env.RUN_LLM_INTEGRATION_TESTS !== 'true') {
 }
 
 const API = process.env.SAJU_V4_API ?? 'https://www.starlight-saju.com/api/saju-v4';
+const DEPTH_MODE = process.env.SAJU_DEPTH === 'on';
+const DEPTH_OPTIONS = DEPTH_MODE ? {
+  useEvidenceNarrativeBlocks: true,
+  useSajuOpeningLuckCondition: true,
+  useFinalGaewoonDirection: true,
+} : {
+  useEvidenceNarrativeBlocks: false,
+  useSajuOpeningLuckCondition: false,
+  useFinalGaewoonDirection: false,
+};
 
 const FIXTURES = [
   {
@@ -51,7 +63,7 @@ async function fetchOne(fx) {
   const res = await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ input: fx.input, maxRepairAttempts: 1 }),
+    body: JSON.stringify({ input: fx.input, maxRepairAttempts: 1, depthOptions: DEPTH_OPTIONS }),
   });
   const dt = ((Date.now() - t0) / 1000).toFixed(1);
   if (!res.ok) {
@@ -127,15 +139,69 @@ function check(result) {
   if (finalLen < 200) issues.push(`#6 [FAIL] finalStrategy 본문 너무 짧음 (compactLen=${finalLen}, sentence=${finalSentenceCount})`);
   else issues.push(`#6 [OK ] finalStrategy compactLen=${finalLen}, sentence=${finalSentenceCount}`);
 
+  // 7~10. Narrative Depth v1 검사 (depth on일 때만 PASS 조건 의미 있음)
+  const lifeBody = sec.lifeStructureNarrative ?? '';
+  const finalBody = sec.finalStrategyNarrative ?? '';
+
+  // #7 신강/신약/중화 반영
+  const strengthHit = /신강|신약|중화/.test(lifeBody);
+  issues.push(
+    DEPTH_MODE
+      ? (strengthHit ? `#7 [OK ] lifeStructure에 신강/신약/중화 단어 반영` : `#7 [FAIL] lifeStructure에 신강/신약/중화 단어 없음 (depth on인데 흡수되지 않음)`)
+      : (strengthHit ? `#7 [INFO] lifeStructure에 신강/신약/중화 단어 있음 (depth off에서도 흡수됨)` : `#7 [INFO] depth off — 신강/신약 단어 없음 (정상)`)
+  );
+
+  // #8 대표 신살 깊이 풀이
+  const KNOWN_STARS = ['양인','괴강','백호','도화','홍염','화개','역마','천을귀인','문창귀인','학당귀인','월덕귀인','천덕귀인'];
+  const presentStars = (data.coreAnalysis?.specialStars ?? []).map(s => s.name).filter(n => KNOWN_STARS.includes(n));
+  let starsExplained = 0;
+  let starsShallow = 0;
+  for (const name of presentStars) {
+    if (!lifeBody.includes(name)) continue;
+    const pos = lifeBody.indexOf(name);
+    const window = lifeBody.slice(Math.max(0, pos - 60), Math.min(lifeBody.length, pos + name.length + 100));
+    const hasExplain = /쉽게|말하면|풀면|풀어|처럼|비유|뜻|의미|라는 건|이라는 건|에 가까|와 비슷|같은 기운|같은 힘/.test(window);
+    if (hasExplain) starsExplained++;
+    else starsShallow++;
+  }
+  issues.push(
+    DEPTH_MODE
+      ? (starsExplained >= 1
+          ? `#8 [OK ] 대표 신살 ${starsExplained}개 풀이 동반 (얕은 언급 ${starsShallow}개)`
+          : `#8 [FAIL] 대표 신살 풀이 동반 0개 (얕은 언급 ${starsShallow}개) — special-star-too-shallow 가능`)
+      : `#8 [INFO] depth off — 대표 신살 풀이 ${starsExplained}, 얕은 ${starsShallow}`
+  );
+
+  // #9 용신/기신 행동 조언 연결
+  const ugHit = /용신|기신|도와주는 결|편하게 살려|과해지면/.test(finalBody);
+  issues.push(
+    DEPTH_MODE
+      ? (ugHit ? `#9 [OK ] final에 용신/기신 결 반영` : `#9 [FAIL] final에 용신/기신 결 없음 — missing-useful-god-advice 가능`)
+      : `#9 [INFO] depth off — 용신 단어 ${ugHit ? '있음' : '없음'}`
+  );
+
+  // #10 개운 방향 포함
+  const gaewoonHit = /개운|운을 편하게|운이 살아나|운을 막는|운이 막히는/.test(finalBody);
+  issues.push(
+    DEPTH_MODE
+      ? (gaewoonHit ? `#10 [OK ] final에 개운 방향 반영` : `#10 [FAIL] final에 개운 방향 없음 — gaewoon-direction-missing 가능`)
+      : `#10 [INFO] depth off — 개운 키워드 ${gaewoonHit ? '있음' : '없음'}`
+  );
+
   // 보조 — 섹션별 본문 길이
   const lens = Object.fromEntries(
     Object.entries(sec).map(([k, v]) => [k, v.replace(/\s+/g, '').length])
   );
-  return { dm, totalLen: md.replace(/\s+/g, '').length, lens, issues, validation: data.validation };
+  // 진단 — # 헤더 개수와 첫 200자
+  const headerMatches = md.match(/^#{1,3}\s*\d+\s*[.:)]\s+.+$/gm) ?? [];
+  const headerCount = headerMatches.length;
+  const headers = headerMatches.slice(0, 10);
+  const first200 = md.slice(0, 200);
+  return { dm, totalLen: md.replace(/\s+/g, '').length, lens, issues, validation: data.validation, headerCount, headers, first200 };
 }
 
 (async () => {
-  console.log(`[verify-narrative-fixtures] API=${API}\n`);
+  console.log(`[verify-narrative-fixtures] API=${API}  DEPTH_MODE=${DEPTH_MODE ? 'on' : 'off'}\n`);
   const results = await Promise.all(FIXTURES.map(fetchOne));
   for (const r of results) {
     console.log('━'.repeat(72));
@@ -147,12 +213,22 @@ function check(result) {
     const ck = check(r);
     console.log(`  dayMaster: ${ck.dm}`);
     console.log(`  reportText compactLen: ${ck.totalLen}`);
+    console.log(`  header count: ${ck.headerCount}`);
+    console.log(`  headers found:`);
+    for (const h of ck.headers) console.log(`    ${h.trim()}`);
+    console.log(`  first 200 chars: ${JSON.stringify(ck.first200)}`);
     console.log(`  section lengths:`);
     for (const [k, v] of Object.entries(ck.lens)) console.log(`    ${k}: ${v}`);
     if (ck.validation) {
-      const h = ck.validation.issues?.filter(i => i.severity === 'high').length ?? 0;
+      const highIssues = ck.validation.issues?.filter(i => i.severity === 'high') ?? [];
       const m = ck.validation.issues?.filter(i => i.severity === 'medium').length ?? 0;
-      console.log(`  validation: isValid=${ck.validation.isValid}, high=${h}, medium=${m}`);
+      console.log(`  validation: isValid=${ck.validation.isValid}, high=${highIssues.length}, medium=${m}`);
+      if (highIssues.length > 0) {
+        console.log(`  HIGH issues:`);
+        for (const iss of highIssues) {
+          console.log(`    - [${iss.type}/${iss.sectionId}] "${(iss.sentence ?? '').slice(0, 80)}" — ${(iss.reason ?? '').slice(0, 120)}`);
+        }
+      }
     }
     console.log(`  check items:`);
     for (const it of ck.issues) console.log(`    ${it}`);

@@ -1035,6 +1035,89 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   }
 
   // ─────────────────────────────────────────────
+  // 21. 2026-05 Narrative Depth v1 — 신강/신약·신살·용신·개운 medium 검사
+  //     plan에 해당 depth fact가 있을 때만 발동 (flag off면 plan에 fact 없음 → 검사 skip).
+  //     모두 medium severity — high count에 영향 없음.
+  // ─────────────────────────────────────────────
+  if (narrativePlans && narrativePlans.length > 0) {
+    const lifePlan = narrativePlans.find(p => p.sectionId === 'lifeStructureNarrative');
+    const finalPlan = narrativePlans.find(p => p.sectionId === 'finalStrategyNarrative');
+    const lifeBlock = byId.get('lifeStructureNarrative');
+    const finalBody = byId.get('finalStrategyNarrative');
+
+    // (a) missing-strength-interpretation — depth on이고 lifeStructure에 신강/신약/중화 단어 없음
+    const hasStrengthFact = !!lifePlan?.mustUseFacts.some(f => f.source === 'dayMasterStrength');
+    if (hasStrengthFact && lifeBlock) {
+      const strengthWords = ['신강', '신약', '중화'];
+      const hit = strengthWords.some(w => lifeBlock.body.includes(w));
+      if (!hit) {
+        pushIssue(issues, {
+          type: 'missing-strength-interpretation', sectionId: 'lifeStructureNarrative',
+          sentence: '신강/신약/중화',
+          reason: 'lifeStructureNarrative에 신강/신약/중화 해석이 없음 — plan에 dayMasterStrength fact가 있는데 본문이 흡수하지 않음',
+          severity: 'medium',
+          suggestion: '일간 비유 직후 1~2문장으로 "신강은 ...", "신약은 ...", "중화는 ..." 식 풀이를 자연스럽게 흡수',
+        });
+      }
+    }
+
+    // (b) special-star-too-shallow — 대표 신살이 단어만 언급되고 가까이 풀이 마커가 없음
+    const repStarFacts = lifePlan?.mustUseFacts.filter(f => f.id.startsWith('representative-star-')) ?? [];
+    if (repStarFacts.length > 0 && lifeBlock) {
+      // 본문 어디에도 등장하지 않으면 missing-narrative-fact(이미 잡힘)와 중복되므로 skip.
+      // 등장은 했는데 60자 window 안에 풀이 마커가 없으면 too-shallow.
+      const shallowStars: string[] = [];
+      for (const f of repStarFacts) {
+        const name = f.matchTokens[0];
+        if (!name) continue;
+        if (!lifeBlock.body.includes(name)) continue;
+        if (!hasNearbyExplanation(lifeBlock.body, name)) shallowStars.push(name);
+      }
+      if (shallowStars.length > 0) {
+        pushIssue(issues, {
+          type: 'special-star-too-shallow', sectionId: 'lifeStructureNarrative',
+          sentence: shallowStars.join('/'),
+          reason: `대표 신살 ${shallowStars.join('/')}이 본문에 등장하지만 가까운 곳에 일상어 풀이가 없음 — 단어 나열만으로 끝남`,
+          severity: 'medium',
+          suggestion: '"양인은 위기에서 ..." 식으로 즉시 일상어 풀이 + 다른 명리 근거(일간/신강신약/십성)와 묶어 현실 장면이나 조언으로 연결',
+        });
+      }
+    }
+
+    // (c) missing-useful-god-advice — depth on이고 final에 용신/기신 단어가 행동 조언과 연결되지 않음
+    const hasUsefulGodFact = !!finalPlan?.mustUseFacts.some(f => f.source === 'usefulGod');
+    if (hasUsefulGodFact && finalBody) {
+      const ugWords = ['용신', '기신', '도와주는 결', '편하게 살려', '과해지면'];
+      const hit = ugWords.some(w => finalBody.body.includes(w));
+      if (!hit) {
+        pushIssue(issues, {
+          type: 'missing-useful-god-advice', sectionId: 'finalStrategyNarrative',
+          sentence: '용신/기신',
+          reason: 'finalStrategyNarrative에 용신/기신 기반 행동 조언이 없음 — plan에 usefulGod fact가 있는데 본문이 흡수하지 않음',
+          severity: 'medium',
+          suggestion: '용신을 "편하게 살려주는 방향", 기신을 "과해지면 막히는 결"로 풀고, 행동·환경·선택으로 연결',
+        });
+      }
+    }
+
+    // (d) gaewoon-direction-missing — depth on이고 final에 "개운" 키워드 또는 운 키워드 없음
+    const hasGaewoonFact = !!finalPlan?.mustUseFacts.some(f => f.source === 'gaewoonDirection');
+    if (hasGaewoonFact && finalBody) {
+      const gWords = ['개운', '운을 편하게', '운이 살아나', '운을 막는', '운이 막히는'];
+      const hit = gWords.some(w => finalBody.body.includes(w));
+      if (!hit) {
+        pushIssue(issues, {
+          type: 'gaewoon-direction-missing', sectionId: 'finalStrategyNarrative',
+          sentence: '개운 방향',
+          reason: 'finalStrategyNarrative에 개운 방향 단락이 없음 — plan에 gaewoonDirection fact가 있는데 본문이 흡수하지 않음',
+          severity: 'medium',
+          suggestion: '"이 사주의 개운 방향은 ..." 단락 1개 — 부적/색상/방향 같은 미신 금지, 행동·구조화·역할 분담 중심',
+        });
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // 종합 — 2026-05 stabilize: cross-leak 등이 high로 잡히면 repair 발동
   // medium 임계 강화 22 → 12
   // ─────────────────────────────────────────────
@@ -1070,6 +1153,11 @@ export function collectFailingSectionsFromIssues(
     'money-section-too-thin',
     'relationship-section-too-thin',
     'suggestion-coverage-missing',
+    // 2026-05 Narrative Depth v1
+    'missing-strength-interpretation',
+    'missing-useful-god-advice',
+    'special-star-too-shallow',
+    'gaewoon-direction-missing',
   ]);
   for (const iss of issues) {
     if (!SECTIONAL_TYPES.has(iss.type)) continue;

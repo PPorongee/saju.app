@@ -29,17 +29,28 @@ function renderPlan(plan: NarrativePlan, idx: number): string {
   const headerIdx = idx + 1;
   const title = SECTION_TITLES[plan.sectionId] ?? plan.sectionId;
   const factLines = plan.mustUseFacts.map(f => {
-    const base = `  - [${f.id} / ${f.source}] fact: "${f.fact}"\n      쉬운 풀이: ${f.plainMeaning}\n      흡수 힌트: ${f.narrativeHint}`;
-    if (!f.lifeSceneHint) return base;
-    const h = f.lifeSceneHint;
-    const sceneParts = [
-      `상황: ${h.situation}`,
-      `행동 가능성: ${h.likelyBehavior}`,
-      `내면 반응: ${h.innerReaction}`,
-      h.externalMisunderstanding ? `외부 오해: ${h.externalMisunderstanding}` : '',
-      h.betterUse ? `더 잘 쓰는 방향: ${h.betterUse}` : '',
-    ].filter(Boolean);
-    return base + `\n      ▷ 실제 장면 시드 (줄글 안에 자연스럽게 녹임):\n        ` + sceneParts.join('\n        ');
+    let block = `  - [${f.id} / ${f.source}] fact: "${f.fact}"\n      쉬운 풀이: ${f.plainMeaning}\n      흡수 힌트: ${f.narrativeHint}`;
+    if (f.lifeSceneHint) {
+      const h = f.lifeSceneHint;
+      const sceneParts = [
+        `상황: ${h.situation}`,
+        `행동 가능성: ${h.likelyBehavior}`,
+        `내면 반응: ${h.innerReaction}`,
+        h.externalMisunderstanding ? `외부 오해: ${h.externalMisunderstanding}` : '',
+        h.betterUse ? `더 잘 쓰는 방향: ${h.betterUse}` : '',
+      ].filter(Boolean);
+      block += `\n      ▷ 실제 장면 시드 (줄글 안에 자연스럽게 녹임):\n        ` + sceneParts.join('\n        ');
+    }
+    if (f.adviceHint) {
+      const a = f.adviceHint;
+      const adviceParts = [
+        `행동 조언: ${a.actionable}`,
+        a.avoidPattern ? `운이 막히는 선택: ${a.avoidPattern}` : '',
+        a.activatePattern ? `운이 살아나는 선택: ${a.activatePattern}` : '',
+      ].filter(Boolean);
+      block += `\n      ▷ 명리 구조 → 행동 조언 (원인·결과·현실 장면 다음에 자연스럽게 연결):\n        ` + adviceParts.join('\n        ');
+    }
+    return block;
   }).join('\n');
   const beatLines = plan.requiredBeats.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
   const avoidLines = plan.avoidRepeating.length > 0
@@ -226,14 +237,33 @@ const CAREER_RULES = `직업 추천 작성 순서(반드시 이 흐름):
 // ============================================================
 // 돈 표현 규칙 — 투자/거래 권유처럼 들리지 않게
 // ============================================================
-const MONEY_RULES = `돈 버는 방식 표현 규칙(중요):
-- "투자 타이밍", "시장 가격 흐름", "거래 시점", "트레이딩" 같은 표현은 금융 권유처럼 들리므로 금지.
-- moneyMakingStyle 데이터를 "수익화 구조 + 보상 방식" 중심으로 풀어쓴다.
+const MONEY_RULES = `돈 버는 방식 표현 규칙(매우 중요 — 위반 시 financial-advice-risk high):
+moneyMonetizationNarrative는 투자/거래 조언이 아니라 "수익화 구조·보상 방식" 중심으로 작성한다.
+사용자의 자산 운용 결정을 유도하지 말 것.
+
+[금지·위험 표현 — 절대 사용 X]
+- "시장 변화에 맞춰 거래" / "시장 변화를 보고 거래" / "가격 흐름을 보고 거래"
+- "시장 타이밍" / "투자 타이밍" / "거래 타이밍에 맞춰"
+- "매수" / "매도" / "시세" / "수익률" / "레버리지" / "단기 투자"
+- "큰돈을 굴린다" / "베팅" / "코인" / "주식" / "급등" / "급락"
+- "가격 흐름을 읽고 들어간다" / "차익" / "트레이딩"
+
+[대체 표현 — 이 결로 작성]
+- "수익 구조를 만든다" / "반복 가능한 수익 구조로 만든다"
+- "작업 범위와 보상 기준을 정한다"
+- "가격 정책을 세운다" / "가격표를 정한다"
+- "계약 조건을 명확히 한다" / "정산 기준을 문서화한다"
+- "작은 단위로 검증한다" / "작은 단위로 확인하고 키워간다"
+- "제안서/포트폴리오/체크리스트/교육 콘텐츠로 상품화한다"
+- "수요와 조건을 확인한다" (← "가격 흐름을 본다" 대체)
+- "큰 결정을 하기 전에" (← "큰돈을 굴리기 전에" 대체)
 
 나쁜 예: "시장의 변화와 가격 흐름을 보고 타이밍에 맞춰 거래하는 방식이 잘 맞습니다."
+나쁜 예: "큰돈을 굴리기 전에 작게 검증하고 시장 흐름을 보세요."
+나쁜 예: "주식이나 코인 같은 분야에서 단기 수익을 노리는 것도 가능합니다."
 
 좋은 예:
-"돈은 큰돈을 한 번에 움직이는 방식보다, 작은 단위로 검증하고 흐름을 보면서 키워가는 방식이 더 잘 맞습니다. 시장 변화나 사람들의 수요를 읽는 감각은 쓸 수 있지만, 충동적인 거래나 감으로만 움직이는 투자는 피하는 게 좋아요.
+"돈의 흐름을 감으로 크게 움직이기보다, 작업 범위·가격 기준·정산 조건을 명확히 정해 반복 가능한 수익 구조로 만드는 편이 좋습니다. 시장과 고객의 요구는 보되, 작은 단위로 검증하고 결과를 외부에서 확인 가능한 형태로 남기는 방식이 더 잘 맞아요.
 
 이 사주에서 돈이 붙는 방식은 '내가 정리한 가치'가 보일 때입니다. 제안서, 포트폴리오, 프로젝트 운영, 컨설팅, 프로세스 개선 성과, 교육 콘텐츠처럼 내가 만든 기준과 결과가 외부에서 확인될 때 보상으로 이어지기 쉽습니다."`;
 
@@ -275,10 +305,60 @@ const FINAL_MESSAGE_RULES = `결론·마지막 한 문장 규칙:
 - "당신의 운은 혼자 버틸 때보다, 기준을 세우고 사람들과 역할을 나눌 때 더 크게 열립니다."
 - "이미 충분히 강한 사람에게 필요한 건 더 큰 책임이 아니라, 그 책임을 오래 감당할 수 있는 구조입니다."`;
 
+// ============================================================
+// 2026-05 Narrative Depth v1 — 명리 구조 풀이 가이드 4종
+// (plan에 해당 fact가 없으면 GPT가 따라할 일이 없으므로 항상 system에 포함해도 안전)
+// ============================================================
+
+const EVIDENCE_NARRATIVE_RULES = `Evidence-to-Narrative 풀이 흐름 (명리 fact를 다룰 때 반드시):
+1. 단일 요소를 단독으로 해석하지 말 것. 최소 2개 근거(일간/신강신약/십성/신살/용신 중)를 묶어 해석.
+2. 흐름은 항상 "원인(명리 구조) → 결과(성향/반응 방식) → 현실 장면 → 행동 조언" 순서.
+3. 같은 분량을 더 길게 쓰는 것이 목적이 아니다. 일반 조언 반복("도움 요청해라", "혼자 버티지 마라")을 줄이고 그 자리에 명리 구조 해설을 넣어라.
+4. 명리 용어를 보여주는 전문가 톤이 아니라, 명리 구조를 사용자가 이해할 수 있는 결로 번역하는 톤.
+5. plan의 mustUseFact에 adviceHint가 붙어 있으면, 그 fact의 본문 흐름 마지막은 반드시 adviceHint.actionable 결로 마무리.
+
+나쁜 예: "비겁이 강해서 혼자 감당하려는 경향이 있습니다."
+좋은 예: "비겁은 자기 힘·독립성·버티는 힘과 관련된 기운입니다. 신강한 구조와 함께 작동하면 '내가 정리해야지' 쪽으로 몸이 먼저 움직일 수 있어요. 다만 도움이 와도 혼자 끌고 가는 패턴으로 굳을 수 있으니, 책임을 맡기 전 권한·범위를 먼저 확인하는 습관이 운을 편하게 만듭니다."`;
+
+const STRENGTH_INTERPRETATION_RULES = `신강/신약/중화 풀이 규칙 (plan에 dayMasterStrength fact가 있을 때):
+1. 본문에 반드시 "신강" / "신약" / "중화" 중 해당 단어 1회 이상.
+2. 운명론 단정 금지 — "신강=좋다" / "신약=나쁘다" 식 표현 절대 금지. "사주 구조"로만.
+3. 신강 → 자기 기준과 버티는 힘이 쉽게 꺾이지 않는 구조. 과해지면 혼자 밀고 가는 패턴.
+4. 신약 → 사람이 약하다는 뜻이 아니라 사주 안에서 나를 직접 도와주는 힘이 상대적으로 부족하다는 뜻. 정보·환경·협업으로 보완.
+5. 중화 → 한쪽으로 쏠리지 않고 환경에 따라 힘의 방향이 달라지는 구조.
+6. 반드시 일간 비유와 묶어 1~2문장 안에 풀이 — 별도 헤더/카드 X.
+7. 신강/신약 해석은 lifeStructureNarrative 본문에 자연스럽게 흡수 (별도 섹션 만들지 말 것).`;
+
+const SPECIAL_STAR_DEPTH_RULES = `대표 신살 깊이 풀이 규칙 (plan에 representative-star-N fact가 있을 때):
+1. 신살 이름만 카드처럼 나열하지 말 것. 반드시 즉시 일상어로 풀고, 다른 명리 근거(일간/신강신약/십성)와 묶어 해석.
+2. 단어 언급으로 끝나면 special-star-too-shallow medium issue. 반드시 현실 장면 또는 행동 조언으로 연결.
+3. 무서운 흉성 해석 금지 — "백호=사고/불행", "겁살=불운" 같은 공포 단정 절대 금지.
+4. 과장 금지 — "귀한 사주", "무조건 도움 받음", "천운" 같은 표현 절대 금지.
+5. 신살 1개당 최소 1개 현실 장면 또는 행동 조언을 줄글로 풀어줄 것.
+
+좋은 예: "양인은 위기에서 물러서지 않으려는 힘이고, 괴강은 기준이 한 번 서면 쉽게 흔들리지 않는 기운입니다. 이 둘이 함께 작동하면 평소에는 조용해 보여도 결정적인 순간에 단호해질 수 있어요. 다만 이 힘이 가까운 관계에서 작동하면 상대는 갑자기 차가워졌다고 느낄 수 있으니, 마음이 닫히기 전에 기준을 말로 나누는 것이 중요합니다."
+
+나쁜 예: "양인, 괴강이 있습니다. 강합니다." (단어 나열만)`;
+
+const GAEWOON_DIRECTION_RULES = `개운 방향 규칙 (plan에 gaewoon-direction fact가 있을 때):
+1. 별빛 사주의 개운법 정의 — "사주의 과해진 기운을 덜고 필요한 기운을 생활 속 선택으로 보완하는 방식". 미신적 개운법 절대 금지.
+2. 금지: 부적, 색상 강요(특정 색만 입으면 운이 좋아진다), 방향 맹신(북쪽으로 자야 운이 좋다), 물건 구매 권유.
+3. 허용: 행동의 결, 환경 선택, 역할 분담, 책임·권한 범위 합의, 기준 문서화, 협업 구조 변경.
+4. finalStrategyNarrative 본문 안에 "이 사주의 개운 방향은 ..." 단락 1개로 자연스럽게. 별도 헤더/카드 X.
+5. 용신은 "이 사주를 편하게 살려주는 방향"으로, 기신은 "과해지면 운이 막히는 결"로 풀어 행동·선택으로 연결.
+6. 미래 연도 예측 절대 금지 — 개운 방향은 "운이 열리는 조건 / 막히는 선택 / 살아나는 선택"으로만.
+
+좋은 예: "이 사주의 개운 방향은 더 강해지는 것이 아니라, 이미 강한 힘을 어디까지 쓰고 어디서 나눌지 정하는 데 있습니다. 운을 막는 선택은 책임만 많고 권한은 없는 자리를 계속 버티는 것이고, 운을 살리는 선택은 기준을 세우되 그 기준을 사람들과 공유하고 구조로 남기는 것입니다."
+
+나쁜 예: "용신이 수이므로 검은색 옷을 입으면 좋습니다." / "북쪽으로 자세요." / "이 부적을 지니면 운이 풀립니다."`;
+
 const SYSTEM_BASE = [
   PERSONA, ABSOLUTE_RULES, TONE_RULES, STYLE_RULES, REPETITION_RULES, HIDDEN_QUESTION_GUIDE,
   COVERAGE_RULE, TERM_TRANSLATION_RULES, CAREER_RULES, MONEY_RULES,
   YEARLY_DIFFERENTIATION_RULES, FINAL_MESSAGE_RULES,
+  // 2026-05 Narrative Depth v1
+  EVIDENCE_NARRATIVE_RULES, STRENGTH_INTERPRETATION_RULES,
+  SPECIAL_STAR_DEPTH_RULES, GAEWOON_DIRECTION_RULES,
 ].join('\n\n');
 
 const OUTPUT_STRUCTURE = `출력 구조 (2026-05 신구조 — 일/돈/관계 분리). 헤더 그대로 사용:

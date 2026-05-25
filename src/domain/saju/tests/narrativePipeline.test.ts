@@ -20,7 +20,7 @@ import { buildStarKeywordCard } from '../star/starKeywordCardBuilder';
 import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
 import { validateNarrativeReport } from '../narrative/narrativeReportValidator';
 import { buildSectionPrompt } from '../narrative/narrativePromptBuilder';
-import { sanitizeNarrativeText, stripFutureLeaks, applyFinalSanitizers, sanitizeUnsupportedUserContext } from '../narrative/narrativeSanitizer';
+import { sanitizeNarrativeText, stripFutureLeaks, applyFinalSanitizers, sanitizeUnsupportedUserContext, sanitizeFinancialAdviceRisk } from '../narrative/narrativeSanitizer';
 import { buildContextGuard } from '../report/contextGuard';
 import { normalizeBirthInput } from '../calendar/normalizeBirthInput';
 import type { BirthInput } from '../calendar/normalizeBirthInput';
@@ -380,6 +380,278 @@ describe('sanitizeUnsupportedUserContext — 단정 표현 중립 치환', () =>
     const out = sanitizeUnsupportedUserContext(input, { relationshipStatus: 'married', hasChildren: true });
     expect(out).toContain('아내');
     expect(out).toContain('자녀');
+  });
+});
+
+// ============================================================
+// 2026-05 Narrative Depth v1 — feature flag off/on 회귀
+// ============================================================
+describe('Narrative Depth v1 — feature flag off (default) — 안정화 v0 plan 그대로', () => {
+  it('depth flag off (또는 미지정) 시 lifeStructure/final plan에 새 depth fact가 추가되지 않는다', () => {
+    for (const f of FIXTURES) {
+      const gptInput = calculateAnalysisOnly(f.input, NOW);
+      // 미지정 = default false
+      const plansDefault = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false });
+      // 명시적 false
+      const plansOff = buildNarrativePlans(gptInput, undefined, {
+        includeFutureFlow: false,
+        depthOptions: {
+          useEvidenceNarrativeBlocks: false,
+          useSajuOpeningLuckCondition: false,
+          useFinalGaewoonDirection: false,
+        },
+      });
+      for (const plans of [plansDefault, plansOff]) {
+        const life = plans.find(p => p.sectionId === 'lifeStructureNarrative')!;
+        const final = plans.find(p => p.sectionId === 'finalStrategyNarrative')!;
+        const opening = plans.find(p => p.sectionId === 'openingDefinition')!;
+        // depth fact source가 존재하면 안 됨
+        const lifeSources = life.mustUseFacts.map(f => f.source);
+        const finalSources = final.mustUseFacts.map(f => f.source);
+        const openingSources = opening.mustUseFacts.map(f => f.source);
+        expect(lifeSources).not.toContain('dayMasterStrength');
+        expect(lifeSources.every(s => s !== 'specialStar' || !life.mustUseFacts.some(ff => ff.id.startsWith('representative-star-')))).toBe(true);
+        expect(finalSources).not.toContain('usefulGod');
+        expect(finalSources).not.toContain('gaewoonDirection');
+        expect(openingSources).not.toContain('luckOpeningCondition');
+      }
+    }
+  });
+});
+
+describe('Narrative Depth v1 — feature flag on — depth fact가 plan에 추가된다', () => {
+  const depthAllOn = {
+    useEvidenceNarrativeBlocks: true,
+    useSajuOpeningLuckCondition: true,
+    useFinalGaewoonDirection: true,
+  };
+
+  it('lifeStructure에 신강/신약 (dayMasterStrength) fact가 추가된다', () => {
+    for (const f of FIXTURES) {
+      const gptInput = calculateAnalysisOnly(f.input, NOW);
+      const plans = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false, depthOptions: depthAllOn });
+      const life = plans.find(p => p.sectionId === 'lifeStructureNarrative')!;
+      const dmsFact = life.mustUseFacts.find(f => f.source === 'dayMasterStrength');
+      expect(dmsFact).toBeTruthy();
+      // plainMeaning에 신강/신약/중화 키워드 중 하나가 있어야 함
+      expect(dmsFact!.plainMeaning).toMatch(/신강|신약|중화/);
+      // adviceHint가 반드시 부착되어 있어야 함 (행동 조언 시드)
+      expect(dmsFact!.adviceHint?.actionable).toBeTruthy();
+      // lifeSceneHint도 부착
+      expect(dmsFact!.lifeSceneHint?.situation).toBeTruthy();
+    }
+  });
+
+  it('lifeStructure에 대표 신살 1~3개 fact가 추가된다 (가능할 때)', () => {
+    for (const f of FIXTURES) {
+      const gptInput = calculateAnalysisOnly(f.input, NOW);
+      if ((gptInput.coreAnalysis.specialStars?.length ?? 0) === 0) continue; // skip if no stars
+      const plans = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false, depthOptions: depthAllOn });
+      const life = plans.find(p => p.sectionId === 'lifeStructureNarrative')!;
+      const starFacts = life.mustUseFacts.filter(f => f.id.startsWith('representative-star-'));
+      expect(starFacts.length).toBeGreaterThanOrEqual(1);
+      expect(starFacts.length).toBeLessThanOrEqual(3);
+      // 각 fact에 adviceHint 또는 narrativeHint가 충분히 부착
+      for (const sf of starFacts) {
+        expect(sf.narrativeHint.length).toBeGreaterThan(20);
+      }
+    }
+  });
+
+  it('finalStrategy에 용신 (usefulGod) fact와 개운 방향 (gaewoonDirection) fact가 추가된다', () => {
+    for (const f of FIXTURES) {
+      const gptInput = calculateAnalysisOnly(f.input, NOW);
+      const plans = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false, depthOptions: depthAllOn });
+      const final = plans.find(p => p.sectionId === 'finalStrategyNarrative')!;
+      const ugFact = final.mustUseFacts.find(f => f.source === 'usefulGod');
+      const gaewoonFact = final.mustUseFacts.find(f => f.source === 'gaewoonDirection');
+      expect(ugFact).toBeTruthy();
+      expect(gaewoonFact).toBeTruthy();
+      expect(ugFact!.adviceHint?.actionable).toBeTruthy();
+      expect(gaewoonFact!.narrativeHint).toMatch(/미신|부적|색상|개운/);
+    }
+  });
+
+  it('opening에 "운이 열리는 방식" (luckOpeningCondition) fact가 추가된다 (2~3문장 짧게)', () => {
+    for (const f of FIXTURES) {
+      const gptInput = calculateAnalysisOnly(f.input, NOW);
+      const plans = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false, depthOptions: depthAllOn });
+      const opening = plans.find(p => p.sectionId === 'openingDefinition')!;
+      const luckFact = opening.mustUseFacts.find(f => f.source === 'luckOpeningCondition');
+      expect(luckFact).toBeTruthy();
+      // narrativeHint에 "2~3문장" 또는 "짧게" 같은 길이 제한 표현이 있어야 함
+      expect(luckFact!.narrativeHint).toMatch(/2~3문장|짧게/);
+    }
+  });
+
+  it('depth flag on/off로 plan을 빌드해도 includeFutureFlow=false이면 섹션 수는 7로 동일', () => {
+    for (const f of FIXTURES) {
+      const gptInput = calculateAnalysisOnly(f.input, NOW);
+      const off = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false });
+      const on = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false, depthOptions: depthAllOn });
+      expect(off.length).toBe(7);
+      expect(on.length).toBe(7);
+      // 섹션 id 순서도 동일 (depth는 fact 추가만, 섹션 추가 X)
+      expect(off.map(p => p.sectionId)).toEqual(on.map(p => p.sectionId));
+    }
+  });
+});
+
+describe('Narrative Depth v1 — validator 4종 medium issue (high count 영향 없음)', () => {
+  const depthAllOn = {
+    useEvidenceNarrativeBlocks: true,
+    useSajuOpeningLuckCondition: true,
+    useFinalGaewoonDirection: true,
+  };
+
+  function depthRef() {
+    const f = FIXTURES[0];
+    const gptInput = calculateAnalysisOnly(f.input, NOW);
+    const plans = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false, depthOptions: depthAllOn });
+    return { gptInput, plans };
+  }
+
+  it('lifeStructure에 신강/신약/중화 단어 없음 → missing-strength-interpretation medium', () => {
+    const ref = depthRef();
+    const md = buildMd({ life: '본문에 강함이라는 표현은 있지만 명리 키워드는 없습니다. '.repeat(20) });
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue = r.issues.find(i => i.type === 'missing-strength-interpretation');
+    expect(issue).toBeTruthy();
+    expect(issue!.severity).toBe('medium');
+  });
+
+  it('final에 용신/기신 키워드 없음 → missing-useful-god-advice medium', () => {
+    const ref = depthRef();
+    const md = buildMd({ final: '결론 본문은 충분히 길지만 명리 결 단어가 빠져 있습니다. '.repeat(20) });
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue = r.issues.find(i => i.type === 'missing-useful-god-advice');
+    expect(issue).toBeTruthy();
+    expect(issue!.severity).toBe('medium');
+  });
+
+  it('final에 개운/운을 편하게 키워드 없음 → gaewoon-direction-missing medium', () => {
+    const ref = depthRef();
+    // 용신은 들어가게 해서 missing-useful-god-advice는 통과시키고 gaewoon만 누락
+    const md = buildMd({ final: '결론 — 용신과 기신 결을 다룹니다. 도와주는 결과 과해지면 막히는 결을 함께 봅니다. '.repeat(15) });
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue = r.issues.find(i => i.type === 'gaewoon-direction-missing');
+    expect(issue).toBeTruthy();
+    expect(issue!.severity).toBe('medium');
+  });
+
+  it('새 4종 issue가 모두 medium severity — high count에 영향 없음', () => {
+    const ref = depthRef();
+    const md = buildMd({ life: '본문은 길지만 신강·신약 풀이가 없습니다. '.repeat(20) });
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const newTypes = [
+      'missing-strength-interpretation',
+      'missing-useful-god-advice',
+      'special-star-too-shallow',
+      'gaewoon-direction-missing',
+    ];
+    for (const t of newTypes) {
+      const issues = r.issues.filter(i => i.type === t);
+      for (const it of issues) expect(it.severity).toBe('medium');
+    }
+  });
+});
+
+// ============================================================
+// 2026-05 audit — financial-advice-risk sanitizer + validator
+// ============================================================
+describe('financial-advice-risk — validator high + sanitizer 치환', () => {
+  const ref = computed_ref();
+
+  it('"시장 변화와 가격 흐름을 보고 타이밍에 맞춰 거래" → validator high', () => {
+    const md = buildMd({ money: '돈은 시장 변화와 가격 흐름을 보고 타이밍에 맞춰 거래하는 방식이 좋습니다. '.repeat(8) });
+    const r = validateNarrativeReport({
+      reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issue = r.issues.find(i => i.type === 'financial-advice-risk');
+    expect(issue).toBeTruthy();
+    expect(issue!.severity).toBe('high');
+  });
+
+  it('sanitizeFinancialAdviceRisk가 위험 표현을 안전한 수익화 표현으로 치환', () => {
+    const input = '돈은 시장 변화와 가격 흐름을 보고 타이밍에 맞춰 거래하는 방식이 좋습니다.';
+    const out = sanitizeFinancialAdviceRisk(input);
+    // 위험 표현이 제거되어야 함
+    expect(out).not.toMatch(/시장\s*변화/);
+    expect(out).not.toMatch(/가격\s*흐름을?\s*보고\s*타이밍/);
+    // 안전 표현으로 치환되어야 함
+    expect(out).toMatch(/수익\s*구조|작업\s*범위|가격\s*기준/);
+  });
+
+  it('"큰돈을 굴리기 전에" → "큰 결정을 하기 전에"', () => {
+    const out = sanitizeFinancialAdviceRisk('큰돈을 굴리기 전에 작게 검증하세요.');
+    expect(out).not.toMatch(/큰돈을?\s*굴리/);
+    expect(out).toContain('큰 결정을 하기 전에');
+  });
+
+  it('"가격 흐름을 읽고 들어가는 방식" → 안전한 표현', () => {
+    const out = sanitizeFinancialAdviceRisk('가격 흐름을 읽고 들어가는 방식이 잘 맞아요.');
+    expect(out).not.toMatch(/가격\s*흐름/);
+    expect(out).toMatch(/수요와 조건/);
+  });
+
+  it('"매수/매도/시세/수익률/레버리지/베팅/코인/주식/단기 투자/급등/트레이딩" 위험 단어 제거 + 안전 단어 등장', () => {
+    // 조사 정합성("가격를")은 sanitizer 책임 밖 — 위험 단어 제거 + 안전 단어 등장만 검사.
+    // 자연스러운 조사는 prompt 강화(M1)로 처음부터 방지.
+    const cases: Array<{ input: string; mustNot: RegExp; mustContain: string }> = [
+      { input: '매수를 ', mustNot: /매수/, mustContain: '확보' },
+      { input: '매도가 ', mustNot: /매도/, mustContain: '정리' },
+      { input: '시세를 ', mustNot: /시세/, mustContain: '가격' },
+      { input: '수익률이 ', mustNot: /수익률/, mustContain: '수익 구조' },
+      { input: '레버리지를 ', mustNot: /레버리지/, mustContain: '확장' },
+      { input: '베팅에 ', mustNot: /베팅/, mustContain: '결정' },
+      { input: '코인에 ', mustNot: /코인/, mustContain: '디지털 자산' },
+      { input: '주식이 ', mustNot: /주식/, mustContain: '유가증권' },
+      { input: '단기 투자가 ', mustNot: /단기\s*투자/, mustContain: '단기 수익 구조' },
+      { input: '급등하기 ', mustNot: /급등/, mustContain: '갑작스러운 변화' },
+      { input: '트레이딩이 ', mustNot: /트레이딩/, mustContain: '수익 구조 운영' },
+    ];
+    for (const { input, mustNot, mustContain } of cases) {
+      const out = sanitizeFinancialAdviceRisk(input);
+      expect(out).not.toMatch(mustNot);
+      expect(out).toContain(mustContain);
+    }
+  });
+
+  it('sanitize 적용 후 validator 재검증 — financial-advice-risk 0건', () => {
+    const dirty = buildMd({ money: '돈은 시장 변화와 가격 흐름을 보고 타이밍에 맞춰 거래하는 방식이 좋습니다. 큰돈을 굴리기 전에 작게 검증하세요. '.repeat(5) });
+    const cleaned = sanitizeFinancialAdviceRisk(dirty);
+    const r = validateNarrativeReport({
+      reportText: cleaned, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issues = r.issues.filter(i => i.type === 'financial-advice-risk');
+    expect(issues.length).toBe(0);
+  });
+
+  it('applyFinalSanitizers({sanitizeFinancial: true})로 묶음 적용 시에도 0건', () => {
+    const dirty = buildMd({ money: '큰돈을 굴리기 전에 시장 변화와 가격 흐름을 보고 타이밍에 맞춰 거래하는 방식. '.repeat(5) });
+    const cleaned = applyFinalSanitizers(dirty, { stripFuture: false, sanitizeFinancial: true });
+    const r = validateNarrativeReport({
+      reportText: cleaned, gptInput: ref.gptInput, narrativePlans: ref.plans,
+    });
+    const issues = r.issues.filter(i => i.type === 'financial-advice-risk');
+    expect(issues.length).toBe(0);
+  });
+
+  it('코드 블록 내부는 보호 (sanitize 안 함)', () => {
+    const input = '본문에 시장 변화는 사라져야 함.\n\n```\n{ "marketChange": "시장 변화" }\n```\n다시 본문 시장 변화.';
+    const out = sanitizeFinancialAdviceRisk(input);
+    // 본문은 치환됨
+    expect(out.indexOf('본문에 시장 변화는') === -1).toBe(true);
+    // 코드 블록은 보존
+    expect(out).toContain('"marketChange": "시장 변화"');
   });
 });
 

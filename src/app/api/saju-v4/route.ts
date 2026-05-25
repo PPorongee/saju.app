@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { generateNarrativePersonalSajuReport } from '@/domain/saju/generatePersonalSajuReport';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import { createOpenAiNarrativeGptCaller } from '@/lib/saju-v4-gpt-caller';
+import type { NarrativeDepthOptions } from '@/domain/saju/narrative/narrativeTypes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,21 @@ interface RequestBody {
   input: BirthInput;
   /** repair 재시도 최대 회수 (default 1) */
   maxRepairAttempts?: number;
+  /**
+   * 2026-05 Narrative Depth v1 — 요청 단위 토글 (verify script가 사용).
+   * 미지정 시 서버 default (env SAJU_NARRATIVE_DEPTH=on이면 모두 true, 그 외엔 모두 false).
+   */
+  depthOptions?: Partial<NarrativeDepthOptions>;
+}
+
+/** 서버 default depth options — env SAJU_NARRATIVE_DEPTH=on이면 모두 true. */
+function getServerDefaultDepth(): NarrativeDepthOptions {
+  const on = process.env.SAJU_NARRATIVE_DEPTH === 'on';
+  return {
+    useEvidenceNarrativeBlocks: on,
+    useSajuOpeningLuckCondition: on,
+    useFinalGaewoonDirection: on,
+  };
 }
 
 export async function POST(req: Request) {
@@ -30,12 +46,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
   }
 
+  // depthOptions: body 명시 > 서버 default(env) > 코드 default(false)
+  const serverDefault = getServerDefaultDepth();
+  const depthOptions = { ...serverDefault, ...(body.depthOptions ?? {}) };
+
   try {
     const result = await generateNarrativePersonalSajuReport(body.input, {
       callGpt: createOpenAiNarrativeGptCaller(),
       // 2026-05 sectionwise: 섹션별 병렬 호출(~12s) + repair는 실패 섹션만 단일 호출.
       // 90s 안에 1회 repair 안전. 기본 1 복원.
       maxRepairAttempts: body.maxRepairAttempts ?? 1,
+      depthOptions,
     });
 
     return NextResponse.json({

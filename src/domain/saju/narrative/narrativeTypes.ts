@@ -83,7 +83,12 @@ export type NarrativeValidationIssueType =
   | 'future-leak'                    // 미래 콘텐츠(2026/앞으로 3년)가 plan에 없는데 본문 등장
   | 'cross-section-leak'             // 한 섹션 본문에 다른 섹션 전용 결론조/주제 침범
   | 'final-section-missing'          // 결론 섹션이 비어있거나 너무 짧음
-  | 'english-element-key-leak';      // 본문에 wood/fire/earth/metal/water 영문 노출
+  | 'english-element-key-leak'       // 본문에 wood/fire/earth/metal/water 영문 노출
+  // 2026-05 Narrative Depth v1 (모두 medium — high 기준은 기존 안정화 항목에만)
+  | 'missing-strength-interpretation' // lifeStructureNarrative에 신강/신약/중화 해석 없음
+  | 'missing-useful-god-advice'      // finalStrategyNarrative에 용신/기신이 행동 조언으로 연결 안 됨
+  | 'special-star-too-shallow'       // 대표 신살이 단어만 언급되고 현실 장면·조언으로 풀리지 않음
+  | 'gaewoon-direction-missing';     // finalStrategyNarrative에 운을 편하게 쓰는 방법/개운 방향 없음
 
 export interface NarrativeValidationIssue {
   type: NarrativeValidationIssueType;
@@ -148,7 +153,12 @@ export type NarrativeFactSource =
   | 'dayMaster'
   | 'elementStrength'
   | 'tenGod'
-  | 'specialStar';
+  | 'specialStar'
+  // 2026-05 Narrative Depth v1
+  | 'dayMasterStrength'    // 신강/신약/중화
+  | 'usefulGod'            // 용신/희신/기신
+  | 'gaewoonDirection'     // 개운 방향 (synthetic — 용신/기신·신강신약 종합)
+  | 'luckOpeningCondition'; // 운이 열리는 방식 (synthetic — opening 짧은 시드)
 
 /**
  * 한 섹션에 반드시 흡수되어야 하는 단일 데이터 조각.
@@ -173,6 +183,19 @@ export interface NarrativeMustUseFact {
     innerReaction: string;
     externalMisunderstanding?: string;
     betterUse?: string;
+  };
+  /**
+   * 2026-05 Narrative Depth v1 — 명리 구조 fact를 "원인 → 결과 → 현실 장면 → 조언"으로 풀 때
+   * GPT가 어떤 행동 가이드/개운 방향 톤으로 마무리해야 하는지 시드.
+   * 미신적 물건/색상/방향 금지. 행동·선택·구조화 중심.
+   */
+  adviceHint?: {
+    /** 이 fact의 핵심을 어떤 결의 행동 조언으로 연결할지 */
+    actionable: string;
+    /** 운이 막히는 선택 (피해야 할 패턴) */
+    avoidPattern?: string;
+    /** 운이 살아나는 선택 (강화 패턴) */
+    activatePattern?: string;
   };
 }
 
@@ -201,3 +224,23 @@ export interface NarrativePlan {
 }
 
 export type NarrativePlanSet = NarrativePlan[];
+
+// ============================================================
+// 2026-05 Narrative Depth v1 — feature flag로 명리 구조 깊이 제어
+// 모두 false면 안정화된 v0 plan 그대로 생성 (rollback 안전망).
+// 검증 통과 후 product default를 true로 전환.
+// ============================================================
+export interface NarrativeDepthOptions {
+  /** lifeStructure + final에 Evidence-to-Narrative 블록 (신강/신약·신살·용신 fact) 추가 */
+  useEvidenceNarrativeBlocks: boolean;
+  /** opening 끝에 "운이 열리는 방식" 2~3문장 fact 추가 */
+  useSajuOpeningLuckCondition: boolean;
+  /** finalStrategy에 "개운 방향" 블록 (용신/기신·행동 중심) 추가 */
+  useFinalGaewoonDirection: boolean;
+}
+
+export const DEFAULT_NARRATIVE_DEPTH_OPTIONS: NarrativeDepthOptions = {
+  useEvidenceNarrativeBlocks: false,
+  useSajuOpeningLuckCondition: false,
+  useFinalGaewoonDirection: false,
+};

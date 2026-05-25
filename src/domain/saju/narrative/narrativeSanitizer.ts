@@ -68,12 +68,144 @@ export function stripFutureLeaks(text: string): string {
 // ============================================================
 export function applyFinalSanitizers(
   text: string,
-  opts: { stripFuture: boolean; userContext?: UnsupportedContextInput },
+  opts: { stripFuture: boolean; userContext?: UnsupportedContextInput; sanitizeFinancial?: boolean },
 ): string {
   let out = sanitizeNarrativeText(text);
   if (opts.stripFuture) out = stripFutureLeaks(out);
   if (opts.userContext) out = sanitizeUnsupportedUserContext(out, opts.userContext);
+  if (opts.sanitizeFinancial) out = sanitizeFinancialAdviceRisk(out);
   return out;
+}
+
+// ============================================================
+// financial-advice-risk sanitizer (2026-05 audit)
+// moneyMonetizationNarrative 본문에서 투자/거래/시세 권유성 표현을
+// 안전한 수익화·운영·계약 표현으로 치환.
+// 새 기능 추가 X — 사용자 노출 직전 high issue 차단용 deterministic 안전망.
+// 코드 블록(```...```) 내부는 보호.
+//
+// 치환 우선순위: 더 긴/구체 패턴부터 → 짧은 단어 패턴 순.
+// 한국어 단어는 lookahead로 조사/공백 경계 매칭.
+// ============================================================
+const FINANCIAL_SANITIZE_RULES: Array<{ re: RegExp; replacement: string }> = [
+  // ── 1) 가장 구체적인 복합 표현 (먼저 매칭) ────────────────
+  {
+    re: /(?:시장의?\s*변화와?\s*)?가격\s*흐름을?\s*보고\s*타이밍(?:에\s*맞춰)?\s*(?:거래|매매|투자)(?:하는)?/g,
+    replacement: '시장과 고객의 요구를 보되 작업 범위와 가격 기준을 명확히 정해 수익 구조를 만드는',
+  },
+  {
+    re: /가격\s*흐름을?\s*보고\s*타이밍(?:을\s*맞춰)?/g,
+    replacement: '수요와 조건을 확인하고',
+  },
+  {
+    re: /가격\s*흐름을?\s*읽(?:고|어)\s*들어가는/g,
+    replacement: '수요와 조건을 확인하고 작은 단위로 검증하는',
+  },
+  {
+    re: /가격\s*흐름을?\s*읽(?=고|어|기|는|을|면|[를을이가의에서])/g,
+    replacement: '수요와 조건을 확인하',
+  },
+  // ── 2) 시장 타이밍 / 투자 타이밍 / 거래 타이밍 ─────────
+  {
+    re: /시장\s*타이밍(?:에\s*맞춰)?/g,
+    replacement: '수익 구조에 맞춰',
+  },
+  {
+    re: /투자\s*타이밍/g,
+    replacement: '수익 구조 정비',
+  },
+  {
+    re: /거래\s*타이밍(?:을\s*맞춰|을\s*보고)?/g,
+    replacement: '운영 타이밍',
+  },
+  // ── 3) 시장 변화 / 가격 흐름 단독 ────────────────────
+  {
+    re: /시장\s*변동(?=[을를이가의에에서로]|\s|$)/g,
+    replacement: '시장과 고객의 요구',
+  },
+  {
+    re: /시장\s*변화/g,
+    replacement: '시장과 고객의 요구',
+  },
+  {
+    re: /가격\s*흐름/g,
+    replacement: '수요와 조건',
+  },
+  // ── 4) 큰돈을 굴리다 ────────────────────────────────
+  {
+    re: /큰돈을?\s*굴리기\s*전에/g,
+    replacement: '큰 결정을 하기 전에',
+  },
+  {
+    re: /큰돈을?\s*굴리(?=기|는|면|어|고|지)/g,
+    replacement: '큰 결정을 하',
+  },
+  // ── 5) 단기 투자 / 차익 / 트레이딩 ─────────────────
+  {
+    re: /단기\s*투자/g,
+    replacement: '단기 수익 구조',
+  },
+  {
+    re: /차익(?=[을를이가의에]|\s|$)/g,
+    replacement: '수익',
+  },
+  {
+    re: /트레이딩/g,
+    replacement: '수익 구조 운영',
+  },
+  // ── 6) 매수 / 매도 / 시세 / 수익률 / 레버리지 / 베팅 ──
+  // 한국어는 \b가 안 통하므로 조사·공백·문장끝 lookahead로 단어 경계 흉내
+  {
+    re: /매수(?=[를을이가의에에서도]|\s|$|\.|,)/g,
+    replacement: '확보',
+  },
+  {
+    re: /매도(?=[를을이가의에에서도]|\s|$|\.|,)/g,
+    replacement: '정리',
+  },
+  {
+    re: /시세(?=[를을이가의에에서도]|\s|$|\.|,)/g,
+    replacement: '가격',
+  },
+  {
+    re: /수익률(?=[을를이가의에에서도]|\s|$|\.|,)/g,
+    replacement: '수익 구조',
+  },
+  {
+    re: /레버리지(?=[를을이가의에에서도]|\s|$|\.|,)/g,
+    replacement: '확장',
+  },
+  {
+    re: /베팅(?=[를을이가의에에서도]|\s|$|\.|,)/g,
+    replacement: '결정',
+  },
+  // ── 7) 자산 종류 단어 (주식·코인·급등·급락) ──────────
+  {
+    re: /주식(?=[을를이가의에에서도와과]|\s|$|\.|,)/g,
+    replacement: '유가증권',
+  },
+  {
+    re: /코인(?=[을를이가의에에서도와과]|\s|$|\.|,)/g,
+    replacement: '디지털 자산',
+  },
+  {
+    re: /급등(?=[을를이가의에에서도하한]|\s|$|\.|,)/g,
+    replacement: '갑작스러운 변화',
+  },
+  {
+    re: /급락(?=[을를이가의에에서도하한]|\s|$|\.|,)/g,
+    replacement: '갑작스러운 변화',
+  },
+];
+
+export function sanitizeFinancialAdviceRisk(text: string): string {
+  return mapOutsideCodeBlocks(text, body => {
+    let out = body;
+    for (const rule of FINANCIAL_SANITIZE_RULES) {
+      out = out.replace(rule.re, rule.replacement);
+    }
+    return out;
+  });
 }
 
 // ============================================================
