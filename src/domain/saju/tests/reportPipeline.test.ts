@@ -152,10 +152,11 @@ describe('buildPersonalSajuPrompt — 시스템/유저 프롬프트', () => {
   const guard = buildContextGuard(all.n.context, all.n.hourUnknown);
   const p = buildPersonalSajuPrompt({ input: json, contextGuard: guard });
 
-  it('system에 절대 규칙·문체 규칙·금지 문장 포함', () => {
-    expect(p.system).toContain('절대 규칙');
-    expect(p.system).toContain('금지 문장');
-    expect(p.system).toContain('estimatedPer10000');
+  it('system에 절대 규칙·문체 규칙·안전 규칙 포함', () => {
+    expect(p.system).toContain('절대 규칙');            // ABSOLUTE_RULES 헤더
+    expect(p.system).toContain('반말 금지');            // TONE_RULES (문체 규칙)
+    expect(p.system).toContain('공포를 조장하지 않는다'); // ABSOLUTE_RULES 안전 규칙 (구 '금지 문장' 기대 대체 — prompt에서 해당 문구 제거됨, 21feec2)
+    expect(p.system).toContain('estimatedPer10000');   // ABSOLUTE_RULES 희소성 규칙
   });
   it('user에 입력 JSON 포함', () => {
     expect(p.user).toContain('"birthChart"');
