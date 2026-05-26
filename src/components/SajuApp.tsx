@@ -30,6 +30,8 @@ import { SajuV4Report, type SajuV4ApiResponse as _SajuV4ApiResponseType } from '
 import { parseSajuReport } from '@/lib/saju-v4-report-parser';
 // Y9: 올해운세 V4 컴포넌트 — NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED==='true'일 때만 렌더.
 import YearlyV4Report, { type YearlyV4Input } from '@/components/YearlyV4Report';
+// Phase 6: 궁합 줄글(narrative) V4 — NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED==='true'일 때만 렌더.
+import CompatNarrativeReport from '@/components/CompatNarrativeReport';
 
 /* ===== Stars Background - SVG Star Illustrations ===== */
 const STAR_COLORS = ['#F0C75E', '#FFD080', '#FF6B9D', '#7DD3FC', '#C4B5FD', '#6EE7B7', '#FF8A8A', '#FFF0C8'];
@@ -2919,6 +2921,66 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
   /* ===== SCREEN 5: Compatibility ===== */
   function renderCompat() {
+    // ── Phase 6: 궁합 줄글(narrative) V4 분기 (가드 OFF가 기본 — 프로덕션 동작 byte-identical) ──
+    // NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED==='true' + compat 모드 + 궁합 결과 준비됨(compatV4Resp)
+    // 일 때만 새 줄글 컴포넌트(POST /api/compat-narrative)로 렌더. 그 외에는 아래 기존 카드형
+    // 경로(CompatV4Report)를 그대로 사용 — compatAiText/compatLoading/태교 분기는 일절 건드리지 않음.
+    if (
+      process.env.NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED === 'true' &&
+      appMode === 'compat' &&
+      compatV4Resp
+    ) {
+      // 기존 compat 경로(runCompatAnalysis)와 동일한 state에서 입력 재구성.
+      const cnTypeMap: Record<number, RelationshipTypeV4> = {
+        0: 'dating', 1: 'married', 2: 'friendship',
+        3: 'coworker', 4: 'reunion_or_breakup', 5: 'crush_or_something',
+      };
+      const cnInputA: CompatBirthInputV4 = {
+        name: compatPerson1.name || (lang === 'en' ? 'Person 1' : '첫 번째'),
+        gender: compatPerson1.gender === 'm' ? 'male' : compatPerson1.gender === 'f' ? 'female' : 'unknown',
+        calendarType: compatPerson1.isLunar ? 'lunar' : 'solar',
+        birthDate: `${compatPerson1.year}-${String(compatPerson1.month).padStart(2,'0')}-${String(compatPerson1.day).padStart(2,'0')}`,
+        birthTime: compatPerson1.hour >= 0
+          ? `${String(compatPerson1.hour).padStart(2,'0')}:${String(compatExact1.use ? compatExact1.min : 0).padStart(2,'0')}`
+          : undefined,
+        birthTimeConfidence: compatPerson1.hour >= 0 ? 'exact' : 'unknown',
+        timezone: 'Asia/Seoul',
+      };
+      const cnInputB: CompatBirthInputV4 = {
+        name: compatPerson2.name || (lang === 'en' ? 'Partner' : '상대'),
+        gender: compatPerson2.gender === 'm' ? 'male' : compatPerson2.gender === 'f' ? 'female' : 'unknown',
+        calendarType: compatPerson2.isLunar ? 'lunar' : 'solar',
+        birthDate: `${compatPerson2.year}-${String(compatPerson2.month).padStart(2,'0')}-${String(compatPerson2.day).padStart(2,'0')}`,
+        birthTime: compatPerson2.hour >= 0
+          ? `${String(compatPerson2.hour).padStart(2,'0')}:${String(compatExact2.use ? compatExact2.min : 0).padStart(2,'0')}`
+          : undefined,
+        birthTimeConfidence: compatPerson2.hour >= 0 ? 'exact' : 'unknown',
+        timezone: 'Asia/Seoul',
+      };
+      const cnRelType = cnTypeMap[compatRelType] || 'dating';
+      return (
+        <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+          <button
+            onClick={() => setCurrentScreen(0)}
+            aria-label={t('backBtn', lang)}
+            style={{
+              background: 'transparent', border: 0, color: 'var(--orot-ink)',
+              fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12,
+              fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+          </button>
+          <CompatNarrativeReport
+            inputA={cnInputA}
+            inputB={cnInputB}
+            relationshipType={cnRelType}
+            lang={lang}
+            onRestart={() => setCurrentScreen(0)}
+          />
+        </div>
+      );
+    }
 
     async function runCompatAnalysis() {
       // ── v4 compat 흐름 ──
