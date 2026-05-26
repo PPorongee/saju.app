@@ -10,6 +10,7 @@ import {
   resolveYearlyDepthOptions,
   validateYearlyRequestBody,
   clampYearlyRepairAttempts,
+  resolveLiveRepairAttempts,
 } from '../yearly/yearlyServerFlags';
 import type { YearlyFortuneServerFlags, YearlyDepthOptions } from '../yearly/yearlyTypes';
 
@@ -315,5 +316,32 @@ describe('clampYearlyRepairAttempts', () => {
 
   it("'3' (string) → 1 (비숫자 타입)", () => {
     expect(clampYearlyRepairAttempts('3')).toBe(1);
+  });
+});
+
+// ============================================================
+// resolveLiveRepairAttempts (live 기본 0)
+// ============================================================
+describe('resolveLiveRepairAttempts', () => {
+  it('undefined → 0 (live 기본: repair 없음)', () => {
+    expect(resolveLiveRepairAttempts(undefined)).toBe(0);
+  });
+  it('null → 0', () => {
+    expect(resolveLiveRepairAttempts(null)).toBe(0);
+  });
+  it('0 → 0 (명시 0)', () => {
+    expect(resolveLiveRepairAttempts(0)).toBe(0);
+  });
+  it('1 → 1 (명시 1이면 repair 허용)', () => {
+    expect(resolveLiveRepairAttempts(1)).toBe(1);
+  });
+  it('2 → 2', () => {
+    expect(resolveLiveRepairAttempts(2)).toBe(2);
+  });
+  it('5 → 2 (상한 clamp)', () => {
+    expect(resolveLiveRepairAttempts(5)).toBe(2);
+  });
+  it('-3 → 0 (하한 clamp)', () => {
+    expect(resolveLiveRepairAttempts(-3)).toBe(0);
   });
 });

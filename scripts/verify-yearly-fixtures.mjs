@@ -16,6 +16,9 @@ import { assertReportShape } from './lib/yearly-verify-helpers.mjs';
 
 const API = process.env.YEARLY_API ?? 'https://www.starlight-saju.com/api/yearly-fortune';
 const CURRENT_DATE = '2026-05-25';
+// secret mode 검증용 — YEARLY_FORTUNE_VERIFY_SECRET이 서버에 설정된 경우 동일 값을 로컬 env로 전달.
+// 값은 절대 커밋/로그 금지. 미설정이면 헤더 없이 호출(공개/비밀 미설정 환경).
+const VERIFY_SECRET = process.env.YEARLY_VERIFY_SECRET;
 
 // verify-narrative-fixtures.mjs 와 동일한 3 birth inputs 사용.
 const FIXTURES = [
@@ -68,10 +71,12 @@ const FIXTURES = [
 
 async function fetchOne(fx) {
   const t0 = Date.now();
+  const headers = { 'Content-Type': 'application/json' };
+  if (VERIFY_SECRET) headers['x-yearly-verify-secret'] = VERIFY_SECRET;
   const res = await fetch(API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ input: fx.input, maxRepairAttempts: 1 }),
+    headers,
+    body: JSON.stringify({ input: fx.input, maxRepairAttempts: 0 }),
   });
   const dt = ((Date.now() - t0) / 1000).toFixed(1);
   if (!res.ok) {

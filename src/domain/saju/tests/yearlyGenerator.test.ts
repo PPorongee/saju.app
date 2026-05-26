@@ -244,6 +244,42 @@ describe('Y6-2b generateYearlyFortuneReport — 빈 문자열 응답 내성', ()
 });
 
 // ============================================================
+// Y6-2c callGpt throw (per-call timeout 시뮬레이션)
+// ============================================================
+describe('Y6-2c generateYearlyFortuneReport — 섹션 호출 throw 내성 (timeout 시뮬레이션)', () => {
+  it('한 섹션 callGpt가 throw → 전체 함수는 throw 안 함, 해당 섹션만 실패(section-missing), 본문에 에러 노출 X', async () => {
+    // caller가 45s timeout으로 throw하는 상황을 동기 throw로 시뮬레이션.
+    const callerThatTimesOut: YearlyGptCaller = async (prompt: BuiltYearlyPrompt) => {
+      if (prompt.sectionId === 'remainingMonths') {
+        throw new Error('Request timed out after 45000ms'); // OpenAI SDK timeout류 에러
+      }
+      return JSON.stringify(validSectionPayload(prompt.sectionId));
+    };
+
+    const res = await generateYearlyFortuneReport(INPUT, {
+      callGpt: callerThatTimesOut,
+      now: NOW,
+      maxRepairAttempts: 0,
+    });
+
+    // 1) 전체 함수는 정상 반환 (throw 전파 안 됨)
+    expect(res.report).toBeTruthy();
+    // 2) 다른 섹션은 정상 생성
+    expect(res.report.yearFlowCard.title).toBeTruthy();
+    expect(res.report.topicFortunes.career).toBeTruthy();
+    // 3) timeout 섹션만 빈 채 → section-missing high
+    const missing = res.validation.issues.filter(
+      i => i.type === 'section-missing' && i.sectionId === 'remainingMonths',
+    );
+    expect(missing.length).toBeGreaterThan(0);
+    // 4) 에러 메시지 문자열이 사용자 본문(report) 어디에도 노출되지 않음
+    const joined = JSON.stringify(res.report);
+    expect(joined).not.toContain('timed out');
+    expect(joined).not.toContain('45000');
+  });
+});
+
+// ============================================================
 // Y6-3 repair path
 // ============================================================
 describe('Y6-3 generateYearlyFortuneReport — repair', () => {

@@ -491,7 +491,7 @@ export type YearlyPlanSet = YearlyPlan[];
 export const YEARLY_SECTION_MAX_TOKENS: Record<YearlyFortuneSectionId, number> = {
   yearFlowCard: 1200,
   yearlyMechanism: 1600,
-  remainingMonths: 2200,
+  remainingMonths: 3800,  // 남은 세운 월운(~8개월 × 9필드)은 가장 무거운 섹션 — 2200은 JSON truncation(finish=length) 유발. 완성 보장용 상향.
   topicFortunes: 1800,
   actionGuide: 1200,
   nextTwoYears: 1200,

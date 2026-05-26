@@ -48,16 +48,24 @@ export function createOpenAiYearlyGptCaller(opts: YearlyCallerOptions = {}): Yea
     const model = opts.model ?? DEFAULT_MODEL;
     const temperature = opts.temperature ?? DEFAULT_TEMPERATURE;
     const maxTokens = callOpts?.maxTokens ?? opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
-    const res = await client().chat.completions.create({
-      model,
-      temperature,
-      max_tokens: maxTokens,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: prompt.system },
-        { role: 'user',   content: prompt.user   },
-      ],
-    });
+    const res = await client().chat.completions.create(
+      {
+        model,
+        temperature,
+        max_tokens: maxTokens,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: prompt.system },
+          { role: 'user',   content: prompt.user   },
+        ],
+      },
+      // per-call 60s timeout + 재시도 0회.
+      // - generator는 callGpt가 throw하면 해당 섹션을 빈 섹션(null)으로 처리(section-missing).
+      // - maxRetries 0: 기본 재시도(2회)면 timeout이 곱해져 함수 전체 예산(maxDuration)을 잠식.
+      // - repair 0(live 기본)이라 단일 wave뿐 → 가장 무거운 remainingMonths(3800토큰)가 ~45-55s 걸려도
+      //   60s 안에 완료, maxDuration 90s 한도 내에서 관리 가능.
+      { timeout: 60_000, maxRetries: 0 },
+    );
     const text = res.choices[0]?.message?.content;
     if (!text) throw new Error('OpenAI returned empty response');
     return text;

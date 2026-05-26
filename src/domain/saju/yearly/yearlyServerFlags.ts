@@ -21,6 +21,17 @@ export function clampYearlyRepairAttempts(n: unknown): number {
   return Math.max(0, Math.min(2, v));
 }
 
+/**
+ * live(라우트) 경로의 maxRepairAttempts 결정.
+ * - 미지정(undefined/null) → 0 (repair 없음: wave2가 maxDuration 예산을 잠식하는 것을 방지).
+ * - 명시값 → clampYearlyRepairAttempts로 [0, 2] 정규화 (명시적으로 1을 주면 기존처럼 repair).
+ * sanitizer는 generator에서 항상 모든 섹션에 적용되므로, repair 0이어도 안전성은 유지된다.
+ */
+export function resolveLiveRepairAttempts(n: unknown): number {
+  if (n === undefined || n === null) return 0;
+  return clampYearlyRepairAttempts(n);
+}
+
 // ============================================================
 // 1) 환경변수 → YearlyFortuneServerFlags 정규화
 // ============================================================

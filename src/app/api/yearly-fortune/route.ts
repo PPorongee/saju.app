@@ -20,7 +20,7 @@ import {
   normalizeYearlyServerFlags,
   resolveYearlyDepthOptions,
   validateYearlyRequestBody,
-  clampYearlyRepairAttempts,
+  resolveLiveRepairAttempts,
 } from '@/domain/saju/yearly/yearlyServerFlags';
 
 export const runtime = 'nodejs';
@@ -91,7 +91,8 @@ export async function POST(req: Request) {
   try {
     const result = await generateYearlyFortuneReport(input, {
       callGpt: createOpenAiYearlyGptCaller(),
-      maxRepairAttempts: clampYearlyRepairAttempts(b.maxRepairAttempts),
+      // live 기본 0 (repair 없음 → 90s 예산 보호). body에서 명시적으로 1을 주면 repair 수행.
+      maxRepairAttempts: resolveLiveRepairAttempts(b.maxRepairAttempts),
       depthOptions,
     });
 
