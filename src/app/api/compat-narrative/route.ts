@@ -82,8 +82,8 @@ export async function POST(req: Request) {
     // 7) 응답 — 직렬화 가능한 부분만 포함
     return NextResponse.json({
       report: result.report,
-      // 3년 흐름(deterministic) — UI 카드용.
-      futureFlow: result.bundle.futureFlow,
+      // 3년 흐름(deterministic) — UI 카드용. 연속 중복 연도 변주 정규화 적용.
+      futureFlow: result.futureFlow,
       // validation: issues[] 는 사용자 문장 + 내부 타입 토큰 포함 → 클라이언트에 노출 금지.
       // isValid/highCount/mediumCount 만 전달.
       validation: {

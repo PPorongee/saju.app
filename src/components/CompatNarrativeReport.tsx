@@ -153,7 +153,10 @@ function ReportBody({
 }) {
   return (
     <div>
-      <CompatibilityCardView card={report.compatibilityCard} />
+      <CompatibilityCardView
+        card={report.compatibilityCard}
+        relationshipTypeKo={report.evidenceView.relationshipTypeKo}
+      />
       <OverviewView overview={report.relationshipOverview} />
       <ProseSection
         title="이 관계가 이렇게 느껴지는 이유"
@@ -189,8 +192,10 @@ function ReportBody({
 // ── compatibilityCard (결정적: 한마디 + SNS + 키워드) ──
 function CompatibilityCardView({
   card,
+  relationshipTypeKo,
 }: {
   card: CompatibilityNarrativeReport['compatibilityCard'];
+  relationshipTypeKo?: string;
 }) {
   return (
     <div
@@ -202,7 +207,25 @@ function CompatibilityCardView({
         border: '1px solid var(--orot-coral-faint)',
       }}
     >
-      <div className="orot-eyebrow" style={{ marginBottom: 8 }}>✦ 두 사람의 관계 카드</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+        <div className="orot-eyebrow">✦ 두 사람의 관계 카드</div>
+        {relationshipTypeKo && (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              padding: '3px 10px',
+              borderRadius: 'var(--orot-r-sm)',
+              background: 'rgba(240,199,94,0.16)',
+              border: '1px solid var(--orot-coral-faint)',
+              color: 'var(--orot-coral)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {relationshipTypeKo}
+          </span>
+        )}
+      </div>
       {card.title && (
         <h1
           style={{
@@ -422,13 +445,13 @@ function LoadingCard() {
         border: '1px solid var(--orot-coral-faint)',
       }}
     >
-      <div style={{ fontSize: 13, color: 'var(--orot-coral)', fontWeight: 600, marginBottom: 8 }}>✦ 궁합 분석</div>
+      <div style={{ fontSize: 13, color: 'var(--orot-coral)', fontWeight: 600, marginBottom: 8 }}>✦ 관계의 결을 읽는 중</div>
       <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 10 }}>
-        두 사람의 관계를 읽고 있어요...
+        두 사람의 관계 흐름을 줄글로 풀어보는 중이에요.
       </div>
       <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', lineHeight: 1.6 }}>
-        두 사람의 사주를 코드로 계산하고<br />
-        그 위에 관계의 결을 줄글로 풀어내는 중입니다.<br />
+        궁합의 끌림과 엇갈림을 정리하고 있어요.<br />
+        관계의 흐름을 차분히 읽어보는 중이에요.<br />
         <span style={{ color: 'var(--orot-ink-mute)' }}>(약 30~60초 소요)</span>
       </div>
       <div

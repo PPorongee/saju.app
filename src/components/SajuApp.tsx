@@ -580,13 +580,17 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const [compatLoading, setCompatLoading] = useState(false);
   const [compatRelType, setCompatRelType] = useState(0); // 0=연애, 1=혼인, 2=우정, 3=동료, 4=재회/이별, 5=짝사랑/썸
   const [compatV4Resp, setCompatV4Resp] = useState<CompatV4ResultApi | null>(null);
+  // Phase 6.5: 궁합 줄글(narrative) V4 UI — flag ON일 때 제출 신호. true가 되면 renderCompat가
+  // 기존 /api/compat-v4 카드 경로를 건너뛰고 CompatNarrativeReport(자체 /api/compat-narrative fetch)만 렌더.
+  const [compatNarrativeRequested, setCompatNarrativeRequested] = useState(false);
 
   // Reset compat results when inputs change (requires re-payment)
   function resetCompatResult() {
-    if (compatResult || compatAiText || compatV4Resp) {
+    if (compatResult || compatAiText || compatV4Resp || compatNarrativeRequested) {
       setCompatResult(null);
       setCompatAiText('');
       setCompatV4Resp(null);
+      setCompatNarrativeRequested(false);
       setCompatPaywall(false);
     }
   }
@@ -2922,13 +2926,15 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   /* ===== SCREEN 5: Compatibility ===== */
   function renderCompat() {
     // ── Phase 6: 궁합 줄글(narrative) V4 분기 (가드 OFF가 기본 — 프로덕션 동작 byte-identical) ──
-    // NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED==='true' + compat 모드 + 궁합 결과 준비됨(compatV4Resp)
-    // 일 때만 새 줄글 컴포넌트(POST /api/compat-narrative)로 렌더. 그 외에는 아래 기존 카드형
-    // 경로(CompatV4Report)를 그대로 사용 — compatAiText/compatLoading/태교 분기는 일절 건드리지 않음.
+    // NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED==='true' + compat 모드 + 제출 신호(compatNarrativeRequested)
+    // 일 때만 새 줄글 컴포넌트(POST /api/compat-narrative)로 렌더하고 early-return 한다. 즉 이 분기가
+    // 켜지면 아래 기존 카드형 경로(runCompatAnalysis / /api/compat-v4 / CompatV4Report)는 절대 도달하지
+    // 않아 더블 생성/구카드 노출이 없다. flag OFF면 compatNarrativeRequested는 영원히 false → byte-identical.
+    // compatAiText/compatLoading/태교 분기는 일절 건드리지 않는다.
     if (
       process.env.NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED === 'true' &&
       appMode === 'compat' &&
-      compatV4Resp
+      compatNarrativeRequested
     ) {
       // 기존 compat 경로(runCompatAnalysis)와 동일한 state에서 입력 재구성.
       const cnTypeMap: Record<number, RelationshipTypeV4> = {
@@ -2961,7 +2967,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       return (
         <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
           <button
-            onClick={() => setCurrentScreen(0)}
+            onClick={() => { setCompatNarrativeRequested(false); setCurrentScreen(0); }}
             aria-label={t('backBtn', lang)}
             style={{
               background: 'transparent', border: 0, color: 'var(--orot-ink)',
@@ -2976,7 +2982,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             inputB={cnInputB}
             relationshipType={cnRelType}
             lang={lang}
-            onRestart={() => setCurrentScreen(0)}
+            onRestart={() => { setCompatNarrativeRequested(false); setCurrentScreen(0); }}
           />
         </div>
       );
@@ -3615,11 +3621,21 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                     console.log('[compat v4] paywall unlocked, starting analysis');
                     updateStarBalance(starBalance - 5);
                     setCompatPaywall(false);
-                    runCompatAnalysis().catch(err => {
-                      console.error('[compat v4] runCompatAnalysis threw:', err);
-                      setCompatLoading(false);
-                      setCompatAiText('⚠ 시작 실패: ' + (err instanceof Error ? err.message : String(err)));
-                    });
+                    // Phase 6.5: flag ON + compat → 기존 /api/compat-v4 경로(runCompatAnalysis)를 완전히 우회하고
+                    // 줄글 분기 신호만 세팅. CompatNarrativeReport가 자체적으로 /api/compat-narrative를 fetch한다.
+                    // flag OFF면 기존 동작 그대로 runCompatAnalysis 호출(byte-identical).
+                    if (
+                      process.env.NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED === 'true' &&
+                      appMode === 'compat'
+                    ) {
+                      setCompatNarrativeRequested(true);
+                    } else {
+                      runCompatAnalysis().catch(err => {
+                        console.error('[compat v4] runCompatAnalysis threw:', err);
+                        setCompatLoading(false);
+                        setCompatAiText('⚠ 시작 실패: ' + (err instanceof Error ? err.message : String(err)));
+                      });
+                    }
                   }}
                 >
                   {lang === 'en' ? 'Unlock with 5 Stars ⭐' : '별빛 5개로 열기 ⭐'}

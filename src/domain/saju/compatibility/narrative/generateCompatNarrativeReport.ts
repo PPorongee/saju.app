@@ -45,6 +45,11 @@ import {
 } from './compatPromptBuilder';
 import { applyCompatFinalSanitizers, type CompatSanitizeContext } from './compatSanitizer';
 import { validateCompatNarrativeReport } from './compatNarrativeValidator';
+import {
+  normalizeCompatibilityKeywords,
+  normalizeCompatFutureFlow,
+} from './compatCardFormatter';
+import type { RelationshipYearFlow } from '../compatibilityTypes';
 
 // ============================================================
 // Public API
@@ -70,6 +75,8 @@ export interface GenerateCompatNarrativeResult {
   validation: CompatNarrativeValidationResult;
   attempts: number;
   repairedSections: CompatNarrativeSectionId[];
+  /** 3년 흐름 — 연속 중복 연도를 deterministic하게 변주한 정규화 결과 (route/UI용). */
+  futureFlow: RelationshipYearFlow[];
 }
 
 // ============================================================
@@ -104,13 +111,17 @@ function san(text: any, ctx: CompatSanitizeContext): string {
 // compatibilityCard — 결정적 (bundle.relationshipArchetype에서).
 //   title/keywords는 archetype, snsPhrase는 shortLabel/summary 폴백 체인.
 // ============================================================
-function buildCompatibilityCard(bundle: CompatibilityAnalysisBundle): CompatibilityCardSection {
+function buildCompatibilityCard(
+  bundle: CompatibilityAnalysisBundle,
+  ctx: CompatNarrativeContext,
+): CompatibilityCardSection {
   const arch = bundle.relationshipArchetype;
   const snsPhrase = firstNonEmpty([arch?.shortLabel, arch?.summary, arch?.title], '');
   return {
     title: arch?.title ?? '',
     snsPhrase,
-    keywords: Array.isArray(arch?.keywords) ? arch.keywords.filter(Boolean) : [],
+    // 사실 문장이 칩으로 새지 않도록 정규화 (길이/문장끝/raw-fact 필터 + compact + 3~5개).
+    keywords: normalizeCompatibilityKeywords(arch?.keywords ?? [], ctx?.focus),
   };
 }
 
@@ -180,7 +191,7 @@ function emptyReportScaffold(
   ctx: CompatNarrativeContext,
 ): CompatibilityNarrativeReport {
   return {
-    compatibilityCard: buildCompatibilityCard(bundle),
+    compatibilityCard: buildCompatibilityCard(bundle, ctx),
     relationshipOverview: { oneLine: '', body: '' },
     relationshipMechanism: { body: '', evidenceBlocks: [] },
     attractionAndFriction: { body: '' },
@@ -406,7 +417,7 @@ export async function generateCompatNarrativeReport(
       applySectionToReport(report, sectionId, parsedBySection.get(sectionId), sanitizeCtx);
     }
     // 결정적 섹션 재확정 (불변이지만 명시적으로 유지)
-    report.compatibilityCard = buildCompatibilityCard(bundle);
+    report.compatibilityCard = buildCompatibilityCard(bundle, ctx);
     report.evidenceView = buildEvidenceView(bundle, ctx);
 
     validation = validateCompatNarrativeReport({
@@ -429,5 +440,7 @@ export async function generateCompatNarrativeReport(
     validation,
     attempts,
     repairedSections: [...repairedSections],
+    // 3년 흐름 정규화 (연속 중복 연도 변주). 원본 bundle.futureFlow는 불변.
+    futureFlow: normalizeCompatFutureFlow(bundle.futureFlow ?? [], ctx),
   };
 }

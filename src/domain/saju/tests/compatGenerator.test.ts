@@ -196,9 +196,18 @@ describe('C5-1 generateCompatNarrativeReport — happy path', () => {
       now: NOW,
     });
 
-    // card는 archetype에서
+    // card는 archetype에서 (title은 그대로, keywords는 카드 칩용 정규화 적용)
     expect(res.report.compatibilityCard.title).toBe(bundle.relationshipArchetype.title);
-    expect(res.report.compatibilityCard.keywords).toEqual(bundle.relationshipArchetype.keywords.filter(Boolean));
+    // keywords: 정규화된 칩 — 3~5개, 각 ≤12자, raw-fact 마커/문장끝 없음.
+    const chips = res.report.compatibilityCard.keywords;
+    expect(chips.length).toBeGreaterThanOrEqual(3);
+    expect(chips.length).toBeLessThanOrEqual(5);
+    for (const c of chips) {
+      expect(c.length).toBeLessThanOrEqual(12);
+      for (const m of ['상대가', '본능적으로', '결핍', '욕구', '또는']) {
+        expect(c.includes(m)).toBe(false);
+      }
+    }
 
     // evidenceView는 bundle에서
     const ev = res.report.evidenceView;
