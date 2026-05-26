@@ -28,6 +28,8 @@ import PillarDisplay, { type Pillar } from '@/components/ui/PillarDisplay';
 import { BleedCard, FeatureCard } from '@/components/orot';
 import { SajuV4Report, type SajuV4ApiResponse as _SajuV4ApiResponseType } from '@/components/SajuV4Report';
 import { parseSajuReport } from '@/lib/saju-v4-report-parser';
+// Y9: 올해운세 V4 컴포넌트 — NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED==='true'일 때만 렌더.
+import YearlyV4Report, { type YearlyV4Input } from '@/components/YearlyV4Report';
 
 /* ===== Stars Background - SVG Star Illustrations ===== */
 const STAR_COLORS = ['#F0C75E', '#FFD080', '#FF6B9D', '#7DD3FC', '#C4B5FD', '#6EE7B7', '#FF8A8A', '#FFF0C8'];
@@ -4245,6 +4247,40 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
   /* ===== SCREEN 7: Yearly Fortune ===== */
   function renderYearlyFortune() {
+    // ── Y9: 올해운세 V4 분기 (가드 OFF가 기본 — 프로덕션 동작 byte-identical) ──
+    // NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED==='true' + yearly 모드 + 사주 계산 완료일 때만
+    // 새 V4 컴포넌트(POST /api/yearly-fortune)로 렌더. 그 외에는 아래 기존 v3 경로 그대로.
+    if (
+      process.env.NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED === 'true' &&
+      appMode === 'yearly' &&
+      sajuResult
+    ) {
+      const birthTimeV4 = useExactTime && exactHour >= 0
+        ? `${String(exactHour).padStart(2, '0')}:${String(exactMinute).padStart(2, '0')}`
+        : userData.hour >= 0 ? `${String((userData.hour * 2) || 0).padStart(2, '0')}:00` : undefined;
+      const birthTimeConfidenceV4: 'exact' | 'approximate' | 'unknown' =
+        (userData.hour < 0 && !useExactTime) ? 'unknown' : useExactTime ? 'exact' : 'approximate';
+      const yearlyV4Input: YearlyV4Input = {
+        birth: {
+          name: userData.name || '익명',
+          gender: (userData.gender === 'm' ? 'male' : userData.gender === 'f' ? 'female' : 'unknown'),
+          calendarType: isLunar ? 'lunar' : 'solar',
+          birthDate: `${userData.year}-${String(userData.month).padStart(2, '0')}-${String(userData.day).padStart(2, '0')}`,
+          birthTime: birthTimeV4,
+          birthTimeConfidence: birthTimeConfidenceV4,
+          timezone: 'Asia/Seoul',
+        },
+        currentDate: new Date().toISOString().slice(0, 10),
+      };
+      return (
+        <YearlyV4Report
+          input={yearlyV4Input}
+          lang={lang}
+          onRestart={() => { setCurrentScreen(0); setAiText(''); setSajuResult(null); }}
+        />
+      );
+    }
+
     if (!sajuResult) {
       // Saved result view — no saju calc data, just AI text
       if (aiText) {
