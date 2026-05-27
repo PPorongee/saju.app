@@ -15,6 +15,7 @@ import {
   normalizeBirthInput,
 } from '../calendar/normalizeBirthInput';
 import { calculatePillars } from '../calendar/pillarCalculator';
+import { buildPrecisionContext } from '../calendar/precisionContext';
 import { analyzeTenGods } from '../analysis/tenGodAnalyzer';
 import { analyzeElementStrength } from '../analysis/elementStrengthAnalyzer';
 import { analyzeDayMasterStrength } from '../analysis/dayMasterStrengthAnalyzer';
@@ -98,7 +99,9 @@ export function buildYearlyAnalysis(
   const currentDate = input.currentDate;
 
   const nb = normalizeBirthInput(input.birth, baseNow);
-  const pr = calculatePillars(nb);
+  // precision 컨텍스트 (legacy면 옵션 undefined → calculatePillars byte-identical)
+  const pctx = buildPrecisionContext(nb, input.birth);
+  const pr = calculatePillars(nb, undefined, pctx.pillarOptions);
   const tenGods = analyzeTenGods(pr.pillars);
   const elements = analyzeElementStrength(pr.pillars);
   const dms = analyzeDayMasterStrength(pr.pillars, tenGods, elements);

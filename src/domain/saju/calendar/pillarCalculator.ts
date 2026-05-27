@@ -29,6 +29,16 @@ import { HIDDEN_STEMS, allHiddenStems } from '../rules/hiddenStems';
 import type { NormalizedBirth } from './normalizeBirthInput';
 import { toSolarDate } from './solarLunarConverter';
 import { findApplicableJie, type SolarTermPoint } from './solarTermProvider';
+import type { CivilDateTime } from './solarTimeCorrector';
+import type { ZiHourPolicy } from './calculationMeta';
+
+// Precision V1 — calculatePillars 옵션 (미지정이면 legacy 동작 byte-identical).
+//   adjustedClock: 이미 양력으로 변환되고 태양시 보정된 벽시계 (precision 경로에서만 전달).
+//   ziHourPolicy: 'zi-midnight-day-boundary'면 야자시(standard-23) 일주 시프트 생략 = 조자시.
+export interface PrecisionPillarOptions {
+  adjustedClock: CivilDateTime;
+  ziHourPolicy: ZiHourPolicy;
+}
 
 // ============================================================
 // 도메인 타입 — spec 준수
@@ -77,11 +87,18 @@ export interface PillarsResult {
 export function calculatePillars(
   input: NormalizedBirth,
   config: RuleConfig = DEFAULT_RULE_CONFIG,
+  precision?: PrecisionPillarOptions,
 ): PillarsResult {
-  const solar = toSolarDate(input.inputCalendar, input.year, input.month, input.day, input.isLeapMonth);
+  // precision(adjustedClock) 미지정이면 legacy 경로 byte-identical.
+  const usePrecision = precision != null;
+  const solar = usePrecision
+    ? { year: precision!.adjustedClock.year, month: precision!.adjustedClock.month, day: precision!.adjustedClock.day }
+    : toSolarDate(input.inputCalendar, input.year, input.month, input.day, input.isLeapMonth);
 
-  const hour = input.hour ?? 12;  // 시간 미상은 정오로 가정 (일주 영향 최소)
-  const minute = input.minute;
+  const hour = usePrecision ? precision!.adjustedClock.hour : (input.hour ?? 12);  // 시간 미상은 정오로 가정
+  const minute = usePrecision ? precision!.adjustedClock.minute : input.minute;
+  // 조자시(zi-midnight)면 야자시 일주 시프트 생략. legacy/미지정이면 false → 기존 동작.
+  const ziMidnight = precision?.ziHourPolicy === 'zi-midnight-day-boundary';
 
   // 월건 결정 절기
   const jie = findApplicableJie(solar.year, solar.month, solar.day, hour, minute);
@@ -97,7 +114,8 @@ export function calculatePillars(
 
   // 야자시 정책: 23시 출생 → 다음날 일주 (config.hourBoundaryMode='standard-23')
   // 월/년 경계 오버플로 안전: JS Date로 다음날을 계산 (12/31 23시 → 1/1 다음해).
-  if (!input.hourUnknown && hour === 23 && config.hourBoundaryMode === 'standard-23') {
+  // precision 조자시면 이 시프트를 생략 (일주는 자정 00:00 경계 = lunar-javascript getDay 기본).
+  if (!input.hourUnknown && hour === 23 && config.hourBoundaryMode === 'standard-23' && !ziMidnight) {
     const d = new Date(Date.UTC(solar.year, solar.month - 1, solar.day));
     d.setUTCDate(d.getUTCDate() + 1);
     const ny = d.getUTCFullYear();

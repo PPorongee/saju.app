@@ -23,6 +23,7 @@ import {
 import { STEM_ELEMENT, BRANCH_ELEMENT } from '../rules/elements';
 import { HIDDEN_STEMS } from '../rules/hiddenStems';
 import { toSolarDate } from './solarLunarConverter';
+import type { CivilDateTime } from './solarTimeCorrector';
 
 export interface DaewoonPillar {
   index: number;        // 1번째, 2번째 ...
@@ -52,17 +53,21 @@ export function calculateFortuneCycles(
   input: NormalizedBirth,
   pillars: FourPillars,
   currentYear: number = new Date().getFullYear(),
+  precisionClock?: CivilDateTime,
 ): FortuneCycleResult {
-  // 1. 방향
+  // 1. 방향 (성별 ⊕ 年干 음양 — precision 무관)
   const yearYy = stemYinYang(pillars.year.stem);
   const isForward =
     (yearYy === 'yang' && input.context.gender === 'male') ||
     (yearYy === 'yin' && input.context.gender === 'female');
 
-  // 2. 시작 나이 — 출생 시점 → 가장 가까운 절기까지 일수
-  const solar = toSolarDate(input.inputCalendar, input.year, input.month, input.day, input.isLeapMonth);
-  const hour = input.hour ?? 12;
-  const minute = input.minute;
+  // 2. 시작 나이 — 출생 시점 → 가장 가까운 절기까지 일수.
+  //    precisionClock(보정 양력 벽시계)이 있으면 보정 시각 기준, 없으면 legacy(원본) byte-identical.
+  const solar = precisionClock
+    ? { year: precisionClock.year, month: precisionClock.month, day: precisionClock.day }
+    : toSolarDate(input.inputCalendar, input.year, input.month, input.day, input.isLeapMonth);
+  const hour = precisionClock ? precisionClock.hour : (input.hour ?? 12);
+  const minute = precisionClock ? precisionClock.minute : input.minute;
   const days = daysToBoundary(solar.year, solar.month, solar.day, hour, minute, isForward);
   // 3일 = 1년. 1일 = 4개월. 1시간 = 5일.
   const firstStartAge = Math.round((days / 3) * 10) / 10;

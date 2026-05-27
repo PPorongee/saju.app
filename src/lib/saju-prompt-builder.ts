@@ -668,9 +668,29 @@ export function stripYongsinMeta(text: string): string {
 // ============================================================
 // 사주명식이 동일하면 용신도 동일해야 함. localStorage에 영구 저장.
 
-export function getYongsinCacheKey(sj: SajuResult): string {
+/** precision-v1 캐시 분리용 (선택). 미지정/legacy면 기존 키 그대로 — 레거시 캐시 호환. */
+export interface YongsinCacheKeyPrecision {
+  calculationVersion: string;             // 'legacy' | 'precision-v1'
+  birthPlaceId?: string | null;
+  utcOffsetMinutes?: number | null;
+  solarTimeAdjustmentMinutes?: number | null;
+  ziHourPolicy?: string | null;
+}
+
+export function getYongsinCacheKey(sj: SajuResult, precision?: YongsinCacheKeyPrecision): string {
   // 사주 8글자(stem 4 + branch 4) 조합으로 유일 키 생성
-  return `yongsin:${sj.yStem}-${sj.yBranch}-${sj.mStem}-${sj.mBranch}-${sj.dStem}-${sj.dBranch}-${sj.hStem}-${sj.hBranch}`;
+  const base = `yongsin:${sj.yStem}-${sj.yBranch}-${sj.mStem}-${sj.mBranch}-${sj.dStem}-${sj.dBranch}-${sj.hStem}-${sj.hBranch}`;
+  // legacy(미지정 또는 'legacy')는 기존 키 그대로 → 기존 캐시 재사용 (byte-identical).
+  if (!precision || precision.calculationVersion === 'legacy') return base;
+  // precision-v1은 별도 suffix로 분리 → 레거시 캐시를 절대 재사용하지 않음.
+  const suffix = [
+    precision.calculationVersion,
+    precision.birthPlaceId ?? 'noplace',
+    precision.utcOffsetMinutes ?? 'nooff',
+    precision.solarTimeAdjustmentMinutes ?? 'noadj',
+    precision.ziHourPolicy ?? 'nozi',
+  ].join(':');
+  return `${base}::${suffix}`;
 }
 
 export function getCachedYongsin(sj: SajuResult): YongsinMeta | null {

@@ -11,6 +11,7 @@
 import { normalizeBirthInput, type BirthInput } from './calendar/normalizeBirthInput';
 import { calculatePillars } from './calendar/pillarCalculator';
 import { calculateFortuneCycles } from './calendar/fortuneCycleCalculator';
+import { buildPrecisionContext } from './calendar/precisionContext';
 import { analyzeTenGods } from './analysis/tenGodAnalyzer';
 import { analyzeElementStrength } from './analysis/elementStrengthAnalyzer';
 import { analyzeDayMasterStrength } from './analysis/dayMasterStrengthAnalyzer';
@@ -84,7 +85,9 @@ export interface GenerateResult {
  */
 export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date()): PersonalSajuGptInput {
   const normalized = normalizeBirthInput(input, now);
-  const pillarsRes = calculatePillars(normalized);
+  // precision 컨텍스트 (legacy면 모든 옵션 undefined → 아래 호출 byte-identical)
+  const pctx = buildPrecisionContext(normalized, input);
+  const pillarsRes = calculatePillars(normalized, DEFAULT_RULE_CONFIG, pctx.pillarOptions);
   const tenGods    = analyzeTenGods(pillarsRes.pillars);
   const elements   = analyzeElementStrength(pillarsRes.pillars);
   const dm         = analyzeDayMasterStrength(pillarsRes.pillars, tenGods, elements);
@@ -92,7 +95,7 @@ export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date())
   const usefulGod  = analyzeUsefulGod({ pillars: pillarsRes.pillars, tenGods, elements, dayMasterStrength: dm, structure });
   const specialStars   = analyzeSpecialStars(pillarsRes.pillars);
   const combConflicts  = analyzeCombinationsAndConflicts(pillarsRes.pillars);
-  const cycles  = calculateFortuneCycles(normalized, pillarsRes.pillars, now.getFullYear());
+  const cycles  = calculateFortuneCycles(normalized, pillarsRes.pillars, now.getFullYear(), pctx.fortuneClock);
   const fortune = analyzeFortuneFlow({ pillars: pillarsRes.pillars, cycles, usefulGod, tenGods });
 
   const specialPoints: SpecialPoint[] = detectSpecialPoints({
@@ -141,7 +144,7 @@ export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date())
     fortuneTriggers, careerSpecificAnalysis, futureTimingAnalysis,
   });
 
-  return buildPersonalSajuGptInput({
+  const gptInput = buildPersonalSajuGptInput({
     userContext: normalized.context,
     birthTimeConfidence: input.birthTimeConfidence,
     ruleConfig: DEFAULT_RULE_CONFIG,
@@ -162,6 +165,9 @@ export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date())
     futureTimingAnalysis,
     contentLedger,
   });
+  // precision-v1일 때만 calculationMeta 부착. legacy면 undefined → 키 미추가(byte-identical).
+  if (pctx.calculationMeta) gptInput.calculationMeta = pctx.calculationMeta;
+  return gptInput;
 }
 
 export async function generatePersonalSajuReport(
@@ -173,7 +179,8 @@ export async function generatePersonalSajuReport(
 
   // ── 결정론적 계산 파이프라인 ──
   const normalized = normalizeBirthInput(input, now);
-  const pillarsRes = calculatePillars(normalized);
+  const pctx = buildPrecisionContext(normalized, input);   // legacy면 옵션 undefined → byte-identical
+  const pillarsRes = calculatePillars(normalized, DEFAULT_RULE_CONFIG, pctx.pillarOptions);
   const tenGods    = analyzeTenGods(pillarsRes.pillars);
   const elements   = analyzeElementStrength(pillarsRes.pillars);
   const dm         = analyzeDayMasterStrength(pillarsRes.pillars, tenGods, elements);
@@ -181,7 +188,7 @@ export async function generatePersonalSajuReport(
   const usefulGod  = analyzeUsefulGod({ pillars: pillarsRes.pillars, tenGods, elements, dayMasterStrength: dm, structure });
   const specialStars   = analyzeSpecialStars(pillarsRes.pillars);
   const combConflicts  = analyzeCombinationsAndConflicts(pillarsRes.pillars);
-  const cycles  = calculateFortuneCycles(normalized, pillarsRes.pillars, now.getFullYear());
+  const cycles  = calculateFortuneCycles(normalized, pillarsRes.pillars, now.getFullYear(), pctx.fortuneClock);
   const fortune = analyzeFortuneFlow({ pillars: pillarsRes.pillars, cycles, usefulGod, tenGods });
 
   const specialPoints: SpecialPoint[] = detectSpecialPoints({
@@ -261,6 +268,7 @@ export async function generatePersonalSajuReport(
   });
 
   const contextGuard = buildContextGuard(normalized.context, normalized.hourUnknown);
+  if (pctx.calculationMeta) gptInput.calculationMeta = pctx.calculationMeta;
   const prompt = buildPersonalSajuPrompt({ input: gptInput, contextGuard });
 
   // ── GPT 호출 + 검증·repair 루프 ──
