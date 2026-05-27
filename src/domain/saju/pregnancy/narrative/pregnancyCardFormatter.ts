@@ -69,13 +69,14 @@ export function normalizePregnancyKeywords(raw: string[]): string[] {
     if (cleaned.includes(k)) continue;
     cleaned.push(k);
   }
-  // 부족하면 폴백 풀로 보강
+  // 부족하면 폴백 풀로 보강 (중복 없이 머지 → 3~5개 보장)
   const fallback = ['연결', '보완', '안정', '태교', '리듬'];
-  for (const f of fallback) {
-    if (cleaned.length >= 5) break;
-    if (!cleaned.includes(f)) cleaned.push(f);
+  const merged: string[] = [];
+  for (const k of [...cleaned, ...fallback]) {
+    if (merged.length >= 5) break;
+    if (!merged.includes(k)) merged.push(k);
   }
-  return cleaned.slice(0, 5).length >= 3 ? cleaned.slice(0, 5) : cleaned.concat(fallback).slice(0, 3);
+  return merged.slice(0, 5);
 }
 
 export function buildMotherBabyCard(

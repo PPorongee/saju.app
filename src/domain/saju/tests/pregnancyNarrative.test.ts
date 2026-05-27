@@ -334,6 +334,29 @@ describe('P9-5 validator HIGH', () => {
     const v = validatePregnancyNarrativeReport({ report, bundle, plans, ctx });
     expect(v.highCount).toBeGreaterThan(0);
   });
+  it('recall 보강: 공주님/철분제/출산하면 좋다/천재 단독/남아 → 각 HIGH', async () => {
+    const { bundle, plans, ctx } = ctxBundlePlans();
+    const cases: Array<[string, string]> = [
+      ['이 아이는 공주님 기운이 가득해요.', 'gender-prediction'],
+      ['아기는 남아입니다.', 'gender-prediction'],
+      ['엄마는 철분제를 챙겨 드세요.', 'medical-advice-risk'],
+      ['이 날 출산하면 좋아요.', 'birth-date-determination-claim'],
+      ['이 아이는 천재예요.', 'fatalistic-claim'],
+    ];
+    for (const [inject, type] of cases) {
+      const report = await baseReport();
+      report.babyEnergyAndFit.body += ' ' + inject;
+      const v = validatePregnancyNarrativeReport({ report, bundle, plans, ctx });
+      expect(v.issues.some(i => i.type === type), `"${inject}" → ${type}`).toBe(true);
+    }
+  });
+  it('정상 산모 표현은 오탐 없음: "산모는 여성으로서"/"엄마 같은 마음" → high 0 유지', async () => {
+    const { bundle, plans, ctx } = ctxBundlePlans();
+    const report = await baseReport();
+    report.motherComfortRhythm.body += ' 산모는 여성으로서 엄마 같은 마음을 지니고 있어요.';
+    const v = validatePregnancyNarrativeReport({ report, bundle, plans, ctx });
+    expect(v.highCount).toBe(0);
+  });
 });
 
 // ============================================================
@@ -398,5 +421,38 @@ describe('P9-7 server flags & types', () => {
   it('섹션 id 구성: LLM 7 + 결정적 3', () => {
     expect(PREGNANCY_NARRATIVE_LLM_SECTION_IDS.length).toBe(7);
     expect(PREGNANCY_NARRATIVE_DETERMINISTIC_SECTION_IDS.length).toBe(3);
+  });
+});
+
+// ============================================================
+// P9-8 산모 gender=female 반영
+// ============================================================
+describe('P9-8 산모 gender=female', () => {
+  it('gender=female이 분석 input에 반영됨', () => {
+    const female = calculateAnalysisOnly({ ...MOM, gender: 'female' }, NOW);
+    expect(female.userContext.gender).toBe('female');
+  });
+  it('성별이 대운(순행/역행)에 영향 — female vs male이면 대운 흐름이 달라짐', () => {
+    const female = calculateAnalysisOnly({ ...MOM, gender: 'female' }, NOW);
+    const male = calculateAnalysisOnly({ ...MOM, gender: 'male' }, NOW);
+    // 같은 생일이라도 성별에 따라 대운 방향이 갈리므로 fortune 전체가 달라야 한다.
+    expect(JSON.stringify(female.fortune)).not.toBe(JSON.stringify(male.fortune));
+  });
+  it('generate 결과 bundle.mother가 female로 분석됨', async () => {
+    const res = await generatePregnancyNarrativeReport(MOM, BABY_NO_TIME, { callGpt: makeGoodCaller(), now: NOW });
+    expect(res.bundle.mother.userContext.gender).toBe('female');
+  });
+  it('"산모/엄마/여성" 표현은 gender-prediction으로 오탐되지 않음', async () => {
+    const mother = calculateAnalysisOnly(MOM, NOW);
+    const baby = calculateAnalysisOnly(BABY_NO_TIME, NOW);
+    const bundle = composePregnancyAnalysis(mother, baby);
+    const taegyoPlan = buildTaegyoPlan(bundle);
+    const ctx = buildPregnancyNarrativeContext({ dueDateLabel: '2026년 9월 15일', babyTimeConfidence: 'unknown', motherTimeConfidence: 'exact', motherName: '산모' });
+    const plans = buildPregnancyNarrativePlans(bundle, taegyoPlan, ctx);
+    const res0 = await generatePregnancyNarrativeReport(MOM, BABY_NO_TIME, { callGpt: makeGoodCaller(), now: NOW });
+    const report = JSON.parse(JSON.stringify(res0.report));
+    report.motherComfortRhythm.body += ' 산모는 여성으로서 엄마의 기운을 지니고 있어요.';
+    const v = validatePregnancyNarrativeReport({ report, bundle, plans, ctx });
+    expect(v.issues.some(i => i.type === 'gender-prediction')).toBe(false);
   });
 });

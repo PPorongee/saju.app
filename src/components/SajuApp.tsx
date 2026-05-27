@@ -4104,8 +4104,11 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     const data = pregResult ? (() => { try { return JSON.parse(pregResult); } catch { return null; } })() : null;
 
     // 임산부 narrative V4 입력 (flag on 경로 전용 — 기존 calcSaju/pregResult와 완전 분리)
+    // pregData.hour / pregDueHour 는 시진(時辰) 인덱스(0~11, -1=모름) — 기존 calcSaju와 동일.
+    // calculateAnalysisOnly가 birthTime "HH:mm"을 다시 시진으로 버킷팅하므로, 각 시진의
+    // 정중앙 시각을 전달해 왕복 일치 보장 (자시 0 → 00:30, 그 외 k → 2k:00).
     const _pad2 = (n: number) => String(n).padStart(2, '0');
-    const _toTime = (h: number) => (h >= 0 && h <= 23 ? `${_pad2(h)}:00` : undefined);
+    const _toTime = (siju: number) => (siju < 0 || siju > 11 ? undefined : siju === 0 ? '00:30' : `${_pad2(siju * 2)}:00`);
     const momInputV4: CompatBirthInputV4 = {
       name: pregData.name || '엄마', gender: 'female', calendarType: 'solar',
       birthDate: `${pregData.year}-${_pad2(pregData.month)}-${_pad2(pregData.day)}`,
@@ -4206,23 +4209,50 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           </div>
         </div>
 
-        {/* 임산부 narrative V4 — 선택 시간 입력 (flag on일 때만 노출, 기존 폼 불변) */}
+        {/* 임산부 narrative V4 — 선택 시간 입력 (flag on일 때만 노출, 기존 폼 불변).
+            개인사주/올해운세와 동일한 시진(時辰) time-grid + "시간 모름" 방식. */}
         {PREGNANCY_NARRATIVE_UI_ENABLED && !pregNarrativeRequested && (
           <div className="card" style={{ background: 'rgba(255,240,245,0.08)', border: '1px solid rgba(233,30,140,0.2)', borderRadius: '20px', padding: '20px', marginTop: '16px' }}>
             <div className="input-group">
-              <label>엄마 출생시간 (선택 · 모르면 비워두세요)</label>
-              <select value={pregData.hour} onChange={e => setPregData(p => ({ ...p, hour: parseInt(e.target.value) }))}>
-                <option value={-1}>모름</option>
-                {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
-              </select>
+              <label id="preg-mom-time-label">엄마 출생시간 (선택 · 모르면 비워두세요)</label>
+              <div className="time-grid" role="radiogroup" aria-labelledby="preg-mom-time-label">
+                {TIMES.map(ti => (
+                  <div key={ti.h} role="radio" aria-checked={pregData.hour === ti.h} tabIndex={0}
+                    className={'time-option' + (pregData.hour === ti.h ? ' selected' : '')}
+                    onClick={() => setPregData(p => ({ ...p, hour: ti.h }))}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPregData(p => ({ ...p, hour: ti.h })); } }}>
+                    <div className="time-range">{ti.range}</div>
+                    <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
+                  </div>
+                ))}
+                <div role="radio" aria-checked={pregData.hour === -1} tabIndex={0}
+                  className={'time-option unknown-time' + (pregData.hour === -1 ? ' selected' : '')}
+                  onClick={() => setPregData(p => ({ ...p, hour: -1 }))}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPregData(p => ({ ...p, hour: -1 })); } }}>
+                  {t('unknownTime', lang)}
+                </div>
+              </div>
             </div>
             <div className="input-group">
-              <label>아기 예정시간 또는 예정 시간대 (선택 · 모르면 비워두세요)</label>
-              <select value={pregDueHour} onChange={e => setPregDueHour(parseInt(e.target.value))}>
-                <option value={-1}>모름</option>
-                {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
-              </select>
-              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px', lineHeight: 1.5 }}>실제 출생일/시간에 따라 달라질 수 있어요. 출산 시간을 정하라는 의미가 아니에요.</p>
+              <label id="preg-baby-time-label">아기 예정 시간대 (선택)</label>
+              <div className="time-grid" role="radiogroup" aria-labelledby="preg-baby-time-label">
+                {TIMES.map(ti => (
+                  <div key={ti.h} role="radio" aria-checked={pregDueHour === ti.h} tabIndex={0}
+                    className={'time-option' + (pregDueHour === ti.h ? ' selected' : '')}
+                    onClick={() => setPregDueHour(ti.h)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPregDueHour(ti.h); } }}>
+                    <div className="time-range">{ti.range}</div>
+                    <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
+                  </div>
+                ))}
+                <div role="radio" aria-checked={pregDueHour === -1} tabIndex={0}
+                  className={'time-option unknown-time' + (pregDueHour === -1 ? ' selected' : '')}
+                  onClick={() => setPregDueHour(-1)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPregDueHour(-1); } }}>
+                  {t('unknownTime', lang)}
+                </div>
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px', lineHeight: 1.5 }}>모르면 비워두세요. 실제 출생일/시간에 따라 달라질 수 있어요. 출산 시간을 정하라는 의미가 아니에요.</p>
             </div>
           </div>
         )}

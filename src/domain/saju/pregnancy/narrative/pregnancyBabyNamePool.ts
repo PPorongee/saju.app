@@ -15,42 +15,43 @@ interface PoolEntry {
   image: string;  // 짧은 이미지 (운명론적이지 않게)
 }
 
-/** 오행별 태명 후보 풀 — 확장 가능. (시드: 사용자 제공 목록) */
+/** 오행별 "태명" 후보 풀 — 귀엽고 가볍고 부르기 쉬운 애칭 중심. 확장 가능.
+ *  공식 이름/한자/획수 느낌 금지. 건강 보장처럼 들리는 태명(튼튼이 등)은 제외. */
 export const BABY_NAME_POOL: Record<Element, PoolEntry[]> = {
   water: [
-    { name: '이슬', image: '맑게 맺히는 물방울' },
-    { name: '하윤', image: '부드럽게 흐르는 물결' },
-    { name: '루아', image: '잔잔한 물빛' },
-    { name: '물결', image: '천천히 번지는 물결' },
-    { name: '하람', image: '깊고 차분한 물' },
+    { name: '물방울', image: '동글동글 맑은 물방울' },
+    { name: '몽글이', image: '몽글몽글 부드러운 결' },
+    { name: '달콩이', image: '달처럼 은은한 콩알' },
+    { name: '조약이', image: '냇가의 동그란 조약돌' },
+    { name: '구름이', image: '둥실 떠가는 구름' },
   ],
   wood: [
-    { name: '새봄', image: '새로 돋는 봄의 새싹' },
-    { name: '초록', image: '싱그러운 잎의 빛' },
-    { name: '나린', image: '하늘에서 내린 나무' },
-    { name: '로운', image: '곧게 자라는 결' },
-    { name: '다온', image: '좋은 기운이 다 오는 숲' },
+    { name: '새싹이', image: '막 돋아난 연둣빛 새싹' },
+    { name: '봄봄이', image: '폴짝이는 봄기운' },
+    { name: '초록이', image: '싱그러운 초록 잎' },
+    { name: '잎새', image: '살랑이는 작은 잎새' },
+    { name: '나무콩', image: '쑥쑥 자라는 나무 콩알' },
   ],
   fire: [
-    { name: '하리', image: '환하게 번지는 햇살' },
-    { name: '라온', image: '즐겁고 따뜻한 빛' },
-    { name: '햇살', image: '포근한 아침 햇살' },
-    { name: '소율', image: '맑게 퍼지는 온기' },
-    { name: '아린', image: '맑고 또렷한 빛' },
+    { name: '반짝이', image: '반짝반짝 밝은 빛' },
+    { name: '햇콩이', image: '햇살 머금은 콩알' },
+    { name: '라라', image: '흥얼흥얼 즐거운 음' },
+    { name: '빛나', image: '환하게 빛나는 기운' },
+    { name: '초롱이', image: '초롱초롱한 눈빛' },
   ],
   earth: [
-    { name: '도담', image: '단단하고 야무진 땅' },
-    { name: '단아', image: '차분하고 단정한 결' },
-    { name: '온유', image: '따뜻하고 부드러운 흙' },
-    { name: '다솜', image: '포근히 품는 마음' },
-    { name: '하온', image: '편안하고 따뜻한 자리' },
+    { name: '복덩이', image: '품에 쏙 안기는 복스러운 아이' },
+    { name: '둥둥이', image: '둥글둥글 포근한 결' },
+    { name: '토리', image: '도토리처럼 야무진 아이' },
+    { name: '포근이', image: '폭 안기는 포근한 결' },
+    { name: '도담이', image: '도담도담 무탈한 결' },
   ],
   metal: [
-    { name: '서율', image: '맑고 단정한 결' },
-    { name: '윤슬', image: '햇빛에 반짝이는 물비늘' },
-    { name: '하린', image: '맑게 빛나는 기운' },
-    { name: '서안', image: '고요하고 정돈된 빛' },
-    { name: '은우', image: '은은하게 빛나는 결' },
+    { name: '방울이', image: '맑게 울리는 작은 방울' },
+    { name: '은콩이', image: '은빛 도는 콩알' },
+    { name: '반디', image: '깜빡이는 작은 반딧불' },
+    { name: '또랑이', image: '또랑또랑 맑은 결' },
+    { name: '맑음이', image: '맑게 갠 하늘 같은 결' },
   ],
 };
 

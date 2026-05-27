@@ -87,8 +87,8 @@ function joinReportText(report: PregnancyNarrativeReport): string {
 // ============================================================
 const ENGLISH_ELEMENT_RE = /\b(wood|fire|earth|metal|water)\b/i;
 
-// medical-advice-risk: 약/영양제/치료/병원대체/식단·운동 처방
-const MEDICAL_RE = /(?:영양제|보약|한약)\s*(?:을|를)?\s*(?:드세요|챙겨\s*드세요|복용)|(?:치료|처방|진단)(?:을|를)?\s*(?:받(?:으세요)|해야)|(?:병원|의사|의료진)\s*(?:말|판단)?\s*(?:대신|보다)\s*사주|매일\s*\d+\s*(?:분|시간)\s*(?:이상\s*)?(?:걷기|운동)/;
+// medical-advice-risk: 약/영양제/철분제/엽산/비타민/검사/치료/병원대체/식단·운동 처방
+const MEDICAL_RE = /(?:영양제|보약|한약|철분제|엽산|비타민[가-힣A-Za-z0-9]*)\s*(?:을|를)?\s*(?:드세요|챙겨?\s*드세요|챙기세요|복용)|(?:치료|처방|진단)(?:을|를)?\s*(?:받(?:으세요)|해야)|검사\s*(?:를)?\s*받(?:으세요|아\s*보세요|는\s*게\s*좋)|(?:병원|의사|의료진)\s*(?:말|판단)?\s*(?:대신|보다)\s*사주|매일\s*\d+\s*(?:분|시간)\s*(?:이상\s*)?(?:걷기|운동)/;
 
 // pregnancy-health-prediction: 임신 중 건강 예측
 const HEALTH_PRED_RE = /(?:입덧|임신성|산후우울)[가-힣]*\s*(?:심|있을\s*것|예상|겪)|임신\s*중\s*(?:건강이?\s*나빠|몸이\s*(?:크게\s*)?약해)/;
@@ -99,8 +99,8 @@ const BIRTH_RISK_RE = /순산(?:합니다|할\s*거예요|하게\s*됩니다|입
 // miscarriage-or-preterm-claim: 조산/유산
 const MISCARRIAGE_RE = /조산|유산|早産|流産/;
 
-// gender-prediction
-const GENDER_RE = /(?:아기|아이|태아)(?:는|가)?\s*(?:아마\s*)?(?:아들|딸|남자아이|여자아이|남아|여아)(?:입니다|일\s*거예요|예요|이에요|로\s*보)|성별(?:은|이)?\s*[가-힣\s]*?(?:아들|딸|남아|여아)/;
+// gender-prediction (명시 + 암시: 공주/왕자, 딸/아들+태어·낳)
+const GENDER_RE = /(?:아기|아이|태아)(?:는|가)?\s*(?:아마\s*)?(?:아들|딸|남자아이|여자아이|남아|여아)(?:입니다|일\s*거예요|예요|이에요|로\s*보)|성별(?:은|이)?\s*[가-힣\s]*?(?:아들|딸|남아|여아)|공주님?|왕자님?|(?:딸|아들)\s*(?:이|을|로)?\s*(?:태어|낳)/;
 
 // deterministic-child-personality
 const CHILD_PERSONALITY_RE = /(?:이|그)\s*아(?:이|기)는?\s*(?:반드시|틀림없이|분명히|꼭)\s*[가-힣\s]+?(?:성격|아이)(?:입니다|이에요|이\s*됩니다|으로\s*자랍니다)|아(?:이|기)\s*성격은\s*[가-힣\s]+(?:입니다|이에요)/;
@@ -108,11 +108,11 @@ const CHILD_PERSONALITY_RE = /(?:이|그)\s*아(?:이|기)는?\s*(?:반드시|�
 // mother-blame-language
 const MOTHER_BLAME_RE = /엄마(?:가|의\s*기운이|때문에)\s*[가-힣\s]*?(?:아이|아기)(?:에게|한테)\s*(?:안\s*좋|나쁘|해롭|악영향)|엄마\s*탓/;
 
-// birth-date-determination-claim
-const BIRTHDATE_RE = /(?:이|그|해당)\s*날(?:짜)?\s*(?:에)?\s*낳으(?:면|시면)\s*(?:좋|나쁘|안\s*좋)|(?:최고의|가장\s*좋은|최적의)\s*출산일|(?:이|그|해당)\s*날(?:짜)?(?:은|는)\s*피하|택일|(?:\d{1,2}월\s*\d{1,2}일|며칠)에\s*낳/;
+// birth-date-determination-claim (낳다 + 출산/분만/제왕절개 + 택일)
+const BIRTHDATE_RE = /(?:이|그|해당)\s*날(?:짜)?\s*(?:에)?\s*낳으(?:면|시면)\s*(?:좋|나쁘|안\s*좋)|낳(?:는\s*게|기에|는\s*것이)\s*(?:좋|나쁘)|(?:이|그|해당)\s*날(?:짜)?\s*(?:에)?\s*(?:출산|분만)(?:하면|하시면|하는\s*게)\s*(?:좋|나쁘)|(?:최고의|가장\s*좋은|최적의)\s*(?:출산일|분만일)|제왕절개[가-힣\s]*?(?:이|그|해당)?\s*날|(?:이|그|해당)\s*날(?:짜)?(?:은|는)\s*피하|택일|(?:\d{1,2}월\s*\d{1,2}일|며칠)에\s*낳/;
 
 // fatalistic-claim
-const FATALISM_RE = /운명(?:적인|의)?\s*(?:입니다|이에요)|전생(?:부터)?(?:의)?\s*인연(?:입니다|이에요)|아(?:기|이)가\s*엄마를\s*(?:선택했|골랐)|(?:천재|영재|대박)\s*(?:아이|아기|사주)|반드시\s|무조건\s|틀림없이\s|100\s*%/;
+const FATALISM_RE = /운명(?:적인|의)?\s*(?:입니다|이에요)|전생(?:부터)?(?:의)?\s*인연(?:입니다|이에요)|아(?:기|이)가\s*엄마를\s*(?:선택했|골랐)|(?:천재|영재)(?:\s*(?:아이|아기))?|대박\s*(?:아이|아기|사주)|반드시\s|무조건\s|틀림없이\s|100\s*%/;
 
 // validator-log-output: 내부 토큰
 const VALIDATOR_LEAK_RE = /\b(oc|mech|comf|baby|tg|fr|fam)-[a-zA-Z0-9\-_]+|\b(motherBabyCard|openingConnection|motherChildMechanism|motherComfortRhythm|babyEnergyAndFit|taegyoGuide|motherFortuneRoutine|familySupportAndFinalMessage|babyNames|evidenceView)\b|mustUseFacts?|computedEvidence|ABSOLUTE_RULES|ownerSection|matchTokens?|evidenceBlocks?|finalMessage|REPAIR_MODE|\bsectionId\b|\bvalidator\b|\bvalidation\b|\bJSON\s+schema\b/i;

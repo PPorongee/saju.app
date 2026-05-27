@@ -39,6 +39,8 @@ const COMMON_AVOID_PATTERNS: string[] = [
   'wood / fire / earth / metal / water 영문 오행 키 (반드시 한글)',
   '계산되지 않은 명리 요소·신살을 지어내기 / 태명을 새로 창작',
   '점수 / 등급 / 궁합 몇 점 / 상위 몇 %',
+  '"화 결과 / 금 결과" 같은 표현 (반드시 "화 기운 / 금 기운")',
+  '"긍정적인 에너지 / 좋은 기운" 같은 막연한 일반론 (구체적 행동·환경으로)',
 ];
 
 function factsFor(all: PregnancyMustUseFact[], sectionId: PregnancyNarrativeSectionId): PregnancyMustUseFact[] {
@@ -79,13 +81,14 @@ function buildMechanismPlan(facts: PregnancyMustUseFact[]): PregnancyNarrativePl
     sectionGoal: '엄마와 아이의 일간·오행·용신/기신·합충이 어떻게 만나는지 원인→결과→현실 장면→태교 조언 흐름으로 설명한다.',
     mustUseFacts: factsFor(facts, 'motherChildMechanism'),
     requiredBeats: [
+      '먼저 엄마 사주의 일간·신강/신약·용신을 한 번 짚어 "왜 이런 해석이 나오는지" 근거를 보여줄 것 (용어는 즉시 쉬운 말로).',
       '엄마와 아이 일간이 만나는 기본 결 (누가 더 주고 받는지).',
       '오행 보완 — 서로 채우는지 / 과한 결을 더 자극하는지.',
       '용신/기신 — 엄마에게 편한 기운인지 부담스러운 기운인지.',
       '합·충·형·파·해는 나열 금지, "끌어당기는 결 / 조정이 필요한 결" 균형으로 한 문장.',
       '각 근거 끝에 "그래서 태교에서는 이렇게" 한 줄씩 자연스럽게 연결.',
     ],
-    avoidRepeating: ['궁합 점수', '상극이라 나쁘다', '상생이라 좋다'],
+    avoidRepeating: ['궁합 점수', '상극이라 나쁘다', '상생이라 좋다', '옅기 쉬운 결', '긍정적인 에너지'],
     avoidPatterns: COMMON_AVOID_PATTERNS,
     toneHints: [
       ...COMMON_TONE,
@@ -95,9 +98,9 @@ function buildMechanismPlan(facts: PregnancyMustUseFact[]): PregnancyNarrativePl
     styleExamples: {
       badExample: '엄마와 아기는 일간이 상극이라 기운이 부딪혀서 안 좋습니다.',
       goodExample:
-        '엄마의 기운은 아이에게 안정된 바탕을 내어주기 쉬운 결이고, 아이 예정일 기운은 거기에 잔잔한 생기를 더해주는 흐름이에요. ' +
-        '엄마에게 옅기 쉬운 결을 아이 쪽 기운이 부드럽게 채워주는 자리도 보여서, 태교에서는 그 결을 억지로 끌어올리기보다 편안하게 곁에 두는 정도가 잘 맞습니다.',
-      transformationRule: '명리 근거 → 쉬운 뜻 → 엄마-아이 방식 → 태교 조언. 합충 나열·상생상극 단정 금지.',
+        '엄마 사주는 일간 기운이 강한 편이라 혼자 끌어안기 쉬운 구조이고, 마음을 풀어주는 수 기운이 도움이 되는 용신으로 작용합니다. 그래서 엄마의 기운은 아이에게 안정된 바탕을 내어주기 쉬운 결이고, 아이 예정일 기운은 거기에 잔잔한 생기를 더해주는 흐름이에요. ' +
+        '엄마에게 약하게 흐르기 쉬운 기운을 아이 쪽 기운이 부드럽게 채워주는 자리도 보여서, 태교에서는 그 기운을 억지로 끌어올리기보다 편안하게 곁에 두는 정도가 잘 맞습니다.',
+      transformationRule: '엄마 일간·신강신약·용신 근거 → 쉬운 뜻 → 엄마-아이 방식 → 태교 조언. 합충 나열·상생상극 단정 금지. "X 결과" 같은 표현 금지(반드시 "X 기운").',
     },
     maxTokens: PREGNANCY_NARRATIVE_SECTION_MAX_TOKENS.motherChildMechanism,
     repairHints: ['일간·오행·용신·합충 결이 본문에 모두 한 번씩.', '영문 오행 키 0건.', '상생/상극 단정 0건.'],
@@ -111,8 +114,8 @@ function buildComfortPlan(facts: PregnancyMustUseFact[]): PregnancyNarrativePlan
     sectionGoal: '엄마가 임신 기간에 마음이 편안해지는 방식(신강신약·용신·감정 리듬·도움 요청)을 짚는다. 의료 조언 금지.',
     mustUseFacts: factsFor(facts, 'motherComfortRhythm'),
     requiredBeats: [
-      '엄마가 혼자 끌어안기 쉬운지 / 기대도 되는지의 마음 리듬.',
-      '어떤 환경·결에서 마음이 안정되는지 (용신 기반, 환경·정서 차원).',
+      '엄마의 신강/신약을 쉬운 말로 풀어 "혼자 끌어안기 쉬운지 / 기대도 되는지"의 마음 리듬으로 연결.',
+      '엄마 용신/희신(도움이 되는 기운)·기신(부담이 되는 기운)을 환경·정서 차원으로 — 어떤 결에서 마음이 안정되는지.',
       '무리하기 쉬운 패턴(완벽주의·불안·정보 과부하)을 부드럽게.',
       '도움을 요청하는 것이 약점이 아니라는 방향.',
     ],

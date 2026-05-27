@@ -86,7 +86,24 @@ function buildMechanismFacts(b: PregnancyAnalysisBundle): PregnancyMustUseFact[]
     cc.destructions.length ? `파 ${cc.destructions.length}` : '',
     cc.harms.length ? `해 ${cc.harms.length}` : '',
   ]);
+  const m = b.mother.coreAnalysis;
+  const momDmKo = b.dayMasterRelation.motherElementKo;
+  const momStrengthKo = STRENGTH_KO[m.dayMasterStrength.level] ?? m.dayMasterStrength.level;
+  const momUsefulKo = m.usefulGod.primaryUseful.type === 'element'
+    ? ELEMENT_KO[m.usefulGod.primaryUseful.value as Element]
+    : String(m.usefulGod.primaryUseful.value);
   return [
+    {
+      // 전문성 근거: 엄마 사주의 일간·신강/신약·용신 (왜 이런 해석이 나오는지의 출발점)
+      id: 'mech-mother',
+      source: 'mother',
+      ownerSection: 'motherChildMechanism',
+      fact: `엄마 사주 기준: 일간 ${momDmKo} 기운 · ${momStrengthKo} · 용신 ${momUsefulKo}`,
+      plainMeaning: '엄마 사주의 중심(일간), 기운의 세기(신강/신약), 도움이 되는 기운(용신)이 이 해석의 출발점이에요.',
+      narrativeHint: '엄마 사주의 일간·신강/신약·용신을 한 번 짚어 "왜 이런 해석이 나오는지" 근거를 보여줄 것. 용어는 즉시 쉬운 말로 풀이.',
+      matchTokens: ['일간', '용신'],
+      role: 'main',
+    },
     {
       id: 'mech-dayMaster',
       source: 'dayMasterRelation',

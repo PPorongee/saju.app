@@ -41,9 +41,10 @@ export function sanitizeBirthHealthAndGender(text: string): string {
   // 조산/유산
   out = out.replace(/(?:조산|유산|早産|流産)\s*(?:위험|가능성|우려)?(?:가\s*있습니다|이\s*있습니다|할\s*수\s*있습니다|합니다)?/g, '관련 건강 사항은 담당 의료진의 안내를 따르세요');
   out = out.replace(/(?:조산|유산)(?:이|가)?\s*(?:걱정|우려)(?:됩니다|돼요)/g, '관련 건강 사항은 담당 의료진의 안내를 따르세요');
-  // 성별 예측
-  out = out.replace(/(?:아기|아이|태아)(?:는|가)?\s*(?:아마)?\s*(?:아들|딸|남자아이|여자아이)(?:입니다|일\s*거예요|예요|이에요|로\s*보입니다)/g, '성별은 사주로 알 수 없는 부분이에요');
+  // 성별 예측 (명시 + 암시: 남아/여아, 공주님/왕자님)
+  out = out.replace(/(?:아기|아이|태아)(?:는|가)?\s*(?:아마)?\s*(?:아들|딸|남자아이|여자아이|남아|여아)(?:입니다|일\s*거예요|예요|이에요|로\s*보입니다)/g, '성별은 사주로 알 수 없는 부분이에요');
   out = out.replace(/성별(?:은|이)?\s*[가-힣\s]*?(?:아들|딸|남아|여아)[가-힣\s]*?(?:입니다|예요|로\s*보입니다)/g, '성별은 사주로 알 수 없는 부분이에요');
+  out = out.replace(/공주님?|왕자님?/g, '아이');
   return out;
 }
 
@@ -99,6 +100,24 @@ export function sanitizeFatalism(text: string): string {
 }
 
 // ============================================================
+// 6b) sanitizeAwkwardPhrasing — 신뢰도 떨어뜨리는 어색한 표현 교정
+//     · 오행 + "결과" → 오행 + "기운"  (예: "화 결과" → "화 기운")
+//     · "옅기 쉬운" → "약하게 흐르기 쉬운"
+//     · "강한 편의 기운" → "기운이 강한 편"
+// ============================================================
+export function sanitizeAwkwardPhrasing(text: string): string {
+  let out = text;
+  // 오행 단독 토큰(앞이 공백/괄호/문장부호일 때) + 결과 → 기운. "변화 결과" 오탐 방지.
+  out = out.replace(/(^|[\s(>·,])([목화토금수])\s*결과(?![가-힣])/g, '$1$2 기운');
+  out = out.replace(/옅기\s*쉬운/g, '약하게 흐르기 쉬운');
+  out = out.replace(/강한\s*편의\s*기운/g, '기운이 강한 편');
+  out = out.replace(/여린\s*편의\s*기운/g, '기운이 여린 편');
+  // 막연한 일반론 → 덜 진부한 표현 (의미 손실 최소)
+  out = out.replace(/긍정적인?\s*에너지/g, '밝은 기운');
+  return out;
+}
+
+// ============================================================
 // 7) sanitizeEnglishElementKeys
 // ============================================================
 export function sanitizeEnglishElementKeys(text: string): string {
@@ -150,6 +169,7 @@ export function applyPregnancyFinalSanitizers(text: string): string {
   out = sanitizeDeterministicChildPersonality(out);
   out = sanitizeMotherBlame(out);
   out = sanitizeFatalism(out);
+  out = sanitizeAwkwardPhrasing(out);
   out = sanitizeValidatorLogLeak(out);
   out = out.replace(/[ \t]{2,}/g, ' ').replace(/ +([,.!?])/g, '$1').replace(/\n{3,}/g, '\n\n');
   return out.trim();

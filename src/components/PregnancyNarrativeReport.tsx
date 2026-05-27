@@ -225,7 +225,7 @@ function BabyNamesView({ report }: { report: PregnancyReport }) {
   return (
     <ProseSection title={`${PREGNANCY_NARRATIVE_SECTION_TITLES.babyNames}`}>
       <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: '0 0 14px', lineHeight: 1.6 }}>
-        아래는 이름 후보 제안이에요. 확정된 이름이 아니라, 엄마와 아이의 기운에 어울리는 태명 후보예요.
+        아래는 엄마와 아이의 기운에 어울리는 가벼운 태명 후보예요. 공식 이름이 아니라 부르기 편한 애칭이에요.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {cands.map((c, i) => (
@@ -340,7 +340,7 @@ function ReportBody({ report }: { report: PregnancyReport }) {
       )}
 
       <BabyNamesView report={report} />
-      <CandidateDateCta />
+      {/* 후보일 비교 CTA: 미구현 기능 노출로 인한 혼란 방지 위해 숨김 (P10+ 실제 구현 시 재노출) */}
       <EvidenceFold report={report} />
     </div>
   );
