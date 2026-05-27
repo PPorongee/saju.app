@@ -15,6 +15,7 @@ import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer
 import CompatV4Report, { type CompatV4ResultApi } from '@/components/CompatV4Report';
 import type { BirthInput as CompatBirthInputV4 } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType as RelationshipTypeV4 } from '@/domain/saju/compatibility/compatibilityTypes';
+import PregnancyNarrativeReport from '@/components/PregnancyNarrativeReport';
 import { lunarToSolar } from '@/lib/lunar-solar';
 import { t, Lang, getTodayHeroLine } from '@/lib/i18n';
 import { saveReadingToSession, loadReadingFromSession, clearReadingFromSession } from '@/lib/reading-storage';
@@ -603,6 +604,10 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   }, [compatKey]);
   const [pregResult, setPregResult] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
+  // 임산부 narrative V4 — flag on일 때만 새 경로(기존 /api/saju·점수카드 미사용). 기본 off → 기존 모드 그대로.
+  const PREGNANCY_NARRATIVE_UI_ENABLED = process.env.NEXT_PUBLIC_PREGNANCY_NARRATIVE_UI_ENABLED === 'true';
+  const [pregNarrativeRequested, setPregNarrativeRequested] = useState(false);
+  const [pregDueHour, setPregDueHour] = useState<number>(-1);
 
   function safeSetItem(key: string, value: string) {
     if (storageConsent) localStorage.setItem(key, value);
@@ -4098,6 +4103,24 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
     const data = pregResult ? (() => { try { return JSON.parse(pregResult); } catch { return null; } })() : null;
 
+    // 임산부 narrative V4 입력 (flag on 경로 전용 — 기존 calcSaju/pregResult와 완전 분리)
+    const _pad2 = (n: number) => String(n).padStart(2, '0');
+    const _toTime = (h: number) => (h >= 0 && h <= 23 ? `${_pad2(h)}:00` : undefined);
+    const momInputV4: CompatBirthInputV4 = {
+      name: pregData.name || '엄마', gender: 'female', calendarType: 'solar',
+      birthDate: `${pregData.year}-${_pad2(pregData.month)}-${_pad2(pregData.day)}`,
+      birthTime: _toTime(pregData.hour),
+      birthTimeConfidence: pregData.hour >= 0 ? 'exact' : 'unknown',
+      timezone: 'Asia/Seoul',
+    };
+    const babyDueInputV4: CompatBirthInputV4 = {
+      name: '아기', gender: 'unknown', calendarType: 'solar',
+      birthDate: `${pregData.dueYear}-${_pad2(pregData.dueMonth)}-${_pad2(pregData.dueDay)}`,
+      birthTime: _toTime(pregDueHour),
+      birthTimeConfidence: pregDueHour >= 0 ? 'approximate' : 'unknown',
+      timezone: 'Asia/Seoul',
+    };
+
     return (
       <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
         <button
@@ -4183,13 +4206,47 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           </div>
         </div>
 
-        <div style={{ marginTop: '20px' }}>
-          <button className="btn btn-glow btn-full" style={{ background: 'linear-gradient(135deg,#E91E8C,#FF6FB7)', boxShadow: '0 4px 20px rgba(233,30,140,0.3)' }} onClick={runPregnancyCompat}>
-            {t('energyAnalysis', lang)}
-          </button>
-        </div>
+        {/* 임산부 narrative V4 — 선택 시간 입력 (flag on일 때만 노출, 기존 폼 불변) */}
+        {PREGNANCY_NARRATIVE_UI_ENABLED && !pregNarrativeRequested && (
+          <div className="card" style={{ background: 'rgba(255,240,245,0.08)', border: '1px solid rgba(233,30,140,0.2)', borderRadius: '20px', padding: '20px', marginTop: '16px' }}>
+            <div className="input-group">
+              <label>엄마 출생시간 (선택 · 모르면 비워두세요)</label>
+              <select value={pregData.hour} onChange={e => setPregData(p => ({ ...p, hour: parseInt(e.target.value) }))}>
+                <option value={-1}>모름</option>
+                {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
+              </select>
+            </div>
+            <div className="input-group">
+              <label>아기 예정시간 또는 예정 시간대 (선택 · 모르면 비워두세요)</label>
+              <select value={pregDueHour} onChange={e => setPregDueHour(parseInt(e.target.value))}>
+                <option value={-1}>모름</option>
+                {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
+              </select>
+              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px', lineHeight: 1.5 }}>실제 출생일/시간에 따라 달라질 수 있어요. 출산 시간을 정하라는 의미가 아니에요.</p>
+            </div>
+          </div>
+        )}
 
-        {data && !data.type && (
+        {!pregNarrativeRequested && (
+          <div style={{ marginTop: '20px' }}>
+            <button className="btn btn-glow btn-full" style={{ background: 'linear-gradient(135deg,#E91E8C,#FF6FB7)', boxShadow: '0 4px 20px rgba(233,30,140,0.3)' }} onClick={() => { if (PREGNANCY_NARRATIVE_UI_ENABLED) { setPregNarrativeRequested(true); } else { runPregnancyCompat(); } }}>
+              {t('energyAnalysis', lang)}
+            </button>
+          </div>
+        )}
+
+        {/* flag on: 새 narrative 경로만 렌더 (기존 /api/saju·점수카드 미사용) */}
+        {PREGNANCY_NARRATIVE_UI_ENABLED && pregNarrativeRequested && (
+          <PregnancyNarrativeReport
+            momInput={momInputV4}
+            babyDueInput={babyDueInputV4}
+            lang={lang === 'en' ? 'en' : 'ko'}
+            onRestart={() => { setPregNarrativeRequested(false); }}
+          />
+        )}
+
+        {/* 기존 모드 결과 (flag off 경로) — flag on narrative 요청 시 숨김 */}
+        {!(PREGNANCY_NARRATIVE_UI_ENABLED && pregNarrativeRequested) && data && !data.type && (
           <>
             <div className="card" style={{ background: 'rgba(255,240,245,0.08)', border: '1px solid rgba(233,30,140,0.15)', borderRadius: '20px', marginTop: '20px', padding: '24px', textAlign: 'center' }}>
               <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>{t('pregMomBabyScore', lang)}</p>
