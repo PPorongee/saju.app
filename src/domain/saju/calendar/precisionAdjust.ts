@@ -83,10 +83,18 @@ export function prepareCalculation(args: PrepareCalculationArgs): PrepareCalcula
     applyCorrection: placeKnown && hourKnown,
   });
 
-  if (!placeKnown) warnings.push('출생지역 미입력 → 표준시(Asia/Seoul) 기준, 태양시 보정 미적용');
+  const placeIdProvided = !!args.birthPlaceId;
+  if (!placeKnown && placeIdProvided) {
+    warnings.push('유효하지 않은 출생지역 id → 표준시(Asia/Seoul) fallback, 태양시 보정 미적용');
+  } else if (!placeKnown) {
+    warnings.push('출생지역 미입력 → 표준시(Asia/Seoul) 기준, 태양시 보정 미적용');
+  }
   if (!hourKnown) warnings.push('출생시간 미상 → 태양시 보정 미적용, 시주는 정오 가정 fallback');
   if (correction.dstApplied) warnings.push('서머타임(DST) 구간 → 표준시 offset 보정 반영');
   if (placeKnown && place!.precision === 'country') warnings.push('국가 단위 fallback → 대표 좌표/표준시로 근사');
+  if (tz === 'Asia/Seoul' && solarYear < 1961) {
+    warnings.push('1961년 이전 한국 표준시는 tzdata 버전에 의존 — 근사값(historical offset approximation)');
+  }
 
   // adjustedClock: 시간 known이면 보정 결과(보정 없으면 원본), 시간 unknown이면 null
   const adjustedClock: CivilDateTime | null = hourKnown ? correction.correctedClock : null;
