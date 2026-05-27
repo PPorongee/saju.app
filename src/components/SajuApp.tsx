@@ -13,6 +13,7 @@ import { getRelevantRefs } from '@/lib/saju-ref-selector';
 import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
 import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer';
 import CompatV4Report, { type CompatV4ResultApi } from '@/components/CompatV4Report';
+import PlaceSelect, { birthPlacePayloadPatch } from '@/components/PlaceSelect';
 import type { BirthInput as CompatBirthInputV4 } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType as RelationshipTypeV4 } from '@/domain/saju/compatibility/compatibilityTypes';
 import PregnancyNarrativeReport from '@/components/PregnancyNarrativeReport';
@@ -448,6 +449,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const [exactHour, setExactHour] = useState(-1);
   const [exactMinute, setExactMinute] = useState(0);
 
+  /* Precision V1 (P7) — 출생지역. '' = 지역 모름. flag off면 UI 미노출 + payload 미포함. */
+  const [birthPlaceId, setBirthPlaceId] = useState<string>('');
+
   /**
    * Maps exact birth time to 시주 branch index (0-11).
    * Standard Korean 만세력 convention: each 시 is exactly 2 hours.
@@ -606,6 +610,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const [isTranslating, setIsTranslating] = useState(false);
   // 임산부 narrative V4 — flag on일 때만 새 경로(기존 /api/saju·점수카드 미사용). 기본 off → 기존 모드 그대로.
   const PREGNANCY_NARRATIVE_UI_ENABLED = process.env.NEXT_PUBLIC_PREGNANCY_NARRATIVE_UI_ENABLED === 'true';
+  // Precision V1 (P7) — 출생지역 입력 UI. flag off(기본) → 기존 입력 폼/페이로드 그대로(byte-identical).
+  const SAJU_PRECISION_INPUTS_ENABLED = process.env.NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED === 'true';
   const [pregNarrativeRequested, setPregNarrativeRequested] = useState(false);
   const [pregDueHour, setPregDueHour] = useState<number>(-1);
 
@@ -914,6 +920,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     timezone: 'Asia/Seoul'; relationshipStatus: typeof v4Ctx.relationshipStatus;
     hasChildren: boolean | 'unknown'; occupation: string | undefined;
     currentConcerns: typeof v4Ctx.concerns;
+    // Precision V1 (P7) — optional. flag off면 키 자체가 없음(기존과 동일). 서버가 SAJU_CALC_MODE로 소비.
+    birthPlaceId?: string;
   };
   async function fetchSajuReadingV4(signal?: AbortSignal, overrideInput?: V4InputShape) {
     setIsLoading(true);
@@ -941,6 +949,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         hasChildren: (v4Ctx.hasChildren === 'true' ? true : v4Ctx.hasChildren === 'false' ? false : 'unknown') as boolean | 'unknown',
         occupation: v4Ctx.occupation || undefined,
         currentConcerns: v4Ctx.concerns,
+        // flag off OR 지역 미선택이면 {} → 키 미포함(기존 payload와 byte-identical).
+        ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, birthPlaceId),
       };
     }
 
@@ -1913,6 +1923,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               <p className="exact-time-note">{t('exactTimeNote', lang)}</p>
             </div>
           </div>
+          {SAJU_PRECISION_INPUTS_ENABLED && (
+            <PlaceSelect value={birthPlaceId} onChange={setBirthPlaceId} lang={lang === 'en' ? 'en' : 'ko'} />
+          )}
         </div>
         <div style={{
           background: 'rgba(243, 160, 146, 0.06)',
