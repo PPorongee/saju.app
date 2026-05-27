@@ -14,6 +14,7 @@ import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
 import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer';
 import CompatV4Report, { type CompatV4ResultApi } from '@/components/CompatV4Report';
 import PlaceSelect, { birthPlacePayloadPatch } from '@/components/PlaceSelect';
+import { resolveBirthTimeFields, pregnancySijuBirthTimeFields } from '@/lib/birthTimePayload';
 import type { BirthInput as CompatBirthInputV4 } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType as RelationshipTypeV4 } from '@/domain/saju/compatibility/compatibilityTypes';
 import PregnancyNarrativeReport from '@/components/PregnancyNarrativeReport';
@@ -932,18 +933,18 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     if (overrideInput) {
       v4Input = overrideInput;
     } else {
-      const birthTime = useExactTime && exactHour >= 0
-        ? `${String(exactHour).padStart(2, '0')}:${String(exactMinute).padStart(2, '0')}`
-        : userData.hour >= 0 ? `${String((userData.hour * 2) || 0).padStart(2, '0')}:00` : undefined;
-      const birthTimeConfidence = (userData.hour < 0 && !useExactTime) ? 'unknown'
-        : useExactTime ? 'exact' : 'approximate';
+      // 출생시간 payload 통일 헬퍼 (정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→undefined+unknown).
+      const { birthTime, birthTimeConfidence } = resolveBirthTimeFields({
+        sijuIndex: userData.hour,
+        exact: { use: useExactTime, hour: exactHour, min: exactMinute },
+      });
       v4Input = {
         name: userData.name || '익명',
         gender: (userData.gender === 'm' ? 'male' : userData.gender === 'f' ? 'female' : 'unknown') as 'male' | 'female' | 'unknown',
         calendarType: (isLunar ? 'lunar' : 'solar') as 'lunar' | 'solar',
         birthDate: `${userData.year}-${String(userData.month).padStart(2, '0')}-${String(userData.day).padStart(2, '0')}`,
         birthTime,
-        birthTimeConfidence: birthTimeConfidence as 'exact' | 'approximate' | 'unknown',
+        birthTimeConfidence,
         timezone: 'Asia/Seoul' as const,
         relationshipStatus: v4Ctx.relationshipStatus,
         hasChildren: (v4Ctx.hasChildren === 'true' ? true : v4Ctx.hasChildren === 'false' ? false : 'unknown') as boolean | 'unknown',
@@ -2964,10 +2965,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         gender: compatPerson1.gender === 'm' ? 'male' : compatPerson1.gender === 'f' ? 'female' : 'unknown',
         calendarType: compatPerson1.isLunar ? 'lunar' : 'solar',
         birthDate: `${compatPerson1.year}-${String(compatPerson1.month).padStart(2,'0')}-${String(compatPerson1.day).padStart(2,'0')}`,
-        birthTime: compatPerson1.hour >= 0
-          ? `${String(compatPerson1.hour).padStart(2,'0')}:${String(compatExact1.use ? compatExact1.min : 0).padStart(2,'0')}`
-          : undefined,
-        birthTimeConfidence: compatPerson1.hour >= 0 ? 'exact' : 'unknown',
+        // 시진 인덱스를 HH로 직접 쓰지 않음: 정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→unknown
+        ...resolveBirthTimeFields({ sijuIndex: compatPerson1.hour, exact: compatExact1 }),
         timezone: 'Asia/Seoul',
       };
       const cnInputB: CompatBirthInputV4 = {
@@ -2975,10 +2974,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         gender: compatPerson2.gender === 'm' ? 'male' : compatPerson2.gender === 'f' ? 'female' : 'unknown',
         calendarType: compatPerson2.isLunar ? 'lunar' : 'solar',
         birthDate: `${compatPerson2.year}-${String(compatPerson2.month).padStart(2,'0')}-${String(compatPerson2.day).padStart(2,'0')}`,
-        birthTime: compatPerson2.hour >= 0
-          ? `${String(compatPerson2.hour).padStart(2,'0')}:${String(compatExact2.use ? compatExact2.min : 0).padStart(2,'0')}`
-          : undefined,
-        birthTimeConfidence: compatPerson2.hour >= 0 ? 'exact' : 'unknown',
+        // 시진 인덱스를 HH로 직접 쓰지 않음: 정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→unknown
+        ...resolveBirthTimeFields({ sijuIndex: compatPerson2.hour, exact: compatExact2 }),
         timezone: 'Asia/Seoul',
       };
       const cnRelType = cnTypeMap[compatRelType] || 'dating';
@@ -3019,10 +3016,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         gender: compatPerson1.gender === 'm' ? 'male' : compatPerson1.gender === 'f' ? 'female' : 'unknown',
         calendarType: compatPerson1.isLunar ? 'lunar' : 'solar',
         birthDate: `${compatPerson1.year}-${String(compatPerson1.month).padStart(2,'0')}-${String(compatPerson1.day).padStart(2,'0')}`,
-        birthTime: compatPerson1.hour >= 0
-          ? `${String(compatPerson1.hour).padStart(2,'0')}:${String(compatExact1.use ? compatExact1.min : 0).padStart(2,'0')}`
-          : undefined,
-        birthTimeConfidence: compatPerson1.hour >= 0 ? 'exact' : 'unknown',
+        // 시진 인덱스를 HH로 직접 쓰지 않음: 정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→unknown
+        ...resolveBirthTimeFields({ sijuIndex: compatPerson1.hour, exact: compatExact1 }),
         timezone: 'Asia/Seoul',
       };
       const inputB: CompatBirthInputV4 = {
@@ -3030,10 +3025,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         gender: compatPerson2.gender === 'm' ? 'male' : compatPerson2.gender === 'f' ? 'female' : 'unknown',
         calendarType: compatPerson2.isLunar ? 'lunar' : 'solar',
         birthDate: `${compatPerson2.year}-${String(compatPerson2.month).padStart(2,'0')}-${String(compatPerson2.day).padStart(2,'0')}`,
-        birthTime: compatPerson2.hour >= 0
-          ? `${String(compatPerson2.hour).padStart(2,'0')}:${String(compatExact2.use ? compatExact2.min : 0).padStart(2,'0')}`
-          : undefined,
-        birthTimeConfidence: compatPerson2.hour >= 0 ? 'exact' : 'unknown',
+        // 시진 인덱스를 HH로 직접 쓰지 않음: 정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→unknown
+        ...resolveBirthTimeFields({ sijuIndex: compatPerson2.hour, exact: compatExact2 }),
         timezone: 'Asia/Seoul',
       };
       const relationshipType = v4TypeMap[compatRelType] || 'dating';
@@ -4121,19 +4114,18 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     // calculateAnalysisOnly가 birthTime "HH:mm"을 다시 시진으로 버킷팅하므로, 각 시진의
     // 정중앙 시각을 전달해 왕복 일치 보장 (자시 0 → 00:30, 그 외 k → 2k:00).
     const _pad2 = (n: number) => String(n).padStart(2, '0');
-    const _toTime = (siju: number) => (siju < 0 || siju > 11 ? undefined : siju === 0 ? '00:30' : `${_pad2(siju * 2)}:00`);
     const momInputV4: CompatBirthInputV4 = {
       name: pregData.name || '엄마', gender: 'female', calendarType: 'solar',
       birthDate: `${pregData.year}-${_pad2(pregData.month)}-${_pad2(pregData.day)}`,
-      birthTime: _toTime(pregData.hour),
-      birthTimeConfidence: pregData.hour >= 0 ? 'exact' : 'unknown',
+      // 엄마: 시진 grid만(분 단위 정확입력 UI 없음) → 대표값 + approximate (exact 아님)
+      ...pregnancySijuBirthTimeFields(pregData.hour),
       timezone: 'Asia/Seoul',
     };
     const babyDueInputV4: CompatBirthInputV4 = {
       name: '아기', gender: 'unknown', calendarType: 'solar',
       birthDate: `${pregData.dueYear}-${_pad2(pregData.dueMonth)}-${_pad2(pregData.dueDay)}`,
-      birthTime: _toTime(pregDueHour),
-      birthTimeConfidence: pregDueHour >= 0 ? 'approximate' : 'unknown',
+      // 아기 예정: 시진 기반 → 대표값 + approximate (기존과 동일)
+      ...pregnancySijuBirthTimeFields(pregDueHour),
       timezone: 'Asia/Seoul',
     };
 
@@ -4433,11 +4425,10 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       appMode === 'yearly' &&
       sajuResult
     ) {
-      const birthTimeV4 = useExactTime && exactHour >= 0
-        ? `${String(exactHour).padStart(2, '0')}:${String(exactMinute).padStart(2, '0')}`
-        : userData.hour >= 0 ? `${String((userData.hour * 2) || 0).padStart(2, '0')}:00` : undefined;
-      const birthTimeConfidenceV4: 'exact' | 'approximate' | 'unknown' =
-        (userData.hour < 0 && !useExactTime) ? 'unknown' : useExactTime ? 'exact' : 'approximate';
+      const { birthTime: birthTimeV4, birthTimeConfidence: birthTimeConfidenceV4 } = resolveBirthTimeFields({
+        sijuIndex: userData.hour,
+        exact: { use: useExactTime, hour: exactHour, min: exactMinute },
+      });
       const yearlyV4Input: YearlyV4Input = {
         birth: {
           name: userData.name || '익명',
