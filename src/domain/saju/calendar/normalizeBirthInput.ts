@@ -11,6 +11,8 @@
 // 사용자 raw 입력 — 외부 spec 그대로 (UI/API가 이 형태로 전달)
 // ============================================================
 
+import type { CalculationMode } from './calculationMeta';
+
 export type CalendarType = 'solar' | 'lunar';
 
 export type Gender = 'male' | 'female' | 'unknown';
@@ -48,7 +50,12 @@ export interface BirthInput {
   birthTime?: string;
   birthTimeConfidence: BirthTimeConfidence;
   birthPlace?: string;
-  timezone: 'Asia/Seoul';
+  /** precision-v1: 출생지역 식별자 (placeResolver가 lat/lng/tz로 resolve). 미입력이면 태양시 보정 없음. */
+  birthPlaceId?: string;
+  /** 'Asia/Seoul'(legacy 고정). precision-v1에서 해외 IANA timezone 확장 예정. */
+  timezone: string;
+  /** 계산 모드. 미지정/'legacy'면 기존 동작 그대로(byte-identical). 'precision-v1'은 opt-in. */
+  calculationMode?: CalculationMode;
   relationshipStatus?: RelationshipStatus;
   hasChildren?: boolean | 'unknown';
   occupation?: string;

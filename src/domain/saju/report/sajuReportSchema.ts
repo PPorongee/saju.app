@@ -12,6 +12,7 @@ import type {
   BirthTimeConfidence,
 } from '../calendar/normalizeBirthInput';
 import type { RuleConfig } from '../rules/ruleConfig';
+import type { CalculationMeta } from '../calendar/calculationMeta';
 
 // ============================================================
 // 십성
@@ -477,6 +478,8 @@ export interface PersonalSajuGptInput {
     mustRespectUserContext: true;
     mustExplainTermsSimply: true;
   };
+  /** precision-v1 계산 메타 (optional). legacy 경로에서는 미설정 → 출력 JSON 동일. P5에서 배선. */
+  calculationMeta?: CalculationMeta;
 }
 
 // ============================================================
