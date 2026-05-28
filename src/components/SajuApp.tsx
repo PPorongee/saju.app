@@ -501,6 +501,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const [compatPerson2, setCompatPerson2] = useState<{ name: string; year: number; month: number; day: number; hour: number; isLunar: boolean; gender: 'm' | 'f' | '' }>({ name: '', year: 1995, month: 1, day: 1, hour: -1, isLunar: false, gender: '' });
   const [compatExact1, setCompatExact1] = useState({ use: false, hour: -1, min: 0 });
   const [compatExact2, setCompatExact2] = useState({ use: false, hour: -1, min: 0 });
+  // P7.3: 궁합 A/B 출생지역. '' = 지역 모름. flag off면 미사용 + payload/compatKey 무변경.
+  const [compatPlaceId1, setCompatPlaceId1] = useState<string>('');
+  const [compatPlaceId2, setCompatPlaceId2] = useState<string>('');
 
   /* Pregnancy state */
   const [pregData, setPregData] = useState({ name: '', year: 1995, month: 1, day: 1, hour: -1, dueYear: new Date().getFullYear(), dueMonth: 1, dueDay: 1 });
@@ -602,7 +605,10 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   }
   // Auto-reset when person info or relationship type changes (useEffect to avoid render-time setState)
   const compatKey = [compatPerson1.name, compatPerson1.year, compatPerson1.month, compatPerson1.day, compatPerson1.hour, compatPerson1.isLunar,
-    compatPerson2.name, compatPerson2.year, compatPerson2.month, compatPerson2.day, compatPerson2.hour, compatPerson2.isLunar, compatRelType].join('|');
+    compatPerson2.name, compatPerson2.year, compatPerson2.month, compatPerson2.day, compatPerson2.hour, compatPerson2.isLunar, compatRelType].join('|')
+    // P7.3: flag on일 때만 placeId를 키에 반영(지역 변경 시 결과 재생성). flag off면 suffix '' → 기존 키와 byte-identical.
+    // (SAJU_PRECISION_INPUTS_ENABLED const는 이 지점보다 뒤에 선언되어 TDZ가 되므로 env를 직접 읽는다.)
+    + (process.env.NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED === 'true' ? `|${compatPlaceId1}|${compatPlaceId2}` : '');
   useEffect(() => {
     resetCompatResult();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2968,6 +2974,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         // 시진 인덱스를 HH로 직접 쓰지 않음: 정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→unknown
         ...resolveBirthTimeFields({ sijuIndex: compatPerson1.hour, exact: compatExact1 }),
         timezone: 'Asia/Seoul',
+        // P7.3: flag off OR 지역 미선택이면 {} → 키 미포함(기존 payload byte-identical). calculationMode 미주입.
+        ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, compatPlaceId1),
       };
       const cnInputB: CompatBirthInputV4 = {
         name: compatPerson2.name || (lang === 'en' ? 'Partner' : '상대'),
@@ -2977,6 +2985,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         // 시진 인덱스를 HH로 직접 쓰지 않음: 정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→unknown
         ...resolveBirthTimeFields({ sijuIndex: compatPerson2.hour, exact: compatExact2 }),
         timezone: 'Asia/Seoul',
+        // P7.3: flag off OR 지역 미선택이면 {} → 키 미포함(기존 payload byte-identical). calculationMode 미주입.
+        ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, compatPlaceId2),
       };
       const cnRelType = cnTypeMap[compatRelType] || 'dating';
       return (
@@ -3019,6 +3029,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         // 시진 인덱스를 HH로 직접 쓰지 않음: 정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→unknown
         ...resolveBirthTimeFields({ sijuIndex: compatPerson1.hour, exact: compatExact1 }),
         timezone: 'Asia/Seoul',
+        // P7.3: flag off OR 지역 미선택이면 {} → 키 미포함(기존 payload byte-identical). calculationMode 미주입.
+        ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, compatPlaceId1),
       };
       const inputB: CompatBirthInputV4 = {
         name: compatPerson2.name || (lang === 'en' ? 'Partner' : '상대'),
@@ -3028,6 +3040,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         // 시진 인덱스를 HH로 직접 쓰지 않음: 정확입력→"HH:mm"+exact / 시진→대표값+approximate / 모름→unknown
         ...resolveBirthTimeFields({ sijuIndex: compatPerson2.hour, exact: compatExact2 }),
         timezone: 'Asia/Seoul',
+        // P7.3: flag off OR 지역 미선택이면 {} → 키 미포함(기존 payload byte-identical). calculationMode 미주입.
+        ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, compatPlaceId2),
       };
       const relationshipType = v4TypeMap[compatRelType] || 'dating';
 
@@ -3307,6 +3321,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 <p className="exact-time-note">{t('exactTimeNote', lang)}</p>
               </div>
             </div>
+            {SAJU_PRECISION_INPUTS_ENABLED && (
+              <PlaceSelect value={compatPlaceId1} onChange={setCompatPlaceId1} lang={lang === 'en' ? 'en' : 'ko'} id="compat1-place-select" />
+            )}
           </div>
         )}
 
@@ -3444,6 +3461,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               <p className="exact-time-note">{t('exactTimeNote', lang)}</p>
             </div>
           </div>
+          {SAJU_PRECISION_INPUTS_ENABLED && (
+            <PlaceSelect value={compatPlaceId2} onChange={setCompatPlaceId2} lang={lang === 'en' ? 'en' : 'ko'} id="compat2-place-select" />
+          )}
         </div>
 
         <div className="orot-card" style={{ marginTop: 12, marginBottom: 12, padding: 22 }}>
