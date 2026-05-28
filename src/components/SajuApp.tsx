@@ -621,6 +621,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const SAJU_PRECISION_INPUTS_ENABLED = process.env.NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED === 'true';
   const [pregNarrativeRequested, setPregNarrativeRequested] = useState(false);
   const [pregDueHour, setPregDueHour] = useState<number>(-1);
+  // P7.4: 임산부 엄마 출생지역. '' = 지역 모름. 아기 예정엔 미적용. flag off면 미사용 + payload 무변경.
+  const [pregMomPlaceId, setPregMomPlaceId] = useState<string>('');
 
   function safeSetItem(key: string, value: string) {
     if (storageConsent) localStorage.setItem(key, value);
@@ -4140,6 +4142,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       // 엄마: 시진 grid만(분 단위 정확입력 UI 없음) → 대표값 + approximate (exact 아님)
       ...pregnancySijuBirthTimeFields(pregData.hour),
       timezone: 'Asia/Seoul',
+      // P7.4: flag off OR 지역 미선택이면 {} → 키 미포함(기존 payload byte-identical). calculationMode 미주입.
+      ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, pregMomPlaceId),
     };
     const babyDueInputV4: CompatBirthInputV4 = {
       name: '아기', gender: 'unknown', calendarType: 'solar',
@@ -4258,6 +4262,10 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 </div>
               </div>
             </div>
+            {/* P7.4: 엄마 출생지역 (flag on일 때만). 아기 예정 영역엔 추가하지 않음. */}
+            {SAJU_PRECISION_INPUTS_ENABLED && (
+              <PlaceSelect value={pregMomPlaceId} onChange={setPregMomPlaceId} lang={lang === 'en' ? 'en' : 'ko'} id="preg-mom-place-select" />
+            )}
             <div className="input-group">
               <label id="preg-baby-time-label">아기 예정 시간대 (선택)</label>
               <div className="time-grid" role="radiogroup" aria-labelledby="preg-baby-time-label">
