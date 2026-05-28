@@ -12,6 +12,7 @@ import {
   resolveBirthTimeFields,
   sijuToRepresentativeTime,
   pregnancySijuBirthTimeFields,
+  pregnancyMomBirthTimeFields,
 } from '@/lib/birthTimePayload';
 
 // 개인사주/올해운세/궁합이 공유하는 exact-우선 헬퍼.
@@ -108,9 +109,31 @@ describe('임산부 — 엄마/아기 시진 기반 (항상 approximate, exact �
   it('아기 예정 시진(idx 6) → "12:00" / approximate (기존 동작 유지)', () => {
     expect(pregnancySijuBirthTimeFields(6)).toEqual({ birthTime: '12:00', birthTimeConfidence: 'approximate' });
   });
-  it('엄마/아기 모두 exact를 절대 반환하지 않음', () => {
+  it('엄마/아기 모두 exact를 절대 반환하지 않음 (시진 전용 헬퍼)', () => {
     for (let i = -1; i <= 11; i++) {
       expect(pregnancySijuBirthTimeFields(i).birthTimeConfidence).not.toBe('exact');
     }
+  });
+});
+
+describe('임산부 엄마 — 정확입력(HH:mm) 지원 (P7.4-fix)', () => {
+  const ex = (sijuIdx: number, hour: number, min: number) =>
+    pregnancyMomBirthTimeFields(sijuIdx, { use: true, hour, min });
+  it('정확입력 11:10 → "11:10" / exact (시진 인덱스 무시)', () => {
+    expect(ex(6, 11, 10)).toEqual({ birthTime: '11:10', birthTimeConfidence: 'exact' });
+  });
+  it('정확입력 23:30 → "23:30" / exact (자시로 뭉뚱그리지 않음)', () => {
+    expect(ex(0, 23, 30)).toEqual({ birthTime: '23:30', birthTimeConfidence: 'exact' });
+  });
+  it('시진 grid 오시(6, 정확입력 off) → "12:00" / approximate', () => {
+    expect(pregnancyMomBirthTimeFields(6, { use: false, hour: -1, min: 0 }))
+      .toEqual({ birthTime: '12:00', birthTimeConfidence: 'approximate' });
+  });
+  it('시진 자시(0) → "00:30" / approximate (임산부 대표시각 보존)', () => {
+    expect(pregnancyMomBirthTimeFields(0)).toEqual({ birthTime: '00:30', birthTimeConfidence: 'approximate' });
+  });
+  it('시간 모름(-1) → undefined / unknown', () => {
+    expect(pregnancyMomBirthTimeFields(-1, { use: false, hour: -1, min: 0 }))
+      .toEqual({ birthTime: undefined, birthTimeConfidence: 'unknown' });
   });
 });

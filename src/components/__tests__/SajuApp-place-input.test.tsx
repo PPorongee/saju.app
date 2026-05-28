@@ -16,6 +16,7 @@ import { setupLocalStorage, mockStreamingFetch } from '@/__tests__/helpers/saju-
 
 const FLAG = 'NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED';
 const PREG_FLAG = 'NEXT_PUBLIC_PREGNANCY_NARRATIVE_UI_ENABLED'; // 임산부 narrative 카드(엄마 시간/지역 입력) 게이트
+const YEARLY_FLAG = 'NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED'; // 올해운세 V4 입력 흐름 게이트
 const PLACE_LABEL = '출생지역 (선택)';
 const NAME_PH = /이름을 입력/i;
 // SajuApp 동적 import + 무거운 화면(특히 궁합: PlaceSelect 2개 × ~70 option) 렌더는 부하 시 느리다.
@@ -71,6 +72,7 @@ afterEach(() => {
   vi.resetModules();
   delete process.env[FLAG];
   delete process.env[PREG_FLAG];
+  delete process.env[YEARLY_FLAG];
 });
 
 describe('SajuApp 개인사주 출생지역 입력 flag 게이팅 (P7.1)', () => {
@@ -130,15 +132,19 @@ describe('SajuApp 궁합(compat) 출생지역 입력 flag 게이팅 (P7.3)', () 
 
 describe('SajuApp 임산부(pregnancy) 출생지역 입력 flag 게이팅 (P7.4)', () => {
   // 엄마 PlaceSelect는 narrative 카드(PREGNANCY_NARRATIVE_UI_ENABLED) 안 + precision flag 안에 있다.
-  it('precision flag off(narrative on): 엄마 PlaceSelect 미렌더', async () => {
+  it('precision flag off(narrative on): 엄마 PlaceSelect 미렌더 + 아기 예정시간 UI 없음', async () => {
     process.env[PREG_FLAG] = 'true'; // narrative 카드(엄마 시간/지역 입력 영역) 렌더
     delete process.env[FLAG];         // precision off
     vi.resetModules();
     const c = await openPregnancyInput();
+    // 엄마 시간 입력 카드는 보이지만(narrative on), 출생지역은 precision off라 미렌더
+    await within(c).findByText(/엄마 출생시간/, undefined, WAIT);
     expect(within(c).queryAllByText(PLACE_LABEL)).toHaveLength(0);
+    // P7.4-fix: 아기 예정시간 입력 UI 제거 확인
+    expect(within(c).queryByText('아기 예정 시간대 (선택)')).toBeNull();
   });
 
-  it('precision on + narrative on: 엄마 PlaceSelect 1개만 렌더 (아기 예정엔 없음)', async () => {
+  it('precision on + narrative on: 엄마 PlaceSelect 1개 + 엄마 정확입력 토글 O + 아기 시간 UI X', async () => {
     process.env[PREG_FLAG] = 'true';
     process.env[FLAG] = 'true';
     vi.resetModules();
@@ -146,5 +152,38 @@ describe('SajuApp 임산부(pregnancy) 출생지역 입력 flag 게이팅 (P7.4)
     // 엄마만 1개 — 아기 예정 영역엔 PlaceSelect를 추가하지 않았으므로 정확히 1개여야 함.
     const found = await within(c).findAllByText(PLACE_LABEL, undefined, WAIT);
     expect(found).toHaveLength(1);
+    // P7.4-fix: 엄마 HH:mm 정확입력 토글 노출
+    expect(within(c).getByText('정확한 출생시간을 알고 있어요')).toBeInTheDocument();
+    // P7.4-fix: 아기 예정시간 입력 UI 제거
+    expect(within(c).queryByText('아기 예정 시간대 (선택)')).toBeNull();
   });
+});
+
+describe('SajuApp 올해운세 V4 질문 흐름 = 개인사주 v4 질문 흐름 (Work B)', () => {
+  const V4Q_MARKER = '현재 혼인 상태가 어떻게 되세요?'; // renderV4Questions step0 고유 문구
+  const TEASER_MARKER = /전문가 대면 상담/;             // 결제(teaser) 화면 고유 문구
+  it('yearly V4 flag on: CTA → v4 질문(renderV4Questions) 노출 (v3 질문/teaser 아님), /api/saju 미호출', async () => {
+    process.env[YEARLY_FLAG] = 'true';
+    vi.resetModules();
+    const c = await openBirthInput('2026 올해운세'); // screen 1 (생년월일 입력)
+    await act(async () => { fireEvent.click(within(c).getByText(/2026 풀이 시작/)); });
+    // 개인사주와 동일한 v4 질문 화면(혼인 상태 질문) 노출
+    expect(await within(c).findByText(V4Q_MARKER, undefined, WAIT)).toBeInTheDocument();
+    // teaser로 건너뛰지 않음
+    expect(within(c).queryByText(TEASER_MARKER)).toBeNull();
+    // v3 /api/saju 스트리밍 미호출
+    const calledSaju = (global.fetch as ReturnType<typeof vi.fn>).mock.calls
+      .some((args: unknown[]) => String(args[0]).includes('/api/saju'));
+    expect(calledSaju).toBe(false);
+  }, 20000);
+
+  it('yearly V4 flag off: CTA → 기존 v3 질문 흐름 유지 (v4 질문 아님)', async () => {
+    delete process.env[YEARLY_FLAG];
+    vi.resetModules();
+    const c = await openBirthInput('2026 올해운세');
+    await act(async () => { fireEvent.click(within(c).getByText(/2026 풀이 시작/)); });
+    // screen 2로 이동(생년월일 입력 placeholder 사라짐) + v4 질문 마커 없음(=기존 v3 질문 흐름)
+    expect(within(c).queryByPlaceholderText(NAME_PH)).toBeNull();
+    expect(within(c).queryByText(V4Q_MARKER)).toBeNull();
+  }, 20000);
 });

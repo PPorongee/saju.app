@@ -14,7 +14,7 @@ import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
 import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer';
 import CompatV4Report, { type CompatV4ResultApi } from '@/components/CompatV4Report';
 import PlaceSelect, { birthPlacePayloadPatch } from '@/components/PlaceSelect';
-import { resolveBirthTimeFields, pregnancySijuBirthTimeFields } from '@/lib/birthTimePayload';
+import { resolveBirthTimeFields, pregnancyMomBirthTimeFields } from '@/lib/birthTimePayload';
 import type { BirthInput as CompatBirthInputV4 } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType as RelationshipTypeV4 } from '@/domain/saju/compatibility/compatibilityTypes';
 import PregnancyNarrativeReport from '@/components/PregnancyNarrativeReport';
@@ -619,8 +619,11 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const PREGNANCY_NARRATIVE_UI_ENABLED = process.env.NEXT_PUBLIC_PREGNANCY_NARRATIVE_UI_ENABLED === 'true';
   // Precision V1 (P7) — 출생지역 입력 UI. flag off(기본) → 기존 입력 폼/페이로드 그대로(byte-identical).
   const SAJU_PRECISION_INPUTS_ENABLED = process.env.NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED === 'true';
+  // Y9: 올해운세 V4 입력/결과 흐름 게이트. on이면 v3 질문/fetchYearlyReading(/api/saju) 우회 → teaser→YearlyV4Report.
+  const YEARLY_FORTUNE_UI_ENABLED = process.env.NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED === 'true';
   const [pregNarrativeRequested, setPregNarrativeRequested] = useState(false);
-  const [pregDueHour, setPregDueHour] = useState<number>(-1);
+  // P7.4-fix: 엄마(실제 출생자) 정확입력(시/분) 상태 — 개인사주/궁합과 동일 정책. 아기 예정시간은 V1에서 제거.
+  const [pregMomExact, setPregMomExact] = useState({ use: false, hour: -1, min: 0 });
   // P7.4: 임산부 엄마 출생지역. '' = 지역 모름. 아기 예정엔 미적용. flag off면 미사용 + payload 무변경.
   const [pregMomPlaceId, setPregMomPlaceId] = useState<string>('');
 
@@ -1449,7 +1452,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       if (controller.signal.aborted) return;
       if (appMode === 'yearly') {
         setCurrentScreen(8); // Go to teaser/paywall first
-        fetchYearlyReading(sj, controller.signal);
+        // 올해운세 V4(flag on)는 questions를 건너뛰어 이 경로에 도달하지 않지만, 방어적으로
+        // V4에서는 v3 fetchYearlyReading(/api/saju)을 호출하지 않는다. (결과는 YearlyV4Report가 생성)
+        if (!YEARLY_FORTUNE_UI_ENABLED) fetchYearlyReading(sj, controller.signal);
       } else if (isV4 && appMode === 'saju') {
         // v4 분기: server에서 사주 재계산 + 차별화 분석 + GPT 해석 통합
         setCurrentScreen(8); // teaser/paywall first (v3와 동일)
@@ -1786,6 +1791,12 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                     }, 4500);
                     return;
                   }
+                  if (YEARLY_FORTUNE_UI_ENABLED && appMode === 'yearly') {
+                    // 올해운세 V4: 저장 프로필 클릭도 v3 질문/fetch 우회 → teaser(8) 직행 (concern/state 불필요).
+                    setSajuResult(calcSaju(p.year, p.month, p.day, p.hour));
+                    setCurrentScreen(8);
+                    return;
+                  }
                   if (p.concern >= 0 && p.state >= 0) {
                     const sj = calcSaju(p.year, p.month, p.day, p.hour);
                     setSajuResult(sj);
@@ -1955,6 +1966,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           className="orot-btn orot-btn--primary orot-btn--full"
           onClick={() => {
             if (!userData.name) updateUser('name', t('anonymous', lang));
+            // 올해운세 V4도 개인사주 v4와 동일하게 screen 2(질문)로 진행. screen 2가 v4 질문(renderV4Questions)을 렌더.
             setCurrentScreen(2); setQuestionStep(0);
           }}
         >
@@ -1966,8 +1978,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
   /* ===== SCREEN 2: Questions ===== */
   function renderQuestions() {
-    // v4 분기: saju mode + version='v4'면 v4 spec 질문(혼인/자녀/직업/관심사)
-    if (isV4 && appMode === 'saju') return renderV4Questions();
+    // v4 분기: 개인사주 v4 + 올해운세 V4(flag on) 모두 동일한 v4 질문(혼인/자녀/직업/관심사) 흐름 사용.
+    //   → v3 질문/프로필 저장 흐름과 분리(v4 프로필로 저장). flag off 올해운세는 아래 기존 v3 질문 유지.
+    if ((isV4 && appMode === 'saju') || (YEARLY_FORTUNE_UI_ENABLED && appMode === 'yearly')) return renderV4Questions();
 
     const concernKeys = ['concern_love', 'concern_career', 'concern_money', 'concern_social', 'concern_health', 'concern_study'];
     const stateKeys = ['state_stable', 'state_change', 'state_stress', 'state_challenge', 'state_unknown'];
@@ -4132,15 +4145,15 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     const data = pregResult ? (() => { try { return JSON.parse(pregResult); } catch { return null; } })() : null;
 
     // 임산부 narrative V4 입력 (flag on 경로 전용 — 기존 calcSaju/pregResult와 완전 분리)
-    // pregData.hour / pregDueHour 는 시진(時辰) 인덱스(0~11, -1=모름) — 기존 calcSaju와 동일.
-    // calculateAnalysisOnly가 birthTime "HH:mm"을 다시 시진으로 버킷팅하므로, 각 시진의
-    // 정중앙 시각을 전달해 왕복 일치 보장 (자시 0 → 00:30, 그 외 k → 2k:00).
+    // 엄마: pregData.hour(시진 인덱스) + pregMomExact(정확입력) → pregnancyMomBirthTimeFields.
+    //   시진 grid는 대표시각(자시 0 → 00:30, 그 외 k → 2k:00)으로 왕복 일치 보장.
+    // 아기(예정): P7.4-fix로 예정시간 입력 제거 → 항상 birthTimeConfidence 'unknown' (birthTime 미전송).
     const _pad2 = (n: number) => String(n).padStart(2, '0');
     const momInputV4: CompatBirthInputV4 = {
       name: pregData.name || '엄마', gender: 'female', calendarType: 'solar',
       birthDate: `${pregData.year}-${_pad2(pregData.month)}-${_pad2(pregData.day)}`,
-      // 엄마: 시진 grid만(분 단위 정확입력 UI 없음) → 대표값 + approximate (exact 아님)
-      ...pregnancySijuBirthTimeFields(pregData.hour),
+      // 엄마(실제 출생자): 정확입력(HH:mm)→exact / 시진→대표값+approximate / 모름→unknown
+      ...pregnancyMomBirthTimeFields(pregData.hour, pregMomExact),
       timezone: 'Asia/Seoul',
       // P7.4: flag off OR 지역 미선택이면 {} → 키 미포함(기존 payload byte-identical). calculationMode 미주입.
       ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, pregMomPlaceId),
@@ -4148,8 +4161,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     const babyDueInputV4: CompatBirthInputV4 = {
       name: '아기', gender: 'unknown', calendarType: 'solar',
       birthDate: `${pregData.dueYear}-${_pad2(pregData.dueMonth)}-${_pad2(pregData.dueDay)}`,
-      // 아기 예정: 시진 기반 → 대표값 + approximate (기존과 동일)
-      ...pregnancySijuBirthTimeFields(pregDueHour),
+      // P7.4-fix: 아기는 미출생 → 예정시간 입력 제거. birthTime 미전송, 항상 unknown.
+      //   narrative 파이프라인: babyHourKnown=false → "예정시간 표현 0건, 출생예정일 기준 3주 참고".
+      birthTimeConfidence: 'unknown',
       timezone: 'Asia/Seoul',
     };
 
@@ -4256,37 +4270,50 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 ))}
                 <div role="radio" aria-checked={pregData.hour === -1} tabIndex={0}
                   className={'time-option unknown-time' + (pregData.hour === -1 ? ' selected' : '')}
-                  onClick={() => setPregData(p => ({ ...p, hour: -1 }))}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPregData(p => ({ ...p, hour: -1 })); } }}>
+                  onClick={() => { setPregData(p => ({ ...p, hour: -1 })); setPregMomExact({ use: false, hour: -1, min: 0 }); }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPregData(p => ({ ...p, hour: -1 })); setPregMomExact({ use: false, hour: -1, min: 0 }); } }}>
                   {t('unknownTime', lang)}
                 </div>
+              </div>
+              {/* P7.4-fix: 엄마(실제 출생자) 정확입력(HH:mm) — 개인사주와 동일. 시진 grid와 동기화. */}
+              <div className="exact-time-section">
+                <label className="exact-time-toggle" onClick={() => {
+                  const next = !pregMomExact.use;
+                  if (!next) { setPregMomExact({ use: false, hour: -1, min: 0 }); }
+                  else { const h = pregMomExact.hour < 0 ? 0 : pregMomExact.hour; setPregMomExact({ use: true, hour: h, min: pregMomExact.min }); setPregData(p => ({ ...p, hour: exactTimeToSiju(h, pregMomExact.min) })); }
+                }}>
+                  <span className={'exact-time-checkbox' + (pregMomExact.use ? ' checked' : '')}>{pregMomExact.use ? '✓' : ''}</span>
+                  {t('knowExactTime', lang)}
+                </label>
+                {pregMomExact.use && (
+                  <div className="exact-time-inputs">
+                    <select className="exact-time-select" value={pregMomExact.hour} onChange={e => {
+                      const h = parseInt(e.target.value);
+                      setPregMomExact(p => ({ ...p, hour: h }));
+                      setPregData(p => ({ ...p, hour: exactTimeToSiju(h, pregMomExact.min) }));
+                    }}>
+                      {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}{t('hourUnit', lang)}</option>)}
+                    </select>
+                    <select className="exact-time-select" value={pregMomExact.min} onChange={e => {
+                      const m = parseInt(e.target.value);
+                      setPregMomExact(p => ({ ...p, min: m }));
+                      setPregData(p => ({ ...p, hour: exactTimeToSiju(pregMomExact.hour, m) }));
+                    }}>
+                      {Array.from({ length: 60 }, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}{t('minuteUnit', lang)}</option>)}
+                    </select>
+                    <span className="exact-time-siju">{'→ ' + (lang === 'en' ? TIMES[exactTimeToSiju(pregMomExact.hour < 0 ? 0 : pregMomExact.hour, pregMomExact.min)].hanja.replace('시', '') : TIMES[exactTimeToSiju(pregMomExact.hour < 0 ? 0 : pregMomExact.hour, pregMomExact.min)].hanja)}</span>
+                  </div>
+                )}
+                <p className="exact-time-note">{t('exactTimeNote', lang)}</p>
               </div>
             </div>
             {/* P7.4: 엄마 출생지역 (flag on일 때만). 아기 예정 영역엔 추가하지 않음. */}
             {SAJU_PRECISION_INPUTS_ENABLED && (
               <PlaceSelect value={pregMomPlaceId} onChange={setPregMomPlaceId} lang={lang === 'en' ? 'en' : 'ko'} id="preg-mom-place-select" />
             )}
-            <div className="input-group">
-              <label id="preg-baby-time-label">아기 예정 시간대 (선택)</label>
-              <div className="time-grid" role="radiogroup" aria-labelledby="preg-baby-time-label">
-                {TIMES.map(ti => (
-                  <div key={ti.h} role="radio" aria-checked={pregDueHour === ti.h} tabIndex={0}
-                    className={'time-option' + (pregDueHour === ti.h ? ' selected' : '')}
-                    onClick={() => setPregDueHour(ti.h)}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPregDueHour(ti.h); } }}>
-                    <div className="time-range">{ti.range}</div>
-                    <div className="time-hangul">{t(TIME_I18N_KEYS[ti.h], lang)}</div>
-                  </div>
-                ))}
-                <div role="radio" aria-checked={pregDueHour === -1} tabIndex={0}
-                  className={'time-option unknown-time' + (pregDueHour === -1 ? ' selected' : '')}
-                  onClick={() => setPregDueHour(-1)}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPregDueHour(-1); } }}>
-                  {t('unknownTime', lang)}
-                </div>
-              </div>
-              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px', lineHeight: 1.5 }}>모르면 비워두세요. 실제 출생일/시간에 따라 달라질 수 있어요. 출산 시간을 정하라는 의미가 아니에요.</p>
-            </div>
+            {/* P7.4-fix: 아기 예정시간 입력 제거 (미출생·불확실 → birthTime 미전송, unknown).
+                출생예정일만 받고, 실제 출생일/시간에 따라 달라질 수 있다는 안내만 유지. 출산시간 추천 뉘앙스 금지. */}
+            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px', lineHeight: 1.5 }}>아기는 출생예정일 기준으로만 봐요. 실제 출생일과 시간에 따라 결과가 달라질 수 있어요.</p>
           </div>
         )}
 

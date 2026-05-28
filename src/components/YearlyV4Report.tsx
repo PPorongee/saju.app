@@ -57,7 +57,8 @@ export interface YearlyV4ReportProps {
   lang?: 'ko' | 'en';
   /** 처음으로 돌아가기 버튼 핸들러 */
   onRestart?: () => void;
-  /** repair 시도 횟수 (기본 1) */
+  /** repair 시도 횟수 (기본 0 — 단일 wave로 maxDuration 90s 예산 보호; route live 기본값과 일치).
+   *  repair 2nd wave는 무거운 remainingMonths 섹션과 겹치면 90s 초과 → 504 위험. */
   maxRepairAttempts?: number;
 }
 
@@ -89,7 +90,7 @@ export async function fetchYearlyV4Report(
 // ============================================================
 // 메인 컴포넌트
 // ============================================================
-export default function YearlyV4Report({ input, onRestart, maxRepairAttempts = 1 }: YearlyV4ReportProps) {
+export default function YearlyV4Report({ input, onRestart, maxRepairAttempts = 0 }: YearlyV4ReportProps) {
   const [data, setData] = useState<YearlyV4ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);

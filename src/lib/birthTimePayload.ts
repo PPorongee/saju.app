@@ -71,3 +71,20 @@ export function pregnancySijuBirthTimeFields(sijuIndex: number): BirthTimeFields
   if (sijuIndex < 0) return { birthTime: undefined, birthTimeConfidence: 'unknown' };
   return { birthTime: pregnancySijuToTime(sijuIndex), birthTimeConfidence: 'approximate' };
 }
+
+/**
+ * 임산부 "엄마"(실제 출생자) 시간 fields — 개인사주와 동일 정책 + 임산부 대표시각(자시 "00:30") 보존.
+ *   - exact.use && exact.hour>=0 → "HH:mm"(실제) + 'exact'
+ *   - sijuIndex>=0               → 임산부 대표값(pregnancySijuToTime) + 'approximate'
+ *   - 그 외                       → undefined + 'unknown'
+ * 아기(예정)에는 사용하지 않는다 — 아기는 항상 unknown.
+ */
+export function pregnancyMomBirthTimeFields(
+  sijuIndex: number,
+  exact?: { use: boolean; hour: number; min: number },
+): BirthTimeFields {
+  if (exact?.use && exact.hour >= 0) {
+    return { birthTime: `${pad2(exact.hour)}:${pad2(exact.min)}`, birthTimeConfidence: 'exact' };
+  }
+  return pregnancySijuBirthTimeFields(sijuIndex);
+}
