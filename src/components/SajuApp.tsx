@@ -4438,6 +4438,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           birthTime: birthTimeV4,
           birthTimeConfidence: birthTimeConfidenceV4,
           timezone: 'Asia/Seoul',
+          // P7.2: flag off OR 지역 미선택이면 {} → 키 미포함(기존 yearly payload와 byte-identical).
+          // precision 적용 여부는 서버 env SAJU_CALC_MODE 소관 (UI는 calculationMode 미주입).
+          ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, birthPlaceId),
         },
         currentDate: new Date().toISOString().slice(0, 10),
       };

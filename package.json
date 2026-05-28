@@ -10,6 +10,7 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:stable": "vitest run --no-file-parallelism",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
