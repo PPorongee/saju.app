@@ -13,6 +13,7 @@ import type {
 } from '../calendar/normalizeBirthInput';
 import type { RuleConfig } from '../rules/ruleConfig';
 import type { CalculationMeta } from '../calendar/calculationMeta';
+import type { YongsinDiagnostic } from '../analysis/yongsinDiagnostic';
 
 // ============================================================
 // 십성
@@ -480,6 +481,11 @@ export interface PersonalSajuGptInput {
   };
   /** precision-v1 계산 메타 (optional). legacy 경로에서는 미설정 → 출력 JSON 동일. P5에서 배선. */
   calculationMeta?: CalculationMeta;
+  /**
+   * 용신 고도화 diagnostic (optional, 서버 내부 전용). flag SAJU_YONGSIN_DIAGNOSTIC=true일 때만 부착.
+   * 미설정(기본) → 키 누락 → 출력 JSON byte-identical. 최종 용신 미변경(read-only mirror).
+   */
+  yongsinDiagnostic?: YongsinDiagnostic;
 }
 
 // ============================================================

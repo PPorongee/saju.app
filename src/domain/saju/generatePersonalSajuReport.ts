@@ -17,6 +17,8 @@ import { analyzeElementStrength } from './analysis/elementStrengthAnalyzer';
 import { analyzeDayMasterStrength } from './analysis/dayMasterStrengthAnalyzer';
 import { analyzeStructure } from './analysis/structureAnalyzer';
 import { analyzeUsefulGod } from './analysis/usefulGodAnalyzer';
+import { analyzeYongsinDiagnostic } from './analysis/yongsinDiagnostic';
+import { isYongsinDiagnosticEnabled } from './report/yongsinDiagnosticFlag';
 import { analyzeSpecialStars } from './analysis/specialStarAnalyzer';
 import { analyzeCombinationsAndConflicts } from './analysis/combinationConflictAnalyzer';
 import { analyzeFortuneFlow } from './analysis/fortuneFlowAnalyzer';
@@ -167,6 +169,19 @@ export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date())
   });
   // precision-v1일 때만 calculationMeta 부착. legacy면 undefined → 키 미추가(byte-identical).
   if (pctx.calculationMeta) gptInput.calculationMeta = pctx.calculationMeta;
+  // P4: flag ON일 때만 yongsin diagnostic 부착(서버 전용, off면 키 미추가 → byte-identical).
+  //     analyzeUsefulGod 결과는 read-only로 미러만 함 — 최종 용신 미변경. 프롬프트/UI/API 미배선.
+  if (isYongsinDiagnosticEnabled()) {
+    gptInput.yongsinDiagnostic = analyzeYongsinDiagnostic({
+      usefulGod,
+      tenGods,
+      elements,
+      dayMasterStrength: dm,
+      structure,
+      pillars: pillarsRes.pillars,
+      calculationMeta: pctx.calculationMeta,
+    });
+  }
   return gptInput;
 }
 
