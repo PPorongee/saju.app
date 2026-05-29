@@ -28,6 +28,7 @@ import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType } from '@/domain/saju/compatibility/compatibilityTypes';
 import type { CompatibilityNarrativeReport } from '@/domain/saju/compatibility/narrative/compatNarrativeTypes';
 import type { RelationshipYearFlow } from '@/domain/saju/compatibility/compatibilityTypes';
+import { glossSajuNotations } from '@/components/evidence/notationGloss';
 
 // ============================================================
 // API 응답 형태 (route.ts 응답과 정합 — issues는 노출 안 됨)
@@ -384,9 +385,14 @@ function EvidenceFold({ ev }: { ev: CompatibilityNarrativeReport['evidenceView']
           </p>
         )}
         {combos.length > 0 && (
-          <p>
-            <b>합·충·형·파·해</b> {combos.join(' / ')}
-          </p>
+          <div>
+            <b>합·충·형·파·해</b>
+            <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+              {glossSajuNotations(combos).map((g, i) => (
+                <li key={i} style={{ marginBottom: 2 }}>{g}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </details>

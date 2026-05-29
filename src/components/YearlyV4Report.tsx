@@ -26,6 +26,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
+import { usefulGodRelationLabel } from '@/components/evidence/notationGloss';
 import type {
   YearlyFortuneReport,
   YearlyRelationshipStatus,
@@ -376,7 +377,7 @@ function EvidenceView({ ev }: { ev: YearlyFortuneReport['evidenceView'] }) {
           <b>세운 간지</b> {ev.yearGanji.display} / <b>현재 대운</b> {ev.currentDaewoonPillar}
         </p>
         <p>
-          <b>세운 십성</b> 천간 {ev.yearStemTenGod} · 지지 {ev.yearBranchTenGod} / <b>세운 오행</b> {ev.yearElement} (용신 관계: {ev.usefulGodRelation})
+          <b>세운 십성</b> 천간 {ev.yearStemTenGod} · 지지 {ev.yearBranchTenGod} / <b>세운 오행</b> {ev.yearElement} (용신 관계: {usefulGodRelationLabel(ev.usefulGodRelation)})
         </p>
         {ev.natalSewoonInteractions.length > 0 && (
           <p>
