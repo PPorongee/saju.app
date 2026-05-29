@@ -140,6 +140,31 @@ describe('yongsinDiagnostic — climate_vs_excess positive 보강 (비-대전, �
   });
 });
 
+describe('yongsinDiagnostic — 비-목 일간 positive (element-agnostic 일반성)', () => {
+  // climate_vs_excess_pattern / final_vs_remedy 가 목일간·대전(印=水)에 과적합되지 않았음을
+  // 서로 다른 일간 오행 + 서로 다른 印 오행 + 서로 다른 用神으로 입증.
+  // (synthetic, calc-only, 하드코딩 아님 — scan으로 발굴한 일반 케이스)
+
+  // 수 일간(임수)·인월·신약 → 印(金) 과다 → 用金. drain=木 / control=火.
+  const water = diagnose(legacy('1961-02-18', '02:00')).diag;
+  it('수 일간: 用金(印=金) + moDa + climate_vs_excess + final_vs_remedy', () => {
+    expect(water.currentFinalYongsin.primary).toBe('metal');
+    expect(water.patternFlags.moDaMyeolJa).toBe(true);
+    expect(water.patternFlags.insungExcess).not.toBeNull();
+    expect(water.conflictFlags).toContain('climate_vs_excess_pattern');
+    expect(water.conflictFlags).toContain('final_vs_remedy');
+  });
+
+  // 화 일간(병화)·진월·신약 → 印(木) 과다 → 用木. drain=土 / control=金.
+  const fire = diagnose(legacy('1962-04-18', '14:00')).diag;
+  it('화 일간: 用木(印=木) + moDa + climate_vs_excess + final_vs_remedy', () => {
+    expect(fire.currentFinalYongsin.primary).toBe('wood');
+    expect(fire.patternFlags.moDaMyeolJa).toBe(true);
+    expect(fire.conflictFlags).toContain('climate_vs_excess_pattern');
+    expect(fire.conflictFlags).toContain('final_vs_remedy');
+  });
+});
+
 describe('yongsinDiagnostic — final invariant', () => {
   it('analyzeYongsinDiagnostic 호출이 usefulGod 객체를 변경하지 않음', () => {
     const c = compute(daejeon('17:29'));
