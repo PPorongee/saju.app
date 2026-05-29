@@ -8,6 +8,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { generateYearlyFortuneReport } from '../yearly/generateYearlyFortuneReport';
 import { generateCompatibilityReport } from '../compatibility/generateCompatibilityReport';
+import { generateCompatNarrativeReport } from '../compatibility/narrative/generateCompatNarrativeReport';
 import { generatePregnancyNarrativeReport } from '../pregnancy/narrative/generatePregnancyNarrativeReport';
 
 const NOW = new Date('2026-05-28T00:00:00Z');
@@ -64,6 +65,32 @@ describe('all-mode — compat', () => {
   it('flag ON: A/B 분리 지침 + (궁합) 라인, raw 미노출', async () => {
     process.env.SAJU_YONGSIN_DIAGNOSTIC_COMPAT = 'true';
     const { systems, users } = await runCompat();
+    expect(systems.some(s => s.includes(MARKER))).toBe(true);
+    expect(systems.some(s => s.includes('(궁합)'))).toBe(true);
+    expect(systems.some(s => s.includes('A(첫 번째 사람)'))).toBe(true);
+    expect(systems.some(s => s.includes('B(두 번째 사람)'))).toBe(true);
+    expect(users.flatMap(rawLeak)).toEqual([]);
+  });
+});
+
+// ── compat narrative (라이브 경로) ──
+async function runCompatNarrative() {
+  const systems: string[] = []; const users: string[] = [];
+  await generateCompatNarrativeReport(A, B, 'dating' as any, {
+    callGpt: async (p: any) => { systems.push(p.system); users.push(p.user); return { text: '{}', finishReason: 'stop' }; },
+    maxRepairAttempts: 0, now: NOW,
+  } as any);
+  return { systems, users };
+}
+describe('all-mode — compat narrative (라이브 경로)', () => {
+  it('flag OFF: 지침 없음 + raw 미노출', async () => {
+    const { systems, users } = await runCompatNarrative();
+    expect(systems.some(s => s.includes(MARKER))).toBe(false);
+    expect(users.flatMap(rawLeak)).toEqual([]);
+  });
+  it('flag ON: A/B 분리 지침 + (궁합) 라인, raw 미노출', async () => {
+    process.env.SAJU_YONGSIN_DIAGNOSTIC_COMPAT = 'true';
+    const { systems, users } = await runCompatNarrative();
     expect(systems.some(s => s.includes(MARKER))).toBe(true);
     expect(systems.some(s => s.includes('(궁합)'))).toBe(true);
     expect(systems.some(s => s.includes('A(첫 번째 사람)'))).toBe(true);

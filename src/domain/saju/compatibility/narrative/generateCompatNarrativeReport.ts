@@ -16,6 +16,8 @@
 
 import type { BirthInput } from '../../calendar/normalizeBirthInput';
 import { calculateAnalysisOnly } from '../../generatePersonalSajuReport';
+import { isCompatYongsinDiagnosticEnabled } from '../../report/yongsinDiagnosticFlag';
+import { renderYongsinDiagnosticGuidance } from '../../report/yongsinDiagnosticGuidance';
 import { composeCompatibilityAnalysis } from '../compatibilityAnalyzer';
 import type { CompatibilityAnalysisBundle, RelationshipType } from '../compatibilityTypes';
 
@@ -294,12 +296,27 @@ export async function generateCompatNarrativeReport(
   const maxAttempts = opts.maxRepairAttempts ?? 0; // LIVE 기본 0
 
   // 1) 결정적 분석 (기존 궁합 계산 재사용) + context + plan + prompt
-  const personA = calculateAnalysisOnly(inputA, now);
-  const personB = calculateAnalysisOnly(inputB, now);
+  // P6: compat diagnostic (별도 flag, 기본 OFF). flag ON일 때만 A/B 진단 force-attach.
+  const compatDiagOn = isCompatYongsinDiagnosticEnabled();
+  const personA = calculateAnalysisOnly(inputA, now, compatDiagOn ? { forceAttachDiagnostic: true } : undefined);
+  const personB = calculateAnalysisOnly(inputB, now, compatDiagOn ? { forceAttachDiagnostic: true } : undefined);
   const bundle = composeCompatibilityAnalysis(personA, personB, relationshipType);
   const ctx = buildCompatNarrativeContext(relationshipType);
   const plans = buildCompatNarrativePlans(bundle, ctx);
   const prompts = buildCompatPromptsAll(plans, ctx);
+
+  // compat diagnostic 지침: A/B 분리 + 각 섹션 prompt.system에 curated append (gpt-input/빌더 무수정, raw 미노출).
+  // flag OFF면 compatGuidance=null → prompts 무변경 → byte-identical.
+  let compatGuidance: string | null = null;
+  if (compatDiagOn) {
+    const blocks: string[] = [];
+    if (personA.yongsinDiagnostic) blocks.push(renderYongsinDiagnosticGuidance(personA.yongsinDiagnostic, { mode: 'compat', personLabel: 'A(첫 번째 사람)' }));
+    if (personB.yongsinDiagnostic) blocks.push(renderYongsinDiagnosticGuidance(personB.yongsinDiagnostic, { mode: 'compat', personLabel: 'B(두 번째 사람)' }));
+    if (blocks.length > 0) {
+      compatGuidance = blocks.join('\n\n');
+      for (const built of prompts.values()) built.system = `${built.system}\n\n${compatGuidance}`;
+    }
+  }
 
   // sanitize context — relationshipStatus는 married만 배우자 허용.
   const sanitizeCtx: CompatSanitizeContext = {
@@ -391,6 +408,7 @@ export async function generateCompatNarrativeReport(
           issues: thisSectionIssues,
         });
         if (!repairPrompt) return;
+        if (compatGuidance) repairPrompt.system = `${repairPrompt.system}\n\n${compatGuidance}`;
         let parsed: any = null;
         let lengthTrunc = false;
         try {
