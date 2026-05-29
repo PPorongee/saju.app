@@ -26,6 +26,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
+import { ActionGuideSection } from '@/components/ActionGuideSection';
 import { usefulGodRelationLabel } from '@/components/evidence/notationGloss';
 import type {
   YearlyFortuneReport,
@@ -165,6 +166,7 @@ function ReportBody({ report }: { report: YearlyFortuneReport }) {
       <TopicFortunesView topics={report.topicFortunes} />
       <ActionGuideView guide={report.actionGuide} />
       {report.nextTwoYears.length > 0 && <NextTwoYearsView years={report.nextTwoYears} />}
+      <ActionGuideSection guide={report.actionGuideV1} />
       <EvidenceView ev={report.evidenceView} />
     </div>
   );

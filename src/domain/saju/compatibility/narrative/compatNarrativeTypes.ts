@@ -22,6 +22,7 @@ import type {
 } from '../compatibilityTypes';
 import { RELATIONSHIP_TYPES, RELATIONSHIP_TYPE_KO } from '../compatibilityTypes';
 import type { Element } from '../../rules/elements';
+import type { ActionGuide as ActionGuideOutput } from '../../actionGuide/actionGuideTypes';
 
 // ============================================================
 // 1) 섹션 ID — 8개 (LLM 6 + 결정적 2)
@@ -176,6 +177,8 @@ export interface CompatibilityNarrativeReport {
   relationshipGuide: RelationshipGuideSection;        // LLM
   finalAdvice: FinalAdviceSection;                    // LLM
   evidenceView: CompatEvidenceView;                   // 결정적
+  /** All-mode Action Guide V1 — flag ON일 때만 부착. OFF면 키 미부착 → byte-identical. */
+  actionGuideV1?: ActionGuideOutput;
 }
 
 // ============================================================

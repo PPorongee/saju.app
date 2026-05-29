@@ -24,6 +24,9 @@ import { analyzeUsefulGod } from '../analysis/usefulGodAnalyzer';
 import { calculateAnalysisOnly } from '../generatePersonalSajuReport';
 import { isYearlyYongsinDiagnosticEnabled } from '../report/yongsinDiagnosticFlag';
 import { renderYongsinDiagnosticGuidance } from '../report/yongsinDiagnosticGuidance';
+import { isYearlyActionGuideEnabled } from '../actionGuide/actionGuideFlag';
+import { buildYearlyActionGuideEvidence } from '../actionGuide/actionGuideEvidence';
+import { generateActionGuide } from '../actionGuide/generateActionGuide';
 import type { HeavenlyStem } from '../rules/heavenlyStems';
 
 import {
@@ -500,6 +503,17 @@ export async function generateYearlyFortuneReport(
     report.evidenceView = buildEvidenceView(analysis);
 
     validation = validateYearlyReport({ report, analysis, plans, ctx: validatorCtx });
+  }
+
+  // ── All-mode Action Guide V1 (flag ON일 때만 1회 추가 호출, 절기 월운 grounding) ──
+  if (isYearlyActionGuideEnabled()) {
+    const ev = buildYearlyActionGuideEvidence(analysis);
+    const guide = await generateActionGuide(
+      ev,
+      (sys, usr, mt) => opts.callGpt({ sectionId: 'actionGuide', system: sys, user: usr, maxTokens: mt, outputJsonSchema: '' }, { maxTokens: mt }),
+      { sanitize: (t: string) => applyYearlyFinalSanitizers(t, sanitizeCtx) },
+    );
+    if (guide) report.actionGuideV1 = guide;
   }
 
   return {

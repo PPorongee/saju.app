@@ -18,6 +18,9 @@ import type { BirthInput } from '../../calendar/normalizeBirthInput';
 import { calculateAnalysisOnly } from '../../generatePersonalSajuReport';
 import { isCompatYongsinDiagnosticEnabled } from '../../report/yongsinDiagnosticFlag';
 import { renderYongsinDiagnosticGuidance } from '../../report/yongsinDiagnosticGuidance';
+import { isCompatActionGuideEnabled } from '../../actionGuide/actionGuideFlag';
+import { buildCompatActionGuideEvidence } from '../../actionGuide/actionGuideEvidence';
+import { generateActionGuide } from '../../actionGuide/generateActionGuide';
 import { composeCompatibilityAnalysis } from '../compatibilityAnalyzer';
 import type { CompatibilityAnalysisBundle, RelationshipType } from '../compatibilityTypes';
 
@@ -448,6 +451,17 @@ export async function generateCompatNarrativeReport(
         finishLengthSections: [...finishLengthSet],
       },
     });
+  }
+
+  // ── All-mode Action Guide V1 (flag ON일 때만 1회 추가 호출, A/B 구분 + 상대 낙인 금지) ──
+  if (isCompatActionGuideEnabled()) {
+    const ev = buildCompatActionGuideEvidence(bundle, personA, personB);
+    const guide = await generateActionGuide(
+      ev,
+      (sys, usr, mt) => opts.callGpt({ sectionId: 'finalAdvice', system: sys, user: usr, maxTokens: mt, outputJsonSchema: '' }, { maxTokens: mt }).then(r => r.text),
+      { sanitize: (t: string) => applyCompatFinalSanitizers(t, sanitizeCtx) },
+    );
+    if (guide) report.actionGuideV1 = guide;
   }
 
   return {
