@@ -4,7 +4,9 @@
 // 프롬프트에 박아넣음으로써 V4 분석 데이터가 본문에 반드시 흡수되도록 강제.
 
 import type { PersonalSajuGptInput, ContextGuardResult } from '../report/sajuReportSchema';
-import type { YongsinDiagnostic } from '../analysis/yongsinDiagnostic';
+// 용신 diagnostic 지침은 공유 렌더러 사용 (yearly/compat/pregnancy와 공통). 재export로 기존 import 호환.
+import { renderYongsinDiagnosticGuidance } from '../report/yongsinDiagnosticGuidance';
+export { renderYongsinDiagnosticGuidance } from '../report/yongsinDiagnosticGuidance';
 import type { NarrativePlan, NarrativePlanSet } from './narrativeTypes';
 import type { TopicCoverageMap, NarrativeTopicKey } from './topicCoverageTypes';
 import { FINAL_LINE_CANDIDATES } from './topicCoverageTypes';
@@ -508,40 +510,6 @@ function sanitizeInputJson(input: PersonalSajuGptInput): string {
     s = s.replace(re, `"${ko}"`);
   }
   return s;
-}
-
-/**
- * 용신 diagnostic → curated 해석 지침(시스템 규칙). diag가 있을 때만 호출.
- * 최종 용신은 변경 금지, 후보는 보조 운용 관점으로만, 기신 겹침 시 단정 금지.
- * element 기반으로 문구를 생성하며 특정 케이스(火/土)를 하드코딩하지 않는다.
- */
-export function renderYongsinDiagnosticGuidance(diag: YongsinDiagnostic): string {
-  const ko = (e?: string) => (e ? (ELEMENT_KO[e] ?? e) : '');
-  const primary = ko(diag.currentFinalYongsin.primary);
-  const drainKo = diag.drainCandidate ? ko(diag.drainCandidate.element) : '';
-  const controlKo = diag.controlCandidate ? ko(diag.controlCandidate.element) : '';
-  const lines: string[] = [];
-  lines.push('[보조 용신 진단 — 해석 지침 (최종 용신 변경 금지)]');
-  lines.push(`- 이 사주의 최종 용신은 '${primary}'(으)로 이미 확정돼 있다. 어떤 경우에도 용신을 다른 오행으로 바꾸거나 "사실은 ○이 용신"이라고 말하지 마라.`);
-  lines.push('- 아래 후보는 용신이 아니라, 용신을 실제로 어떻게 쓰는가(운용)에 대한 보조 관점일 뿐이다.');
-  if (diag.drainCandidate) {
-    lines.push(`- 배출/표현 후보: ${drainKo} — 과하게 받은 기운을 밖으로 표현·배출하는 운용 관점. '${drainKo}이(가) 용신'이라는 뜻이 절대 아니다.`);
-  }
-  if (diag.controlCandidate) {
-    lines.push(`- 제어/현실화 후보: ${controlKo} — 과한 기운을 현실로 정리·제어하는 관점.`);
-  }
-  if (diag.drainCandidate?.conflictsWithFinal) {
-    lines.push(`- ${drainKo}은(는) 이 사주가 꺼리는 기운(기신)과 겹친다. 그러므로 ${drainKo}을(를) "좋다"고 단정하지 말고, "표현·활동의 관점에서 조건부로 의미가 있다" 정도로만 균형 있게 서술하라.`);
-  }
-  if (diag.conflictFlags.length > 0) {
-    lines.push(`- 기본 기운(용신)과 실제 운용 기운이 다를 수 있다는 점은 설명하되, 불안감을 주는 표현은 쓰지 마라. "용신이 틀렸다/바뀐다"가 아니라 "기본적으로는 ${primary} 기운이 중심이며, 운용에서는 보조 기운도 의미가 있다"로 설명한다.`);
-  }
-  if (diag.boundarySensitivity?.sensitive) {
-    lines.push('- 출생 시각·지역 경계에 민감한 사주다. "시간·지역 경계상 해석이 더 섬세해질 수 있다" 정도로만 완곡히 언급하고, 단정·불안 조성은 금지.');
-  }
-  lines.push(`- 권장 톤 예: "기본적으로는 ${primary} 기운이 중심이지만, 실제로 운을 쓰는 방식에서는 보조 기운의 역할도 중요합니다."`);
-  lines.push(`- 금지 표현: "용신이 사실은 ○입니다" / "${primary}는(은) 틀렸다" / "기신이니 반드시 피해야" / "반드시" / "운명이 바뀐다" / "이 시간 때문에 인생이 달라진다".`);
-  return lines.join('\n');
 }
 
 // ============================================================

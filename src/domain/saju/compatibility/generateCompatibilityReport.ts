@@ -12,6 +12,8 @@
 
 import type { BirthInput } from '../calendar/normalizeBirthInput';
 import { calculateAnalysisOnly } from '../generatePersonalSajuReport';
+import { isCompatYongsinDiagnosticEnabled } from '../report/yongsinDiagnosticFlag';
+import { renderYongsinDiagnosticGuidance } from '../report/yongsinDiagnosticGuidance';
 import { composeCompatibilityAnalysis } from './compatibilityAnalyzer';
 import { buildRelationshipQuestions } from './questions/relationshipQuestionBuilder';
 import { buildCompatibilityContentLedger } from './report/compatibilityContentLedger';
@@ -63,6 +65,21 @@ export async function generateCompatibilityReport(
   const gptInput = calculateCompatibilityAnalysisOnly(inputA, inputB, relationshipType, now);
   const prompt = buildCompatibilityPrompt(gptInput);
 
+  // P6: 궁합 diagnostic (별도 flag, 기본 OFF). flag OFF면 prompt 무변경.
+  // A/B 각각의 개인 진단을 분리해 prompt.system에 curated 지침만 append (gpt-input/빌더·raw 미노출).
+  let compatGuidance: string | null = null;
+  if (isCompatYongsinDiagnosticEnabled()) {
+    const diagA = calculateAnalysisOnly(inputA, now, { forceAttachDiagnostic: true }).yongsinDiagnostic;
+    const diagB = calculateAnalysisOnly(inputB, now, { forceAttachDiagnostic: true }).yongsinDiagnostic;
+    const blocks: string[] = [];
+    if (diagA) blocks.push(renderYongsinDiagnosticGuidance(diagA, { mode: 'compat', personLabel: 'A(첫 번째 사람)' }));
+    if (diagB) blocks.push(renderYongsinDiagnosticGuidance(diagB, { mode: 'compat', personLabel: 'B(두 번째 사람)' }));
+    if (blocks.length > 0) {
+      compatGuidance = blocks.join('\n\n');
+      prompt.system = `${prompt.system}\n\n${compatGuidance}`;
+    }
+  }
+
   let attempts = 0;
   let reportText = '';
   let validation = { isValid: true, issues: [] } as ReturnType<typeof validateCompatibilityReport>;
@@ -80,6 +97,7 @@ export async function generateCompatibilityReport(
       gptInput,
       originalPrompt: prompt,
     });
+    if (compatGuidance) currentPrompt.system = `${currentPrompt.system}\n\n${compatGuidance}`;
   }
 
   return { gptInput, reportText, validation, attempts };

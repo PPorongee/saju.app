@@ -17,6 +17,8 @@
 
 import type { BirthInput } from '../../calendar/normalizeBirthInput';
 import { calculateAnalysisOnly } from '../../generatePersonalSajuReport';
+import { isPregnancyYongsinDiagnosticEnabled } from '../../report/yongsinDiagnosticFlag';
+import { renderYongsinDiagnosticGuidance } from '../../report/yongsinDiagnosticGuidance';
 import { composePregnancyAnalysis, type PregnancyAnalysisBundle } from './pregnancyMomBabyAnalyzer';
 import { buildTaegyoPlan, type TaegyoPlan } from './pregnancyTaegyoMapper';
 import { selectBabyNames } from './pregnancyBabyNamePool';
@@ -184,7 +186,8 @@ export async function generatePregnancyNarrativeReport(
   const maxAttempts = opts.maxRepairAttempts ?? 0;
 
   // 1) 결정적 분석
-  const mother = calculateAnalysisOnly(momInput, now);
+  // P6: 임산부 diagnostic은 엄마(母) 사주에만. 아기 예정 사주에는 미적용. flag OFF면 기존 동작 동일.
+  const mother = calculateAnalysisOnly(momInput, now, isPregnancyYongsinDiagnosticEnabled() ? { forceAttachDiagnostic: true } : undefined);
   const baby = calculateAnalysisOnly(babyDueInput, now);
   const bundle = composePregnancyAnalysis(mother, baby);
   const taegyoPlan = buildTaegyoPlan(bundle);
@@ -198,6 +201,14 @@ export async function generatePregnancyNarrativeReport(
 
   const plans = buildPregnancyNarrativePlans(bundle, taegyoPlan, ctx);
   const prompts = buildPregnancyPromptsAll(plans, ctx);
+
+  // P6: 엄마 사주 diagnostic 지침 (별도 flag, 기본 OFF). 아기에는 미적용.
+  // gpt-input/빌더 무수정, 각 섹션 prompt.system에 curated 지침만 append → raw 미노출.
+  let momYongsinGuidance: string | null = null;
+  if (isPregnancyYongsinDiagnosticEnabled() && mother.yongsinDiagnostic) {
+    momYongsinGuidance = renderYongsinDiagnosticGuidance(mother.yongsinDiagnostic, { mode: 'pregnancy', personLabel: '엄마(母)' });
+    for (const built of prompts.values()) built.system = `${built.system}\n\n${momYongsinGuidance}`;
+  }
 
   // 2) sectionwise LLM
   const report = emptyReportScaffold(bundle, taegyoPlan, ctx);
@@ -266,6 +277,7 @@ export async function generatePregnancyNarrativeReport(
         const previousOutput = JSON.stringify(parsedBySection.get(sectionId) ?? {});
         const repairPrompt = buildPregnancyRepairPrompt(plan, ctx, { previousOutput, issues: thisSectionIssues });
         if (!repairPrompt) return;
+        if (momYongsinGuidance) repairPrompt.system = `${repairPrompt.system}\n\n${momYongsinGuidance}`;
         let parsed: any = null;
         let lengthTrunc = false;
         try {

@@ -85,7 +85,11 @@ export interface GenerateResult {
  * 결정론 분석만 — GPT 호출 X. preview endpoint에서 즉시 응답용.
  * 출력: PersonalSajuGptInput과 동일 구조 (단 reportText 없음).
  */
-export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date()): PersonalSajuGptInput {
+export function calculateAnalysisOnly(
+  input: BirthInput,
+  now: Date = new Date(),
+  opts?: { forceAttachDiagnostic?: boolean },
+): PersonalSajuGptInput {
   const normalized = normalizeBirthInput(input, now);
   // precision 컨텍스트 (legacy면 모든 옵션 undefined → 아래 호출 byte-identical)
   const pctx = buildPrecisionContext(normalized, input);
@@ -171,7 +175,7 @@ export function calculateAnalysisOnly(input: BirthInput, now: Date = new Date())
   if (pctx.calculationMeta) gptInput.calculationMeta = pctx.calculationMeta;
   // P4: flag ON일 때만 yongsin diagnostic 부착(서버 전용, off면 키 미추가 → byte-identical).
   //     analyzeUsefulGod 결과는 read-only로 미러만 함 — 최종 용신 미변경. 프롬프트/UI/API 미배선.
-  if (isYongsinDiagnosticEnabled()) {
+  if (isYongsinDiagnosticEnabled() || opts?.forceAttachDiagnostic) {
     gptInput.yongsinDiagnostic = analyzeYongsinDiagnostic({
       usefulGod,
       tenGods,

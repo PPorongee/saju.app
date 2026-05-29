@@ -21,6 +21,9 @@ import { analyzeElementStrength } from '../analysis/elementStrengthAnalyzer';
 import { analyzeDayMasterStrength } from '../analysis/dayMasterStrengthAnalyzer';
 import { analyzeStructure } from '../analysis/structureAnalyzer';
 import { analyzeUsefulGod } from '../analysis/usefulGodAnalyzer';
+import { calculateAnalysisOnly } from '../generatePersonalSajuReport';
+import { isYearlyYongsinDiagnosticEnabled } from '../report/yongsinDiagnosticFlag';
+import { renderYongsinDiagnosticGuidance } from '../report/yongsinDiagnosticGuidance';
 import type { HeavenlyStem } from '../rules/heavenlyStems';
 
 import {
@@ -393,6 +396,17 @@ export async function generateYearlyFortuneReport(
   // 3) section별 prompt (evidenceView 제외 — buildYearlyPromptsAll이 이미 제외)
   const prompts = buildYearlyPromptsAll(plans, promptCtx);
 
+  // P6: 올해운세 diagnostic (별도 flag, 기본 OFF). flag OFF면 prompt 무변경.
+  // gpt-input/빌더는 손대지 않고, 각 섹션 prompt.system에 curated 지침만 append → raw 미노출.
+  let yongsinGuidance: string | null = null;
+  if (isYearlyYongsinDiagnosticEnabled()) {
+    const diag = calculateAnalysisOnly(input.birth, now, { forceAttachDiagnostic: true }).yongsinDiagnostic;
+    if (diag) {
+      yongsinGuidance = renderYongsinDiagnosticGuidance(diag, { mode: 'yearly' });
+      for (const built of prompts.values()) built.system = `${built.system}\n\n${yongsinGuidance}`;
+    }
+  }
+
   // 4) LLM 호출 + parse + sanitize → report 조립
   const report = emptyReportScaffold(analysis);
   const parsedBySection = new Map<YearlyFortuneSectionId, any>();
@@ -463,6 +477,7 @@ export async function generateYearlyFortuneReport(
           issues: thisSectionIssues,
         });
         if (!repairPrompt) return;
+        if (yongsinGuidance) repairPrompt.system = `${repairPrompt.system}\n\n${yongsinGuidance}`;
         let parsed: any = null;
         try {
           const raw = await opts.callGpt(repairPrompt, { maxTokens: repairPrompt.maxTokens });
