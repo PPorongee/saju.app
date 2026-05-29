@@ -13,6 +13,17 @@
 //   - 실행: node --import tsx scripts/edge-boundary-fixture-report.ts
 import { calculateAnalysisOnly } from '../src/domain/saju/generatePersonalSajuReport';
 import { prepareCalculation } from '../src/domain/saju/calendar/precisionAdjust';
+// P3 — 용신 diagnostic 관찰 출력 (production 미배선, calc-only).
+import { normalizeBirthInput } from '../src/domain/saju/calendar/normalizeBirthInput';
+import { buildPrecisionContext } from '../src/domain/saju/calendar/precisionContext';
+import { calculatePillars } from '../src/domain/saju/calendar/pillarCalculator';
+import { analyzeTenGods } from '../src/domain/saju/analysis/tenGodAnalyzer';
+import { analyzeElementStrength } from '../src/domain/saju/analysis/elementStrengthAnalyzer';
+import { analyzeDayMasterStrength } from '../src/domain/saju/analysis/dayMasterStrengthAnalyzer';
+import { analyzeStructure } from '../src/domain/saju/analysis/structureAnalyzer';
+import { analyzeUsefulGod } from '../src/domain/saju/analysis/usefulGodAnalyzer';
+import { analyzeYongsinDiagnostic } from '../src/domain/saju/analysis/yongsinDiagnostic';
+import { DEFAULT_RULE_CONFIG } from '../src/domain/saju/rules/ruleConfig';
 
 const NOW = new Date('2026-05-28T00:00:00Z');
 
@@ -110,5 +121,50 @@ for (const t of TIMES) {
     if (meta.warnings?.length) console.log(`  warnings: ${meta.warnings.join(' | ')}`);
   }
 }
+// ── P3: 용신 diagnostic (대전 fixture) — final 용신 불변, 보조 진단만 ──
+function diagBundle(birthTime: string, placeId: string) {
+  const input = { ...baseInput(birthTime), calculationMode: 'precision-v1', birthPlaceId: placeId } as any;
+  const norm = normalizeBirthInput(input, NOW);
+  const pctx = buildPrecisionContext(norm, input);
+  const pillars = calculatePillars(norm, DEFAULT_RULE_CONFIG, pctx.pillarOptions).pillars;
+  const tenGods = analyzeTenGods(pillars);
+  const elements = analyzeElementStrength(pillars);
+  const dm = analyzeDayMasterStrength(pillars, tenGods, elements);
+  const structure = analyzeStructure(pillars, tenGods, elements);
+  const usefulGod = analyzeUsefulGod({ pillars, tenGods, elements, dayMasterStrength: dm, structure });
+  const diag = analyzeYongsinDiagnostic({ usefulGod, tenGods, elements, dayMasterStrength: dm, structure, pillars, calculationMeta: pctx.calculationMeta });
+  return { diag, elements, tenGods };
+}
+
+console.log('\n======================================================================');
+console.log(' YONGSIN DIAGNOSTIC (대전 fixture) — final 용신 불변, 보조 후보/충돌만 진단');
+console.log(' (analyzeUsefulGod 결과 미변경 · production/GPT/UI 미배선)');
+console.log('======================================================================');
+for (const t of TIMES) {
+  const { diag } = diagBundle(t, 'KR-30');
+  const f = diag.currentFinalYongsin;
+  console.log(`\n[DIAG 대전 ${t}]`);
+  console.log(`  currentFinalYongsin: 用 ${el(f.primary)} / 喜 ${f.secondary ? el(f.secondary) : '-'} / 忌 ${el(f.unfavorable)} (conf ${f.confidence})  ← 기존 엔진값 그대로`);
+  console.log(`  patternFlags: insungExcess=${diag.patternFlags.insungExcess} · bigeopExcess=${diag.patternFlags.bigeopExcess} · moDaMyeolJa=${diag.patternFlags.moDaMyeolJa}`);
+  console.log(`  drainCandidate(설기): ${diag.drainCandidate ? el(diag.drainCandidate.element) : '-'} — ${diag.drainCandidate?.rationale ?? ''}`);
+  console.log(`  controlCandidate(財破印): ${diag.controlCandidate ? el(diag.controlCandidate.element) : '-'} — ${diag.controlCandidate?.rationale ?? ''}`);
+  console.log(`  alternativeCandidates: ${diag.alternativeCandidates.map(c => `${el(c.element)}(${c.perspective})`).join(' · ') || '-'}`);
+  console.log(`  conflictFlags: ${diag.conflictFlags.join(', ') || '-'}`);
+  console.log(`  boundarySensitivity: sensitive=${diag.boundarySensitivity.sensitive} | ${diag.boundarySensitivity.note ?? ''}`);
+  console.log(`  confidenceNotes:`);
+  for (const n of diag.confidenceNotes) console.log(`    - ${n}`);
+}
+
+// 관측 cross-delta (report 계산 — 순수 함수 출력 아님. boundarySensitivity 정밀화는 P4+).
+{
+  const a = diagBundle('17:29', 'KR-30');
+  const b = diagBundle('17:30', 'KR-30');
+  const insA = (a.tenGods.totals['정인'] ?? 0) + (a.tenGods.totals['편인'] ?? 0);
+  const insB = (b.tenGods.totals['정인'] ?? 0) + (b.tenGods.totals['편인'] ?? 0);
+  console.log(`\n[DIAG 관측 cross-delta 17:29→17:30] (report 계산)`);
+  console.log(`  印합 ${insA.toFixed(2)} → ${insB.toFixed(2)} | 金 ${a.elements.scores.metal.toFixed(2)} → ${b.elements.scores.metal.toFixed(2)} | dryWet ${a.elements.climate.dryWet} → ${b.elements.climate.dryWet}`);
+  console.log(`  → 印과다 강도만 STRONG↔MILD 토글, 최종 용신(水)·drain(火)·control(土)·moDaMyeolJa는 불변`);
+}
+
 console.log('\n──── 끝 ────');
 process.exit(0);
