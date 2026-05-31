@@ -455,7 +455,7 @@ export async function generateCompatNarrativeReport(
 
   // ── Event Forecast V1 (flag ON일 때만 1회 추가 호출, A/B 구분 + 상대 낙인 금지) ──
   if (isCompatEventForecastEnabled()) {
-    const ev = buildCompatEventForecastEvidence(bundle, personA, personB);
+    const ev = buildCompatEventForecastEvidence(bundle, personA, personB, relationshipType);
     const forecast = await generateEventForecast(
       ev,
       (sys, usr, mt) => opts.callGpt({ sectionId: 'finalAdvice', system: sys, user: usr, maxTokens: mt, outputJsonSchema: '' }, { maxTokens: mt }).then(r => r.text),

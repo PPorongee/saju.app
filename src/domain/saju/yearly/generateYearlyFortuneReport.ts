@@ -507,7 +507,7 @@ export async function generateYearlyFortuneReport(
 
   // ── Event Forecast V1 (flag ON일 때만 1회 추가 호출, 절기 월운 grounding) ──
   if (isYearlyEventForecastEnabled()) {
-    const ev = buildYearlyEventForecastEvidence(analysis);
+    const ev = buildYearlyEventForecastEvidence(analysis, relationshipStatus);
     const forecast = await generateEventForecast(
       ev,
       (sys, usr, mt) => opts.callGpt({ sectionId: 'actionGuide', system: sys, user: usr, maxTokens: mt, outputJsonSchema: '' }, { maxTokens: mt }),
