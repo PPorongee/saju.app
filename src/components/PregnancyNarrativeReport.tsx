@@ -32,7 +32,7 @@ import {
   PREGNANCY_NARRATIVE_SECTION_TITLES,
   PREGNANCY_CANDIDATE_CTA_TEXT,
 } from '@/domain/saju/pregnancy/narrative/pregnancyNarrativeTypes';
-import { ActionGuideSection } from '@/components/ActionGuideSection';
+import { EventForecastSection } from '@/components/EventForecastSection';
 
 const PINK = '#E91E8C';
 const PINK_SOFT = 'rgba(233,30,140,0.15)';
@@ -340,7 +340,7 @@ function ReportBody({ report }: { report: PregnancyReport }) {
         </ProseSection>
       )}
 
-      <ActionGuideSection guide={report.actionGuideV1} />
+      <EventForecastSection forecast={report.eventForecast} />
       <BabyNamesView report={report} />
       {/* 후보일 비교 CTA: 미구현 기능 노출로 인한 혼란 방지 위해 숨김 (P10+ 실제 구현 시 재노출) */}
       <EvidenceFold report={report} />

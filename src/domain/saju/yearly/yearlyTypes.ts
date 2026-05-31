@@ -17,8 +17,8 @@ import type {
   SpecialStarInfo,
 } from '../report/sajuReportSchema';
 import type { Element } from '../rules/elements';
-// All-mode Action Guide V1 출력 타입 (yearly의 기존 ActionGuide와 이름 충돌 방지 위해 alias).
-import type { ActionGuide as ActionGuideOutput } from '../actionGuide/actionGuideTypes';
+// Event Forecast V1 출력 타입 (yearly의 기존 ActionGuide와 이름 충돌 없음).
+import type { EventForecast } from '../eventForecast/eventForecastTypes';
 
 // ============================================================
 // Feature flags — 4개 (server 3 + NEXT_PUBLIC UI 1)
@@ -589,10 +589,10 @@ export interface YearlyFortuneReport {
   nextTwoYears: NextTwoYearSection[];
   evidenceView: YearlyFortuneEvidenceView;
   /**
-   * All-mode Action Guide V1 (개운법+흐름+결정 시기). flag(SAJU_ACTION_GUIDE_ENABLED 등) ON일 때만 부착.
+   * Event Forecast V1 (운의 사건 예보). flag(SAJU_EVENT_FORECAST_ENABLED 등) ON일 때만 부착.
    * 기존 actionGuide(mustCatch/betterAvoid/bestStrategy)와 별개의 추가 섹션. OFF면 키 미부착 → byte-identical.
    */
-  actionGuideV1?: ActionGuideOutput;
+  eventForecast?: EventForecast;
 }
 
 // ============================================================

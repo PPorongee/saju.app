@@ -11,8 +11,8 @@ import type { ParsedReport } from '@/lib/saju-v4-report-parser';
 import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
 import { StarShareCardWithDownload } from '@/components/star/StarShareCard';
 import { EasyEvidenceView } from '@/components/evidence/EasyEvidenceView';
-import { ActionGuideSection } from '@/components/ActionGuideSection';
-import type { ActionGuide } from '@/domain/saju/actionGuide/actionGuideTypes';
+import { EventForecastSection } from '@/components/EventForecastSection';
+import type { EventForecast } from '@/domain/saju/eventForecast/eventForecastTypes';
 import type {
   SpecialPoint,
   TenGodAnalysis,
@@ -99,8 +99,8 @@ export interface SajuV4ApiResponse {
     keywords: string[];
     hashtag: string;
   };
-  /** All-mode Action Guide V1 — flag ON일 때만 응답에 포함. 없으면 미렌더. */
-  actionGuideV1?: ActionGuide;
+  /** Event Forecast V1 — flag ON일 때만 응답에 포함. 없으면 미렌더. */
+  eventForecast?: EventForecast;
 }
 
 export interface Props {
@@ -190,8 +190,8 @@ export function SajuV4Report({ api, birthSummary }: Props) {
         </div>
       )}
 
-      {/* ── All-mode Action Guide V1 (flag ON일 때만 응답에 포함; 없으면 미렌더) ── */}
-      <ActionGuideSection guide={api.actionGuideV1} />
+      {/* ── Event Forecast V1 (flag ON일 때만 응답에 포함; 없으면 미렌더) ── */}
+      <EventForecastSection forecast={api.eventForecast} />
 
       {/* ── 명리 근거 보기 — 2026-05: 쉬운 설명형으로 재구성 ── */}
       <details className="card" style={{ marginTop: 18, padding: 14 }}>

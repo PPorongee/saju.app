@@ -19,9 +19,9 @@ import type { BirthInput } from '../../calendar/normalizeBirthInput';
 import { calculateAnalysisOnly } from '../../generatePersonalSajuReport';
 import { isPregnancyYongsinDiagnosticEnabled } from '../../report/yongsinDiagnosticFlag';
 import { renderYongsinDiagnosticGuidance } from '../../report/yongsinDiagnosticGuidance';
-import { isPregnancyActionGuideEnabled } from '../../actionGuide/actionGuideFlag';
-import { buildPregnancyActionGuideEvidence } from '../../actionGuide/actionGuideEvidence';
-import { generateActionGuide } from '../../actionGuide/generateActionGuide';
+import { isPregnancyEventForecastEnabled } from '../../eventForecast/eventForecastFlag';
+import { buildPregnancyEventForecastEvidence } from '../../eventForecast/eventForecastEvidence';
+import { generateEventForecast } from '../../eventForecast/generateEventForecast';
 import { PREGNANCY_DISCLAIMER } from './pregnancyNarrativeTypes';
 import { composePregnancyAnalysis, type PregnancyAnalysisBundle } from './pregnancyMomBabyAnalyzer';
 import { buildTaegyoPlan, type TaegyoPlan } from './pregnancyTaegyoMapper';
@@ -320,16 +320,16 @@ export async function generatePregnancyNarrativeReport(
   // 안내문 최종 보장
   report.disclaimer = ensurePregnancyDisclaimer(report.disclaimer);
 
-  // ── All-mode Action Guide V1 (flag ON + 안전 게이트 통과 시에만; 엄마 중심, 시기 없음) ──
+  // ── Event Forecast V1 (flag ON + 안전 게이트 통과 시에만; 엄마 중심, 시기 없음) ──
   // highCount>0이면 라우트가 422로 본문을 막으므로 생성하지 않는다(불필요한 호출 방지).
-  if (isPregnancyActionGuideEnabled() && validation.highCount === 0) {
-    const ev = buildPregnancyActionGuideEvidence(bundle);
-    const guide = await generateActionGuide(
+  if (isPregnancyEventForecastEnabled() && validation.highCount === 0) {
+    const ev = buildPregnancyEventForecastEvidence(bundle);
+    const forecast = await generateEventForecast(
       ev,
       (sys, usr, mt) => opts.callGpt({ sectionId: 'familySupportAndFinalMessage', system: sys, user: usr, maxTokens: mt, outputJsonSchema: '' }, { maxTokens: mt }).then(r => r.text),
       { sanitize: (t: string) => applyPregnancyFinalSanitizers(t), disclaimer: PREGNANCY_DISCLAIMER },
     );
-    if (guide) report.actionGuideV1 = guide;
+    if (forecast) report.eventForecast = forecast;
   }
 
   return {

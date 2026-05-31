@@ -19,10 +19,10 @@ import { analyzeStructure } from './analysis/structureAnalyzer';
 import { analyzeUsefulGod } from './analysis/usefulGodAnalyzer';
 import { analyzeYongsinDiagnostic } from './analysis/yongsinDiagnostic';
 import { isYongsinDiagnosticEnabled } from './report/yongsinDiagnosticFlag';
-import { isPersonalActionGuideEnabled } from './actionGuide/actionGuideFlag';
-import { buildPersonalActionGuideEvidence } from './actionGuide/actionGuideEvidence';
-import { generateActionGuide } from './actionGuide/generateActionGuide';
-import type { ActionGuide } from './actionGuide/actionGuideTypes';
+import { isPersonalEventForecastEnabled } from './eventForecast/eventForecastFlag';
+import { buildPersonalEventForecastEvidence } from './eventForecast/eventForecastEvidence';
+import { generateEventForecast } from './eventForecast/generateEventForecast';
+import type { EventForecast } from './eventForecast/eventForecastTypes';
 import { analyzeSpecialStars } from './analysis/specialStarAnalyzer';
 import { analyzeCombinationsAndConflicts } from './analysis/combinationConflictAnalyzer';
 import { analyzeFortuneFlow } from './analysis/fortuneFlowAnalyzer';
@@ -350,8 +350,8 @@ export interface NarrativeGenerateResult {
   validation: NarrativeValidationResult;
   attempts: number;
   repairedSections: string[];
-  /** All-mode Action Guide V1 — flag ON일 때만 채워짐. OFF면 undefined → 응답에서 키 누락(byte-identical). */
-  actionGuideV1?: ActionGuide;
+  /** Event Forecast V1 — flag ON일 때만 채워짐. OFF면 undefined → 응답에서 키 누락(byte-identical). */
+  eventForecast?: EventForecast;
 }
 
 /**
@@ -494,25 +494,25 @@ export async function generateNarrativePersonalSajuReport(
     validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 
-  // ── All-mode Action Guide V1 (flag ON일 때만 1회 추가 호출) ──
-  // 메인 리포트와 독립. 실패해도 null → 미부착(기존 결과 무영향).
-  let actionGuideV1: ActionGuide | undefined;
-  if (isPersonalActionGuideEnabled()) {
-    const ev = buildPersonalActionGuideEvidence(gptInput);
+  // ── Event Forecast V1 (flag ON일 때만 1회 추가 호출) ──
+  // 메인 리포트와 독립(섹션 프롬프트 무수정). 실패해도 null → 미부착(기존 결과 무영향).
+  let eventForecast: EventForecast | undefined;
+  if (isPersonalEventForecastEnabled()) {
+    const ev = buildPersonalEventForecastEvidence(gptInput);
     const personalSanitize = (t: string) => {
       let out = sanitizeNarrativeText(t);
       out = sanitizeUnsupportedUserContext(out, uctx);
       out = sanitizeFinancialAdviceRisk(out);
       return out;
     };
-    actionGuideV1 = (await generateActionGuide(
+    eventForecast = (await generateEventForecast(
       ev,
       (sys, usr, mt) => opts.callGpt({ system: sys, user: usr }, { maxTokens: mt }),
       { sanitize: personalSanitize },
     )) ?? undefined;
   }
 
-  return { gptInput, narrativePlans, topicCoverageMap, starKeywordCard, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections), actionGuideV1 };
+  return { gptInput, narrativePlans, topicCoverageMap, starKeywordCard, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections), eventForecast };
 }
 
 // ============================================================
