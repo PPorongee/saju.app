@@ -14,7 +14,7 @@ import type { YearlyFortuneAnalysis } from '../yearly/yearlyTypes';
 import type { CompatibilityAnalysisBundle } from '../compatibility/compatibilityTypes';
 import type { PregnancyAnalysisBundle } from '../pregnancy/narrative/pregnancyMomBabyAnalyzer';
 import type {
-  FortuneVerdictEvidence, VerdictSeed, VerdictStrength, RelationshipStatus,
+  FortuneVerdictEvidence, VerdictSeed, VerdictStrength, RelationshipStatus, ConcernKey,
 } from './fortuneVerdictTypes';
 
 const ELEMENT_KEYS = ['wood', 'fire', 'earth', 'metal', 'water'];
@@ -86,6 +86,82 @@ function auxLines(diag: YongsinDiagnostic | undefined | null): string[] {
   if (diag.drainCandidate?.element) out.push(`설기 보조: ${ELEMENT_KO[diag.drainCandidate.element]}`);
   if (diag.controlCandidate?.element) out.push(`극제 보조: ${ELEMENT_KO[diag.controlCandidate.element]}`);
   return out;
+}
+
+// ── 나이대 라벨 ──
+function ageBandOf(age: number | null): string {
+  if (age == null || !Number.isFinite(age) || age <= 0) return '';
+  if (age < 20) return '10대';
+  if (age < 25) return '20대 초반';
+  if (age < 30) return '20대 후반';
+  if (age < 35) return '30대 초반';
+  if (age < 40) return '30대 후반';
+  if (age < 45) return '40대 초반';
+  if (age < 50) return '40대 후반';
+  if (age < 55) return '50대 초반';
+  if (age < 60) return '50대 후반';
+  return '60대 이후';
+}
+
+// ── 관심사 정규화(배열 + merge + dedup) ──
+const CONCERN_RULES: Array<{ key: ConcernKey; re: RegExp }> = [
+  { key: 'money', re: /money|invest|wealth|돈|재물|재테크|투자|수입|소득/i },
+  { key: 'housing_move', re: /move|hous|real.?estate|relocat|이사|이동|생활권|집|부동산|주거|전세|매매/i },
+  { key: 'child_family', re: /child|kid|education|pregnan|family|자녀|아이|애|육아|교육|임신|출산|가족/i },
+  { key: 'career', re: /career|job|promot|employ|이직|직장|직업|커리어|승진|취업|진로/i },
+  { key: 'business', re: /business|startup|freelance|사업|창업|장사|프리랜|동업/i },
+  { key: 'relationship', re: /relationship|marriage|spouse|dating|love|연애|결혼|배우자|인연|관계|이성/i },
+];
+function normalizeConcerns(raw: unknown): ConcernKey[] {
+  const arr: string[] = Array.isArray(raw) ? raw.map(String) : (typeof raw === 'string' && raw ? [raw] : []);
+  const out: ConcernKey[] = [];
+  for (const item of arr) {
+    for (const { key, re } of CONCERN_RULES) {
+      if (re.test(item) && !out.includes(key)) out.push(key);
+    }
+  }
+  return out;
+}
+
+// ── 개인사주 섹션 플랜(우선순위: 공통축 → 관심사 → 생애상태 → evidence강. 6~8개) ──
+const SEC = {
+  daewoon: '운이 트이는 시기(대운)',
+  money: '돈과 재물운',
+  career: '일·사업·이직',
+  housing: '이동수와 집·부동산',
+  child: '자녀와 가족',
+  spouse: '배우자와 집안',
+  relationship: '인연과 결혼',
+  invest: '투자 성향과 돈의 형태',
+  noble: '귀인운과 문서·계약',
+};
+function buildPersonalSectionPlan(a: {
+  concerns: ConcernKey[]; status: RelationshipStatus; hasChildren: boolean | 'unknown'; yeokma: boolean; noble: boolean;
+}): string[] {
+  const plan: string[] = [SEC.daewoon, SEC.money, SEC.career]; // P1 필수 공통축
+  const add = (s: string) => { if (!plan.includes(s)) plan.push(s); };
+  // P2 관심사
+  for (const c of a.concerns) {
+    if (c === 'housing_move') add(SEC.housing);
+    else if (c === 'child_family') add(SEC.child);
+    else if (c === 'relationship') add(a.status === 'married' || a.status === 'divorced' ? SEC.spouse : SEC.relationship);
+    else if (c === 'business') add(SEC.career); // 사업은 일·사업·이직에 포함(이미 있음)
+    else if (c === 'money') add(SEC.invest); // 돈 관심 → 투자 성향 섹션도
+    // career → 이미 P1
+  }
+  // P3 생애상태
+  if ((a.status === 'married' || a.status === 'divorced')) add(SEC.spouse);
+  if (a.hasChildren === true) add(SEC.child);
+  if ((a.status === 'single' || a.status === 'dating' || a.status === 'unknown') && !plan.includes(SEC.relationship)) {
+    // 미혼/연애중은 인연운 기본 포함(관심사로 이미 들어갔으면 skip)
+    add(SEC.relationship);
+  }
+  // P4 evidence강(여유 있을 때만)
+  if (a.yeokma) add(SEC.housing);
+  if (plan.length < 6 && a.noble) add(SEC.noble);
+  if (plan.length < 6) add(SEC.invest);
+  if (plan.length < 6) add(SEC.noble);
+  return plan.slice(0, 8);
 }
 
 // ============================================================
@@ -254,10 +330,19 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
     if (y.year && tg) breakthroughLines.push(`${y.year}년: ${tg} 강해짐`);
   }
 
+  const currentAge: number | null = typeof (gpt as any).userContext?.age === 'number' ? (gpt as any).userContext.age : null;
+  const ageBand = ageBandOf(currentAge);
+  const concerns = normalizeConcerns((gpt as any).userContext?.currentConcerns);
+  const sectionPlan = buildPersonalSectionPlan({
+    concerns, status, hasChildren,
+    yeokma: hasStar(core, /역마/), noble: hasStar(core, /천을귀인/),
+  });
+
   return {
     mode: 'personal',
     relationshipStatus: status,
     hasChildren,
+    currentAge, ageBand, concerns, sectionPlan,
     coreLines: coreLinesFromPerson(gpt),
     seeds,
     breakthroughLines,
@@ -273,6 +358,8 @@ export function buildYearlyFortuneVerdictEvidence(
   analysis: YearlyFortuneAnalysis,
   relationshipStatus: RelationshipStatus = 'unknown',
   hasChildren: boolean | 'unknown' = 'unknown',
+  rawConcerns: unknown = undefined,
+  currentAge: number | null = null,
 ): FortuneVerdictEvidence {
   const carried: any = analysis.carriedOver ?? {};
   const ug: any = carried.usefulGod ?? {};
@@ -293,6 +380,7 @@ export function buildYearlyFortuneVerdictEvidence(
 
   return {
     mode: 'yearly', relationshipStatus: status, hasChildren,
+    currentAge, ageBand: ageBandOf(currentAge), concerns: normalizeConcerns(rawConcerns), sectionPlan: [],
     coreLines, seeds,
     breakthroughLines: [yee.label ? `올해 세운 작용: ${yee.label}` : ''].filter(Boolean),
     auxiliaryLines: [],
@@ -323,8 +411,10 @@ export function buildCompatFortuneVerdictEvidence(
     { question: '돈·생활·가족이 얽힐 때 어떤 문제가 생기는가?', verdictType: 'family_spouse', strength: 'moderate', timing: '', basisSignals: ['생활·돈·역할 분담에서 드러나는 결'], allowedClaims: ['책임 분담이 흐려질 때 한쪽이 소모되는 구조 등 판정'] },
   ];
 
+  const aAge: number | null = typeof (personA as any).userContext?.age === 'number' ? (personA as any).userContext.age : null;
   return {
     mode: 'compat', relationshipStatus: relationshipType === 'married' ? 'married' : 'unknown', hasChildren: 'unknown',
+    currentAge: aAge, ageBand: ageBandOf(aAge), concerns: [], sectionPlan: [],
     coreLines: relationLines, seeds, breakthroughLines: [], auxiliaryLines: [],
     timingRule: '관계는 연 단위까지만. 결혼/이별 확정 금지. 상대를 용신/기신/운명으로 단정 금지.',
     partner: { aLines: coreLinesFromPerson(personA), bLines: coreLinesFromPerson(personB), relationLines },
@@ -341,8 +431,10 @@ export function buildPregnancyFortuneVerdictEvidence(bundle: PregnancyAnalysisBu
     { question: '자녀·가족운은 어떤 그림인가?', verdictType: 'child', strength: 'moderate', timing: '', basisSignals: ['엄마 사주로 본 자녀·가족 책임의 결'], allowedClaims: ['자녀운 강/약, 한 아이 집중형/가족 책임형 등 그림 판정', '임신·출산·성별·건강·아이 수·출산일 예측 절대 금지'] },
     { question: '엄마가 떠안기 쉬운 구조와 가족 도움', verdictType: 'family_spouse', strength: 'moderate', timing: '', basisSignals: ['엄마가 혼자 떠안기 쉬운 구조 — 가족의 구체적 분담이 필요한 결'], allowedClaims: ['집안 준비·역할 분담을 누가 어디까지 질지 판정', '의료/출산 판단 대체 금지'] },
   ];
+  const mAge: number | null = typeof (mother as any)?.userContext?.age === 'number' ? (mother as any).userContext.age : null;
   return {
     mode: 'pregnancy', relationshipStatus: 'unknown', hasChildren: 'unknown',
+    currentAge: mAge, ageBand: ageBandOf(mAge), concerns: [], sectionPlan: [],
     coreLines, seeds, breakthroughLines: [], auxiliaryLines: auxLines((mother as any)?.yongsinDiagnostic),
     timingRule: '출산일·출산시간·성별·건강·아이 수·태아 운명 예측 절대 금지. 시기는 임신 초/중/후기 국면만. 의료 판단은 의료진 우선.',
   };

@@ -45,10 +45,21 @@ export interface VerdictSeed {
   allowedClaims: string[];
 }
 
+/** 정규화된 관심사 축. */
+export type ConcernKey = 'money' | 'housing_move' | 'child_family' | 'career' | 'business' | 'relationship';
+
 export interface FortuneVerdictEvidence {
   mode: FortuneVerdictMode;
   relationshipStatus: RelationshipStatus;
   hasChildren: boolean | 'unknown';
+  /** 현재 나이(만, userContext.age). 모르면 null. */
+  currentAge: number | null;
+  /** 나이대 라벨(예: "30대 초반"). 모르면 ''. */
+  ageBand: string;
+  /** 정규화·중복제거·merge된 관심사. 없으면 []. */
+  concerns: ConcernKey[];
+  /** (개인) 써야 할 섹션 제목 순서. 다른 모드는 []. */
+  sectionPlan: string[];
   /** 핵심 좌표(용신/신강약 등, compact). */
   coreLines: string[];
   /** 판정 씨앗 — GPT는 이 중에서만 판정. */

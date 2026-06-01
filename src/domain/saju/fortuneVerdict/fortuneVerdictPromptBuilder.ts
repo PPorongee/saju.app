@@ -33,6 +33,16 @@ const TONE = [
   '  · "이동수도 있습니다. 여행처럼 가볍게 움직이는 운이 아니라 집과 가족의 조건 때문에 움직이는 운입니다. 2027년 말부터 2028년 사이 집을 옮기거나, 아이의 생활권이 바뀌거나, 배우자의 일정과 내 일하는 장소가 맞물려 실제 이동을 고민하게 됩니다."',
 ];
 
+// 나이대별 해석 방향(같은 관심사도 나이대에 따라 다르게).
+function ageGuideOf(band: string): string {
+  if (/10대|20대/.test(band)) return '진로 선택·첫 기반·관계 탐색 중심. 돈은 축적보다 수입 구조 형성, 이직보다 기반 다지기.';
+  if (/30대/.test(band)) return '결혼·자녀·집·이직·사업 검증기. 가족 책임과 돈이 함께 움직이고, 직장 안 책임 확대 또는 독립 고민, 집·생활권이 본격화.';
+  if (/40대/.test(band)) return '재물 축적·자산화. 부동산·사업 확장·직책/권한, 자녀 교육비·가족 돈 구조, 부모/상속 가능성. 전문성이 돈으로 바뀌는 시기.';
+  if (/50대/.test(band)) return '수확·안정·자산 방어. 가족/부모/상속/건강 리듬, 확장보다 정리·관리, 돈을 지키는 운.';
+  if (/60대/.test(band)) return '자산 유지·가족 배분·건강 리듬·구조 정리·거주 안정.';
+  return '';
+}
+
 const MODE_TITLE: Record<FortuneVerdictMode, string> = {
   personal: '사주가 말하는 당신의 큰 운',
   yearly: '올해, 사주가 말하는 것',
@@ -44,8 +54,8 @@ function relationshipRule(status: RelationshipStatus, hasChildren: boolean | 'un
   const child = hasChildren === true ? ' (자녀 있음 — 새 아이 여부가 아니라 교육·생활권·돈·역할로 자녀운을 풀 것)' : '';
   switch (status) {
     case 'married': return `[관계 규칙] 기혼${child} — 새 연애 인연 절대 금지. 관계운은 배우자·집안·돈·아이·부모 구조로만.`;
-    case 'single': return '[관계 규칙] 미혼 — 인연/연애/결혼운 풀이 허용("반드시 만난다" 단정만 금지).';
-    case 'dating': return '[관계 규칙] 연애 중 — 공식화/동거/결혼 논의 가능성 조심스럽게 허용. 새 사람 강조 금지.';
+    case 'single': return `[관계 규칙] 미혼 — "인연과 결혼" 섹션을 반드시 1개 포함하고 인연운 강약·결을 풀 것("반드시 만난다" 단정만 금지).${hasChildren === true ? '' : ' 자녀가 없으므로 자녀 전용 섹션은 만들지 말 것(자녀운은 아직 열리지 않은 영역으로 한두 문장만).'}`;
+    case 'dating': return '[관계 규칙] 연애 중 — "인연과 결혼" 섹션을 포함해 공식화/동거/결혼 논의 가능성을 조심스럽게 풀 것(새 사람 강조 금지). 자녀 전용 섹션은 만들지 말 것.';
     case 'divorced': return '[관계 규칙] 이혼 — 재혼 단정 금지. 관계 결 변화·정리로.';
     default: return '[관계 규칙] 관계 상태 미상 — 연애/결혼 단정 금지.';
   }
@@ -55,12 +65,12 @@ function modeSections(mode: FortuneVerdictMode): string[] {
   switch (mode) {
     case 'personal':
       return [
-        '[섹션 구성] sections는 줄글로(각 2~4문단). 권장 제목: "돈과 재물운" / "일·사업·이직" / "이동수와 집" / "관계와 가족" / "자녀운" / "운이 트이는 시기".',
-        '- "돈과 재물운": 언제부터 돈이 붙는가, 한 방형 vs 축적형, 주식·코인 같은 변동성 돈 vs 부동산·실물·고정수입 중 무엇이 맞는가를 한 흐름으로.',
+        '[섹션 구성] 위 [섹션 플랜]을 6~8개 줄글 섹션으로(각 2~4문단). 대운(운 트이는 시기)/돈/직업·사업은 반드시 포함. 관심사는 각각 최소 1회 반영하되 관련된 것끼리 묶어도 됨.',
+        '- "돈과 재물운": 언제부터 돈이 붙는가, 한 방형 vs 축적형, 주식·코인 같은 변동성 돈 vs 부동산·실물·고정수입 중 무엇이 맞는가를 한 흐름으로(나이대 반영).',
         '- "일·사업·이직": 직장 안에서 크는가 독립해야 크는가, 이직이 도망인가 기회인가, 사업 확장은 언제가 나은가.',
-        '- "이동수와 집": 이사운·생활권 변화·집 문제가 언제 어떤 형태로 움직이는가(여행성 X, 현실 조건성 O).',
-        '- "관계와 가족" + "자녀운": 위 관계 규칙을 지켜 자연스럽게.',
-        '- timingSummary: 몇 살 이후/어느 대운 구간이 진짜 확장기인지 한 문단.',
+        '- "이동수와 집·부동산": 이사·생활권·집 문제가 언제 어떤 형태로 움직이는가(여행성 X, 현실 조건성 O).',
+        '- "자녀와 가족"/"배우자와 집안": 위 관계 규칙대로(기혼 새 연애 금지, 기존 자녀는 교육·생활권·돈·역할로).',
+        '- timingSummary: 몇 살 이후/어느 대운 구간이 진짜 확장기인지 한 문단(나이대 기준).',
       ];
     case 'yearly':
       return [
@@ -82,6 +92,19 @@ function renderEvidence(ev: FortuneVerdictEvidence): string {
   b.push(`[핵심 좌표] ${ev.coreLines.join(' / ') || '(없음)'}`);
   if (ev.auxiliaryLines.length) b.push(`[보조 운용] ${ev.auxiliaryLines.join(' / ')}`);
   b.push(relationshipRule(ev.relationshipStatus, ev.hasChildren));
+  if (ev.ageBand) {
+    b.push(`[나이대] ${ev.ageBand}${ev.currentAge ? ` (만 ${ev.currentAge}세)` : ''} — 해석 방향: ${ageGuideOf(ev.ageBand)}`);
+    b.push('  ※ 결과 문장에 나이대를 자연스럽게 녹일 것(예: "지금 나이대는 돈이 갑자기 터지기보다 40대 이후 자산 구조를 만드는 시기"). 같은 운도 나이대에 따라 해석을 달리할 것.');
+  }
+  if (ev.concerns.length) {
+    b.push(`[사용자 관심사 — 각각 반드시 1회 이상 반영] ${ev.concerns.join(', ')}`);
+    b.push('  ※ 관심사가 여러 개면 관련된 것끼리 한 섹션으로 묶어도 됨(예: 자녀+집+돈 → "아이 때문에 집과 돈이 함께 움직이는 운"). evidence가 약한 관심사도 "없음"으로 끝내지 말고, 어떤 방식으로 나타나는지 대체 해석을 줄 것.');
+  } else {
+    b.push('[관심사] 없음 — 전체운 기본 모드. 대운/돈/직업 + 생애상태 + evidence 강한 축으로 충실히(얇아지지 않게).');
+  }
+  if (ev.sectionPlan.length) {
+    b.push(`[섹션 플랜 — 아래 제목으로 6~8개 섹션(관련된 것끼리 묶기 가능, 순서 참고). 대운/돈/직업 필수. 플랜에 없는 섹션(특히 무자녀 미혼의 자녀 섹션)을 임의로 추가하지 말 것]\n${ev.sectionPlan.map(t => `  - ${t}`).join('\n')}`);
+  }
   if (ev.partner) {
     b.push(`[A 결] ${ev.partner.aLines.join(' / ') || '(없음)'}`);
     b.push(`[B 결] ${ev.partner.bLines.join(' / ') || '(없음)'}`);

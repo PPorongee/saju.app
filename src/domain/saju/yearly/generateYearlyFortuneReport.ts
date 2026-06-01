@@ -507,7 +507,10 @@ export async function generateYearlyFortuneReport(
 
   // ── Fortune Questions Verdict V1 (flag ON일 때만 1회 추가 호출) ──
   if (isYearlyFortuneVerdictEnabled()) {
-    const ev = buildYearlyFortuneVerdictEvidence(analysis, relationshipStatus, hasChildren);
+    const _byr = parseInt(String(input.birth?.birthDate ?? '').slice(0, 4), 10);
+    const _cyr = parseInt(String(input.currentDate ?? '').slice(0, 4), 10);
+    const _yAge = (Number.isFinite(_byr) && Number.isFinite(_cyr) && _cyr > _byr) ? _cyr - _byr : null;
+    const ev = buildYearlyFortuneVerdictEvidence(analysis, relationshipStatus, hasChildren, (input.userContext as any)?.currentConcerns, _yAge);
     const verdict = await generateFortuneVerdict(
       ev,
       (sys, usr, mt) => opts.callGpt({ sectionId: 'actionGuide', system: sys, user: usr, maxTokens: mt, outputJsonSchema: '' }, { maxTokens: mt }),

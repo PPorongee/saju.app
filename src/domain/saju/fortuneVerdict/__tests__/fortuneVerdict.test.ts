@@ -13,7 +13,7 @@ import { generateFortuneVerdict } from '../generateFortuneVerdict';
 
 function personFixture(over: any = {}): any {
   return {
-    userContext: { gender: over.gender ?? 'male', relationshipStatus: over.relationshipStatus ?? 'single', hasChildren: over.hasChildren ?? 'unknown' },
+    userContext: { gender: over.gender ?? 'male', relationshipStatus: over.relationshipStatus ?? 'single', hasChildren: over.hasChildren ?? 'unknown', age: over.age, currentConcerns: over.currentConcerns },
     coreAnalysis: {
       usefulGod: { primaryUseful: { type: 'element', value: 'water' }, favorable: over.favorable ?? ['정재'], unfavorable: ['편관'] },
       dayMasterStrength: { level: over.dm ?? 'strong' },
@@ -91,6 +91,47 @@ describe('evidence — 큰 질문 판정 씨앗', () => {
     const ev = buildPregnancyFortuneVerdictEvidence({ mother: personFixture() } as any);
     expect(ev.timingRule).toMatch(/출산.*금지|성별/);
     expect(ev.seeds.some(s => s.verdictType === 'child')).toBe(true);
+  });
+});
+
+describe('관심사 다중선택 + 나이대 반영', () => {
+  it('관심사 없음 → concerns [], 그래도 대운/돈/직업 + 생애상태 섹션', () => {
+    const ev = buildPersonalFortuneVerdictEvidence(personFixture({ relationshipStatus: 'married', hasChildren: true }));
+    expect(ev.concerns).toEqual([]);
+    expect(ev.sectionPlan.slice(0, 3)).toEqual(['운이 트이는 시기(대운)', '돈과 재물운', '일·사업·이직']);
+    expect(ev.sectionPlan).toContain('배우자와 집안');
+    expect(ev.sectionPlan).toContain('자녀와 가족');
+  });
+  it('관심사 1개(이사) → housing 섹션 포함', () => {
+    const ev = buildPersonalFortuneVerdictEvidence(personFixture({ currentConcerns: ['이사 가고 싶어요'] }));
+    expect(ev.concerns).toContain('housing_move');
+    expect(ev.sectionPlan).toContain('이동수와 집·부동산');
+  });
+  it('관심사 4개(돈/이사/자녀/사업) merge+dedup, 각 축 반영, 6~8 섹션', () => {
+    const ev = buildPersonalFortuneVerdictEvidence(personFixture({ relationshipStatus: 'married', hasChildren: true, currentConcerns: ['money', '부동산/이사', '아이 교육', '창업/사업'] }));
+    expect(ev.concerns).toEqual(expect.arrayContaining(['money', 'housing_move', 'child_family', 'business']));
+    expect(ev.sectionPlan).toContain('이동수와 집·부동산');
+    expect(ev.sectionPlan).toContain('자녀와 가족');
+    expect(ev.sectionPlan.length).toBeGreaterThanOrEqual(6);
+    expect(ev.sectionPlan.length).toBeLessThanOrEqual(8);
+    expect(ev.sectionPlan.slice(0, 3)).toEqual(['운이 트이는 시기(대운)', '돈과 재물운', '일·사업·이직']);
+  });
+  it('나이대 계산: 만 32세 → 30대 초반', () => {
+    const ev = buildPersonalFortuneVerdictEvidence(personFixture({ age: 32 }));
+    expect(ev.currentAge).toBe(32);
+    expect(ev.ageBand).toBe('30대 초반');
+  });
+  it('나이 없음 → ageBand 빈 문자열', () => {
+    const ev = buildPersonalFortuneVerdictEvidence(personFixture());
+    expect(ev.ageBand).toBe('');
+  });
+  it('프롬프트에 나이대 해석방향 + 관심사 반영 지시', () => {
+    const ev = buildPersonalFortuneVerdictEvidence(personFixture({ age: 42, currentConcerns: ['투자', '부동산'] }));
+    const p = buildFortuneVerdictPrompt(ev);
+    expect(p.user).toMatch(/나이대/);
+    expect(p.user).toMatch(/40대/);
+    expect(p.user).toMatch(/관심사/);
+    expect(p.user).toMatch(/섹션 플랜/);
   });
 });
 

@@ -499,12 +499,9 @@ export async function generateNarrativePersonalSajuReport(
   let fortuneVerdict: FortuneVerdict | undefined;
   if (isPersonalFortuneVerdictEnabled()) {
     const ev = buildPersonalFortuneVerdictEvidence(gptInput);
-    const personalSanitize = (t: string) => {
-      let out = sanitizeNarrativeText(t);
-      out = sanitizeUnsupportedUserContext(out, uctx);
-      out = sanitizeFinancialAdviceRisk(out);
-      return out;
-    };
+    // fortuneVerdict는 자녀운/배우자운이 의도된 주제(관계 규칙은 프롬프트가 처리)이므로
+    // 본문 narrative용 sanitizeUnsupportedUserContext(자녀→"후배·제자·돌봄이…" 치환)는 적용하지 않는다.
+    const personalSanitize = (t: string) => sanitizeFinancialAdviceRisk(sanitizeNarrativeText(t));
     fortuneVerdict = (await generateFortuneVerdict(
       ev,
       (sys, usr, mt) => opts.callGpt({ system: sys, user: usr }, { maxTokens: mt }),
