@@ -17,7 +17,7 @@
 
 import type { BirthInput, BirthTimeConfidence } from '../../calendar/normalizeBirthInput';
 import { ELEMENT_KO, type Element } from '../../rules/elements';
-import type { EventForecast } from '../../eventForecast/eventForecastTypes';
+import type { FortuneVerdict } from '../../fortuneVerdict/fortuneVerdictTypes';
 import type {
   DayMasterRelationKind,
   BranchRelationKind,
@@ -249,8 +249,8 @@ export interface PregnancyNarrativeReport {
   evidenceView: PregnancyEvidenceView;                                 // 결정적
   /** 고정 안내문 (sanitizer가 보장). UI 배너 렌더용. */
   disclaimer: string;
-  /** Event Forecast V1 (엄마를 편하게 하는 흐름, 시기 없음). flag ON일 때만 부착. OFF면 키 미부착 → byte-identical. */
-  eventForecast?: EventForecast;
+  /** Fortune Questions Verdict V1 (자녀·가족운 판정). flag ON일 때만 부착. OFF면 키 미부착 → byte-identical. */
+  fortuneVerdict?: FortuneVerdict;
 }
 
 // ============================================================

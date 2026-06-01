@@ -18,9 +18,9 @@ import type { BirthInput } from '../../calendar/normalizeBirthInput';
 import { calculateAnalysisOnly } from '../../generatePersonalSajuReport';
 import { isCompatYongsinDiagnosticEnabled } from '../../report/yongsinDiagnosticFlag';
 import { renderYongsinDiagnosticGuidance } from '../../report/yongsinDiagnosticGuidance';
-import { isCompatEventForecastEnabled } from '../../eventForecast/eventForecastFlag';
-import { buildCompatEventForecastEvidence } from '../../eventForecast/eventForecastEvidence';
-import { generateEventForecast } from '../../eventForecast/generateEventForecast';
+import { isCompatFortuneVerdictEnabled } from '../../fortuneVerdict/fortuneVerdictFlag';
+import { buildCompatFortuneVerdictEvidence } from '../../fortuneVerdict/fortuneVerdictEvidence';
+import { generateFortuneVerdict } from '../../fortuneVerdict/generateFortuneVerdict';
 import { composeCompatibilityAnalysis } from '../compatibilityAnalyzer';
 import type { CompatibilityAnalysisBundle, RelationshipType } from '../compatibilityTypes';
 
@@ -453,15 +453,15 @@ export async function generateCompatNarrativeReport(
     });
   }
 
-  // ── Event Forecast V1 (flag ON일 때만 1회 추가 호출, A/B 구분 + 상대 낙인 금지) ──
-  if (isCompatEventForecastEnabled()) {
-    const ev = buildCompatEventForecastEvidence(bundle, personA, personB, relationshipType);
-    const forecast = await generateEventForecast(
+  // ── Fortune Questions Verdict V1 (flag ON일 때만 1회 추가 호출, A/B 구분 + 상대 낙인 금지) ──
+  if (isCompatFortuneVerdictEnabled()) {
+    const ev = buildCompatFortuneVerdictEvidence(bundle, personA, personB, relationshipType);
+    const verdict = await generateFortuneVerdict(
       ev,
       (sys, usr, mt) => opts.callGpt({ sectionId: 'finalAdvice', system: sys, user: usr, maxTokens: mt, outputJsonSchema: '' }, { maxTokens: mt }).then(r => r.text),
       { sanitize: (t: string) => applyCompatFinalSanitizers(t, sanitizeCtx) },
     );
-    if (forecast) report.eventForecast = forecast;
+    if (verdict) report.fortuneVerdict = verdict;
   }
 
   return {

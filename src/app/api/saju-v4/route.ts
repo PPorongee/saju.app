@@ -77,8 +77,8 @@ export async function POST(req: Request) {
       attempts: result.attempts,
       // 별빛 키워드 카드 (개인사주 최상단 + SNS 공유용)
       starKeywordCard: result.starKeywordCard,
-      // Event Forecast V1 — flag OFF면 undefined → JSON 직렬화에서 키 누락(byte-identical).
-      eventForecast: result.eventForecast,
+      // Fortune Questions Verdict V1 — flag OFF면 undefined → JSON 직렬화에서 키 누락(byte-identical).
+      fortuneVerdict: result.fortuneVerdict,
       narrative: true,
     });
   } catch (err: unknown) {

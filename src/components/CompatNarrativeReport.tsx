@@ -27,7 +27,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType } from '@/domain/saju/compatibility/compatibilityTypes';
 import type { CompatibilityNarrativeReport } from '@/domain/saju/compatibility/narrative/compatNarrativeTypes';
-import { EventForecastSection } from '@/components/EventForecastSection';
+import { FortuneVerdictSection } from '@/components/FortuneVerdictSection';
 import type { RelationshipYearFlow } from '@/domain/saju/compatibility/compatibilityTypes';
 import { glossSajuNotations } from '@/components/evidence/notationGloss';
 
@@ -186,7 +186,7 @@ function ReportBody({
         body={report.finalAdvice.body}
       />
       {futureFlow.length > 0 && <FutureFlowView flow={futureFlow} />}
-      <EventForecastSection forecast={report.eventForecast} />
+      <FortuneVerdictSection verdict={report.fortuneVerdict} />
       <EvidenceFold ev={report.evidenceView} />
     </div>
   );

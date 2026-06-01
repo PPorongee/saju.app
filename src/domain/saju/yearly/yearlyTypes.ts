@@ -17,8 +17,8 @@ import type {
   SpecialStarInfo,
 } from '../report/sajuReportSchema';
 import type { Element } from '../rules/elements';
-// Event Forecast V1 출력 타입 (yearly의 기존 ActionGuide와 이름 충돌 없음).
-import type { EventForecast } from '../eventForecast/eventForecastTypes';
+// Fortune Questions Verdict V1 출력 타입.
+import type { FortuneVerdict } from '../fortuneVerdict/fortuneVerdictTypes';
 
 // ============================================================
 // Feature flags — 4개 (server 3 + NEXT_PUBLIC UI 1)
@@ -589,10 +589,10 @@ export interface YearlyFortuneReport {
   nextTwoYears: NextTwoYearSection[];
   evidenceView: YearlyFortuneEvidenceView;
   /**
-   * Event Forecast V1 (운의 사건 예보). flag(SAJU_EVENT_FORECAST_ENABLED 등) ON일 때만 부착.
+   * Fortune Questions Verdict V1 (인생 큰 질문 판정). flag(SAJU_FORTUNE_VERDICT_ENABLED 등) ON일 때만 부착.
    * 기존 actionGuide(mustCatch/betterAvoid/bestStrategy)와 별개의 추가 섹션. OFF면 키 미부착 → byte-identical.
    */
-  eventForecast?: EventForecast;
+  fortuneVerdict?: FortuneVerdict;
 }
 
 // ============================================================

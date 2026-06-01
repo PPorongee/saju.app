@@ -22,7 +22,7 @@ import type {
 } from '../compatibilityTypes';
 import { RELATIONSHIP_TYPES, RELATIONSHIP_TYPE_KO } from '../compatibilityTypes';
 import type { Element } from '../../rules/elements';
-import type { EventForecast } from '../../eventForecast/eventForecastTypes';
+import type { FortuneVerdict } from '../../fortuneVerdict/fortuneVerdictTypes';
 
 // ============================================================
 // 1) 섹션 ID — 8개 (LLM 6 + 결정적 2)
@@ -177,8 +177,8 @@ export interface CompatibilityNarrativeReport {
   relationshipGuide: RelationshipGuideSection;        // LLM
   finalAdvice: FinalAdviceSection;                    // LLM
   evidenceView: CompatEvidenceView;                   // 결정적
-  /** Event Forecast V1 (관계의 전개 포인트) — flag ON일 때만 부착. OFF면 키 미부착 → byte-identical. */
-  eventForecast?: EventForecast;
+  /** Fortune Questions Verdict V1 (이 관계 어디까지 가는가) — flag ON일 때만 부착. OFF면 키 미부착 → byte-identical. */
+  fortuneVerdict?: FortuneVerdict;
 }
 
 // ============================================================

@@ -24,9 +24,9 @@ import { analyzeUsefulGod } from '../analysis/usefulGodAnalyzer';
 import { calculateAnalysisOnly } from '../generatePersonalSajuReport';
 import { isYearlyYongsinDiagnosticEnabled } from '../report/yongsinDiagnosticFlag';
 import { renderYongsinDiagnosticGuidance } from '../report/yongsinDiagnosticGuidance';
-import { isYearlyEventForecastEnabled } from '../eventForecast/eventForecastFlag';
-import { buildYearlyEventForecastEvidence } from '../eventForecast/eventForecastEvidence';
-import { generateEventForecast } from '../eventForecast/generateEventForecast';
+import { isYearlyFortuneVerdictEnabled } from '../fortuneVerdict/fortuneVerdictFlag';
+import { buildYearlyFortuneVerdictEvidence } from '../fortuneVerdict/fortuneVerdictEvidence';
+import { generateFortuneVerdict } from '../fortuneVerdict/generateFortuneVerdict';
 import type { HeavenlyStem } from '../rules/heavenlyStems';
 
 import {
@@ -505,15 +505,15 @@ export async function generateYearlyFortuneReport(
     validation = validateYearlyReport({ report, analysis, plans, ctx: validatorCtx });
   }
 
-  // ── Event Forecast V1 (flag ON일 때만 1회 추가 호출, 절기 월운 grounding) ──
-  if (isYearlyEventForecastEnabled()) {
-    const ev = buildYearlyEventForecastEvidence(analysis, relationshipStatus);
-    const forecast = await generateEventForecast(
+  // ── Fortune Questions Verdict V1 (flag ON일 때만 1회 추가 호출) ──
+  if (isYearlyFortuneVerdictEnabled()) {
+    const ev = buildYearlyFortuneVerdictEvidence(analysis, relationshipStatus, hasChildren);
+    const verdict = await generateFortuneVerdict(
       ev,
       (sys, usr, mt) => opts.callGpt({ sectionId: 'actionGuide', system: sys, user: usr, maxTokens: mt, outputJsonSchema: '' }, { maxTokens: mt }),
       { sanitize: (t: string) => applyYearlyFinalSanitizers(t, sanitizeCtx) },
     );
-    if (forecast) report.eventForecast = forecast;
+    if (verdict) report.fortuneVerdict = verdict;
   }
 
   return {
