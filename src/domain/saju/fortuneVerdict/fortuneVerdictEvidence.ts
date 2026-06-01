@@ -221,14 +221,25 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
     const childSum = gsum(totals, childG);
     const hourChild = lifeStagesOfTenGods(core, childG).includes('말년') || (core?.tenGods?.visible ?? []).some((e: any) => /hour/.test(e?.position) && childG.includes(e?.tenGod));
     const concentrated = childG.reduce((a, g) => a + (Number(totals[g]) || 0), 0) > 0 && (Number(totals[childG[0]]) || 0) >= (Number(totals[childG[1]]) || 0) * 2;
+    const childHas = hasChildren === true;
     seeds.push({
-      question: '자녀운이 있는가? 어떤 그림인가?', verdictType: 'child', strength: str3(childSum),
+      question: childHas
+        ? '이미 자녀가 있다면, 앞으로 자녀운은 교육·생활권·돈·역할 중 어디로 움직이는가?'
+        : '자녀운은 강한가? 한 아이 집중형인가, 여럿으로 퍼지는가?',
+      verdictType: 'child', strength: str3(childSum),
       timing: '', basisSignals: [`자녀 인연 기운 ${childSum >= 2 ? '또렷' : childSum >= 1 ? '있음' : '약함'}`, hourChild ? '자식궁(시주)에 관련 기운' : ''].filter(Boolean),
-      allowedClaims: [
-        '자녀운 강/약 판정',
-        concentrated ? '여러 자녀로 넓게 퍼지기보다 한 아이에게 책임·관심이 집중되는 그림' : '자녀보다 가족 전체 책임이 더 강조되는 그림일 수 있음',
-        '임신·출산·성별·건강·아이 수 확정은 절대 금지(그림·경향 판정만)',
-      ],
+      allowedClaims: childHas
+        ? [
+            '"약함"으로 끊지 말 것 — 이미 자녀가 있으므로 새 아이 여부가 아니라 "앞으로의 자녀운"이 어디로 움직이는지로 풀 것',
+            '새로 생기는 아이보다 아이의 교육·생활권(전학·이사)·가족의 돈 배분·배우자와의 역할 분담 문제로 움직인다는 결',
+            concentrated ? '관심·책임이 한 아이에게 집중되는 그림' : '가족 전체 책임으로 넓게 번지는 그림',
+            '임신·출산·성별·건강·아이 수 확정은 절대 금지(경향·방향 판정만)',
+          ]
+        : [
+            '자녀운 강/약 + 그림 판정(여럿 vs 한 아이 집중)',
+            concentrated ? '한 아이에게 책임·관심이 집중되는 그림' : '가족 전체 책임이 더 강조되는 그림',
+            '임신·출산·성별·건강·아이 수 확정은 절대 금지',
+          ],
     });
   }
 

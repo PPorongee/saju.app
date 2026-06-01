@@ -98,8 +98,9 @@ describe('prompt — 판정 + 안전 규칙', () => {
   it('SAFETY/GOLD/블랙리스트/관계 규칙/출력 schema 포함', () => {
     const p = buildFortuneVerdictPrompt(buildPersonalFortuneVerdictEvidence(personFixture()));
     expect(p.user).toMatch(/금지\(결과 보장/);
-    expect(p.user).toMatch(/GOLD 판정 예시/);
-    expect(p.user).toContain('verdicts');
+    expect(p.user).toMatch(/GOLD 예시/);
+    expect(p.user).toContain('sections');
+    expect(p.user).toMatch(/라벨 금지/); // Q./판정:/근거· 금지
     expect(p.user).toMatch(/관계 규칙/);
   });
   it('기혼 프롬프트는 새 연애 금지 명시', () => {
@@ -108,61 +109,77 @@ describe('prompt — 판정 + 안전 규칙', () => {
   });
 });
 
-describe('generate — 파싱/안전/null', () => {
+describe('generate — 줄글 파싱/안전/null', () => {
   const ev = buildPersonalFortuneVerdictEvidence(personFixture());
   const valid = JSON.stringify({
-    title: '인생 큰 질문 판정서', lead: '이 사주는 횡재형이 아니라 축적형 재물운입니다.',
-    verdicts: [
-      { question: '돈복이 있는가?', verdict: '돈은 한 번에 터지기보다 직책·소유·고정수입으로 늦게 크게 쌓이는 구조입니다.', strength: 'moderate', timing: '40대 이후', basis: '성실·고정형 돈 기운', whatItLooksLike: '전문성이 보상으로 바뀜', caution: '단타성 투자는 맞지 않음' },
-      { question: '이동수가 있는가?', verdict: '집·근무지·생활권 중 하나를 현실적으로 바꾸는 이동수입니다.', strength: 'moderate', timing: '현재 대운', basis: '이동·변화의 결', whatItLooksLike: '근무지 이동', caution: '' },
+    title: '사주가 말하는 당신의 큰 운',
+    lead: '이 사주는 초반보다 시간이 붙을수록 커지는 축적형 사주입니다.',
+    sections: [
+      { title: '돈과 재물운', body: ['돈은 한 번에 터지기보다 직책·소유·고정수입으로 늦게 크게 쌓이는 구조입니다.', '40대 이후 돈의 구조가 잡히고, 변동성 큰 자금보다 형태가 남는 자산에서 운이 살아납니다.'] },
+      { title: '이동수와 집', body: ['집과 가족의 조건 때문에 생활권을 한 번 옮기는 흐름이 있습니다.'] },
     ],
-    breakthroughTiming: { summary: '40대 이후 축적이 돈으로', accumulationPhase: '30대', expansionPhase: '40대', cautionPhase: '' },
+    timingSummary: '40대 이후가 진짜 확장기입니다.',
     closing: '축적형으로 가면 늦게 크게 됩니다.',
   });
-  it('유효 JSON → verdicts 보존', async () => {
+  it('유효 JSON → sections 보존', async () => {
     const f = await generateFortuneVerdict(ev, async () => valid);
     expect(f).toBeTruthy();
     expect(f!.mode).toBe('personal');
-    expect(f!.verdicts.length).toBe(2);
-    expect(f!.breakthroughTiming.expansionPhase).toBe('40대');
+    expect(f!.sections.length).toBe(2);
+    expect(f!.sections[0].body.length).toBe(2);
+    expect(f!.timingSummary).toContain('40대');
   });
-  it('lead/verdicts<2면 null', async () => {
-    const f = await generateFortuneVerdict(ev, async () => JSON.stringify({ title: 't', lead: 'x', verdicts: [{ question: 'q', verdict: 'v', strength: 'weak' }] }));
+  it('lead 없거나 섹션<2면 null', async () => {
+    const f = await generateFortuneVerdict(ev, async () => JSON.stringify({ title: 't', lead: '', sections: [{ title: 'a', body: ['x'] }] }));
     expect(f).toBeNull();
   });
   it('throw → null', async () => {
     const f = await generateFortuneVerdict(ev, async () => { throw new Error('t'); });
     expect(f).toBeNull();
   });
-  it('필러/블랙리스트 제거 + 한국어 깨짐 없음', async () => {
-    const filler = JSON.stringify({ title: 't', lead: '돈복이 큽니다.', verdicts: [
-      { question: '돈복?', verdict: '재물운은 강합니다. 소통이 중요합니다.', strength: 'strong', timing: '', basis: '수익이 발생할 가능성이 큽니다', whatItLooksLike: '활용해보세요', caution: '무리하지 마세요' },
-      { question: '이직?', verdict: '이직은 가능성이 있습니다.', strength: 'moderate', timing: '', basis: 'x', whatItLooksLike: 'y', caution: '' },
-    ], breakthroughTiming: { summary: 's' }, closing: '준비가 필요합니다.' });
-    const f = await generateFortuneVerdict(ev, async () => filler);
+  it('라벨(Q./판정:/근거·) + 필러 + 깨짐 제거', async () => {
+    const dirty = JSON.stringify({
+      title: 't', lead: '돈복이 큽니다.',
+      sections: [
+        { title: '돈', body: ['Q. 돈복이 있는가? 판정: 강함. 재물운은 강합니다. 소통이 중요합니다.', '근거 · 수익이 발생할 가능성이 큽니다.'] },
+        { title: '일', body: ['이직은 가능성이 있습니다. 활용해보세요. 무리하지 마세요.', '확장은 신중하게 결정해야 합니다.'] },
+      ],
+      timingSummary: '', closing: '준비가 필요합니다.',
+    });
+    const f = await generateFortuneVerdict(ev, async () => dirty);
     const ser = JSON.stringify(f);
-    expect(ser).not.toMatch(/중요합니다|필요합니다|무리하지 마세요|활용해보세요|가능성이 (있|큽|높)/);
+    expect(ser).not.toMatch(/Q\.|판정\s*[:：]|근거\s*[·:]/);
+    expect(ser).not.toMatch(/중요합니다|필요합니다|무리하지 마세요|활용해보세요|가능성이 (있|큽|높)|신중하게 결정/);
     expect(ser).not.toContain('뚜렷하아');
-    expect(f!.lead).toContain('돈복이 큽니다'); // 진짜 판정("돈복이 큽니다")은 보존(가능성이 큽니다만 제거)
+    expect(f!.lead).toContain('돈복이 큽니다'); // 진짜 판정은 보존
   });
-  it('기혼: 신규 연애 verdict 제거', async () => {
+  it('기혼: 신규 연애 문단 제거', async () => {
     const evM = buildPersonalFortuneVerdictEvidence(personFixture({ relationshipStatus: 'married', hasChildren: true }));
-    const romance = JSON.stringify({ title: 't', lead: '판정', verdicts: [
-      { question: '인연운?', verdict: '새로운 인연이 들어옵니다.', strength: 'strong', timing: '', basis: 'x', whatItLooksLike: '새 사람과 연애', caution: '' },
-      { question: '집안운?', verdict: '배우자와 돈·역할을 다시 정합니다.', strength: 'moderate', timing: '', basis: 'x', whatItLooksLike: 'y', caution: '' },
-      { question: '재물운?', verdict: '축적형입니다.', strength: 'moderate', timing: '', basis: 'x', whatItLooksLike: 'y', caution: '' },
-    ], breakthroughTiming: { summary: 's' }, closing: 'c' });
+    const romance = JSON.stringify({
+      title: 't', lead: '집안 구조가 움직입니다.',
+      sections: [
+        { title: '관계와 가족', body: ['새로운 인연이 들어와 새 사람과 연애가 시작됩니다.', '배우자와 돈·역할을 다시 정하는 흐름입니다.'] },
+        { title: '돈', body: ['축적형 재물운입니다.', '40대 이후 구조가 잡힙니다.'] },
+      ],
+      timingSummary: '', closing: 'c',
+    });
     const f = await generateFortuneVerdict(evM, async () => romance);
-    expect(f!.verdicts.every(v => !/새(로운)?\s*(인연|사람|연애)/.test(v.verdict + v.whatItLooksLike))).toBe(true);
+    expect(JSON.stringify(f)).not.toMatch(/새(로운)?\s*(인연|사람|연애)/);
+    // 배우자/돈 문단은 살아남음
+    expect(JSON.stringify(f)).toMatch(/배우자와 돈/);
   });
-  it('임산부: 성별/출산/수 예측 verdict 제거', async () => {
+  it('임산부: 성별/출산/수 예측 문단 제거', async () => {
     const evP = buildPregnancyFortuneVerdictEvidence({ mother: personFixture() } as any);
-    const leaky = JSON.stringify({ title: 't', lead: '자녀운 판정', verdicts: [
-      { question: '자녀운?', verdict: '딸일 가능성이 높습니다.', strength: 'strong', timing: '', basis: 'x', whatItLooksLike: '아이가 2명', caution: '' },
-      { question: '가족운?', verdict: '가족 분담이 핵심입니다.', strength: 'moderate', timing: '', basis: 'x', whatItLooksLike: '가족이 나눔', caution: '' },
-      { question: '엄마 구조?', verdict: '혼자 떠안기 쉽습니다.', strength: 'moderate', timing: '', basis: 'x', whatItLooksLike: 'y', caution: '' },
-    ], breakthroughTiming: { summary: 's' }, closing: 'c' });
+    const leaky = JSON.stringify({
+      title: 't', lead: '자녀·가족운을 봅니다.',
+      sections: [
+        { title: '자녀운', body: ['딸일 가능성이 높고 아이가 2명으로 보입니다.', '자녀운은 가족 책임으로 번지는 그림입니다.'] },
+        { title: '엄마 구조', body: ['엄마가 혼자 떠안기 쉬운 구조입니다.', '가족이 나눠 맡아야 하는 흐름입니다.'] },
+      ],
+      timingSummary: '', closing: 'c',
+    });
     const f = await generateFortuneVerdict(evP, async () => leaky, { disclaimer: '의료진을 따르세요.' });
     expect(JSON.stringify(f)).not.toMatch(/딸|아들|성별|아이가 \d/);
+    expect(f!.disclaimer).toContain('의료진');
   });
 });

@@ -64,37 +64,28 @@ export interface FortuneVerdictEvidence {
 }
 
 // ============================================================
-// 2) Output (GPT 생성 — report.fortuneVerdict)
+// 2) Output (GPT 생성 — report.fortuneVerdict) — 줄글형 "운명 판정 서사"
+//    Q&A 판정표/강도 라벨/근거 라벨을 쓰지 않는다. 자연스러운 사주풀이 문단만.
 // ============================================================
-export interface Verdict {
-  /** 사용자 질문 (예: "돈복이 있는가?"). */
-  question: string;
-  /** 판정 본문 — 단호·선명하게(결과 보장 금지). */
-  verdict: string;
-  strength: VerdictStrength;
-  /** 시기 (계산된 것만). */
-  timing: string;
-  /** 명리 근거를 생활 언어로. */
-  basis: string;
-  /** 실제 삶의 장면. */
-  whatItLooksLike: string;
-  /** 결과 보장 방지용 단서(짧게). 본문을 죽이는 안전문구 금지. */
-  caution: string;
-}
-
-export interface BreakthroughTiming {
-  summary: string;
-  accumulationPhase?: string;
-  expansionPhase?: string;
-  cautionPhase?: string;
+export interface FortuneNarrativeSection {
+  /** 섹션 제목 (예: "돈과 재물운", "운이 트이는 시기"). */
+  title: string;
+  /** 문단 배열(2~4문단). "판정:" / "Q." / "근거 ·" 라벨 금지 — 줄글. */
+  body: string[];
 }
 
 export interface FortuneVerdict {
   mode: FortuneVerdictMode;
+  /** 전체 제목. */
   title: string;
+  /** 이 사주를 한 호흡으로 짚는 도입 한 줄(두루뭉술 금지). */
   lead: string;
-  verdicts: Verdict[];
-  breakthroughTiming: BreakthroughTiming;
+  /** 줄글 섹션들. */
+  sections: FortuneNarrativeSection[];
+  /** 운이 트이는 시기 요약(선택). */
+  timingSummary?: string;
+  /** 마무리 문단. */
   closing: string;
+  /** 모드별 안전 안내(임산부 의료 면책 등). */
   disclaimer?: string;
 }
