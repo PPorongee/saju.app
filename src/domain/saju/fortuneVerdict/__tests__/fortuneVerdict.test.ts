@@ -194,6 +194,19 @@ describe('generate — 줄글 파싱/안전/null', () => {
     expect(ser).not.toContain('뚜렷하아');
     expect(f!.lead).toContain('돈복이 큽니다'); // 진짜 판정은 보존
   });
+  it('punch-up: 노잼 표현 펀치 교체 + "관건입니다" 미출현', async () => {
+    const bland = JSON.stringify({
+      title: 't', lead: '돈복은 큽니다.',
+      sections: [
+        { title: '돈', body: ['큰 돈은 안정적으로 쌓이는 구조입니다.', '부동산이 유리합니다. 조율하는 것이 핵심입니다.'] },
+        { title: '관계', body: ['역할 분담이 중요합니다.', '소통이 필요합니다.'] },
+      ],
+      timingSummary: '', closing: '전략적으로 준비한다면 좋습니다.',
+    });
+    const f = await generateFortuneVerdict(ev, async () => bland);
+    const ser = JSON.stringify(f);
+    expect(ser).not.toMatch(/안정적으로 쌓이는 구조입니다|유리합니다|관건입니다|조율하는 것이 핵심|전략적으로 준비한다면|중요합니다|필요합니다/);
+  });
   it('기혼: 신규 연애 문단 제거', async () => {
     const evM = buildPersonalFortuneVerdictEvidence(personFixture({ relationshipStatus: 'married', hasChildren: true }));
     const romance = JSON.stringify({
