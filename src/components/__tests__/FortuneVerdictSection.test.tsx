@@ -21,15 +21,22 @@ describe('FortuneVerdictSection', () => {
     expect(render(<FortuneVerdictSection verdict={undefined} />).container.firstChild).toBeNull();
     expect(render(<FortuneVerdictSection verdict={null} />).container.firstChild).toBeNull();
   });
-  it('제목/lead/섹션 줄글/운트이는시기 표시, 판정표 라벨 없음', () => {
+  it('개인사주: 제목/lead/섹션 + 종합 결론(closing) 표시, "운이 트이는 시기" 중복 숨김, 판정표 라벨 없음', () => {
     const { container, getByText } = render(<FortuneVerdictSection verdict={base} />);
     expect(getByText('사주가 말하는 당신의 큰 운')).toBeTruthy();
     expect(container.textContent).toContain('축적형 사주');
     expect(container.textContent).toContain('돈과 재물운');
     expect(container.textContent).toContain('40대 이후 돈의 구조');
-    expect(container.textContent).toContain('운이 트이는 시기');
+    // Final Polish V1: 개인사주는 별도 "운이 트이는 시기" 블록 숨김(대운 섹션이 시간표 담당), closing은 "이 사주의 큰 결론"
+    expect(container.textContent).not.toContain('운이 트이는 시기');
+    expect(container.textContent).toContain('이 사주의 큰 결론');
+    expect(container.textContent).toContain('축적형으로 가면 늦게 크게 됩니다');
     // 판정표 잔재 없음
     expect(container.textContent).not.toMatch(/Q\.|판정\s*:|근거\s*·/);
+  });
+  it('올해운세 등 비개인 모드는 "운이 트이는 시기" 블록 유지', () => {
+    const yearly: FortuneVerdict = { ...base, mode: 'yearly' };
+    expect(render(<FortuneVerdictSection verdict={yearly} />).container.textContent).toContain('운이 트이는 시기');
   });
   it('임산부 disclaimer 노출', () => {
     const preg: FortuneVerdict = {

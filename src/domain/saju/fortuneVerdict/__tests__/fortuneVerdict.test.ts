@@ -98,7 +98,7 @@ describe('관심사 다중선택 + 나이대 반영', () => {
   it('관심사 없음 → concerns [], 그래도 대운/돈/직업 + 생애상태 섹션', () => {
     const ev = buildPersonalFortuneVerdictEvidence(personFixture({ relationshipStatus: 'married', hasChildren: true }));
     expect(ev.concerns).toEqual([]);
-    expect(ev.sectionPlan.slice(0, 3)).toEqual(['운이 트이는 시기(대운)', '돈과 재물운', '일·사업·이직']);
+    expect(ev.sectionPlan.slice(0, 3)).toEqual(['운이 커지는 시기와 대운', '돈과 재물운', '일·사업·이직']);
     expect(ev.sectionPlan).toContain('배우자와 집안');
     expect(ev.sectionPlan).toContain('자녀와 가족');
   });
@@ -114,7 +114,7 @@ describe('관심사 다중선택 + 나이대 반영', () => {
     expect(ev.sectionPlan).toContain('자녀와 가족');
     expect(ev.sectionPlan.length).toBeGreaterThanOrEqual(6);
     expect(ev.sectionPlan.length).toBeLessThanOrEqual(9); // Depth-Up V1: 7~9 허용
-    expect(ev.sectionPlan.slice(0, 3)).toEqual(['운이 트이는 시기(대운)', '돈과 재물운', '일·사업·이직']);
+    expect(ev.sectionPlan.slice(0, 3)).toEqual(['운이 커지는 시기와 대운', '돈과 재물운', '일·사업·이직']);
   });
   it('Depth-Up: noble/document seed 추가 + 기혼+자녀는 housing 섹션 승격 + 40대 이전 재물 서사', () => {
     const ev = buildPersonalFortuneVerdictEvidence(personFixture({ relationshipStatus: 'married', hasChildren: true, age: 32 }));
@@ -175,13 +175,15 @@ describe('generate — 줄글 파싱/안전/null', () => {
     timingSummary: '40대 이후가 진짜 확장기입니다.',
     closing: '축적형으로 가면 늦게 크게 됩니다.',
   });
-  it('유효 JSON → sections 보존', async () => {
+  it('유효 JSON → sections 보존 / 개인사주는 timingSummary 미부착(종합 결론=closing)', async () => {
     const f = await generateFortuneVerdict(ev, async () => valid);
     expect(f).toBeTruthy();
     expect(f!.mode).toBe('personal');
     expect(f!.sections.length).toBe(2);
     expect(f!.sections[0].body.length).toBe(2);
-    expect(f!.timingSummary).toContain('40대');
+    // Final Polish V1: 개인사주는 "운이 트이는 시기" 중복 방지 위해 timingSummary를 두지 않고 closing(종합 결론)만 둠
+    expect(f!.timingSummary).toBeUndefined();
+    expect(f!.closing).toContain('축적형');
   });
   it('lead 없거나 섹션<2면 null', async () => {
     const f = await generateFortuneVerdict(ev, async () => JSON.stringify({ title: 't', lead: '', sections: [{ title: 'a', body: ['x'] }] }));

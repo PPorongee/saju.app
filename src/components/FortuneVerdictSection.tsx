@@ -23,7 +23,11 @@ function Section({ sec }: { sec: FortuneNarrativeSection }) {
 
 export function FortuneVerdictSection({ verdict }: { verdict?: FortuneVerdict | null }) {
   if (!verdict) return null;
-  const { title, lead, sections, timingSummary, closing, disclaimer } = verdict;
+  const { mode, title, lead, sections, timingSummary, closing, disclaimer } = verdict;
+  // 개인사주: 시간표는 "운이 커지는 시기와 대운" 섹션이 담당하므로 별도 "운이 트이는 시기" 블록은 숨김(중복 제거).
+  // closing은 "이 사주의 큰 결론"(종합 결론) 헤딩으로 렌더.
+  const isPersonal = mode === 'personal';
+  const showTiming = !!timingSummary && !isPersonal;
   return (
     <section style={{ marginTop: 18 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: ACCENT, marginBottom: 4 }}>✦ 사주가 말하는 큰 운</div>
@@ -32,14 +36,19 @@ export function FortuneVerdictSection({ verdict }: { verdict?: FortuneVerdict | 
 
       {Array.isArray(sections) && sections.map((sec, i) => <Section key={i} sec={sec} />)}
 
-      {timingSummary && (
+      {showTiming && (
         <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 16, background: 'rgba(199,179,255,0.06)', border: '1px solid rgba(199,179,255,0.16)' }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>운이 트이는 시기</div>
           <p style={{ margin: 0, lineHeight: 1.9, fontSize: 15, color: 'var(--text)' }}>{timingSummary}</p>
         </div>
       )}
 
-      {closing && <p style={{ margin: '14px 0 0', lineHeight: 1.95, fontSize: 15.5, fontWeight: 600, color: 'var(--text)' }}>{closing}</p>}
+      {closing && (
+        <div style={{ marginTop: 16 }}>
+          {isPersonal && <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>이 사주의 큰 결론</div>}
+          <p style={{ margin: 0, lineHeight: 1.95, fontSize: 15.5, fontWeight: 600, color: 'var(--text)' }}>{closing}</p>
+        </div>
+      )}
       {disclaimer && <p style={{ marginTop: 10, fontSize: 12, lineHeight: 1.6, color: 'var(--orot-ink-mute, #9aa)' }}>{disclaimer}</p>}
     </section>
   );

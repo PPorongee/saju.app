@@ -125,7 +125,7 @@ function normalizeConcerns(raw: unknown): ConcernKey[] {
 
 // ── 개인사주 섹션 플랜(우선순위: 공통축 → 관심사 → 생애상태 → evidence강. 6~8개) ──
 const SEC = {
-  daewoon: '운이 트이는 시기(대운)',
+  daewoon: '운이 커지는 시기와 대운',
   money: '돈과 재물운',
   career: '일·사업·이직',
   housing: '이동수와 집·부동산',
@@ -253,9 +253,13 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
     seeds.push({
       question: '주식·코인처럼 변동성 큰 투자가 맞는가?', verdictType: 'wealth_style', strength: jae >= 1 ? 'moderate' : 'weak',
       timing: '', basisSignals: [tradingType ? '변동·확장형 돈 기운 + 추진력' : '성실·고정형 돈 기운 + 안정 지향'],
-      allowedClaims: tradingType
+      allowedClaims: (tradingType
         ? ['변동성을 감당하되 규모를 키우기 전 구조를 먼저 잡는 거래·사업형', '단타 몰빵보다 현금흐름 보이는 자산']
-        : ['주식처럼 변동성 큰 승부보다 현금흐름·실물·고정수입 기반 축적이 맞다고 판정', '부동산/계약형/전문직 쪽이 더 맞음'],
+        : ['주식처럼 변동성 큰 승부보다 현금흐름·실물·고정수입 기반 축적이 맞다고 판정', '부동산/계약형/전문직 쪽이 더 맞음'])
+        .concat([
+          '★투자 성향 판정은 선명하게 하되, "원금 손실/투자 수익/매수·매도 지시"로 들리는 표현은 금지',
+          '변동성 자산은 수익보다 피로·흔들림을 먼저 만든다 / 감으로 들어간 돈은 오래 버티기 어렵다 식으로 결을 풀 것',
+        ]),
     });
   }
   // 4) 직장 vs 사업/이직
@@ -277,11 +281,21 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
     const biz: VerdictStrength = (sikSang >= 1.5 && jae >= 1.5) ? 'strong' : (sikSang >= 1 || bigeop >= 2) ? 'moderate' : 'weak';
     const expYear = (Array.isArray(fortune.nextThreeYears) ? fortune.nextThreeYears : [])
       .find((y: any) => (y.activatedTenGods ?? []).some((g: string) => ['정재', '편재', '식신', '상관'].includes(g)));
+    const bizInterest = concerns.includes('business');
     seeds.push({
       question: '독립·사업운이 있는가? 확장은 언제가 나은가?', verdictType: 'business', strength: biz,
       timing: expYear ? `${expYear.year}년 무렵` : (jaeStages[0] || ''),
-      basisSignals: [(sikSang >= 1.5 && jae >= 1.5) ? '생산·표현 기운이 돈으로 이어지는 결(식상생재)' : '확장보다 구조·정비가 먼저인 결'],
-      allowedClaims: ['초반 크게 벌리기보다 기준·시스템을 상품화하는 구조', '확장 시기 판정 가능(없는 연도 생성 금지)', '동업은 역할·돈 기준 먼저'],
+      basisSignals: [
+        (sikSang >= 1.5 && jae >= 1.5) ? '생산·표현 기운이 돈으로 이어지는 결(식상생재)' : '확장보다 구조·정비가 먼저인 결',
+        bizInterest ? '사용자가 사업을 직접 관심사로 고름 — "직장형"으로 끊지 말고 "어떤 사업이 맞는지"까지 풀 것' : '',
+      ].filter(Boolean),
+      allowedClaims: [
+        '★"사업운이 없다"로 끝내지 말 것 — 직장을 끊고 바로 크게 벌리는 사업보다, 직장에서 쌓은 전문성·기준을 상품화할 때 사업운이 살아난다는 식으로',
+        '맞는 형태를 특정: 부업·컨설팅·강의·시스템화된 서비스처럼 "내 기준을 파는 구조"가 먼저 (큰 확장형 vs 작게 반복되는 구조 중 어느 쪽인지 단정)',
+        biz === 'weak' ? '크게 벌리는 확장형보다, 작게 시작해 반복·자동화되는 구조가 맞음' : '식상생재 결 — 전문성이 상품이 될 때 확장운이 붙음',
+        '동업은 역할·돈 기준을 먼저 못 박을 때만 가능(기준 없으면 같이 샌다)',
+        '확장 시기 판정 가능(없는 연도 생성 금지)',
+      ],
     });
   }
   // 5) 이동수 — 집·아이 동선·배우자 일정·일하는 장소·계약 조건으로 구체화

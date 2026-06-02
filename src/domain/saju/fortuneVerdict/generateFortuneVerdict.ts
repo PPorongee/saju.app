@@ -62,6 +62,20 @@ function cleanFiller(t: string): string {
     .replace(/긍정적으로\s*대응[가-힣]*/g, '차분히 대응').replace(/활용해\s*보세요/g, '써 보세요').replace(/잘\s*활용하면/g, '잘 살리면').replace(/활용하면/g, '살리면').replace(/활용하세요/g, '써야 합니다')
     .replace(/활용하여/g, '살려').replace(/활용하는/g, '살리는').replace(/활용한\s/g, '살린 ').replace(/활용할/g, '살릴').replace(/활용해서/g, '살려서').replace(/활용해(?![\s가-힣])/g, '살려')
     .replace(/무리하지\s*마세요/g, '속도를 늦추세요').replace(/스트레칭/g, '가벼운 산책').replace(/명상/g, '호흡 정리')
+    // Final Polish V1 — 금전 보장·금융 리스크 과격 표현 완화(판정은 유지, 보장/지시 어감만 제거)
+    .replace(/통장\s*자릿수를?\s*(한\s*자리\s*)?(바꿔?\s*놓을\s*기회[가-힣]*|바꿉니다|바꿀\s*[가-힣]*|가[릅른][가-힣]*)/g, '자산 구조를 바꿀 기반이 됩니다')
+    .replace(/통장\s*자릿수/g, '자산 구조').replace(/연봉\s*앞자리가?\s*바[뀌꿔][가-힣]*/g, '자산의 단위가 달라집니다')
+    .replace(/원금을?\s*잃을\s*(공산이\s*큽니다|수\s*있습니다|수도\s*있습니다|것입니다)/g, '오래 버티기 어렵습니다')
+    .replace(/원금\s*손실[가-힣]*/g, '흔들림').replace(/투자\s*수익률?/g, '수익 구조')
+    // Final Polish V1 — 권유·지시 어미 → 결과·판정형
+    .replace(/놓치지\s*마세요/g, '놓치면 그 자리가 다시 오지 않습니다').replace(/소홀히\s*하지\s*마세요/g, '여기서 흐리면 같은 문제가 반복됩니다')
+    .replace(/확인하세요/g, '다시 따져야 합니다').replace(/고려하세요/g, '따져봐야 합니다').replace(/집중하세요/g, '여기에 무게가 실립니다')
+    .replace(/준비하세요/g, '지금 판을 깔아야 합니다').replace(/결정하세요/g, '여기서 갈립니다').replace(/조율하세요/g, '역할을 다시 정해야 합니다')
+    .replace(/긍정적인\s*결과를?\s*가져올\s*것입니다/g, '여기서 결과가 달라집니다').replace(/긍정적인\s*결과를?\s*가져옵니다/g, '여기서 결과가 달라집니다')
+    .replace(/유지할\s*수\s*있습니다/g, '이어집니다')
+    // 후처리 치환이 동사형 도장 + 명사("시점/시기")를 충돌시켜 깨진 문장이 되는 경우 교정
+    .replace(/갈립니다\s+(시점|시기)입니다/g, '갈리는 $1입니다')
+    .replace(/(먼저|핵심)입니다\s+(시점|시기)입니다/g, '$1인 $2입니다')
     // 신종 클리셰(세 샘플 공통 누수) — 구조 먼저 / 맞물릴 때 / 정착형
     .replace(/구조를\s*먼저\s*잡고\s*나서/g, '틀부터 박고').replace(/구조를?\s*먼저/g, '틀부터')
     .replace(/맞물릴\s*때/g, '겹칠 때').replace(/맞물리면/g, '겹치면')
@@ -120,8 +134,9 @@ export async function generateFortuneVerdict(
     sections,
     closing: s(parsed.closing),
   };
+  // 개인사주는 timingSummary를 따로 두지 않는다(시간표=대운 섹션, 종합 결론=closing). 데이터 레벨에서 중복 제거.
   const ts = s(parsed.timingSummary);
-  if (ts) out.timingSummary = ts;
+  if (ts && ev.mode !== 'personal') out.timingSummary = ts;
   if (opts.disclaimer) out.disclaimer = opts.disclaimer;
   return out;
 }
