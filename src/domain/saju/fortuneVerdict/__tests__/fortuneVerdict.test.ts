@@ -113,8 +113,21 @@ describe('관심사 다중선택 + 나이대 반영', () => {
     expect(ev.sectionPlan).toContain('이동수와 집·부동산');
     expect(ev.sectionPlan).toContain('자녀와 가족');
     expect(ev.sectionPlan.length).toBeGreaterThanOrEqual(6);
-    expect(ev.sectionPlan.length).toBeLessThanOrEqual(8);
+    expect(ev.sectionPlan.length).toBeLessThanOrEqual(9); // Depth-Up V1: 7~9 허용
     expect(ev.sectionPlan.slice(0, 3)).toEqual(['운이 트이는 시기(대운)', '돈과 재물운', '일·사업·이직']);
+  });
+  it('Depth-Up: noble/document seed 추가 + 기혼+자녀는 housing 섹션 승격 + 40대 이전 재물 서사', () => {
+    const ev = buildPersonalFortuneVerdictEvidence(personFixture({ relationshipStatus: 'married', hasChildren: true, age: 32 }));
+    const types = ev.seeds.map(s => s.verdictType);
+    expect(types).toContain('noble');
+    expect(types).toContain('document');
+    expect(ev.sectionPlan).toContain('이동수와 집·부동산'); // 기혼+자녀 → housingSignal
+    const noble = ev.seeds.find(s => s.verdictType === 'noble');
+    expect(noble!.allowedClaims.join(' ')).toMatch(/피해야 할 사람|새게 만든/);
+    const doc = ev.seeds.find(s => s.verdictType === 'document');
+    expect(doc!.allowedClaims.join(' ')).toMatch(/법률.*금지|계약서|정산/);
+    const wealth = ev.seeds.find(s => s.verdictType === 'wealth');
+    expect(wealth!.allowedClaims.join(' ')).toMatch(/40대 이후 자산화|판을 까는|굵어/);
   });
   it('나이대 계산: 만 32세 → 30대 초반', () => {
     const ev = buildPersonalFortuneVerdictEvidence(personFixture({ age: 32 }));

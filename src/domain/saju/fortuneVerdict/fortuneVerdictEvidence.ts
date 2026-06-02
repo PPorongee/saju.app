@@ -133,10 +133,14 @@ const SEC = {
   spouse: '배우자와 집안',
   relationship: '인연과 결혼',
   invest: '투자 성향과 돈의 형태',
-  noble: '귀인운과 문서·계약',
+  noble: '귀인운과 피해야 할 사람',
+  document: '문서·계약에서 조심할 것',
 };
+// Depth-Up V1: 7~9개 섹션 허용. housing은 관심사/역마뿐 아니라 기혼+자녀·충 신호로도 우선 포함.
+// 귀인(noble)·문서계약(document)은 evidence(천을귀인/인성)가 있으면 별도 섹션으로 승격.
 function buildPersonalSectionPlan(a: {
-  concerns: ConcernKey[]; status: RelationshipStatus; hasChildren: boolean | 'unknown'; yeokma: boolean; noble: boolean;
+  concerns: ConcernKey[]; status: RelationshipStatus; hasChildren: boolean | 'unknown';
+  yeokma: boolean; noble: boolean; housingSignal: boolean; document: boolean;
 }): string[] {
   const plan: string[] = [SEC.daewoon, SEC.money, SEC.career]; // P1 필수 공통축
   const add = (s: string) => { if (!plan.includes(s)) plan.push(s); };
@@ -153,15 +157,20 @@ function buildPersonalSectionPlan(a: {
   if ((a.status === 'married' || a.status === 'divorced')) add(SEC.spouse);
   if (a.hasChildren === true) add(SEC.child);
   if ((a.status === 'single' || a.status === 'dating' || a.status === 'unknown') && !plan.includes(SEC.relationship)) {
-    // 미혼/연애중은 인연운 기본 포함(관심사로 이미 들어갔으면 skip)
-    add(SEC.relationship);
+    add(SEC.relationship); // 미혼/연애중은 인연운 기본 포함
   }
-  // P4 evidence강(여유 있을 때만)
-  if (a.yeokma) add(SEC.housing);
-  if (plan.length < 6 && a.noble) add(SEC.noble);
-  if (plan.length < 6) add(SEC.invest);
-  if (plan.length < 6) add(SEC.noble);
-  return plan.slice(0, 8);
+  // P3.5 evidence강 — 4대 강화 주제(이동수/문서계약/귀인)를 신호 있을 때 승격
+  if (a.housingSignal) add(SEC.housing);     // 역마 OR 기혼+자녀 OR 충 신호
+  if (a.document) add(SEC.document);          // 인성(문서·자격·계약 기운) 있음
+  // 귀인/피해야 할 사람은 천을귀인이 없어도 누구에게나 궁금한 축 — 항상 포함.
+  // (천을귀인 있으면 seed.strength=moderate "귀인운 강함", 없으면 weak이되 tenGod 기반 "어떤 사람"으로 풀림)
+  add(SEC.noble);
+  // P4 채움 — 관심사 없어도 최소 7섹션 보장(얇아짐 방지). evidence 약한 축으로 채움.
+  for (const f of [SEC.invest, SEC.document, SEC.housing]) {
+    if (plan.length >= 7) break;
+    add(f);
+  }
+  return plan.slice(0, 9); // 7~9 허용
 }
 
 // ============================================================
@@ -193,6 +202,19 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
   const jaeStages = lifeStagesOfTenGods(core, ['정재', '편재']);
   const gwanStages = lifeStagesOfTenGods(core, ['정관', '편관']);
 
+  // Depth-Up V1 — 나이대/관심사 + 4대 강화 신호(이동수·귀인·문서계약·40대 재물)
+  const currentAge: number | null = typeof (gpt as any).userContext?.age === 'number' ? (gpt as any).userContext.age : null;
+  const ageBand = ageBandOf(currentAge);
+  const concerns = normalizeConcerns((gpt as any).userContext?.currentConcerns);
+  const before40 = currentAge != null && currentAge < 40; // 40대 이전 → "판 까는 시기" 서사
+  const yeokma = hasStar(core, /역마/);
+  const nobleStar = hasStar(core, /천을귀인|월덕귀인|천덕귀인/);
+  const cac: any = core?.combinationsAndConflicts ?? {};
+  const conflictList: any[] = cac.conflicts ?? cac.clashes ?? (Array.isArray(cac) ? cac : []);
+  const hasConflict = Array.isArray(conflictList) && conflictList.length > 0;
+  const housingSignal = yeokma || (status === 'married' && hasChildren === true) || hasConflict || concerns.includes('housing_move');
+  const docSignal = insung >= 1; // 인성 = 문서·자격·계약 기운
+
   // 1) 재물운
   {
     let st = str3(jae);
@@ -201,11 +223,19 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
     if (jaeFavorable) basis.push('돈 기운이 사주에 도움이 되는 결(용신·희신)');
     else if (jaeUnfavorable) basis.push('돈 기운이 과하면 부담이 되는 결(기신) — 관리형');
     if (jaeStages.length) basis.push(`재물 흐름이 강해지는 생애 단계: ${jaeStages.join('·')}`);
+    if (before40) basis.push('지금은 40대 이전 — 돈이 바로 터지는 시기가 아니라 40대 이후 돈이 붙을 판을 까는 시기');
+    const claims = [
+      pyeonJae >= jeongJae ? '한 번에 크게보다 기회·거래로 움직이는 편' : '한 방보다 직책·소유·고정수입으로 늦게 크게 쌓이는 축적형',
+      '돈복 강/약을 선명히 판정 가능',
+    ];
+    // 40대 이후 자산화 서사 강화(2~3문단으로 풀 것): 30대는 판 까는 시기, 40대 이후 굵어짐 + 자산 형태 연결
+    claims.push('40대 이후 자산화 흐름을 2~3문단으로: 30대에 깐 전문성·고정수입·계약·소유가 40대 이후 자산으로 굵어지는 그림');
+    claims.push('한 방형이 아니라 축적형 — 고정수입·부동산성 자산·장기 계약·전문성의 가격이 시간이 붙을수록 오르는 쪽으로 돈이 남음');
     seeds.push({
-      question: '돈복이 있는가?', verdictType: 'wealth', strength: st,
-      timing: jaeStages.length ? jaeStages.join('·') : cdAge,
+      question: '돈복이 있는가? 언제부터 굵어지는가?', verdictType: 'wealth', strength: st,
+      timing: jaeStages.length ? `${jaeStages.join('·')}${cd?.ageRange ? ` / 현재 대운 ${cd.ageRange}세` : ''}` : cdAge,
       basisSignals: basis,
-      allowedClaims: [pyeonJae >= jeongJae ? '한 번에 크게보다 기회·거래로 움직이는 편' : '한 방보다 직책·소유·고정수입으로 늦게 크게 쌓이는 축적형', '돈복 강/약을 선명히 판정 가능'],
+      allowedClaims: claims,
     });
   }
   // 2) 횡재수
@@ -254,22 +284,37 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
       allowedClaims: ['초반 크게 벌리기보다 기준·시스템을 상품화하는 구조', '확장 시기 판정 가능(없는 연도 생성 금지)', '동업은 역할·돈 기준 먼저'],
     });
   }
-  // 5) 이동수
+  // 5) 이동수 — 집·아이 동선·배우자 일정·일하는 장소·계약 조건으로 구체화
   {
-    const yeokma = hasStar(core, /역마/);
+    const married = status === 'married' || status === 'divorced';
     seeds.push({
-      question: '이사운·이동수가 있는가?', verdictType: 'move', strength: yeokma ? 'moderate' : 'not_prominent',
-      timing: yeokma ? cdAge : '', basisSignals: [yeokma ? '이동·변화에서 운이 살아나는 결(역마)' : '한곳에 뿌리내리는 결이 더 강함'],
-      allowedClaims: [yeokma ? '집·근무지·생활권 중 하나가 현실적으로 바뀌는 이동수' : '잦은 이동보다 정착형'],
+      question: '이사운·이동수가 있는가? 어떤 조건으로 움직이는가?', verdictType: 'move',
+      strength: yeokma ? 'moderate' : 'not_prominent',
+      timing: yeokma ? cdAge : '',
+      basisSignals: [
+        yeokma ? '이동·변화에서 운이 살아나는 결(역마)' : '한곳에 뿌리내리는 결이 더 강함',
+        married && hasChildren === true ? '기혼·자녀 — 이동은 여행이 아니라 집·아이 동선·배우자 일정·일하는 장소 조건으로 움직임' : '이동은 여행운이 아니라 현실 조건(집·근무지·생활권)으로',
+        hasConflict ? '원국 충 신호 — 자리·환경이 흔들려 이동이 올라올 결' : '',
+      ].filter(Boolean),
+      allowedClaims: [
+        yeokma ? '집·근무지·생활권 중 하나가 현실적으로 바뀌는 이동수' : '잦은 이동보다 뿌리내리는 쪽 — 다만 집·가족 조건 때문에 한 번은 움직일 수 있음',
+        '이동의 트리거는 아이 동선(전학·학군)·배우자 일정·일하는 장소·집 계약 만료 — 이 조건들이 겹칠 때 실제 이동',
+        '여행이 아니라 집과 가족 조건 때문에 움직이는 운',
+      ],
     });
   }
-  // 6) 부동산
+  // 6) 부동산·집 계약 (매수/매도 확정 지시 금지)
   {
     const re: VerdictStrength = (jae >= 1.5 && insung >= 1) ? 'moderate' : 'weak';
     seeds.push({
-      question: '부동산·큰 계약운이 있는가?', verdictType: 'real_estate', strength: re,
-      timing: '', basisSignals: ['돈 기운 + 문서·계약 기운의 조합으로 본 판정'],
-      allowedClaims: ['빠르게 잡는 운이 아니라 대출·보증금·계약 기간·가족 동선을 따질 때 실속', '분위기에 밀려 급하게 결정하면 부담'],
+      question: '부동산·집 계약운은 어떻게 움직이는가?', verdictType: 'real_estate', strength: re,
+      timing: '',
+      basisSignals: ['돈 기운 + 문서·계약 기운(인성)의 조합', docSignal ? '문서·계약 기운 있음 — 조건을 직접 따질 때 실속' : ''].filter(Boolean),
+      allowedClaims: [
+        '빠르게 잡는 운이 아니라 대출·보증금·계약 기간·가족 동선을 따질 때 실속',
+        '분위기에 밀려 급하게 도장 찍으면 그 부담(이자·계약 조항)이 몇 년을 따라옴',
+        '사라/팔아라 확정 지시가 아니라 계약 조건과 시점을 따지는 판단으로만',
+      ],
     });
   }
   // 7) 관계/배우자
@@ -287,7 +332,12 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
       seeds.push({
         question: '배우자·집안·가족 구조는 어떻게 움직이는가?', verdictType: 'family_spouse', strength: 'moderate',
         timing: '', basisSignals: ['기혼 — 새 인연이 아니라 배우자·집·돈·아이·부모 문제로 움직이는 관계운'],
-        allowedClaims: ['집안의 돈·역할·책임을 누가 어디까지 질지 다시 정하는 흐름', '새 연애 인연 절대 금지'],
+        allowedClaims: [
+          '집안의 돈·역할·책임을 누가 어디까지 질지 다시 정하는 흐름',
+          '★최소 2문단 — 돈(누가 통장을 쥐고 어디에 쓰나)·아이(교육비·생활권)·집(이사·계약)·역할분담 중 2개 이상을 엮어, 이 부부 사이에 무엇이 테이블 위로 올라오는지 구체로 풀 것',
+          '"배우자와 조율하라/소통하라"는 상담문으로 끝내지 말 것 — 무엇을 두고 부딪히고 무엇을 숫자로 못 박아야 하는지로',
+          '새 연애 인연 절대 금지',
+        ],
       });
     }
   }
@@ -319,10 +369,59 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
     });
   }
 
+  // 9) 귀인운 / 피해야 할 사람 (B) — 운을 열어주는 사람 vs 돈·시간을 새게 만드는 사람.
+  //    천을귀인 없어도 항상 출력(누구나 궁금한 축). 신살 대신 tenGod로 "어떤 사람"인지 grounding.
+  {
+    // 천을귀인 강 → "귀인운 강함". 없으면 사주의 기운으로 조력자 유형을 특정(억지 과장 금지).
+    const helperType = insung >= 1
+      ? '윗사람·멘토·문서나 자격을 챙겨주는 어른형 조력자'
+      : bigeop >= 2
+        ? '실무로 같이 뛰는 동료형 — 단, 돈·역할 기준 없는 동료는 같이 새게 만드는 쪽'
+        : jae >= 1.5
+          ? '거래·계약으로 엮이는 사람 — 숫자를 명확히 하는 상대일 때만 득'
+          : '감정 응원형보다 숫자·계약·일정을 같이 잡아주는 실무형 소수';
+    seeds.push({
+      question: '나에게 귀인은 어떤 사람인가? 피해야 할 사람은 누구인가?', verdictType: 'noble',
+      strength: nobleStar ? 'moderate' : 'weak',
+      timing: '',
+      basisSignals: [
+        nobleStar ? '사람·소개·계약을 통해 막힌 일이 풀리는 결(천을귀인류 신살) — 귀인운 강함' : '두드러진 귀인 신살은 없음 — 화려한 인맥이 아니라 실무로 받쳐주는 소수가 귀인',
+        `이 사주에서 운을 여는 사람 유형: ${helperType}`,
+        '명리 용어를 노출하지 말고 "어떤 사람"인지로만 풀 것 (없는 귀인을 억지로 과장 금지)',
+      ],
+      allowedClaims: [
+        nobleStar ? '귀인운이 강한 편 — 결정적 순간에 사람·소개·계약으로 막힌 일이 풀린다' : '귀인운이 요란하진 않지만, 운을 여는 사람은 감정적으로 응원만 하는 사람이 아니라 숫자·계약·일정·문서를 같이 잡아주는 사람',
+        '피해야 할 사람 = 기준 없이 부탁만 늘리는 사람 — 당신의 돈과 시간을 같이 새게 만든다',
+        '★ 누가 판을 키워주고 누가 까먹게 하는지, 사람 고르는 기준을 1~2문단으로 구체화(천을귀인 유무와 무관하게 반드시 풀 것)',
+      ],
+    });
+  }
+  // 10) 문서·계약 리스크 (C) — 계약서·정산 기준·집 문서·가족 간 돈 (법률 조언 금지)
+  {
+    const docYear = (Array.isArray(fortune.nextThreeYears) ? fortune.nextThreeYears : [])
+      .find((y: any) => (y.activatedTenGods ?? []).some((g: string) => ['정인', '편인'].includes(g)));
+    seeds.push({
+      question: '문서·계약에서 조심할 것은 무엇인가?', verdictType: 'document',
+      strength: docSignal ? 'moderate' : 'weak',
+      timing: docYear ? `${docYear.year}년 무렵 문서·자격 흐름` : '',
+      basisSignals: [
+        docSignal ? '문서·자격·계약 기운(인성)이 있음 — 종이로 남기는 일에서 운이 갈림' : '문서·계약은 두드러지지 않으나 큰 결정 때 한 번은 걸림',
+        docYear ? `${docYear.year}년 무렵 문서·자격·배움 흐름이 올라옴` : '',
+      ].filter(Boolean),
+      allowedClaims: [
+        '명리 용어 대신 생활 언어로: 계약서, 정산 기준, 가족 간 돈 문제, 집 관련 문서, 사인하기 전에 다시 봐야 하는 종이',
+        '구두 약속·분위기로 넘기면 나중에 돈·관계가 새는 결 — 범위·금액·기한을 종이에 박아둘 때 실속',
+        docYear ? `${docYear.year}년 문서·계약 흐름은 돈/사업 섹션 안에서라도 반드시 깊게 풀 것` : '문서·계약은 돈/사업 섹션 안에서라도 한 문단 이상 풀 것',
+        '법률 자문을 대체하는 단정 금지 — 어떤 종이를 다시 봐야 하는지까지만',
+      ],
+    });
+  }
+
   // 운 터지는 시기
   const breakthroughLines: string[] = [];
   if (cd?.theme || cd?.ageRange) breakthroughLines.push(`${cdAge}: ${cd?.theme ?? ''}`.trim());
   if (jaeStages.length) breakthroughLines.push(`재물이 강해지는 생애 단계: ${jaeStages.join('·')}`);
+  if (before40) breakthroughLines.push('30대는 판을 까는 시기 / 40대 이후 깐 전문성·계약·소유가 자산으로 굵어지는 시기');
   if (gwanStages.length) breakthroughLines.push(`직장·책임이 강해지는 생애 단계: ${gwanStages.join('·')}`);
   const next3: any[] = Array.isArray(fortune.nextThreeYears) ? fortune.nextThreeYears : [];
   for (const y of next3.slice(0, 3)) {
@@ -330,12 +429,9 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
     if (y.year && tg) breakthroughLines.push(`${y.year}년: ${tg} 강해짐`);
   }
 
-  const currentAge: number | null = typeof (gpt as any).userContext?.age === 'number' ? (gpt as any).userContext.age : null;
-  const ageBand = ageBandOf(currentAge);
-  const concerns = normalizeConcerns((gpt as any).userContext?.currentConcerns);
   const sectionPlan = buildPersonalSectionPlan({
     concerns, status, hasChildren,
-    yeokma: hasStar(core, /역마/), noble: hasStar(core, /천을귀인/),
+    yeokma, noble: nobleStar, housingSignal, document: docSignal,
   });
 
   return {

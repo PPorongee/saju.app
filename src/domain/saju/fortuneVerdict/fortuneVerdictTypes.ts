@@ -26,6 +26,8 @@ export type VerdictType =
   | 'relationship'    // 결혼·배우자·인연
   | 'family_spouse'   // 기혼: 집안·배우자·가족 구조
   | 'child'           // 자녀운
+  | 'noble'           // 귀인운 / 피해야 할 사람 (운을 열어주는 사람 vs 새게 만드는 사람)
+  | 'document'        // 문서·계약 리스크 (계약·정산·집 문서·가족 간 돈)
   | 'breakthrough'    // 운 터지는 시기 (별도 섹션으로도 출력)
   | 'other';
 

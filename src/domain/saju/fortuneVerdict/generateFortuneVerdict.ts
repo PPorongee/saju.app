@@ -108,7 +108,7 @@ export async function generateFortuneVerdict(
   let sections: FortuneNarrativeSection[] = (Array.isArray(parsed.sections) ? parsed.sections : [])
     .map((sec: any) => ({ title: s(sec?.title), body: sArr(sec?.body).filter(paraOk) }))
     .filter((sec: FortuneNarrativeSection) => sec.body.length > 0)
-    .slice(0, 8);
+    .slice(0, 9); // Depth-Up V1: 7~9개 섹션 허용
 
   const totalParas = sections.reduce((a, sec) => a + sec.body.length, 0);
   if (!lead || sections.length < 2 || totalParas < 3) return null;
