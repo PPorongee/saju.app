@@ -112,8 +112,8 @@ describe('관심사 다중선택 + 나이대 반영', () => {
     expect(ev.concerns).toEqual(expect.arrayContaining(['money', 'housing_move', 'child_family', 'business']));
     expect(ev.sectionPlan).toContain('이동수와 집·부동산');
     expect(ev.sectionPlan).toContain('자녀와 가족');
-    expect(ev.sectionPlan.length).toBeGreaterThanOrEqual(6);
-    expect(ev.sectionPlan.length).toBeLessThanOrEqual(9); // Depth-Up V1: 7~9 허용
+    expect(ev.sectionPlan.length).toBeGreaterThanOrEqual(8); // Differentiation V1: 최소 8섹션
+    expect(ev.sectionPlan.length).toBeLessThanOrEqual(10); // Differentiation V1: 8~10 허용
     expect(ev.sectionPlan.slice(0, 3)).toEqual(['운이 커지는 시기와 대운', '돈과 재물운', '일·사업·이직']);
   });
   it('Depth-Up: noble/document seed 추가 + 기혼+자녀는 housing 섹션 승격 + 40대 이전 재물 서사', () => {

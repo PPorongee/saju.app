@@ -70,13 +70,13 @@ function cleanFiller(t: string): string {
     .replace(/원금\s*손실[가-힣]*/g, '흔들림').replace(/투자\s*수익률?/g, '수익 구조')
     // Final Polish V1 — 권유·지시 어미 → 결과·판정형
     .replace(/놓치지\s*마세요/g, '놓치면 그 자리가 다시 오지 않습니다').replace(/소홀히\s*하지\s*마세요/g, '여기서 흐리면 같은 문제가 반복됩니다')
-    .replace(/확인하세요/g, '다시 따져야 합니다').replace(/고려하세요/g, '따져봐야 합니다').replace(/집중하세요/g, '여기에 무게가 실립니다')
+    .replace(/확인하세요/g, '다시 따져야 합니다').replace(/고려하세요/g, '따져봐야 합니다')
     .replace(/준비하세요/g, '지금 판을 깔아야 합니다').replace(/결정하세요/g, '여기서 갈립니다').replace(/조율하세요/g, '역할을 다시 정해야 합니다')
     .replace(/긍정적인\s*결과를?\s*가져올\s*것입니다/g, '여기서 결과가 달라집니다').replace(/긍정적인\s*결과를?\s*가져옵니다/g, '여기서 결과가 달라집니다')
     .replace(/유지할\s*수\s*있습니다/g, '이어집니다')
     // Final Polish V2 — preview에서 발견된 잔여 권유·상담 어미 추가 제거(판정·결과형으로)
     .replace(/수익을?\s*바라보세요/g, '여기서 수익이 남습니다')
-    .replace(/집중하는\s*것이\s*(좋|낫)습니다/g, '여기에 무게가 실립니다')
+    .replace(/집중하는\s*것이\s*(좋|낫)습니다/g, '무게를 실어야 합니다').replace(/에\s*집중하세요/g, '에 무게를 실어야 합니다').replace(/집중하세요/g, '무게를 실어야 합니다')
     .replace(/명확히\s*정리해야\s*합니다/g, '숫자로 못 박아야 합니다').replace(/명확히\s*정리하세요/g, '숫자로 못 박아야 합니다')
     .replace(/명확히\s*판단하세요/g, '분명하게 가려집니다').replace(/명확히\s*해야\s*합니다/g, '숫자로 못 박아야 합니다')
     .replace(/꼼꼼히\s*따져보세요/g, '조건을 따져야 합니다').replace(/꼼꼼히\s*확인하세요/g, '조건을 따져야 합니다').replace(/따져보세요/g, '따져야 합니다')
@@ -85,6 +85,7 @@ function cleanFiller(t: string): string {
     // 후처리 치환이 동사형 도장 + 명사("시점/시기")를 충돌시켜 깨진 문장이 되는 경우 교정
     .replace(/갈립니다\s+(시점|시기)입니다/g, '갈리는 $1입니다')
     .replace(/(먼저|핵심)입니다\s+(시점|시기)입니다/g, '$1인 $2입니다')
+    .replace(/다시\s+다시/g, '다시').replace(/여기에\s+여기에/g, '여기에')
     // 신종 클리셰(세 샘플 공통 누수) — 구조 먼저 / 맞물릴 때 / 정착형
     .replace(/구조를\s*먼저\s*잡고\s*나서/g, '틀부터 박고').replace(/구조를?\s*먼저/g, '틀부터')
     .replace(/맞물릴\s*때/g, '겹칠 때').replace(/맞물리면/g, '겹치면')
@@ -131,7 +132,7 @@ export async function generateFortuneVerdict(
   let sections: FortuneNarrativeSection[] = (Array.isArray(parsed.sections) ? parsed.sections : [])
     .map((sec: any) => ({ title: s(sec?.title), body: sArr(sec?.body).filter(paraOk) }))
     .filter((sec: FortuneNarrativeSection) => sec.body.length > 0)
-    .slice(0, 9); // Depth-Up V1: 7~9개 섹션 허용
+    .slice(0, 10); // Differentiation V1: 8~10개 섹션 허용
 
   const totalParas = sections.reduce((a, sec) => a + sec.body.length, 0);
   if (!lead || sections.length < 2 || totalParas < 3) return null;

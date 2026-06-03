@@ -76,6 +76,12 @@ function coreLinesFromPerson(gpt: PersonalSajuGptInput): string[] {
   const lines: string[] = [];
   if (ug.primaryUseful) lines.push(`용신: ${toKo(ug.primaryUseful.value)}${ug.unfavorable?.length ? ` / 기신: ${(ug.unfavorable as any[]).map(toKo).join(',')}` : ''}`);
   if (dm.level) lines.push(`일간 강약: ${STRENGTH_KO[dm.level] ?? dm.level}`);
+  // Differentiation V1 — 이 사주만의 좌표(두드러진 십성 + 대표 신살). 섹션마다 "왜 이 사주냐"의 근거로 쓰게 함.
+  const totals: Record<string, number> = core.tenGods?.totals ?? {};
+  const topTg = Object.entries(totals).filter(([, v]) => Number(v) > 0).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+  if (topTg) lines.push(`두드러진 기운: ${TG_LIFE[topTg[0]] ?? topTg[0]}`);
+  const star = (core.specialStars ?? []).map((s: any) => String(s?.name ?? '')).filter(Boolean).slice(0, 2);
+  if (star.length) lines.push(`대표 신살: ${star.join('·')}`);
   return lines;
 }
 function auxLines(diag: YongsinDiagnostic | undefined | null): string[] {
@@ -165,12 +171,12 @@ function buildPersonalSectionPlan(a: {
   // 귀인/피해야 할 사람은 천을귀인이 없어도 누구에게나 궁금한 축 — 항상 포함.
   // (천을귀인 있으면 seed.strength=moderate "귀인운 강함", 없으면 weak이되 tenGod 기반 "어떤 사람"으로 풀림)
   add(SEC.noble);
-  // P4 채움 — 관심사 없어도 최소 7섹션 보장(얇아짐 방지). evidence 약한 축으로 채움.
-  for (const f of [SEC.invest, SEC.document, SEC.housing]) {
-    if (plan.length >= 7) break;
+  // P4 채움 — Differentiation V1: 관심사 없어도 최소 8섹션 보장(유료 분량). evidence 약한 축으로 채움.
+  for (const f of [SEC.invest, SEC.document, SEC.housing, SEC.noble]) {
+    if (plan.length >= 8) break;
     add(f);
   }
-  return plan.slice(0, 9); // 7~9 허용
+  return plan.slice(0, 10); // 8~10 허용
 }
 
 // ============================================================
@@ -215,11 +221,50 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
   const housingSignal = yeokma || (status === 'married' && hasChildren === true) || hasConflict || concerns.includes('housing_move');
   const docSignal = insung >= 1; // 인성 = 문서·자격·계약 기운
 
+  // Differentiation V1 — verdictType 라벨(uniqueAngle). 차트 구성에 따라 달라져 4샘플이 실제로 갈리게 함.
+  const moneyType =
+    (pyeonJae >= 2 && sikSang >= 1) ? '거래·확장형(편재+식상 — 기회와 거래로 굴리는 돈)'
+    : (jae >= 1.5 && insung >= 1) ? '부동산·문서형(재성+인성 — 실물·계약으로 묶이는 돈)'
+    : (jeongGwan >= 1 && jeongJae >= 1) ? '직책형(정관+정재 — 자리·직책이 올라가며 붙는 돈)'
+    : (sikSang >= 1.5 && jae >= 1.5) ? '사업·상품화형(식상생재 — 내 기준을 팔 때 붙는 돈)'
+    : (jeongJae >= pyeonJae && jae >= 1) ? '축적형(정재 — 고정수입으로 늦게 크게 쌓이는 돈)'
+    : (pyeonJae > jeongJae && jae >= 1) ? '한 방·기회형(편재 — 변동·기회에 끌리나 새기 쉬운 돈)'
+    // 재성 약한 차트(jae<1)도 2차 십성으로 갈리게 — 전부 "형태 우선형"으로 붕괴 방지
+    : sikSang >= 2 ? '상품화·기술형(식상 — 기술·콘텐츠·서비스를 팔아 버는 돈, 재성이 약해 형태를 직접 만들어야)'
+    : gwan >= 2 ? '직책·근로형(관성 — 자리·직책·근로소득 중심, 한 방보다 직책이 오를 때 붙는 돈)'
+    : insung >= 2 ? '자격·전문성형(인성 — 자격·전문성이 수입의 축, 재성은 약해 형태로 묶어야)'
+    : bigeop >= 2 ? '공동·분배 주의형(비겁 — 같이 벌어도 나가는 쪽, 내 몫 기준이 없으면 새는 돈)'
+    : '형태 우선형(돈 기운이 약해 고정수입·계약으로 형태를 만들어야 남는 돈)';
+  const careerType =
+    jeongGwan >= 1.5 ? '직장형(정관 — 조직 안 직책·책임으로 큼)'
+    : (jeongGwan >= 1 && sikSang >= 1) ? '직장기반 후 독립형(정관+식상 — 조직에서 쌓고 나와서 상품화)'
+    : (sikSang >= 1.5 && bigeop >= 1.5) ? '독립·사업형(식상+비겁 — 자기 일로 큼)'
+    : bigeop >= 2 ? '동업·확장 주의형(비겁 강 — 같이 벌이나 돈 기준 없으면 샘)'
+    : pyeonGwan >= 1.5 ? '도전·전환형(편관 — 판을 바꿀 때 큼)'
+    : '직장 기반형(조직에서 자리를 잡는 쪽)';
+  const nobleType =
+    nobleStar ? '강한 귀인형(천을귀인류 — 사람·소개·계약으로 막힌 일이 풀림)'
+    : insung >= 1.5 ? '상사·멘토형(인성 — 윗사람·자격을 챙겨주는 어른)'
+    : jae >= 1.5 ? '고객·거래형(재성 — 거래로 엮인 사람, 숫자 명확할 때만 득)'
+    : bigeop >= 2 ? '동료형(비겁 — 같이 뛰는 동료, 단 돈·역할 기준 없으면 위험)'
+    : '실무형 소수(화려한 인맥 아님) — 귀인운이 요란치 않으니 피해야 할 사람 중심으로';
+  const documentType =
+    (insung >= 1 && jae >= 1.5) ? '부동산·자산 계약형(재+인성 — 집·자산 문서)'
+    : insung >= 1.5 ? '자격·인증형(정인 — 자격증·학위·인증 문서)'
+    : (insung >= 1 && (status === 'married' || status === 'divorced')) ? '가족 돈 문서형(가족 간 돈·상속·공동명의)'
+    : sikSang >= 1 ? '정산·계약 기준형(일·거래의 정산·범위 문서)'
+    : '큰 결정 때 한 번 걸리는 계약형(평소 두드러지진 않음)';
+  const moveType =
+    yeokma ? '강한 이동수형(역마 — 집·근무지·생활권이 실제로 바뀜)'
+    : (status === 'married' && hasChildren === true) ? '조건부 이동형(아이 동선·집 계약이 겹칠 때 한 번)'
+    : hasConflict ? '환경 변동형(원국 충 — 자리·환경이 흔들려 이동)'
+    : '정착형(뿌리내리는 쪽, 큰 조건 겹칠 때만 움직임)';
+
   // 1) 재물운
   {
     let st = str3(jae);
     if (jaeUnfavorable && st === 'strong') st = 'moderate';
-    const basis = [`돈 기운 비중 ${jae >= 3 ? '큼' : jae >= 1.5 ? '보통' : '약함'}`];
+    const basis = [`[돈 유형] ${moneyType}`, `돈 기운 비중 ${jae >= 3 ? '큼' : jae >= 1.5 ? '보통' : '약함'}`];
     if (jaeFavorable) basis.push('돈 기운이 사주에 도움이 되는 결(용신·희신)');
     else if (jaeUnfavorable) basis.push('돈 기운이 과하면 부담이 되는 결(기신) — 관리형');
     if (jaeStages.length) basis.push(`재물 흐름이 강해지는 생애 단계: ${jaeStages.join('·')}`);
@@ -267,7 +312,7 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
     const jobStable = jeongGwan >= pyeonGwan && jeongGwan >= 1;
     seeds.push({
       question: '직장 안에서 크는 타입인가, 독립·사업형인가?', verdictType: 'career_job', strength: str3(gwan + sikSang),
-      timing: gwanStages.length ? gwanStages.join('·') : '', basisSignals: [jobStable ? '안정된 직장·책임 기운(정관)이 또렷' : (pyeonGwan >= 1 ? '압박·권한·도전 기운(편관)이 강함' : '조직보다 자기 일·표현 기운이 강함')],
+      timing: gwanStages.length ? gwanStages.join('·') : '', basisSignals: [`[직업 유형] ${careerType}`, jobStable ? '안정된 직장·책임 기운(정관)이 또렷' : (pyeonGwan >= 1 ? '압박·권한·도전 기운(편관)이 강함' : '조직보다 자기 일·표현 기운이 강함')],
       allowedClaims: [jobStable ? '조직 안에서 직책·책임으로 크는 타입' : '자기 기준·시스템을 상품화하는 독립형에 가까움'],
     });
     // 이직운
@@ -306,6 +351,7 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
       strength: yeokma ? 'moderate' : 'not_prominent',
       timing: yeokma ? cdAge : '',
       basisSignals: [
+        `[이동 유형] ${moveType}`,
         yeokma ? '이동·변화에서 운이 살아나는 결(역마)' : '한곳에 뿌리내리는 결이 더 강함',
         married && hasChildren === true ? '기혼·자녀 — 이동은 여행이 아니라 집·아이 동선·배우자 일정·일하는 장소 조건으로 움직임' : '이동은 여행운이 아니라 현실 조건(집·근무지·생활권)으로',
         hasConflict ? '원국 충 신호 — 자리·환경이 흔들려 이동이 올라올 결' : '',
@@ -386,21 +432,14 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
   // 9) 귀인운 / 피해야 할 사람 (B) — 운을 열어주는 사람 vs 돈·시간을 새게 만드는 사람.
   //    천을귀인 없어도 항상 출력(누구나 궁금한 축). 신살 대신 tenGod로 "어떤 사람"인지 grounding.
   {
-    // 천을귀인 강 → "귀인운 강함". 없으면 사주의 기운으로 조력자 유형을 특정(억지 과장 금지).
-    const helperType = insung >= 1
-      ? '윗사람·멘토·문서나 자격을 챙겨주는 어른형 조력자'
-      : bigeop >= 2
-        ? '실무로 같이 뛰는 동료형 — 단, 돈·역할 기준 없는 동료는 같이 새게 만드는 쪽'
-        : jae >= 1.5
-          ? '거래·계약으로 엮이는 사람 — 숫자를 명확히 하는 상대일 때만 득'
-          : '감정 응원형보다 숫자·계약·일정을 같이 잡아주는 실무형 소수';
+    // nobleType(상사/동료/고객/실무/강한귀인)으로 "어떤 사람"인지 grounding. 천을귀인 없어도 과장 금지.
     seeds.push({
       question: '나에게 귀인은 어떤 사람인가? 피해야 할 사람은 누구인가?', verdictType: 'noble',
       strength: nobleStar ? 'moderate' : 'weak',
       timing: '',
       basisSignals: [
         nobleStar ? '사람·소개·계약을 통해 막힌 일이 풀리는 결(천을귀인류 신살) — 귀인운 강함' : '두드러진 귀인 신살은 없음 — 화려한 인맥이 아니라 실무로 받쳐주는 소수가 귀인',
-        `이 사주에서 운을 여는 사람 유형: ${helperType}`,
+        `[귀인 유형] ${nobleType}`,
         '명리 용어를 노출하지 말고 "어떤 사람"인지로만 풀 것 (없는 귀인을 억지로 과장 금지)',
       ],
       allowedClaims: [
@@ -419,6 +458,7 @@ export function buildPersonalFortuneVerdictEvidence(gpt: PersonalSajuGptInput): 
       strength: docSignal ? 'moderate' : 'weak',
       timing: docYear ? `${docYear.year}년 무렵 문서·자격 흐름` : '',
       basisSignals: [
+        `[문서 유형] ${documentType}`,
         docSignal ? '문서·자격·계약 기운(인성)이 있음 — 종이로 남기는 일에서 운이 갈림' : '문서·계약은 두드러지지 않으나 큰 결정 때 한 번은 걸림',
         docYear ? `${docYear.year}년 무렵 문서·자격·배움 흐름이 올라옴` : '',
       ].filter(Boolean),
