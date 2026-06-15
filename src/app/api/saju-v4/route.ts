@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import { generateNarrativePersonalSajuReport } from '@/domain/saju/generatePersonalSajuReport';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import { createOpenAiNarrativeGptCaller } from '@/lib/saju-v4-gpt-caller';
-import type { NarrativeDepthOptions } from '@/domain/saju/narrative/narrativeTypes';
+import type { NarrativeDepthOptions, NarrativeValidationResult } from '@/domain/saju/narrative/narrativeTypes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,6 +32,20 @@ function getServerDefaultDepth(): NarrativeDepthOptions {
     useSajuOpeningLuckCondition: on,
     useFinalGaewoonDirection: on,
   };
+}
+
+/**
+ * 응답에 실을 validation — production에서는 내부 diagnostics
+ * (exposureSafe/highCount/mediumCount/lowCount/qualityWarnings)를 제거하고
+ * UI/안전 판정이 쓰는 isValid + issues만 노출한다.
+ * dev/test 또는 SAJU_EXPOSE_VALIDATION_DIAGNOSTICS=true 면 전체 유지(디버그용).
+ */
+function toPublicValidation(v: NarrativeValidationResult): NarrativeValidationResult | Pick<NarrativeValidationResult, 'isValid' | 'issues'> {
+  const exposeDiagnostics =
+    process.env.NODE_ENV !== 'production' ||
+    process.env.SAJU_EXPOSE_VALIDATION_DIAGNOSTICS === 'true';
+  if (exposeDiagnostics) return v;
+  return { isValid: v.isValid, issues: v.issues };
 }
 
 export async function POST(req: Request) {
@@ -73,7 +87,7 @@ export async function POST(req: Request) {
       futureTimingAnalysis: result.gptInput.futureTimingAnalysis,
       fortune: result.gptInput.fortune,
       reportText: result.reportText, // 7섹션 markdown
-      validation: result.validation,
+      validation: toPublicValidation(result.validation),
       attempts: result.attempts,
       // 별빛 키워드 카드 (개인사주 최상단 + SNS 공유용)
       starKeywordCard: result.starKeywordCard,
