@@ -429,10 +429,13 @@ export async function generateNarrativePersonalSajuReport(
   let validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
 
   // ── 2) 섹션별 repair (실패 섹션만 재호출) ──
-  for (let i = 0; !validation.isValid && i < maxAttempts; i++) {
+  // Repair Gating R1 (2026-06): high(노출 위험) 이슈가 있을 때만 repair.
+  //   medium/low(품질·coverage)만 있으면 1차 결과를 그대로 반환 — gpt-4o-mini가 medium을
+  //   repair로 잘 못 잡으면서 시간만 2배로 쓰던 문제(40~70s) 제거. 노출 안전은 high로만 판정.
+  for (let i = 0; !validation.exposureSafe && i < maxAttempts; i++) {
     attempts++;
     const failingSections = collectFailingSectionsFromIssues(validation.issues);
-    if (failingSections.size === 0) break; // global-only 이슈 → repair 불가능, 결과 그대로 반환
+    if (failingSections.size === 0) break; // global-only high → 섹션 repair 불가 → deterministic fallback에 위임
 
     // 실패 섹션을 plan index와 매칭하여 그 섹션만 단일 호출 재실행
     const newSectionTexts = [...sectionTexts];
@@ -487,7 +490,7 @@ export async function generateNarrativePersonalSajuReport(
 
   // ── 3) Final deterministic fallback ──
   // repair 이후에도 high가 남으면 마지막 안전망: sanitizer 한 번 더 + 미래 단어 제거 + 재검증
-  if (!validation.isValid && validation.issues.some(i => i.severity === 'high')) {
+  if (!validation.exposureSafe) {
     const stripFuture = !narrativePlans.some(p => p.sectionId === 'futureFlowNarrative');
     // 2026-05 audit: user-context sanitize + financial-advice-risk sanitize도 final fallback에 포함
     reportText = applyFinalSanitizers(reportText, { stripFuture, userContext: uctx, sanitizeFinancial: true });

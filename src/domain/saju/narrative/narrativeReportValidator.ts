@@ -1123,9 +1123,20 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   // ─────────────────────────────────────────────
   const high = issues.filter(i => i.severity === 'high').length;
   const medium = issues.filter(i => i.severity === 'medium').length;
+  const low = issues.filter(i => i.severity === 'low').length;
+  // Repair Gating R1 (2026-06): 노출 안전 기준은 high 이슈 0개.
+  //   medium/low(품질·coverage)는 노출을 막지 않으므로 isValid를 깨지 않는다 → repair 강제 제거.
+  //   (이전: high===0 && medium<12 — gpt-4o-mini가 depth-on mustUseFact를 다 못 흡수해 medium이
+  //    상시 12개 이상 발생 → 매 생성 repair 강제 → 40~70s. medium은 repair해도 잘 안 잡힘.)
+  const exposureSafe = high === 0;
   return {
-    isValid: high === 0 && medium < 12,
+    isValid: exposureSafe,
     issues,
+    exposureSafe,
+    highCount: high,
+    mediumCount: medium,
+    lowCount: low,
+    qualityWarnings: issues.filter(i => i.severity !== 'high'),
   };
 }
 
@@ -1160,7 +1171,11 @@ export function collectFailingSectionsFromIssues(
     'gaewoon-direction-missing',
   ]);
   for (const iss of issues) {
-    if (!SECTIONAL_TYPES.has(iss.type)) continue;
+    // Repair Gating R1: high 이슈는 type과 무관하게 섹션을 repair 대상으로 포함
+    //   (financial-advice-risk/cross-section-leak/future-leak/final-section-missing 등
+    //    안전 관련 high가 SECTIONAL_TYPES에 없어도 해당 섹션을 반드시 다시 쓰도록).
+    const include = SECTIONAL_TYPES.has(iss.type) || iss.severity === 'high';
+    if (!include) continue;
     // sectionId가 "a,b" 콤마 결합 형태일 수 있음 → 각각 추가
     for (const sid of String(iss.sectionId).split(',')) {
       const trimmed = sid.trim();

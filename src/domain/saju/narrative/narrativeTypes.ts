@@ -100,8 +100,20 @@ export interface NarrativeValidationIssue {
 }
 
 export interface NarrativeValidationResult {
+  /**
+   * Repair Gating R1 (2026-06): "사용자에게 노출 가능한가" = high 이슈 없음.
+   * medium/low(품질·coverage)는 노출을 막지 않으므로 isValid에 영향 없음 → repair를 강제하지 않는다.
+   * (이전: high===0 && medium<12 — medium만으로도 repair가 강제되어 매 생성 40~70s 지연.)
+   */
   isValid: boolean;
   issues: NarrativeValidationIssue[];
+  /** isValid와 동치 — 의미를 명시한 별칭(= highCount === 0). repair gating 기준. */
+  exposureSafe: boolean;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  /** medium+low 품질 경고. repair 대상이 아니라 diagnostics/로깅용. */
+  qualityWarnings: NarrativeValidationIssue[];
 }
 
 // ============================================================

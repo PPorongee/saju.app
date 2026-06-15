@@ -14,7 +14,7 @@
 //   - validator가 cross-leak/future-leak/english-key/final-missing high를 잡음
 
 import { describe, it, expect } from 'vitest';
-import { calculateAnalysisOnly } from '../generatePersonalSajuReport';
+import { calculateAnalysisOnly, generateNarrativePersonalSajuReport, type NarrativeGptCaller } from '../generatePersonalSajuReport';
 import { buildNarrativePlans } from '../narrative/narrativePlanBuilder';
 import { buildStarKeywordCard } from '../star/starKeywordCardBuilder';
 import { parseNarrativeReport } from '@/lib/saju-v4-narrative-parser';
@@ -695,3 +695,66 @@ function buildMd(overrides: Partial<{
     `# 7. final`, overrides.final ?? finalPad,
   ].join('\n\n');
 }
+
+// ============================================================
+// Repair Gating R1 (2026-06) — high(노출 위험)일 때만 repair, medium/low는 통과
+// ============================================================
+describe('Repair Gating R1 — validator 노출안전(exposureSafe) 계약', () => {
+  const ref = computed_ref();
+
+  it('medium만 있고 high 없음 → isValid=true·exposureSafe=true·highCount=0·mediumCount>0, qualityWarnings=non-high', () => {
+    // pad 본문: 명리 fact 토큰이 거의 없어 missing-narrative-fact 등 medium 다수 발생.
+    // 단, leak/단정/영문오행 없음 → high 0.
+    const md = buildMd({});
+    const r = validateNarrativeReport({ reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans });
+    expect(r.highCount).toBe(0);
+    expect(r.exposureSafe).toBe(true);
+    expect(r.isValid).toBe(true);
+    expect(r.mediumCount).toBeGreaterThan(0);
+    // qualityWarnings는 medium+low 합과 동일하고 high를 포함하지 않음
+    expect(r.qualityWarnings.length).toBe(r.mediumCount + r.lowCount);
+    expect(r.qualityWarnings.every(i => i.severity !== 'high')).toBe(true);
+  });
+
+  it('high 이슈(cross-section-leak)가 있으면 → isValid=false·exposureSafe=false·highCount>0', () => {
+    const md = buildMd({ money: '돈은 작은 단위로 검증하는 게 좋습니다. 결국 이 사주는 이렇게 정리됩니다. '.repeat(3) });
+    const r = validateNarrativeReport({ reportText: md, gptInput: ref.gptInput, narrativePlans: ref.plans });
+    expect(r.highCount).toBeGreaterThan(0);
+    expect(r.exposureSafe).toBe(false);
+    expect(r.isValid).toBe(false);
+  });
+});
+
+describe('Repair Gating R1 — generator는 high가 있을 때만 repair', () => {
+  // 섹션 프롬프트 system에 "(id: <sectionId>)"가 있어 섹션별 응답을 제어할 수 있음.
+  function sectionIdOf(prompt: { system: string; user: string }): string {
+    const m = `${prompt.system}\n${prompt.user}`.match(/\(id:\s*([A-Za-z]+)\)/);
+    return m ? m[1] : 'unknown';
+  }
+  // leak/단정/영문오행/결론조 없는 충분히 긴 안전 본문 → high 0 (medium은 다수 발생 가능).
+  const SAFE_BODY = '이 부분은 충분히 긴 안전한 줄글 본문입니다. 명리 용어 없이 일상어로 풀어 씁니다. 회의나 가족, 가까운 관계 같은 장면도 자연스럽게 들어갑니다. 무리한 단정 없이 결을 설명합니다. '.repeat(6);
+
+  it('high 없음(medium만) → repair 미실행: attempts=1, repairedSections=[], exposureSafe=true', async () => {
+    let calls = 0;
+    const caller: NarrativeGptCaller = async () => { calls++; return SAFE_BODY; };
+    const res = await generateNarrativePersonalSajuReport(FIXTURES[0].input, { callGpt: caller, now: NOW });
+    expect(res.attempts).toBe(1);                       // 1차 병렬 호출만 — repair 라운드 없음
+    expect(res.repairedSections.length).toBe(0);
+    expect(res.validation.exposureSafe).toBe(true);
+    expect(res.validation.highCount).toBe(0);
+    expect(res.validation.qualityWarnings.every(i => i.severity !== 'high')).toBe(true);
+    expect(calls).toBe(res.narrativePlans.length);      // repair 추가 호출 없음(= 섹션 수만큼만)
+  });
+
+  it('high(final-section-missing) 있으면 → repair 실행: attempts=2, 결론 섹션 repair 시도', async () => {
+    const caller: NarrativeGptCaller = async (prompt) => {
+      const sid = sectionIdOf(prompt);
+      if (sid === 'finalStrategyNarrative') return '결론.';   // 너무 짧음 → final-section-missing(high)
+      return SAFE_BODY;
+    };
+    const res = await generateNarrativePersonalSajuReport(FIXTURES[0].input, { callGpt: caller, now: NOW });
+    expect(res.attempts).toBe(2);                                  // repair 1회 실행
+    expect(res.repairedSections).toContain('finalStrategyNarrative');
+    expect(res.validation.highCount).toBeGreaterThan(0);           // mock이 계속 짧게 반환 → 여전히 high
+  });
+});
