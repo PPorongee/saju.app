@@ -568,6 +568,24 @@ function buildMoneyChartFacts(input: PersonalSajuGptInput): NarrativeMustUseFact
 }
 
 // ============================================================
+// R1.1 (2026-06): opening 시작부 de-convergence.
+//   기존 requiredBeats[0]이 모든 차트에 "겉/속 결 차이"를 강제해 GPT가 "겉과 속이 다른 입체적인
+//   사람"으로 수렴했다. 대신 그 사주의 지배 십성에서 도입 각도를 끌어와 첫 문장이 차트별로 갈리게 한다.
+//   (하드코딩 문장이 아니라 "어느 결에서 시작할지" 각도만 chart에서 도출 — 문장은 GPT가 작성.)
+// ============================================================
+function openingAngleHint(input: PersonalSajuGptInput): string {
+  const groups: Array<{ key: string; val: number; angle: string }> = [
+    { key: '인성', val: tgSum(input, ['정인', '편인']), angle: '받아들이고 배우고 곱씹어 자기 것으로 만드는 결(학습·직관·이해, 아직 말로 다 나오지 않은 감각)' },
+    { key: '식상', val: tgSum(input, ['식신', '상관']), angle: '안에 있는 것을 표현하고 만들어 밖으로 내보내는 결(말·창작·결과물)' },
+    { key: '재성', val: tgSum(input, ['정재', '편재']), angle: '현실과 자원·결과를 직접 쥐고 굴리는 결(실행·수완·장악)' },
+    { key: '관성', val: tgSum(input, ['정관', '편관']), angle: '책임·역할·기준을 세우고 감당하는 결(체계·통제)' },
+    { key: '비겁', val: tgSum(input, ['비견', '겁재']), angle: '자기 주관과 힘으로 끝까지 버티고 밀어붙이는 결(독립·승부)' },
+  ];
+  groups.sort((a, b) => b.val - a.val);
+  return groups[0].val > 0 ? groups[0].angle : '일간(타고난 기질)에서 드러나는 고유한 결';
+}
+
+// ============================================================
 // 섹션 1 — openingDefinition
 // ============================================================
 function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], depth: NarrativeDepthOptions = DEFAULT_NARRATIVE_DEPTH_OPTIONS): NarrativePlan {
@@ -619,7 +637,10 @@ function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], 
   }
 
   const requiredBeats: string[] = [
-    '이 사주를 대표하는 한 문장으로 시작한다(겉/속 결 차이나 결정 방식이 드러나야 함).',
+    // R1.1: 고정 "겉/속" 도입 제거 → 그 사주의 지배 십성 각도 + 신강약 + 일간에서 첫 문장을 끌어온다.
+    `이 사주의 가장 두드러진 결 — ${openingAngleHint(input)} — 에서 한 문장으로 시작한다. ` +
+    `${strengthCoreLabel(input.coreAnalysis.dayMasterStrength.level)} 구조와 일간(${dm})의 기질이 그 문장에 함께 묻어나야 한다. ` +
+    `"겉과 속이 다른", "입체적인 사람", "반전" 같은 일반 표현으로 시작하지 말 것 — 겉/속 차이는 특정 반전 근거(specialPoint)가 있을 때만 본문 뒤 단락에서 다룬다.`,
     '그 한 문장이 실제 삶에서 어떻게 나타나는지 1~2단락 설명한다.',
     '핵심 키워드 3~5개를 문장 속에 녹인다(리스트 X).',
     'specialPoints를 일상어로 풀어준다 (예: "양인은 쉽게 말해 ...").',
@@ -640,13 +661,15 @@ function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], 
       '위기에서 쉽게 꺾이지 않는',
       '안정성과 신뢰를 중시',
       '상위 1%', '희귀한 사주', '무조건 성공',
+      // R1.1: 모든 사주에 공통으로 새던 도입 클리셰 차단.
+      '겉과 속이 다른', '입체적인 사람', '입체적인 성향',
     ],
     styleExamples: {
-      badExample: '이 사주는 위기에서 쉽게 꺾이지 않는 힘을 지닌 사람입니다.',
-      // R1: 특정 사주형(양인·괴강·혼자버티기) 예시 제거 — 톤/구조만 안내. 내용은 mustUseFacts에서.
+      badExample: '이 사주는 겉과 속이 다른 입체적인 사람입니다.',
+      // R1.1: 도입을 "겉/속"이 아니라 그 사주의 지배 십성 각도에서 끌어오도록 안내. 내용은 mustUseFacts에서.
       goodExample:
-        '[톤·구조 예시일 뿐, 문장을 복사하지 말 것. 실제 내용은 이 plan의 mustUseFacts(일간·키워드·specialPoints)에서만 가져온다.]\n\n' +
-        '이 사주를 한 문장으로 말하면 → 이 사주의 대표 키워드 결을 한 문장으로 잡는다(겉/속 차이나 결정 방식이 드러나게).\n\n' +
+        '[톤·구조 예시일 뿐, 문장을 복사하지 말 것. 실제 내용은 이 plan의 mustUseFacts(일간·키워드·specialPoints)와 requiredBeats의 도입 각도에서만 가져온다.]\n\n' +
+        '이 사주를 한 문장으로 말하면 → requiredBeats에 지정된 "가장 두드러진 결"(지배 십성 각도)에서 한 문장을 잡는다. "겉과 속이 다른/입체적인" 같은 표현으로 시작하지 말 것.\n\n' +
         '→ 그 한 문장이 실제 삶에서 어떻게 나타나는지 한두 장면으로 보여준다. specialPoints 용어가 나오면 바로 쉬운 말로 풀고, 이 힘이 장점이 되는 상황과 부담이 되는 상황을 함께 말한 뒤 다음 장으로 자연스럽게 넘긴다.',
       transformationRule: '핵심 성향을 한 문장으로 끝내지 말고, 그 사주의 실제 분석값(일간·신살·키워드)에 근거한 장면과 그림자까지 이어서 설명하라. 다른 사주에도 들어맞을 일반 문장 금지.',
     },
