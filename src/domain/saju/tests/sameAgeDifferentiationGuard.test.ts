@@ -40,30 +40,39 @@ describe('3) generic phrase blocker — 근거 없이 세 차트 공통이면 FA
     const shared = sharedExactStrings(IDS.map(id => forcedMeanings(plansOf(id), 'relationshipLoveNarrative')));
     expect(shared).toEqual([]);
   });
-  guardIt('돈 섹션: 세 차트에 동일한 강제문구(plainMeaning) 공유 금지', () => {
+  // R1 GREEN: 합성 돈 fact 제거 → 차트별 재성/식상생재 fact로 교체되어 수렴 해소됨.
+  it('돈 섹션: 세 차트에 동일한 강제문구(plainMeaning) 공유 금지', () => {
     const shared = sharedExactStrings(IDS.map(id => forcedMeanings(plansOf(id), 'moneyMonetizationNarrative')));
     expect(shared).toEqual([]);
   });
 
   // GOLD(styleExamples)는 차트 무관 상수 → 모든 차트가 같은 수렴 문구를 베낌.
-  guardIt('GOLD example(openingDefinition): 근거 없는 수렴 문구가 세 차트 공통이면 안 됨', () => {
+  // R1 GREEN: styleExamples.goodExample을 톤·구조 안내로 교체(고정 prose 제거)해 수렴 해소됨.
+  it('GOLD example(openingDefinition): 근거 없는 수렴 문구가 세 차트 공통이면 안 됨', () => {
     const entries = IDS.map(id => ({ text: goldText(plansOf(id), 'openingDefinition'), signals: signalsOf(id) }));
     expect(unjustifiedSharedPhrases(entries)).toEqual([]);
   });
-  guardIt('GOLD example(finalStrategy): 근거 없는 수렴 문구가 세 차트 공통이면 안 됨', () => {
+  // R1 GREEN: finalStrategy goodExample도 톤·구조 안내로 교체해 수렴 해소됨.
+  it('GOLD example(finalStrategy): 근거 없는 수렴 문구가 세 차트 공통이면 안 됨', () => {
     const entries = IDS.map(id => ({ text: goldText(plansOf(id), 'finalStrategyNarrative'), signals: signalsOf(id) }));
     expect(unjustifiedSharedPhrases(entries)).toEqual([]);
   });
 
-  // 교차오염: B(신강·편재)에 신약/협업 보완 결, A(신약)에 양인·괴강 버티는 힘이 새어들면 안 됨.
-  guardIt('B plan: 신약·협업 보완 결("협업")이 강제 fact로 들어오면 안 됨', () => {
-    expect(allForcedText(plansOf('B'))).not.toContain('협업');
+  // 교차오염: B(신강)에 신약 remedy가 새어들면 안 됨.
+  //   주: bare "협업"은 B의 정당한 chart 근거(양인·괴강 → 합의 시간/네트워크 수익)라 금지 대상 아님.
+  //   진짜 누출은 "신약 → 협업으로 보완" 결이 신강 B에 들어오는 것 → 그것만 정밀 차단.
+  // R1 GREEN: 신강약 기반 chart fact로 교체되어 신약 remedy 누출이 사라짐.
+  it('B plan: 신약 remedy("신약"/"협업으로 보완")가 신강 B에 새어들면 안 됨', () => {
+    const txt = allForcedText(plansOf('B'));
+    expect(txt).not.toContain('신약');
+    expect(txt).not.toContain('협업으로 보완');
   });
 });
 
 describe('4) same-age 수렴 가드 — 나이대로 결론이 수렴하면 FAIL (현재 RED)', () => {
   // FINAL_LINE 상수 5개가 전부 "혼자 버티기 / 기준·역할" 수렴 문구.
-  guardIt('FINAL_LINE_CANDIDATES 상수에 수렴 문구가 없어야 한다', () => {
+  // R1 GREEN: FINAL_LINE_CANDIDATES 5개를 중립 시드로 교체해 "혼자버티기/역할나누기" 수렴 제거.
+  it('FINAL_LINE_CANDIDATES 상수에 수렴 문구가 없어야 한다', () => {
     const hits = FINAL_LINE_CANDIDATES.flatMap(line => findConvergencePhrases(line));
     expect(hits).toEqual([]);
   });

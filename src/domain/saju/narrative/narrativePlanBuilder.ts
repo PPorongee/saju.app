@@ -392,6 +392,181 @@ function buildLuckOpeningConditionFact(input: PersonalSajuGptInput): NarrativeMu
 }
 
 // ============================================================
+// R1 (2026-06): chart-derived 관계/돈 fact 빌더
+// 합성(차트 무관) mustUseFacts 대체 — 실제 십성·신살·신강약에서만 문장을 만든다.
+// 근거가 없으면 해당 fact를 push하지 않는다("근거 없으면 말하지 않는다").
+// ============================================================
+function tgSum(input: PersonalSajuGptInput, names: string[]): number {
+  const t = (input.coreAnalysis.tenGods?.totals ?? {}) as Record<string, number>;
+  return names.reduce((a, n) => a + (Number(t[n]) || 0), 0);
+}
+function starSet(input: PersonalSajuGptInput): Set<string> {
+  return new Set((input.coreAnalysis.specialStars ?? []).map(s => s.name));
+}
+
+/** 관계·연애 섹션 — 도화/홍염·화개 신살 + 성별별 인연 십성 + 신강약에서 chart fact 생성. */
+function buildRelationshipChartFacts(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativeMustUseFact[] {
+  const facts: NarrativeMustUseFact[] = [];
+  const relHints = hints?.filter(h => h.sectionId === 'relationshipLoveNarrative') ?? [];
+  const stars = starSet(input);
+  const has = (re: RegExp) => [...stars].some(s => re.test(s));
+  const female = input.userContext.gender === 'female';
+  const core = strengthCoreLabel(input.coreAnalysis.dayMasterStrength.level);
+  const relGod = female ? tgSum(input, ['정관', '편관']) : tgSum(input, ['정재', '편재']);
+
+  // 1) 끌림/거리 결 — 도화·홍염(매력) vs 화개(거리·몰입). 둘 다 없으면 신강약 기반 기본 결.
+  if (has(/도화|홍염/)) {
+    facts.push({
+      id: 'rel-charm', source: 'specialStar',
+      fact: '도화·홍염 계열 — 사람을 끄는 매력',
+      plainMeaning: '특별히 애쓰지 않아도 다가오는 사람이 많은 편이라, 모든 신호에 반응하기보다 오래 남길 관계를 고르는 감각이 중요한 결.',
+      narrativeHint: '관계 도입을 이 매력의 결로 시작 (신살 이름은 즉시 일상어로 풀이)',
+      matchTokens: ['매력', '끌리', '다가오는 사람', '도화', '홍염'],
+      lifeSceneHint: relHints[0] ? {
+        situation: relHints[0].situation, likelyBehavior: relHints[0].likelyBehavior,
+        innerReaction: relHints[0].innerReaction,
+        externalMisunderstanding: relHints[0].externalMisunderstanding, betterUse: relHints[0].betterUse,
+      } : undefined,
+    });
+  } else if (has(/화개/)) {
+    facts.push({
+      id: 'rel-solitude', source: 'specialStar',
+      fact: '화개 — 관계에서 거리·정리 시간이 필요한 결',
+      plainMeaning: '가까워질수록 혼자 정리할 시간이 필요한 편. 거리감이 차가움이 아니라 관계를 깊게 가져가기 위한 결.',
+      narrativeHint: '관계 도입을 거리·몰입의 결로',
+      matchTokens: ['거리', '혼자 정리', '화개', '몰입'],
+    });
+  }
+
+  // 2) 인연 십성 결 (성별별 — 女 관성 / 男 재성)
+  if (relGod >= 1.5) {
+    facts.push({
+      id: 'rel-bond', source: 'tenGod',
+      fact: female ? '관성(책임·공식) 인연 기운이 또렷' : '재성(현실 인연) 기운이 또렷',
+      plainMeaning: female
+        ? '책임과 약속이 분명한 관계에 마음이 가는 결. 분위기보다 관계의 틀이 잡힐 때 안정됨.'
+        : '현실 조건과 생활이 맞는 인연에 마음이 가는 결. 분위기보다 함께 굴러가는 그림이 보일 때 깊어짐.',
+      narrativeHint: '인연의 결을 십성 근거로 — 용어는 즉시 일상어',
+      matchTokens: female ? ['책임', '약속', '관계의 틀'] : ['현실', '생활', '함께'],
+    });
+  } else {
+    facts.push({
+      id: 'rel-bond-weak', source: 'tenGod',
+      fact: female ? '관성(인연) 기운이 강하진 않음' : '재성(인연) 기운이 강하진 않음',
+      plainMeaning: female
+        ? '여성 사주에서 관계·결혼을 끌어오는 기운이 두드러지진 않아, 한눈에 타오르기보다 시간을 두고 신뢰가 쌓일 때 가까워지는 결.'
+        : '남성 사주에서 현실 인연을 끌어오는 기운이 두드러지진 않아, 분위기보다 생활이 맞물릴 때 천천히 깊어지는 결.',
+      narrativeHint: '천천히 깊어지는 결로 (인연운 약함을 단점이 아니라 결로)',
+      matchTokens: female ? ['시간을 두고', '신뢰가 쌓', '천천히'] : ['생활이', '천천히', '깊어지'],
+    });
+  }
+
+  // 3) 신강약 → 관계 거리·마음 열고 닫힘 결
+  facts.push({
+    id: 'rel-distance', source: 'dayMasterStrength',
+    fact: `${core} — 가까운 관계에서의 거리 결`,
+    plainMeaning: core === '신강'
+      ? '관계에서 자기 기준이 분명한 편이라 상대가 거리감을 느낄 수 있음. 마음이 닫히기 전에 먼저 말로 풀면 단단함이 신뢰로 바뀌는 결.'
+      : core === '신약'
+        ? '가까운 사람의 결에 영향을 크게 받는 편. 휘둘림이 아니라, 믿을 사람을 고르는 기준을 자기 안에 먼저 둘 때 마음이 편해지는 결.'
+        : '상대와 환경에 따라 관계의 결이 달라지는 편이라, 누구와 함께하느냐에 따라 다른 강점이 나오는 결.',
+    narrativeHint: '마음이 열리고 닫히는 방식을 신강약 근거로 (열림/닫힘 둘 다)',
+    matchTokens: [core, '거리', '신뢰', '마음'],
+    lifeSceneHint: relHints[1] ? {
+      situation: relHints[1].situation, likelyBehavior: relHints[1].likelyBehavior,
+      innerReaction: relHints[1].innerReaction,
+      externalMisunderstanding: relHints[1].externalMisunderstanding, betterUse: relHints[1].betterUse,
+    } : undefined,
+  });
+
+  // 4) userContext 안전망 (혼인/자녀 단정 방지) — 동일 컨텍스트면 동일해도 됨(차트 수렴 아님).
+  facts.push({
+    id: 'relationship-context', source: 'userContext',
+    fact: `relationshipStatus=${input.userContext.relationshipStatus}`,
+    plainMeaning:
+      input.userContext.relationshipStatus === 'married' ? '기혼자 — 새 인연/배우자 표현 단정 주의' :
+      input.userContext.relationshipStatus === 'single' ? '미혼 — 결혼 단정 금지' :
+      '관계 상태 unknown — 일반 관계 결로',
+    narrativeHint: 'userContext 위반 금지 (배우자/남편/아내/자녀와 등)',
+    matchTokens: ['관계'],
+  });
+
+  return facts;
+}
+
+/** 돈·수익화 섹션 — 재성(편재/정재) 구조 + 식상생재 + 신강약에서 chart fact 생성. */
+function buildMoneyChartFacts(input: PersonalSajuGptInput): NarrativeMustUseFact[] {
+  const facts: NarrativeMustUseFact[] = [];
+  const jeongJae = tgSum(input, ['정재']);
+  const pyeonJae = tgSum(input, ['편재']);
+  const jae = jeongJae + pyeonJae;
+  const sikSang = tgSum(input, ['식신', '상관']);
+  const insung = tgSum(input, ['정인', '편인']);
+  const core = strengthCoreLabel(input.coreAnalysis.dayMasterStrength.level);
+
+  // 1) 재성 구조 — 돈이 붙는 "형태"
+  if (pyeonJae > jeongJae && pyeonJae >= 1.5) {
+    facts.push({
+      id: 'money-jae-shape', source: 'tenGod',
+      fact: '편재 우위 — 변동·확장형 돈 기운',
+      plainMeaning: '기회·거래·사람을 통해 크게 움직이는 돈의 결. 한자리 고정보다 판을 키우는 쪽에서 살아나되, 들어온 만큼 새기도 쉬워 기준이 필요한 결.',
+      narrativeHint: '"돈이 붙는 방식은 ..." 편재 결로. 투자/매매 권유 톤 금지',
+      matchTokens: ['편재', '기회', '거래', '확장'],
+    });
+  } else if (jeongJae >= pyeonJae && jeongJae >= 1) {
+    facts.push({
+      id: 'money-jae-shape', source: 'tenGod',
+      fact: '정재 우위 — 고정·축적형 돈 기운',
+      plainMeaning: '꾸준한 수입과 계획적인 관리로 천천히 쌓이는 돈의 결. 한 번에 크게보다 시간이 붙을수록 단단해지는 쪽.',
+      narrativeHint: '"돈이 붙는 방식은 ..." 정재 결로',
+      matchTokens: ['정재', '꾸준한 수입', '관리', '쌓이'],
+    });
+  } else {
+    facts.push({
+      id: 'money-jae-weak', source: 'tenGod',
+      fact: '재성이 약한 구조 — 돈을 "형태"로 묶어야 남음',
+      plainMeaning: '돈 기운 자체가 강하진 않아, 돈을 바로 좇기보다 자격·전문성·결과물·계약 같은 형태로 묶을 때 남는 결. 형태가 없으면 실력은 쓰이는데 보상이 약해지기 쉬움.',
+      narrativeHint: '"돈이 붙는 방식은 ..." 재성 약 → 형태화 결로 (단정적 빈곤 단정 금지)',
+      matchTokens: ['자격', '전문성', '결과물', '형태'],
+    });
+  }
+
+  // 2) 식상생재 — 만든 것이 돈으로 이어지는 흐름 (신호 있을 때만)
+  if (sikSang >= 1.5 && jae >= 1) {
+    facts.push({
+      id: 'money-siksang-jae', source: 'tenGod',
+      fact: '식상생재 — 만든 것이 돈으로 이어지는 흐름',
+      plainMeaning: '표현·기획·결과물(식상)이 돈(재성)으로 이어지는 결. 내가 만든 것을 외부에서 확인 가능한 형태로 남길 때 수익으로 연결됨.',
+      narrativeHint: '식상생재 흐름을 한 단락으로',
+      matchTokens: ['식상생재', '만든 것', '결과물', '수익'],
+    });
+  } else if (insung >= 2) {
+    facts.push({
+      id: 'money-insung', source: 'tenGod',
+      fact: '인성 강 — 자격·전문성이 수입의 축',
+      plainMeaning: '배움·자격·전문성(인성)이 돈의 통로가 되는 결. 자격·콘텐츠·전문 분야처럼 "검증된 형태"로 묶을수록 수입이 안정됨.',
+      narrativeHint: '인성 → 자격·전문성 수익 결로',
+      matchTokens: ['자격', '전문성', '인성', '수입'],
+    });
+  }
+
+  // 3) 신강약 → 돈을 쥐는 방식
+  facts.push({
+    id: 'money-strength', source: 'dayMasterStrength',
+    fact: `${core} — 돈을 쥐고 가는 방식`,
+    plainMeaning: core === '신강'
+      ? '재성을 직접 굴리는 힘이 있는 편 — 다만 추진이 과하면 한 번에 벌이려다 새기 쉬워, 규모를 키우기 전에 구조를 먼저 잡는 쪽이 안정적.'
+      : core === '신약'
+        ? '돈을 혼자 크게 굴리기보다, 검증된 구조·사람·계약에 얹어 천천히 키울 때 안정적인 결.'
+        : '환경에 따라 돈을 쥐는 방식이 달라지는 편이라, 판의 결을 보고 방식을 바꾸는 유연함이 자산.',
+    narrativeHint: '"돈이 새는 패턴"을 신강약 결로 (투자 권유 금지)',
+    matchTokens: [core, '구조', '돈'],
+  });
+
+  return facts;
+}
+
+// ============================================================
 // 섹션 1 — openingDefinition
 // ============================================================
 function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], depth: NarrativeDepthOptions = DEFAULT_NARRATIVE_DEPTH_OPTIONS): NarrativePlan {
@@ -467,11 +642,12 @@ function buildOpeningPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], 
     ],
     styleExamples: {
       badExample: '이 사주는 위기에서 쉽게 꺾이지 않는 힘을 지닌 사람입니다.',
+      // R1: 특정 사주형(양인·괴강·혼자버티기) 예시 제거 — 톤/구조만 안내. 내용은 mustUseFacts에서.
       goodExample:
-        '이 사주를 한 문장으로 말하면, 겉으로는 차분해 보여도 안쪽에는 쉽게 물러서지 않는 승부심을 품은 사람에 가까워요.\n\n' +
-        '평소에는 조용히 상황을 지켜보다가도, 막상 일이 꼬이거나 누군가 결정을 미루는 순간이 오면 "그럼 내가 정리해야지" 쪽으로 몸이 먼저 움직일 수 있습니다.\n\n' +
-        '양인은 위기에서 밀리지 않으려는 힘이고, 괴강은 기준이 강하게 서는 기운으로 볼 수 있습니다. 다만 이 힘이 강할수록 혼자 너무 오래 버티는 패턴도 함께 생길 수 있어요.',
-      transformationRule: '핵심 성향을 한 문장으로 끝내지 말고, 실제 장면과 명리 근거와 그림자까지 이어서 설명하라.',
+        '[톤·구조 예시일 뿐, 문장을 복사하지 말 것. 실제 내용은 이 plan의 mustUseFacts(일간·키워드·specialPoints)에서만 가져온다.]\n\n' +
+        '이 사주를 한 문장으로 말하면 → 이 사주의 대표 키워드 결을 한 문장으로 잡는다(겉/속 차이나 결정 방식이 드러나게).\n\n' +
+        '→ 그 한 문장이 실제 삶에서 어떻게 나타나는지 한두 장면으로 보여준다. specialPoints 용어가 나오면 바로 쉬운 말로 풀고, 이 힘이 장점이 되는 상황과 부담이 되는 상황을 함께 말한 뒤 다음 장으로 자연스럽게 넘긴다.',
+      transformationRule: '핵심 성향을 한 문장으로 끝내지 말고, 그 사주의 실제 분석값(일간·신살·키워드)에 근거한 장면과 그림자까지 이어서 설명하라. 다른 사주에도 들어맞을 일반 문장 금지.',
     },
   };
 }
@@ -546,7 +722,9 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
         `일간 비유 뒤 단락에서 "${core}은(는) ..." 식으로 짧게 풀어 1~2문장 안에 흡수. ` +
         `반드시 일간 비유와 묶어 "원인(${core} 구조) → 결과(성향) → 현실 장면 → 조언" 흐름으로. ` +
         '운명론적 단정("강하다"=좋다 / "약하다"=나쁘다) 금지. 사주 구조 설명으로만.',
-      matchTokens: [core, '기준', '버티는 힘', '도와주는 힘', '환경에 따라'],
+      // R1: '버티는 힘'/'도와주는 힘' 같은 고정 토큰을 모든 차트에 강제하면 수렴하므로 제거.
+      //     core(신강/신약/중화)만 흡수 토큰으로 — 실제 풀이는 chart 신호에서.
+      matchTokens: [core, '구조'],
       lifeSceneHint: strengthLifeSceneHint(dms.level),
       adviceHint: strengthAdviceHint(dms.level),
     });
@@ -632,11 +810,12 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
     ],
     styleExamples: {
       badExample: '이 사주는 강한 일간이라 안정성과 신뢰를 중시합니다.',
+      // R1: 고정 페르소나(겉차분/비겁 버티는 힘) 제거 — 풀이 "방법"만 안내, 내용은 mustUseFacts에서.
       goodExample:
-        '[일간 비유는 이 plan의 dayMaster fact plainMeaning을 그대로 첫 단락에 사용하라. 아래는 일간 무관 톤 예시.]\n\n' +
-        '겉으로는 차분해 보여도 속으로는 상황을 오래 곱씹고, 사람의 태도나 말투를 세밀하게 기억하는 쪽일 수 있어요. 가까운 사람은 "말을 안 하니까 괜찮은 줄 알았다"고 느끼기 쉽지만, 사실 안쪽에서는 이미 여러 번 선을 넘었는지 판단하고 있었을 수 있습니다.\n\n' +
-        '비겁은 자기 힘·독립성·버티는 힘과 관련된 기운입니다. 이 기운이 강하면 스스로 해결하려는 힘은 커지지만, 반대로 도움을 받는 타이밍이 늦어질 수 있습니다.',
-      transformationRule: '명리 용어를 말한 뒤 반드시 쉬운 뜻과 실제 반응 방식까지 연결하라. 일간 비유는 plan dayMaster fact plainMeaning만 사용.',
+        '[톤·구조 예시. 문장 복사 금지. 일간 비유는 이 plan의 dayMaster fact plainMeaning만 사용한다.]\n\n' +
+        '먼저 일간을 그 plan의 비유로 설명한다(다른 일간 비유 카피 금지).\n\n' +
+        '→ 강한 오행/십성과 신강약 구조가 성격에 어떻게 나타나는지 줄글로 풀고, 명리 용어가 나오면 바로 쉬운 뜻과 실제 반응 방식까지 연결한다. 겉으로 보이는 모습과 실제 내면의 차이, 주변이 오해하기 쉬운 지점을 그 사주의 근거로 말한다.',
+      transformationRule: '명리 용어를 말한 뒤 반드시 쉬운 뜻과 실제 반응 방식까지 연결하라. 일간 비유는 plan dayMaster fact plainMeaning만 사용. 다른 사주에도 맞는 일반 성격 묘사 금지.',
     },
   };
 }
@@ -702,32 +881,9 @@ function buildRepeatedPatternPlan(input: PersonalSajuGptInput, hints?: LifeScene
     });
   }
 
-  // 관계·연애·가족 synthetic facts — V4 분석에 직접 매핑 없는 주제지만 본문에 반드시 다뤄야
-  facts.push({
-    id: 'relationship-pattern',
-    source: 'relationshipPattern',
-    fact: '인간관계에서 반복되는 결',
-    plainMeaning: '편한 사람 vs 지치는 사람의 구분이 분명, 참다가 거리 조절을 시작하는 패턴',
-    narrativeHint: '"관계에서는 ..." 한 단락 줄글로. 편한 사람·지치는 사람 결도 포함',
-    matchTokens: ['관계에서는', '관계에서도', '인간관계', '사람과의'],
-    lifeSceneHint: pickHint(hints, 'repeatedPatternNarrative', 'relationshipPattern'),
-  });
-  facts.push({
-    id: 'love-marriage-pattern',
-    source: 'relationshipPattern',
-    fact: '연애·장기 관계에서 반복되는 결',
-    plainMeaning: '뜨겁게 다가오는 사람보다 행동이 꾸준한 사람에게 신뢰가 열림',
-    narrativeHint: '"연애나 가까운 관계에서도..." 식 한 단락. 결혼 여부 단정 금지(userContext 참고)',
-    matchTokens: ['연애', '결혼', '연인', '파트너', '장기 관계', '가까운 관계'],
-  });
-  facts.push({
-    id: 'family-early-repeated',
-    source: 'familyEarlyPattern',
-    fact: '가족 안에서 맡기 쉬운 역할',
-    plainMeaning: '먼저 알아차리고 움직이는 사람 역할이 굳어질 가능성',
-    narrativeHint: '"가족 안에서는..." 한두 문장. 단정 금지, 조건부 톤',
-    matchTokens: ['가족 안에서는', '가족', '집안'],
-  });
+  // R1: 합성 관계/연애/가족 fact 3개 제거 (모든 차트 동일 문장이라 수렴 유발).
+  //   반복 패턴은 chart-derived lifeTraps + timingAnchors + blockingChoices에서만 도출한다.
+  //   관계·연애 결은 6장(relationshipLove)에서 chart 신호로 다룬다.
 
   return {
     sectionId: 'repeatedPatternNarrative',
@@ -752,12 +908,12 @@ function buildRepeatedPatternPlan(input: PersonalSajuGptInput, hints?: LifeScene
     ],
     styleExamples: {
       badExample: '혼자 모든 것을 감당하려는 경향이 있습니다. 도움을 요청하세요.',
+      // R1: 고정 패턴 예시(떠안기/조용히 마음 접기) 제거 — 풀이 방법만. 패턴 내용은 lifeTraps에서.
       goodExample:
-        '이 사주에서 반복되기 쉬운 패턴은 "처음엔 괜찮다고 생각했는데, 어느 순간 너무 많이 떠안고 있는 상태"예요.\n\n' +
-        '직장에서는 남들이 놓친 일을 정리하는 사람, 관계에서는 분위기를 수습하는 사람, 가족 안에서는 먼저 알아차리고 움직이는 사람 역할을 하게 될 수 있습니다.\n\n' +
-        '또 하나의 패턴은 아닌 사람을 바로 밀어내기보다, 꽤 오래 참다가 어느 순간 조용히 마음을 접는 방식으로 나타날 수 있습니다.\n\n' +
-        '특히 2015년이나 2024년처럼 관계의 판이나 역할의 무게가 달라지는 흐름에서는 이 패턴이 더 선명했을 가능성이 있어요.',
-      transformationRule: '함정 이름을 나열하지 말고, 일·관계·가족에서 반복되는 장면으로 풀어라.',
+        '[톤·구조 예시. 문장 복사 금지. 반복 패턴 내용은 이 plan의 lifeTraps/timingAnchors fact에서만 가져온다.]\n\n' +
+        '가장 큰 반복 패턴을 한 문장으로 잡는다(함정 이름을 카드처럼 나열하지 말고 줄글로).\n\n' +
+        '→ 그 패턴이 일에서, 그리고 가까운 관계에서 각각 어떤 장면으로 나타나는지 보여준다. timingAnchors가 있으면 "~였을 수 있어요" 톤으로 짧게 얹고, 벗어나는 방향을 조언 리스트가 아니라 한 단락 줄글로 푼다.',
+      transformationRule: '함정 이름을 나열하지 말고, 그 사주의 lifeTraps 근거로 일·관계에서 반복되는 장면을 풀어라.',
     },
   };
 }
@@ -830,12 +986,14 @@ function buildCareerTalentPlan(input: PersonalSajuGptInput, hints?: LifeSceneHin
     });
   });
 
-  // 리더십·동료·독립 (synthetic)
+  // 리더십 — R1: 신강약 기반으로 차별화 (고정 "기준을 세우고 흐름을 정리" 제거).
   facts.push({
     id: 'leadership-style',
     source: 'careerSpecificAnalysis',
     fact: '리더십 스타일',
-    plainMeaning: '강하게 밀어붙이기보다 기준을 세우고 흐름을 정리하는 리더십',
+    plainMeaning: strengthCoreLabel(input.coreAnalysis.dayMasterStrength.level) === '신강'
+      ? '앞에서 끌고 가며 결정을 빠르게 내리는 추진형 리더십 — 속도가 강점이되 혼자 떠안지 않도록 권한을 나눌 때 더 단단해지는 결.'
+      : '직접 밀어붙이기보다 사람·정보·근거를 엮어 판을 정리하는 조율형 리더십 — 신뢰를 쌓아 움직이게 하는 쪽.',
     narrativeHint: '리더십 한 단락 — 잘 맞는 동료 유형도 함께',
     matchTokens: ['리더십', '리더', '이끌', '주도'],
   });
@@ -884,11 +1042,12 @@ function buildCareerTalentPlan(input: PersonalSajuGptInput, hints?: LifeSceneHin
     ],
     styleExamples: {
       badExample: '운영 개선, 프로세스, SCM 분야에서 두각을 나타냅니다.',
+      // R1: 고정 재능 예시(기준 세우고 흐름 정리) 제거 — 구조만. 재능·직업군은 lifeWeapons/careerMatches에서.
       goodExample:
-        '이 사주의 재능은 단순히 성실하다는 말로 끝나지 않습니다. 더 정확히 말하면, 복잡하게 얽힌 상황에서 기준을 세우고, 흐름이 막힌 지점을 찾아내고, 다시 굴러가게 만드는 능력에 가깝습니다.\n\n' +
-        '그래서 운영 개선, 프로세스 관리, SCM, 프로젝트 매니징, PM, 서비스 기획, 전략기획 같은 역할이 잘 맞을 수 있어요. 공통점은 "흐름이 막힌 것을 정리해서 다시 움직이게 만드는 일"입니다.\n\n' +
-        '반대로 결과물보다 눈치·보고가 더 중요한 조직, 책임은 많은데 권한은 적은 자리에서는 쉽게 지칠 수 있습니다. 리더십도 강하게 밀어붙이는 방식보다 기준을 세우고 흐름을 정리하는 방식이 더 잘 맞아요.',
-      transformationRule: '직업군을 말하기 전 반드시 핵심 능력을 설명하고, 직업군은 그 능력의 적용처로 제시하라.',
+        '[톤·구조 예시. 문장 복사 금지. 재능·직업군은 이 plan의 lifeWeapons/careerSpecificAnalysis fact에서만.]\n\n' +
+        '이 사주의 핵심 재능을 한 줄로 정의한다(그 사주의 lifeWeapons 근거로).\n\n' +
+        '→ 그 능력이 잘 발휘되는 업무 환경을 설명하고, 구체 직업군을 산업 2개·직무 3개 이상 문장 속에 자연스럽게 녹인다(리스트 X). 반대로 쉽게 지치는 환경도 그 사주의 근거로 말한 뒤, 다음 장(돈)으로 넘긴다.',
+      transformationRule: '직업군을 말하기 전 반드시 그 사주의 핵심 능력을 설명하고, 직업군은 그 능력의 적용처로 제시하라.',
     },
   };
 }
@@ -913,55 +1072,10 @@ function buildMoneyMonetizationPlan(input: PersonalSajuGptInput, hints?: LifeSce
     });
   });
 
-  // 돈 새는 패턴 (synthetic)
-  facts.push({
-    id: 'money-leak',
-    source: 'moneyMakingStyle',
-    fact: '돈이 새는 패턴',
-    plainMeaning: '능력을 자연스럽게 써주는데 서비스/상품/계약 범위로 만들지 않아 보상이 약해짐',
-    narrativeHint: '"반대로 돈이 새는 패턴은 ..." 한 단락',
-    matchTokens: ['돈이 새', '무료로', '능력을', '서비스로'],
-  });
-
-  // 수익 구조 유형 (synthetic)
-  facts.push({
-    id: 'monetization-style',
-    source: 'moneyMakingStyle',
-    fact: '월급형/전문성형/프로젝트형/사업형 성향',
-    plainMeaning: '책임·역할이 분명하고 기준이 성과로 인정되는 자리에서 만족도가 올라감',
-    narrativeHint: '본인 성향에 가까운 수익 구조 1~2개를 줄글로 권장',
-    matchTokens: ['월급형', '전문성형', '프로젝트형', '사업형', '수익화', '컨설팅', '강의'],
-  });
-
-  // 가격표·계약·정산 (synthetic)
-  facts.push({
-    id: 'pricing-contract',
-    source: 'moneyMakingStyle',
-    fact: '가격표·작업 범위·정산 기준',
-    plainMeaning: '잘하는 것을 유료 구조로 바꾸려면 가격·범위·결과물 형태를 먼저 정해야 함',
-    narrativeHint: '구체 조언: 가격, 작업 범위, 보상 기준 명문화',
-    matchTokens: ['가격', '계약', '정산', '작업 범위', '보상 기준'],
-  });
-
-  // 상품화 (synthetic)
-  facts.push({
-    id: 'productization',
-    source: 'moneyMakingStyle',
-    fact: '능력을 상품화하는 방식',
-    plainMeaning: '제안서·포트폴리오·템플릿·교육 콘텐츠처럼 결과물이 외부에서 확인 가능해야 함',
-    narrativeHint: '예시 형태(제안서/포트폴리오/템플릿/콘텐츠/컨설팅) 자연스럽게 나열',
-    matchTokens: ['포트폴리오', '제안서', '템플릿', '콘텐츠', '결과물'],
-  });
-
-  // 프리랜서/1인 사업 (synthetic, 조건부)
-  facts.push({
-    id: 'freelance-business',
-    source: 'careerSpecificAnalysis',
-    fact: '프리랜서/1인 사업 권장 구조',
-    plainMeaning: '감각만으로 승부하는 방식보다 문제 정리해주는 서비스형 구조가 안정적',
-    narrativeHint: '"만약 프리랜서나 1인 사업을 생각한다면..." 조건부 한 단락',
-    matchTokens: ['프리랜서', '1인', '서비스형', '사업'],
-  });
+  // R1: 합성(차트 무관) 돈 fact 5개 제거 → 재성/식상생재/신강약 기반 chart fact로 교체.
+  //   "돈이 새는 패턴/작업 범위·보상 기준/무료로 해주던/상품화" 고정 문장은 더 이상 강제하지 않는다.
+  //   (운영 조언은 requiredBeats가 안내하되, 돈의 "결" 판정은 차트에서만 온다.)
+  facts.push(...buildMoneyChartFacts(input));
 
   return {
     sectionId: 'moneyMonetizationNarrative',
@@ -990,11 +1104,12 @@ function buildMoneyMonetizationPlan(input: PersonalSajuGptInput, hints?: LifeSce
     ],
     styleExamples: {
       badExample: '시장 변화와 가격 흐름을 보고 타이밍에 맞춰 거래하는 방식이 잘 맞습니다.',
+      // R1: 고정 돈 예시(축적형/작업 범위/상품화) 제거 — 구조만. 돈의 결은 재성/식상생재 fact에서.
       goodExample:
-        '이 사주는 돈이 한 번에 크게 터지는 방식보다, 신뢰와 기준이 쌓이면서 점점 커지는 구조가 더 잘 맞습니다.\n\n' +
-        '반대로 돈이 새는 패턴은 능력을 너무 자연스럽게 써주는 데서 시작될 수 있습니다. 남이 막힌 일을 풀어주고, 정리해주고, 기준을 잡아주는데 정작 그걸 서비스나 상품, 계약 범위로 만들지 않으면 실력은 쓰이지만 보상은 약해질 수 있어요.\n\n' +
-        '그래서 이 사주는 "잘하는 것"을 "유료로 제공되는 구조"로 바꾸는 감각이 중요합니다. 예를 들면 업무 프로세스 정리, 실무 강의, 컨설팅, 체크리스트나 템플릿 판매, 교육 콘텐츠처럼 내가 정리한 기준이 상품이 되는 방식이 좋습니다.',
-      transformationRule: '돈은 수익화 구조·계약 기준 중심으로. 투자/거래/시장 타이밍 표현은 절대 금지.',
+        '[톤·구조 예시. 문장 복사 금지. 돈이 붙는/새는 결은 이 plan의 재성·식상생재·moneyMakingStyle fact에서만.]\n\n' +
+        '돈이 붙는 방식을 그 사주의 재성 구조(편재/정재/재성 약)로 한 단락 푼다.\n\n' +
+        '→ 돈이 새는 패턴을 그 사주의 결로 한 단락, 어떤 수익 형태가 맞는지 한 단락. 투자·거래·시장 타이밍 권유 표현은 절대 금지하고, 수익화 구조·계약 조건 중심으로만.',
+      transformationRule: '돈은 그 사주의 재성 구조에서 도출한 수익화 결 중심으로. 투자/거래/시장 타이밍 표현은 절대 금지. 다른 사주에도 맞는 일반 돈 조언 금지.',
     },
   };
 }
@@ -1003,101 +1118,10 @@ function buildMoneyMonetizationPlan(input: PersonalSajuGptInput, hints?: LifeSce
 // 섹션 6 — relationshipLoveNarrative (관계와 연애: 독립 장)
 // ============================================================
 function buildRelationshipLovePlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[]): NarrativePlan {
-  const facts: NarrativeMustUseFact[] = [];
-  const relHints = hints?.filter(h => h.sectionId === 'relationshipLoveNarrative') ?? [];
-
-  // 인간관계 스타일 (synthetic)
-  facts.push({
-    id: 'relationship-style',
-    source: 'relationshipPattern',
-    fact: '인간관계 스타일',
-    plainMeaning: '말의 빈도보다 행동의 일관성으로 신뢰를 본다',
-    narrativeHint: '도입 한 단락으로 관계 스타일 핵심',
-    matchTokens: ['관계에서', '행동의 일관성', '말보다 행동', '신뢰'],
-  });
-
-  // 편한 사람 (synthetic)
-  facts.push({
-    id: 'easy-people',
-    source: 'relationshipPattern',
-    fact: '편한 사람 유형',
-    plainMeaning: '말과 행동이 일치하고 약속을 지키며 책임을 나눌 줄 아는 사람',
-    narrativeHint: '"당신에게 편한 사람은 ..." 식 한두 문장',
-    matchTokens: ['편한 사람', '약속을 지', '행동이 꾸준', '책임을 나'],
-    lifeSceneHint: relHints[0] ? {
-      situation: relHints[0].situation, likelyBehavior: relHints[0].likelyBehavior,
-      innerReaction: relHints[0].innerReaction,
-      externalMisunderstanding: relHints[0].externalMisunderstanding, betterUse: relHints[0].betterUse,
-    } : undefined,
-  });
-
-  // 지치는 사람 (synthetic)
-  facts.push({
-    id: 'draining-people',
-    source: 'relationshipPattern',
-    fact: '지치는 사람 유형',
-    plainMeaning: '말은 많은데 행동이 따르지 않고 기준 없이 부탁만 쌓는 사람',
-    narrativeHint: '"반대로 지치는 사람은 ..." 식 한두 문장',
-    matchTokens: ['지치는 사람', '말은 많', '기준 없이', '감정적으로 기'],
-  });
-
-  // 마음이 열리는 방식 (synthetic)
-  facts.push({
-    id: 'heart-opening',
-    source: 'relationshipPattern',
-    fact: '연애에서 마음이 열리는 방식',
-    plainMeaning: '뜨겁게 다가오는 사람보다 생활 리듬이 안정적이고 말·행동이 맞는 사람',
-    narrativeHint: '연애 단락 도입',
-    matchTokens: ['마음이 열', '신뢰가 열', '뜨겁게', '생활 리듬', '믿을 만한'],
-  });
-
-  // 마음이 닫히는 방식 (synthetic)
-  facts.push({
-    id: 'heart-closing',
-    source: 'relationshipPattern',
-    fact: '마음이 닫히는 방식',
-    plainMeaning: '서운함을 바로 말하지 않고 쌓아두다 신뢰가 깎이는 장면',
-    narrativeHint: '"가까운 관계에서 조심해야 할 점은 ..." 한 단락',
-    matchTokens: ['마음이 닫', '서운', '거리 조절', '신뢰가 깎'],
-    lifeSceneHint: relHints[1] ? {
-      situation: relHints[1].situation, likelyBehavior: relHints[1].likelyBehavior,
-      innerReaction: relHints[1].innerReaction,
-      externalMisunderstanding: relHints[1].externalMisunderstanding, betterUse: relHints[1].betterUse,
-    } : undefined,
-  });
-
-  // 결혼/장기 관계 (synthetic, 조건부)
-  facts.push({
-    id: 'marriage-long-term',
-    source: 'relationshipPattern',
-    fact: '장기 관계/결혼 조건',
-    plainMeaning: '다정함만큼 역할 분담·생활 기준·갈등 해소 방식의 합의가 중요',
-    narrativeHint: '"장기 관계나 결혼을 생각한다면..." 조건부 단락 (relationshipStatus 반영)',
-    matchTokens: ['장기 관계', '결혼', '역할 분담', '생활의 기준', '오래 가는'],
-  });
-
-  // 갈등 패턴 (synthetic)
-  facts.push({
-    id: 'conflict-pattern',
-    source: 'relationshipPattern',
-    fact: '갈등이 생기는 방식',
-    plainMeaning: '오래 보고 오래 참다가 어느 순간 조용히 마음을 닫는 쪽',
-    narrativeHint: '갈등 신호와 회복 가이드 함께',
-    matchTokens: ['갈등', '서운함', '오래 참', '조용히 마음'],
-  });
-
-  // userContext
-  facts.push({
-    id: 'relationship-context',
-    source: 'userContext',
-    fact: `relationshipStatus=${input.userContext.relationshipStatus}`,
-    plainMeaning:
-      input.userContext.relationshipStatus === 'married' ? '기혼자 — 새 인연/배우자 표현 단정 주의' :
-      input.userContext.relationshipStatus === 'single' ? '미혼 — 결혼 단정 금지' :
-      '관계 상태 unknown — 일반 관계 결로',
-    narrativeHint: 'userContext 위반 금지 (배우자/남편/아내/자녀와 등)',
-    matchTokens: ['관계'],
-  });
+  // R1: 합성 관계 fact 7개(말보다 행동 일관성/기준 없이 부탁/역할 분담 등) 제거 →
+  //   도화·홍염·화개 신살 + 성별별 인연 십성(女관성/男재성) + 신강약 기반 chart fact로 교체.
+  //   근거 없는 관계 결은 말하지 않고, 매력·거리·인연·열림닫힘을 차트에서만 도출한다.
+  const facts: NarrativeMustUseFact[] = buildRelationshipChartFacts(input, hints);
 
   return {
     sectionId: 'relationshipLoveNarrative',
@@ -1126,11 +1150,12 @@ function buildRelationshipLovePlan(input: PersonalSajuGptInput, hints?: LifeScen
     ],
     styleExamples: {
       badExample: '인간관계에서는 소통이 중요합니다.',
+      // R1: 고정 관계 예시(말보다 행동 일관성/서운함 쌓기) 제거 — 구조만. 관계 결은 신살·인연 십성·신강약 fact에서.
       goodExample:
-        '관계에서 이 사주는 말보다 행동의 일관성을 더 중요하게 볼 가능성이 큽니다. 누가 얼마나 다정한 말을 하는지보다, 실제로 약속을 지키는지, 힘든 순간에 태도가 달라지지 않는지를 더 오래 봅니다.\n\n' +
-        '연애에서도 처음부터 뜨겁게 다가오는 사람보다, 생활 리듬이 안정적이고 말과 행동이 맞는 사람에게 마음이 열리기 쉬워요.\n\n' +
-        '다만 가까운 관계에서 조심해야 할 점은 서운함을 바로 말하지 않고 쌓아둘 수 있다는 것입니다. 비슷한 장면이 반복되면 어느 순간 마음이 조용히 닫힐 수 있어요. 상대는 그때서야 문제가 생겼다고 느끼지만, 본인 입장에서는 이미 오래전부터 신호를 보내고 있었을 가능성이 큽니다.',
-      transformationRule: '관계는 다정함이 아니라 신뢰 형성·열림/닫힘 방식으로 풀어라. userContext 단정 금지.',
+        '[톤·구조 예시. 문장 복사 금지. 관계 결은 이 plan의 도화·홍염·화개 신살, 인연 십성, 신강약 fact에서만.]\n\n' +
+        '관계 스타일을 그 사주의 매력 신살(도화·홍염) 또는 거리 신살(화개)로 도입한다.\n\n' +
+        '→ 어떤 사람과 편하고 어떤 사람에게 지치는지, 연애에서 마음이 열리고 닫히는 방식을 인연 십성·신강약 근거로 푼다. userContext(혼인/자녀)를 단정하지 말 것.',
+      transformationRule: '관계는 다정함이 아니라 그 사주의 신살·인연 십성·신강약에서 도출한 신뢰·열림/닫힘 방식으로 풀어라. 다른 사주에도 맞는 일반 관계 묘사 금지. userContext 단정 금지.',
     },
   };
 }
@@ -1294,12 +1319,13 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
     ],
     styleExamples: {
       badExample: '자기 기준을 자산으로 삼고, 협업을 통해 더 나은 결과를 만들어가는 것이 이 사주의 핵심입니다.',
+      // R1: 고정 결론(혼자 버티기→기준 잡고 역할 나누기/작업 범위·보상) 제거 — 구조만.
+      //   결론은 그 사주의 fortuneTriggers·lifeWeapons·용신에서 도출. 마지막 문장도 그 사주에서만.
       goodExample:
-        '결국 이 사주는 혼자 끝까지 버티는 힘이 있지만, 그 힘을 계속 혼자 쓰면 운이 막힌 것처럼 느껴질 수 있어요. 그래서 가장 중요한 건 "내가 다 해야 한다"에서 "내가 기준을 잡고, 역할을 나눈다"로 넘어가는 것입니다.\n\n' +
-        '일에서는 책임을 맡기 전에 범위와 권한을 먼저 확인하는 게 좋습니다.\n\n' +
-        '돈에서는 무료로 해주던 능력을 계속 흘려보내지 않는 게 중요합니다. 작은 일이라도 작업 범위, 기간, 보상 기준을 먼저 정해야 합니다.\n\n' +
-        '이 사주는 무조건 더 강해져야 좋아지는 사주가 아니에요. 이미 강한 부분은 충분히 강합니다. 이제는 그 힘을 어디까지 쓰고, 어디서 나눌지를 정할 때 운이 훨씬 편하게 흐릅니다.',
-      transformationRule: '결론은 요약이 아니라 사주의 사용법이어야 한다. 마지막 문장은 저장하고 싶을 만큼 선명해야 한다.',
+        '[톤·구조 예시. 문장 복사 금지. 결론 내용은 이 plan의 fortuneTriggers·lifeWeapons·용신 fact에서만.]\n\n' +
+        '이 사주의 핵심 사용법을 한 단락으로 정리한다(그 사주의 무기·운을 살리는 선택 근거로).\n\n' +
+        '→ 일·돈·관계에서의 사용법을 그 사주의 결로 각각 한 줄씩, 운을 막는 선택과 살리는 선택을 줄글로. 마지막 한 문장은 그 사주의 일간/신살/대운에서 나온, 저장하고 싶을 만큼 선명한 문장으로 닫는다(일반론 금지).',
+      transformationRule: '결론은 요약이 아니라 그 사주의 사용법이어야 한다. 마지막 문장은 그 사주의 분석값에서 나와야 하고, 다른 사주에도 들어맞는 일반 결론 금지.',
     },
   };
 }

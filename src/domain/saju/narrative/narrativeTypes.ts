@@ -240,7 +240,10 @@ export interface NarrativeDepthOptions {
 }
 
 export const DEFAULT_NARRATIVE_DEPTH_OPTIONS: NarrativeDepthOptions = {
-  useEvidenceNarrativeBlocks: false,
+  // R1 (2026-06): 신강약 + 대표 신살을 plan에 복구해 A/B/C 차별 신호를 살린다.
+  //   (audit: OFF면 신강약·대표신살이 plan에 안 들어가 결과가 수렴) — 최소 신호만 ON.
+  useEvidenceNarrativeBlocks: true,
+  // 아래 둘은 일반화·잡음 위험이 있어 R1에서는 계속 OFF (필요 최소만 복구).
   useSajuOpeningLuckCondition: false,
   useFinalGaewoonDirection: false,
 };

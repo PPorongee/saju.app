@@ -386,13 +386,32 @@ describe('sanitizeUnsupportedUserContext — 단정 표현 중립 치환', () =>
 // ============================================================
 // 2026-05 Narrative Depth v1 — feature flag off/on 회귀
 // ============================================================
-describe('Narrative Depth v1 — feature flag off (default) — 안정화 v0 plan 그대로', () => {
-  it('depth flag off (또는 미지정) 시 lifeStructure/final plan에 새 depth fact가 추가되지 않는다', () => {
+describe('Narrative Depth v1 — feature flag 기본값 계약', () => {
+  // R1 (2026-06): 기본값에서 useEvidenceNarrativeBlocks 를 true 로 변경.
+  //   신강약·대표신살(lifeStructure) + 용신(finalStrategy) fact를 복구해 A/B/C 수렴을 방지.
+  //   나머지 둘(luckOpeningCondition / gaewoonDirection)은 일반화·잡음 위험으로 계속 기본 OFF.
+  it('기본값(미지정) 시 evidence blocks 가 ON — lifeStructure에 dayMasterStrength, final에 usefulGod fact가 추가된다', () => {
     for (const f of FIXTURES) {
       const gptInput = calculateAnalysisOnly(f.input, NOW);
-      // 미지정 = default false
-      const plansDefault = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false });
-      // 명시적 false
+      const plans = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false });
+      const life = plans.find(p => p.sectionId === 'lifeStructureNarrative')!;
+      const final = plans.find(p => p.sectionId === 'finalStrategyNarrative')!;
+      const opening = plans.find(p => p.sectionId === 'openingDefinition')!;
+      const lifeSources = life.mustUseFacts.map(f => f.source);
+      const finalSources = final.mustUseFacts.map(f => f.source);
+      const openingSources = opening.mustUseFacts.map(f => f.source);
+      // evidence blocks 기본 ON → 복구된 fact 존재
+      expect(lifeSources).toContain('dayMasterStrength');
+      expect(finalSources).toContain('usefulGod');
+      // 나머지 둘은 기본 OFF → 여전히 없음
+      expect(finalSources).not.toContain('gaewoonDirection');
+      expect(openingSources).not.toContain('luckOpeningCondition');
+    }
+  });
+
+  it('명시적 all-off 시 lifeStructure/final/opening에 어떤 depth fact도 추가되지 않는다 (안정화 v0)', () => {
+    for (const f of FIXTURES) {
+      const gptInput = calculateAnalysisOnly(f.input, NOW);
       const plansOff = buildNarrativePlans(gptInput, undefined, {
         includeFutureFlow: false,
         depthOptions: {
@@ -401,20 +420,17 @@ describe('Narrative Depth v1 — feature flag off (default) — 안정화 v0 pla
           useFinalGaewoonDirection: false,
         },
       });
-      for (const plans of [plansDefault, plansOff]) {
-        const life = plans.find(p => p.sectionId === 'lifeStructureNarrative')!;
-        const final = plans.find(p => p.sectionId === 'finalStrategyNarrative')!;
-        const opening = plans.find(p => p.sectionId === 'openingDefinition')!;
-        // depth fact source가 존재하면 안 됨
-        const lifeSources = life.mustUseFacts.map(f => f.source);
-        const finalSources = final.mustUseFacts.map(f => f.source);
-        const openingSources = opening.mustUseFacts.map(f => f.source);
-        expect(lifeSources).not.toContain('dayMasterStrength');
-        expect(lifeSources.every(s => s !== 'specialStar' || !life.mustUseFacts.some(ff => ff.id.startsWith('representative-star-')))).toBe(true);
-        expect(finalSources).not.toContain('usefulGod');
-        expect(finalSources).not.toContain('gaewoonDirection');
-        expect(openingSources).not.toContain('luckOpeningCondition');
-      }
+      const life = plansOff.find(p => p.sectionId === 'lifeStructureNarrative')!;
+      const final = plansOff.find(p => p.sectionId === 'finalStrategyNarrative')!;
+      const opening = plansOff.find(p => p.sectionId === 'openingDefinition')!;
+      const lifeSources = life.mustUseFacts.map(f => f.source);
+      const finalSources = final.mustUseFacts.map(f => f.source);
+      const openingSources = opening.mustUseFacts.map(f => f.source);
+      expect(lifeSources).not.toContain('dayMasterStrength');
+      expect(life.mustUseFacts.some(ff => ff.id.startsWith('representative-star-'))).toBe(false);
+      expect(finalSources).not.toContain('usefulGod');
+      expect(finalSources).not.toContain('gaewoonDirection');
+      expect(openingSources).not.toContain('luckOpeningCondition');
     }
   });
 });

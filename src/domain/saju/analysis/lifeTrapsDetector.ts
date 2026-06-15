@@ -78,7 +78,7 @@ const TEMPLATES: Template[] = [
     id: 'cut-relationship-late',
     name: '아닌 사람을 오래 참다가 한 번에 끊어내는 것',
     category: 'relationship',
-    patternDescription: '겉은 차분하지만 속에 쌓아두는 결(반전 구조 또는 인성+양인)에서 자주 나오는 패턴',
+    patternDescription: '오래 참고 누적하다가 임계치를 넘으면 한 번에 정리해버리는 패턴',
     realLifeScene: '주변엔 "갑자기 변했다"고 보이지만 본인은 오래 누적한 끝의 결정',
     escapeStrategy: '중간 단계에서 거리감을 조정하는 짧은 신호 — 미리 표현하면 한 방에 끊을 일이 줄어듦',
     match: ({ specialPoints, tenGods }) => {
