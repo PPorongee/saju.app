@@ -815,9 +815,17 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
       '대표 신살 1~3개를 일간/신강신약/십성과 묶어 깊이 풀이 — 단어 나열 금지, 반드시 현실 장면이나 조언으로 연결.',
     );
   }
+  // R1.1+ (2026-06): 겉/속 차이 beat는 실제 inner specialPoint(반전 근거)가 있을 때만 추가한다.
+  //   없는데도 강제하면 모든 차트가 "겉과 속이 다른" 상투구로 흐른다(B 본문 잔존 원인).
+  //   있을 때도 상투구 자체는 금지하고 그 사주의 결로 구체적으로 풀게 한다.
+  if (innerSPs.length > 0) {
+    requiredBeats.push(
+      '겉으로 드러나는 모습과 실제 내면의 결 차이를 이 사주의 inner specialPoint 근거로 구체적으로 설명한다. ' +
+      '단 "겉과 속이 다른", "입체적인 사람" 같은 상투구로 시작·요약하지 말고, 무엇이 어떻게 다른지 그 결로 풀 것.',
+    );
+  }
   requiredBeats.push(
-    '겉으로 보이는 모습과 실제 내면의 차이를 설명한다(반전 포인트).',
-    '주변이 오해하기 쉬운 지점을 말한다.',
+    '주변이 오해하기 쉬운 지점을 그 사주의 결로 말한다.',
     '본인이 스스로 힘들어할 수 있는 지점을 말한다.',
     '초년/가족 관련 내용은 단정하지 않고 "사주 구조상 ~할 가능성"으로 조건부 표현.',
   );
@@ -835,6 +843,8 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
       '안정성과 신뢰를 중시',
       '어린 시절부터 책임감이 강했던',
       '함정 1.', '함정 2.',
+      // R1.1+: 도입 클리셰가 2장 본문으로 새는 것 방지.
+      '겉과 속이 다른', '입체적인 사람', '입체적인 성향',
     ],
     styleExamples: {
       badExample: '이 사주는 강한 일간이라 안정성과 신뢰를 중시합니다.',
