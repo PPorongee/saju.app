@@ -14,6 +14,7 @@ import type {
 } from './narrativeTypes';
 import { DEFAULT_NARRATIVE_DEPTH_OPTIONS } from './narrativeTypes';
 import type { LifeSceneHint, LifeSceneSectionId, LifeSceneSource } from './lifeSceneHintBuilder';
+import { ELEMENT_KO } from '../rules/elements';
 
 // ============================================================
 // hint pick — (sectionId, source)로 가장 첫 hint 찾기
@@ -671,14 +672,18 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
   });
 
   // strongest elements top 2
+  // R1-fix (2026-06): elementStrength.strongest는 영문 키(wood/water…). fact/plainMeaning/matchTokens
+  //   모두 한글 오행(목/화/토/금/수)으로 변환해야 함 — sanitizer가 본문을 한글로 바꾸므로 영문
+  //   matchToken은 영구 매칭 실패 → 매 생성 medium 이슈 → 불필요한 repair 유발.
   input.coreAnalysis.elementStrength.strongest.slice(0, 2).forEach((el, i) => {
+    const elKo = ELEMENT_KO[el] ?? el;
     facts.push({
       id: `element-strong-${i}`,
       source: 'elementStrength',
-      fact: `${el} 강세`,
-      plainMeaning: `${el} 기운이 강하다는 건 그 결의 행동/감각이 평소보다 자주 올라온다는 뜻`,
+      fact: `${elKo} 강세`,
+      plainMeaning: `${elKo} 기운이 강하다는 건 그 결의 행동/감각이 평소보다 자주 올라온다는 뜻`,
       narrativeHint: '성격에 어떻게 나타나는지 줄글로',
-      matchTokens: buildMatchTokens(el),
+      matchTokens: buildMatchTokens(elKo),
     });
   });
 
