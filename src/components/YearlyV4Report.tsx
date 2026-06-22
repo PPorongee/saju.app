@@ -483,29 +483,24 @@ function RemainingMonthsView({ months }: { months: YearlyFortuneReport['remainin
   const teaser = months[0] ? `${months[0].monthLabel}${months[0].keyword ? ' · ' + months[0].keyword : ''}` : '';
   return (
     <AccordionSection title="남은 올해 월별 흐름" eyebrow="달마다 달라지는 결" accent={a} showDivider teaserText={teaser}>
-      {months.map((m, i) => (
-        <div key={i} className="card" style={{ padding: 14, marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-coral)' }}>{m.monthLabel}</span>
-            {m.periodLabel && (
-              <span style={{ fontSize: 11, color: 'var(--orot-ink-mute)' }}>{m.periodLabel}</span>
-            )}
-          </div>
-          {m.keyword && (
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--orot-ink)', marginBottom: 8 }}>
-              {m.keyword}
+      {months.map((m, i) => {
+        // 카드·라벨 없이 줄글로: 본문 + 일/돈/관계를 한 문단으로, 선택/주의를 마무리 문단으로 엮는다.
+        const prose = [
+          m.body,
+          [m.work, m.money, m.relationship].map((s) => (s || '').trim()).filter(Boolean).join(' '),
+          [m.goodChoice, m.caution].map((s) => (s || '').trim()).filter(Boolean).join(' '),
+        ].filter(Boolean).join('\n\n');
+        return (
+          <div key={i} style={{ marginBottom: i < months.length - 1 ? 20 : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: m.periodLabel ? 2 : 6 }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: a.accent, fontFamily: 'var(--orot-font)' }}>{m.monthLabel}</span>
+              {m.keyword && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--orot-ink-soft)' }}>· {m.keyword}</span>}
             </div>
-          )}
-          {m.body && <Body text={m.body} />}
-          <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginTop: 8, lineHeight: 1.7 }}>
-            {m.work && <div><b style={{ color: 'var(--orot-ink-mute)' }}>일:</b> {m.work}</div>}
-            {m.money && <div style={{ marginTop: 3 }}><b style={{ color: 'var(--orot-ink-mute)' }}>돈:</b> {m.money}</div>}
-            {m.relationship && <div style={{ marginTop: 3 }}><b style={{ color: 'var(--orot-ink-mute)' }}>관계:</b> {m.relationship}</div>}
-            {m.goodChoice && <div style={{ marginTop: 6 }}><b style={{ color: '#7c8' }}>좋은 선택:</b> {m.goodChoice}</div>}
-            {m.caution && <div style={{ marginTop: 3 }}><b style={{ color: '#c46' }}>주의:</b> {m.caution}</div>}
+            {m.periodLabel && <div style={{ fontSize: 11, color: 'var(--orot-ink-mute)', marginBottom: 6 }}>{m.periodLabel}</div>}
+            <Body text={prose} />
           </div>
-        </div>
-      ))}
+        );
+      })}
     </AccordionSection>
   );
 }
@@ -523,12 +518,8 @@ function TopicFortunesView({ topics }: { topics: YearlyFortuneReport['topicFortu
   return (
     <AccordionSection title="일·돈·관계·리듬에서 들어오는 변화" eyebrow="주제별 흐름" accent={a} showDivider teaserText={visible.map((r) => r.label).join(' · ')}>
       {visible.map((r, i) => (
-        <div
-          key={i}
-          className="card"
-          style={{ padding: 14, marginBottom: 8, borderLeft: `3px solid ${a.accent}` }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 700, color: a.accent, marginBottom: 6 }}>{r.label}</div>
+        <div key={i} style={{ marginBottom: i < visible.length - 1 ? 20 : 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: a.accent, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{r.label}</div>
           <Body text={r.value} />
         </div>
       ))}
@@ -543,31 +534,24 @@ function ActionGuideView({ guide }: { guide: YearlyFortuneReport['actionGuide'] 
   return (
     <AccordionSection title="올해의 선택 가이드" eyebrow="무엇을 잡고 무엇을 놓을까" accent={a} showDivider teaserText={teaser}>
       {guide.mustCatch.length > 0 && (
-        <div className="card" style={{ padding: 14, marginBottom: 8 }}>
-          <div className="orot-eyebrow" style={{ marginBottom: 8, color: 'rgba(120,200,140,0.9)' }}>
-            + 꼭 잡으면 좋은 결
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'rgba(120,200,140,0.95)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
+            꼭 잡으면 좋은 결
           </div>
-          <ul style={{ fontSize: 14, color: 'var(--orot-ink)', paddingLeft: 18, lineHeight: 1.8, margin: 0 }}>
-            {guide.mustCatch.map((c, i) => <li key={i}>{c}</li>)}
-          </ul>
+          <Body text={guide.mustCatch.map((c) => c.trim()).filter(Boolean).join('\n\n')} />
         </div>
       )}
       {guide.betterAvoid.length > 0 && (
-        <div className="card" style={{ padding: 14, marginBottom: 8 }}>
-          <div className="orot-eyebrow" style={{ marginBottom: 8, color: 'rgba(240,140,140,0.9)' }}>
-            − 잠깐 멈춰서 볼 결
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'rgba(240,140,140,0.95)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
+            잠깐 멈춰서 볼 결
           </div>
-          <ul style={{ fontSize: 14, color: 'var(--orot-ink)', paddingLeft: 18, lineHeight: 1.8, margin: 0 }}>
-            {guide.betterAvoid.map((c, i) => <li key={i}>{c}</li>)}
-          </ul>
+          <Body text={guide.betterAvoid.map((c) => c.trim()).filter(Boolean).join('\n\n')} />
         </div>
       )}
       {guide.bestStrategy && (
-        <div
-          className="card"
-          style={{ padding: 16, background: 'rgba(240,199,94,0.08)', border: '1px solid var(--orot-coral-faint)' }}
-        >
-          <div className="orot-eyebrow" style={{ marginBottom: 6 }}>올해의 한 수</div>
+        <div style={{ marginTop: 4 }}>
+          <div className="orot-eyebrow" style={{ marginBottom: 6, color: a.accent }}>올해의 한 수</div>
           <Body text={guide.bestStrategy} lead accent={a.accent} />
         </div>
       )}
@@ -581,23 +565,25 @@ function NextTwoYearsView({ years }: { years: YearlyFortuneReport['nextTwoYears'
   const teaser = years[0] ? `${years[0].year}${years[0].keyword ? ' · ' + years[0].keyword : ''}` : '';
   return (
     <AccordionSection title="이후 2년 큰 흐름" eyebrow="앞으로" accent={a} showDivider teaserText={teaser}>
-      {years.map((y, i) => (
-        <div key={i} className="card" style={{ padding: 14, marginBottom: 8 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
-            {y.year}
-            {y.keyword && (
-              <span style={{ color: 'var(--orot-ink-mute)', fontWeight: 400, fontSize: 13, marginLeft: 8 }}>
-                · {y.keyword}
-              </span>
-            )}
+      {years.map((y, i) => {
+        const prose = [
+          y.summary,
+          [y.opportunity, y.caution].map((s) => (s || '').trim()).filter(Boolean).join(' '),
+        ].filter(Boolean).join('\n\n');
+        return (
+          <div key={i} style={{ marginBottom: i < years.length - 1 ? 20 : 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: a.accent, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
+              {y.year}
+              {y.keyword && (
+                <span style={{ color: 'var(--orot-ink-soft)', fontWeight: 600, fontSize: 13, marginLeft: 8 }}>
+                  · {y.keyword}
+                </span>
+              )}
+            </div>
+            <Body text={prose} />
           </div>
-          {y.summary && <Body text={y.summary} />}
-          <div style={{ fontSize: 12, color: 'var(--orot-ink-soft)', marginTop: 6, lineHeight: 1.7 }}>
-            {y.opportunity && <div><b style={{ color: '#7c8' }}>잡으면 좋은 결:</b> {y.opportunity}</div>}
-            {y.caution && <div style={{ marginTop: 3 }}><b style={{ color: '#c46' }}>주의할 결:</b> {y.caution}</div>}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </AccordionSection>
   );
 }
