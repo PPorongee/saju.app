@@ -19,55 +19,111 @@ import type {
   PaidEvidenceMap,
 } from '@/domain/saju/paidReport/paidReportTypes';
 
+// 실전 가이드 섹션별 악센트 — SajuV4Report의 톤을 잇되 가이드는 따뜻한 coral/amber 계열로.
+const GUIDE_ACCENTS: Array<{ icon: string; accent: string }> = [
+  { icon: '🧭', accent: 'var(--orot-coral)' },
+  { icon: '💠', accent: 'var(--orot-el-water, #8aa1c4)' },
+  { icon: '⏳', accent: 'var(--orot-el-earth, #d3b87a)' },
+  { icon: '🍀', accent: '#9cc99a' },
+  { icon: '✶', accent: '#b9a7ef' },
+];
+
 export interface PaidReportProseProps {
   sections: PaidProseSection[];
   evidenceMap: PaidEvidenceMap;
+  /** 섹션 eyebrow 라벨(언어별). 없으면 한국어 기본값. */
+  eyebrowLabel?: string;
 }
 
-export function PaidReportProse({ sections, evidenceMap }: PaidReportProseProps) {
+export function PaidReportProse({ sections, evidenceMap, eyebrowLabel }: PaidReportProseProps) {
   const usable = (sections ?? []).filter((s) => s.body && s.body.trim());
   if (usable.length === 0) return null;
   return (
     <div style={{ marginTop: 18 }}>
-      {usable.map((s) => (
-        <ProseSection key={s.id} section={s} evidenceMap={evidenceMap} />
+      {usable.map((s, i) => (
+        <ProseSection
+          key={s.id}
+          section={s}
+          evidenceMap={evidenceMap}
+          eyebrowLabel={eyebrowLabel ?? '실전'}
+          accent={GUIDE_ACCENTS[i % GUIDE_ACCENTS.length]}
+          showDivider={i > 0}
+        />
       ))}
     </div>
   );
 }
 
-// 섹션 하나 — NarrativeSection과 동일 타이포: eyebrow + coral h2 + 줄글 본문.
+// ✦ 디바이더 — SajuV4Report와 동일 모티프(sv4-divider 클래스 재사용; 메인 페이지에서 스타일 주입됨).
+function ProseDivider() {
+  return (
+    <div className="sv4-divider" aria-hidden>
+      <span className="sv4-divider-line" />
+      <span className="sv4-divider-star">✦</span>
+      <span className="sv4-divider-line" />
+    </div>
+  );
+}
+
+// 첫 비어있지 않은 줄을 티저로 추출 — summary 안 한 줄 미리보기.
+function extractProseTeaser(body: string, maxLen = 60): string {
+  const first = body
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => !!l);
+  if (!first) return '';
+  return first.length > maxLen ? first.slice(0, maxLen).trimEnd() + '…' : first;
+}
+
+// 섹션 하나 — 아코디언. 모두 기본 접힘(defaultOpen 없음). sv4-* 클래스는 SajuV4Report가 주입.
 function ProseSection({
   section,
   evidenceMap,
+  eyebrowLabel,
+  accent,
+  showDivider,
 }: {
   section: PaidProseSection;
   evidenceMap: PaidEvidenceMap;
+  eyebrowLabel: string;
+  accent: { icon: string; accent: string };
+  showDivider: boolean;
 }) {
   if (!section.body || !section.body.trim()) return null;
+  const teaser = extractProseTeaser(section.body);
   return (
-    <section style={{ marginTop: 24 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 8 }}>✦ 실전</div>
-      <h2
-        style={{
-          fontSize: 22,
-          fontWeight: 800,
-          color: 'var(--orot-coral)',
-          margin: '0 0 16px',
-          letterSpacing: '-0.01em',
-          lineHeight: 1.35,
-          fontFamily: 'var(--orot-font)',
-        }}
+    <>
+      {showDivider && <ProseDivider />}
+      <details
+        className="sv4-accordion sv4-reveal"
+        style={{ marginTop: showDivider ? 6 : 14 }}
       >
-        {section.title}
-      </h2>
-      <ProseBody text={section.body} />
-    </section>
+        <summary
+          className="sv4-accordion-summary"
+          style={{ '--sv4-accent': accent.accent } as React.CSSProperties}
+        >
+          <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: accent.accent }}>
+              {eyebrowLabel}
+            </span>
+            <span className="sv4-accordion-title" style={{ color: accent.accent }}>
+              {section.title}
+            </span>
+            {teaser && <span className="sv4-accordion-teaser">{teaser}</span>}
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: accent.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body">
+          <ProseBody text={section.body} />
+        </div>
+      </details>
+    </>
   );
 }
 
 // 본문 — 줄글 위주. 단락은 빈 줄로 나누고, 한 단락 안의 ' — '/', '는 불릿으로 바꾸지 않고
-// 흐르는 문장으로 둔다 (NarrativeBody와 같은 line-height/색/사이즈).
+// 흐르는 문장으로 둔다 (NarrativeBody와 같은 line-height/색/사이즈). 첫 단락은 리드인.
 function ProseBody({ text }: { text: string }) {
   const paragraphs = text
     .split(/\n{2,}/)
@@ -83,20 +139,26 @@ function ProseBody({ text }: { text: string }) {
           .filter(Boolean);
   return (
     <>
-      {blocks.map((p, i) => (
-        <p
-          key={i}
-          style={{
-            margin: '10px 0',
-            fontSize: 15,
-            lineHeight: 1.85,
-            color: 'var(--orot-ink)',
-            wordBreak: 'keep-all',
-          }}
-        >
-          {p}
-        </p>
-      ))}
+      {blocks.map((p, i) => {
+        const isLead = i === 0;
+        return (
+          <p
+            key={i}
+            className={isLead ? 'sv4-lead' : undefined}
+            style={{
+              margin: '10px 0',
+              fontSize: isLead ? 16.5 : 15,
+              fontWeight: isLead ? 600 : 400,
+              lineHeight: 1.85,
+              letterSpacing: isLead ? '-0.005em' : undefined,
+              color: isLead ? 'var(--orot-ink-soft)' : 'var(--orot-ink)',
+              wordBreak: 'keep-all',
+            }}
+          >
+            {p}
+          </p>
+        );
+      })}
     </>
   );
 }

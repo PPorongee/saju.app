@@ -117,30 +117,52 @@ export interface Props {
   lang?: 'ko' | 'en';
 }
 
+// 섹션별 악센트 팔레트 — 다크 테마에 맞춘 절제된 톤(전부 coral 대신 테마 코딩).
+// icon: 섹션 무드를 잡는 이모지. accent: heading/eyebrow/좌측 보더 색. glow: 히어로/리드용 미세 글로우.
+type SectionAccent = { icon: string; accent: string; glow: string };
+const SECTION_ACCENTS: Record<string, SectionAccent> = {
+  opening:   { icon: '✦', accent: 'var(--orot-coral)', glow: 'rgba(243,160,146,0.16)' },
+  structure: { icon: '🌙', accent: '#b9a7ef',           glow: 'rgba(185,167,239,0.14)' },
+  repeated:  { icon: '🔁', accent: '#7fc6c0',           glow: 'rgba(127,198,192,0.14)' },
+  career:    { icon: '💼', accent: 'var(--orot-el-earth)', glow: 'rgba(211,184,122,0.14)' },
+  money:     { icon: '💰', accent: '#9cc99a',           glow: 'rgba(156,201,154,0.14)' },
+  love:      { icon: '❤️', accent: '#e899ad',           glow: 'rgba(232,153,173,0.14)' },
+  future:    { icon: '🌠', accent: '#8aa1c4',           glow: 'rgba(138,161,196,0.14)' },
+  final:     { icon: '⭐', accent: 'var(--orot-primary, #f0c75e)', glow: 'rgba(240,199,94,0.16)' },
+  guide:     { icon: '🧭', accent: 'var(--orot-coral)', glow: 'rgba(243,160,146,0.14)' },
+};
+
 // 7섹션 narrative 제목 — 언어별. (본문 reportText는 API가 lang=en이면 영어로 번역해 전달.)
+// eyebrow는 ✦ 없이 라벨만 — 아이콘은 SECTION_ACCENTS.icon이 별도로 렌더한다(이중 ✦ 방지).
 const NARRATIVE_TITLES = {
   ko: {
-    opening: { eyebrow: '✦ 시작', title: '이 사주를 한 문장으로 말하면' },
-    structure: { eyebrow: '✦ 기질과 내면', title: '당신이 이런 방식으로 살아온 이유' },
-    repeated: { eyebrow: '✦ 반복되는 결', title: '반복해서 찾아오는 삶의 패턴' },
-    career: { eyebrow: '✦ 일과 재능', title: '일과 재능: 어떤 역할에서 실력이 살아나는가' },
-    money: { eyebrow: '✦ 돈과 수익화', title: '돈과 수익화: 어떤 방식으로 돈이 붙는가' },
-    love: { eyebrow: '✦ 관계와 연애', title: '관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가' },
-    final: { eyebrow: '✦ 결론', title: '결국 이 사주는 이렇게 써야 해요' },
-    guideEyebrow: '✦ 이 사주 실전 가이드',
+    opening:   { eyebrow: '시작',    title: '당신을 한마디로 담으면' },
+    structure: { eyebrow: '기질',    title: '타고난 기질, 그 결' },
+    repeated:  { eyebrow: '패턴',    title: '자꾸 돌아오는 삶의 흐름' },
+    career:    { eyebrow: '일·재능', title: '당신이 가장 빛나는 자리' },
+    money:     { eyebrow: '돈',      title: '돈이 당신에게 흐르는 길' },
+    love:      { eyebrow: '관계',    title: '마음이 열리고 닫히는 순간' },
+    future:    { eyebrow: '앞으로',  title: '앞으로 3년, 열리는 흐름' },
+    final:     { eyebrow: '결론',    title: '당신에게 건네는 한마디' },
+    chartToggle: '사주 원국 보기',
+    guideEyebrow: '오늘부터 곁에 두면 좋은 것',
     guideSub: '사람·돈·타이밍·행운 — 위 풀이를 실제 삶에서 쓰는 법',
+    guideSectionEyebrow: '실전',
     star: { serviceName: '별빛 사주', label: '별빛 키워드', titleLead: '당신은', hashtag: '#별빛사주' },
   },
   en: {
-    opening: { eyebrow: '✦ Opening', title: 'Your chart in one sentence' },
-    structure: { eyebrow: '✦ Temperament & inner self', title: 'Why you have lived this way' },
-    repeated: { eyebrow: '✦ Recurring patterns', title: 'The life patterns that keep returning' },
-    career: { eyebrow: '✦ Work & talent', title: 'Work & talent: where your strengths come alive' },
-    money: { eyebrow: '✦ Money', title: 'Money: how wealth tends to come to you' },
-    love: { eyebrow: '✦ Relationships', title: 'Relationships: who opens and closes your heart' },
-    final: { eyebrow: '✦ Conclusion', title: 'How to make the most of this chart' },
-    guideEyebrow: '✦ Practical guide for your chart',
+    opening:   { eyebrow: 'Opening',       title: 'You, in one line' },
+    structure: { eyebrow: 'Temperament',   title: 'Your nature, at the core' },
+    repeated:  { eyebrow: 'Patterns',      title: 'The flow that keeps coming back' },
+    career:    { eyebrow: 'Work',          title: 'Where you shine brightest' },
+    money:     { eyebrow: 'Money',         title: 'How money flows to you' },
+    love:      { eyebrow: 'Relationships', title: 'When your heart opens and closes' },
+    future:    { eyebrow: 'Ahead',         title: 'The next 3 years, unfolding' },
+    final:     { eyebrow: 'Conclusion',    title: 'A word for you' },
+    chartToggle: 'View birth chart',
+    guideEyebrow: 'Worth keeping close, starting today',
     guideSub: 'People · Money · Timing · Luck — how to use this reading in real life',
+    guideSectionEyebrow: 'In practice',
     star: { serviceName: 'Starlight Saju', label: 'Starlight Keyword', titleLead: 'You are', hashtag: '#StarlightSaju' },
   },
 } as const;
@@ -150,28 +172,26 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
   // narrative 모드 — 7섹션 줄글
   const narrative = api.reportText ? parseNarrativeReport(api.reportText) : null;
   return (
-    <div className="inner orot-root" style={{ paddingTop: 16, paddingBottom: 32 }}>
-      {/* ── 1. 사주 원국 카드 (표지) ── */}
-      <SectionPalja api={api} birthSummary={birthSummary} />
+    <div className="inner orot-root sv4" style={{ paddingTop: 16, paddingBottom: 32 }}>
+      {/* sv4-* accordion/editorial CSS now lives in globals.css (shared source of truth). */}
 
-      {/* ── 1.5 별빛 키워드 카드 (SNS 공유용 + 저장 버튼) ── */}
+      {/* ── 1. 정체성 히어로 (첫 화면) — 별빛 아키타입을 가장 먼저 보여준다.
+            starKeywordCard 없으면(일부 flag 기본값) 통째로 스킵하고 바로 챕터로 넘어간다. ── */}
       {api.starKeywordCard && (
-        <div style={{ marginTop: 20, marginBottom: 8 }}>
-          <StarShareCardWithDownload
-            serviceName={T.star.serviceName}
-            label={T.star.label}
-            titleLead={T.star.titleLead}
-            archetypeTitle={api.starKeywordCard.displayTitle}
-            shortDescription={api.starKeywordCard.shortDescription}
-            brightSide={api.starKeywordCard.brightSide}
-            shadowSide={api.starKeywordCard.shadowSide}
-            keywords={api.starKeywordCard.keywords}
-            hashtag={T.star.hashtag}
-            theme="midnight"
-            ratio="feed"
-          />
-        </div>
+        <SectionIdentityHero card={api.starKeywordCard} T={T} />
       )}
+
+      {/* ── 2. 사주 원국 — 히어로 아래로 강등. 기본 접힘(<details>), 내용은 그대로. ── */}
+      <details className="sv4-chart-toggle card" style={{ marginTop: api.starKeywordCard ? 14 : 0, padding: '14px 16px' }}>
+        <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13.5, color: 'var(--orot-ink-soft)', minHeight: 24 }}>
+          <span aria-hidden style={{ fontSize: 15 }}>🪐</span>
+          <span>{T.chartToggle}</span>
+          <span className="sv4-chevron" aria-hidden style={{ marginLeft: 'auto', color: 'var(--orot-ink-mute)', fontSize: 12 }}>▾</span>
+        </summary>
+        <div style={{ marginTop: 14 }}>
+          <SectionPalja api={api} birthSummary={birthSummary} />
+        </div>
+      </details>
 
       {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩.
             2026-05 hotfix: parser가 헤더를 못 잡았으면(7섹션 모두 비어있음)
@@ -181,17 +201,17 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
       {!api.reportText ? (
         <SectionAiLoading />
       ) : narrative && hasAnyNarrativeBody(narrative) ? (
-        <div style={{ marginTop: 18 }}>
-          <NarrativeSection title={T.opening.title} body={narrative.openingDefinition} eyebrow={T.opening.eyebrow} />
-          <NarrativeSection title={T.structure.title} body={narrative.lifeStructureNarrative} eyebrow={T.structure.eyebrow} />
-          <NarrativeSection title={T.repeated.title} body={narrative.repeatedPatternNarrative} eyebrow={T.repeated.eyebrow} />
-          <NarrativeSection title={T.career.title} body={narrative.careerTalentNarrative} eyebrow={T.career.eyebrow} />
-          <NarrativeSection title={T.money.title} body={narrative.moneyMonetizationNarrative} eyebrow={T.money.eyebrow} />
-          <NarrativeSection title={T.love.title} body={narrative.relationshipLoveNarrative} eyebrow={T.love.eyebrow} />
+        <div style={{ marginTop: 8 }}>
+          <NarrativeSection title={T.opening.title} body={narrative.openingDefinition} eyebrow={T.opening.eyebrow} accent={SECTION_ACCENTS.opening} index={0} lead />
+          <NarrativeSection title={T.structure.title} body={narrative.lifeStructureNarrative} eyebrow={T.structure.eyebrow} accent={SECTION_ACCENTS.structure} index={1} lead />
+          <NarrativeSection title={T.repeated.title} body={narrative.repeatedPatternNarrative} eyebrow={T.repeated.eyebrow} accent={SECTION_ACCENTS.repeated} index={2} lead />
+          <NarrativeSection title={T.career.title} body={narrative.careerTalentNarrative} eyebrow={T.career.eyebrow} accent={SECTION_ACCENTS.career} index={3} lead />
+          <NarrativeSection title={T.money.title} body={narrative.moneyMonetizationNarrative} eyebrow={T.money.eyebrow} accent={SECTION_ACCENTS.money} index={4} lead />
+          <NarrativeSection title={T.love.title} body={narrative.relationshipLoveNarrative} eyebrow={T.love.eyebrow} accent={SECTION_ACCENTS.love} index={5} lead />
           {narrative.futureFlowNarrative && (
-            <NarrativeFutureFlow data={narrative.futureFlowNarrative} />
+            <NarrativeFutureFlow data={narrative.futureFlowNarrative} title={T.future.title} eyebrow={T.future.eyebrow} />
           )}
-          <NarrativeSection title={T.final.title} body={narrative.finalStrategyNarrative} eyebrow={T.final.eyebrow} />
+          <NarrativeSection title={T.final.title} body={narrative.finalStrategyNarrative} eyebrow={T.final.eyebrow} accent={SECTION_ACCENTS.final} index={7} lead />
         </div>
       ) : (
         // parser가 7섹션 헤더를 못 잡았으면 fallback — 원문 그대로 한 덩어리로
@@ -204,16 +224,22 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
             paidReport.prose가 present일 때만 메인 narrative 아래에 줄글 톤으로 덧붙인다.
             paidReport(또는 prose) 없으면 전부 건너뛰어 기존 동작과 byte-identical 유지. ── */}
       {api.paidReport?.prose?.length ? (
-        <section style={{ marginTop: 32 }}>
+        <section className="sv4-reveal" style={{ marginTop: 40 }}>
+          <SectionStarDivider />
+          <div className="sv4-eyebrow" style={{ color: SECTION_ACCENTS.guide.accent }}>
+            <span aria-hidden>{SECTION_ACCENTS.guide.icon}</span>
+            <span>{T.guideSub}</span>
+          </div>
           <h2 style={{
-            fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)',
-            margin: '0 0 4px', letterSpacing: '-0.01em', lineHeight: 1.35,
+            fontSize: 24, fontWeight: 800, color: SECTION_ACCENTS.guide.accent,
+            margin: '6px 0 4px', letterSpacing: '-0.01em', lineHeight: 1.3,
             fontFamily: 'var(--orot-font)',
           }}>{T.guideEyebrow}</h2>
-          <div style={{ fontSize: 12.5, color: 'var(--orot-ink-mute)', lineHeight: 1.55 }}>
-            {T.guideSub}
-          </div>
-          <PaidReportProse sections={api.paidReport.prose} evidenceMap={api.paidReport.evidenceMap} />
+          <PaidReportProse
+            sections={api.paidReport.prose}
+            evidenceMap={api.paidReport.evidenceMap}
+            eyebrowLabel={T.guideSectionEyebrow}
+          />
         </section>
       ) : null}
 
@@ -270,48 +296,171 @@ function hasAnyNarrativeBody(narrative: ReturnType<typeof parseNarrativeReport>)
   );
 }
 
-function NarrativeSection({ title, body, eyebrow }: { title: string; body: string; eyebrow?: string }) {
-  if (!body || !body.trim()) return null;
+// 별빛 정체성 히어로 — 첫 화면. 큰 아키타입 닉네임 + 한 줄 + 키워드 칩 + 야경 글로우.
+// 기존 공유/저장 카드(StarShareCardWithDownload)도 접근 가능하게 함께 둔다.
+function SectionIdentityHero({
+  card,
+  T,
+}: {
+  card: NonNullable<SajuV4ApiResponse['starKeywordCard']>;
+  T: (typeof NARRATIVE_TITLES)['ko'] | (typeof NARRATIVE_TITLES)['en'];
+}) {
+  const keywords = (card.keywords ?? []).filter((k) => k && k.trim()).slice(0, 6);
   return (
-    <section style={{ marginTop: 24 }}>
-      {eyebrow && (
-        <div className="orot-eyebrow" style={{ marginBottom: 8 }}>{eyebrow}</div>
-      )}
-      <h2 style={{
-        fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)',
-        margin: '0 0 16px', letterSpacing: '-0.01em', lineHeight: 1.35,
-        fontFamily: 'var(--orot-font)',
-      }}>{title}</h2>
-      <NarrativeBody text={body} />
+    <section className="sv4-hero sv4-reveal">
+      <div className="sv4-hero-glow" aria-hidden />
+      <div className="sv4-hero-inner">
+        <div className="sv4-hero-eyebrow">
+          <span aria-hidden>✦</span>
+          <span>{T.star.label}</span>
+        </div>
+        <div className="sv4-hero-lead">{T.star.titleLead}</div>
+        <h1 className="sv4-hero-title">{card.displayTitle}</h1>
+        {card.shortDescription && (
+          <p className="sv4-hero-desc">{card.shortDescription}</p>
+        )}
+        {keywords.length > 0 && (
+          <div className="sv4-hero-chips">
+            {keywords.map((k) => (
+              <span key={k} className="sv4-chip">#{k}</span>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* 공유/저장 카드 — 정체성 아래에 그대로 두어 다운로드 affordance 유지 */}
+      <div className="sv4-hero-share">
+        <StarShareCardWithDownload
+          serviceName={T.star.serviceName}
+          label={T.star.label}
+          titleLead={T.star.titleLead}
+          archetypeTitle={card.displayTitle}
+          shortDescription={card.shortDescription}
+          brightSide={card.brightSide}
+          shadowSide={card.shadowSide}
+          keywords={card.keywords}
+          hashtag={T.star.hashtag}
+          theme="midnight"
+          ratio="feed"
+        />
+      </div>
     </section>
   );
 }
 
-function NarrativeFutureFlow({ data }: { data: { intro: string; years: Array<{ year: number; body: string }> } }) {
-  if (!data.intro && data.years.length === 0) return null;
+// 섹션 사이 ✦ 모티프 디바이더 — 잡지 호흡.
+function SectionStarDivider() {
   return (
-    <section style={{ marginTop: 24 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 8 }}>✦ 앞으로</div>
-      <h2 style={{
-        fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)',
-        margin: '0 0 16px', letterSpacing: '-0.01em', lineHeight: 1.35,
-        fontFamily: 'var(--orot-font)',
-      }}>앞으로 3년, 어떤 판이 열릴까</h2>
-      {data.intro && <NarrativeBody text={data.intro} />}
-      <div style={{ marginTop: 16 }}>
-        {data.years.map(y => (
-          <div key={y.year} style={{ marginTop: 18 }}>
-            <h3 style={{
-              fontSize: 17, fontWeight: 700, color: 'var(--orot-ink)',
-              margin: '0 0 10px', display: 'inline-block',
-              paddingBottom: 4, borderBottom: '2px solid var(--orot-coral-faint)',
-              fontFamily: 'var(--orot-font)',
-            }}>{y.year}</h3>
-            <NarrativeBody text={y.body} />
+    <div className="sv4-divider" aria-hidden>
+      <span className="sv4-divider-line" />
+      <span className="sv4-divider-star">✦</span>
+      <span className="sv4-divider-line" />
+    </div>
+  );
+}
+
+// 본문 첫 문장을 티저 텍스트로 추출 — <summary> 안의 한 줄 미리보기용.
+// 마크다운 헤더/불릿 제거 후 첫 비어있지 않은 줄을 사용.
+function extractTeaser(body: string, maxLen = 60): string {
+  const first = body
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l && !/^#{1,4}\s/.test(l) && !/^[-*]\s/.test(l));
+  if (!first) return '';
+  return first.length > maxLen ? first.slice(0, maxLen).trimEnd() + '…' : first;
+}
+
+function NarrativeSection({
+  title,
+  body,
+  eyebrow,
+  accent,
+  index = 0,
+  lead = false,
+  defaultOpen = false,
+}: {
+  title: string;
+  body: string;
+  eyebrow?: string;
+  accent?: SectionAccent;
+  index?: number;
+  lead?: boolean;
+  defaultOpen?: boolean;
+}) {
+  if (!body || !body.trim()) return null;
+  const a = accent ?? SECTION_ACCENTS.opening;
+  const teaser = defaultOpen ? '' : extractTeaser(body);
+  return (
+    <>
+      {index > 0 && <SectionStarDivider />}
+      <details
+        className="sv4-accordion sv4-reveal"
+        style={{ marginTop: index > 0 ? 6 : 24 }}
+        {...(defaultOpen ? { open: true } : {})}
+      >
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': a.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{a.icon}</span>
+          <span className="sv4-accordion-header">
+            {eyebrow && (
+              <span className="sv4-accordion-eyebrow" style={{ color: a.accent }}>{eyebrow}</span>
+            )}
+            <span className="sv4-accordion-title" style={{ color: a.accent }}>{title}</span>
+            {teaser && (
+              <span className="sv4-accordion-teaser">{teaser}</span>
+            )}
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: a.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body">
+          <NarrativeBody text={body} accent={a.accent} lead={lead} />
+        </div>
+      </details>
+    </>
+  );
+}
+
+function NarrativeFutureFlow({
+  data,
+  title,
+  eyebrow,
+}: {
+  data: { intro: string; years: Array<{ year: number; body: string }> };
+  title: string;
+  eyebrow: string;
+}) {
+  if (!data.intro && data.years.length === 0) return null;
+  const a = SECTION_ACCENTS.future;
+  const teaser = extractTeaser(data.intro || (data.years[0]?.body ?? ''));
+  return (
+    <>
+      <SectionStarDivider />
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: 6 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': a.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{a.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: a.accent }}>{eyebrow}</span>
+            <span className="sv4-accordion-title" style={{ color: a.accent }}>{title}</span>
+            {teaser && <span className="sv4-accordion-teaser">{teaser}</span>}
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: a.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body">
+          {data.intro && <NarrativeBody text={data.intro} accent={a.accent} lead />}
+          <div style={{ marginTop: 16 }}>
+            {data.years.map((y) => (
+              <div key={y.year} style={{ marginTop: 18 }}>
+                <h3 style={{
+                  fontSize: 17, fontWeight: 700, color: 'var(--orot-ink)',
+                  margin: '0 0 10px', display: 'inline-block',
+                  paddingBottom: 4, borderBottom: `2px solid ${a.accent}`,
+                  fontFamily: 'var(--orot-font)',
+                }}>{y.year}</h3>
+                <NarrativeBody text={y.body} accent={a.accent} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </section>
+        </div>
+      </details>
+    </>
   );
 }
 
@@ -331,15 +480,28 @@ function NarrativeFinalLine({ text }: { text: string }) {
   );
 }
 
-// 본문 — 줄글 위주 렌더 (단락·짧은 하위 헤더·간단 리스트만 처리)
-function NarrativeBody({ text }: { text: string }) {
+// 본문 — 줄글 위주 렌더 (단락·짧은 하위 헤더·간단 리스트만 처리).
+// lead=true면 첫 단락을 살짝 크게/진하게 리드인으로 렌더(잡지 호흡, 콘텐츠 비의존).
+// accent는 하위 헤더(### …) 색에만 쓰여 섹션 톤을 본문까지 잇는다.
+function NarrativeBody({ text, accent, lead = false }: { text: string; accent?: string; lead?: boolean }) {
+  const headColor = accent ?? 'var(--orot-coral)';
   const lines = text.split('\n');
   const out: React.ReactElement[] = [];
   let para: string[] = [];
+  let paraCount = 0;
   const flush = (k: string) => {
     if (para.length === 0) return;
+    const isLead = lead && paraCount === 0;
+    paraCount += 1;
     out.push(
-      <p key={k} style={{ margin: '10px 0', fontSize: 15, lineHeight: 1.85, color: 'var(--orot-ink)' }}>
+      <p key={k} className={isLead ? 'sv4-lead' : undefined} style={{
+        margin: '10px 0',
+        fontSize: isLead ? 16.5 : 15,
+        lineHeight: 1.85,
+        fontWeight: isLead ? 600 : 400,
+        color: isLead ? 'var(--orot-ink-soft)' : 'var(--orot-ink)',
+        letterSpacing: isLead ? '-0.005em' : undefined,
+      }}>
         {para.join(' ')}
       </p>
     );
@@ -351,7 +513,7 @@ function NarrativeBody({ text }: { text: string }) {
     if (/^#{3,4}\s+/.test(trimmed)) {
       flush('p-' + i);
       out.push(<div key={'h-' + i} style={{
-        fontSize: 14, fontWeight: 700, color: 'var(--orot-coral)',
+        fontSize: 14, fontWeight: 700, color: headColor,
         marginTop: 14, marginBottom: 4, fontFamily: 'var(--orot-font)',
       }}>{trimmed.replace(/^#+\s+/, '')}</div>);
       return;

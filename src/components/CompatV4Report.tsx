@@ -40,6 +40,8 @@ const TITLES = {
     aiQuestions: '관계 유형별 10가지 질문',
     aiPracticalGuide: '이 관계를 잘 쓰는 현실 전략',
     aiEvidence: '📜 명리 근거 보기',
+    aiReadingDivider: '두 사람의 이야기',
+    aiEyebrows: { overview: '한눈에', attraction: '끌림', conflict: '균열', questions: '질문', guide: '실전', evidence: '근거' },
     relType: RELATIONSHIP_TYPE_KO,
   },
   en: {
@@ -58,6 +60,8 @@ const TITLES = {
     aiQuestions: '10 questions for your relationship type',
     aiPracticalGuide: 'A practical strategy for this relationship',
     aiEvidence: '📜 See the saju basis',
+    aiReadingDivider: 'Your story, together',
+    aiEyebrows: { overview: 'At a glance', attraction: 'Attraction', conflict: 'Friction', questions: 'Questions', guide: 'In practice', evidence: 'Basis' },
     relType: {
       dating: 'Dating',
       married: 'Married',
@@ -72,6 +76,76 @@ const TITLES = {
 // 두 언어 분기를 모두 받을 수 있도록 리터럴 타입을 넓힌다.
 type Widen<T> = T extends Record<string, unknown> ? { [K in keyof T]: Widen<T[K]> } : T extends string ? string : T;
 type CompatTitles = Widen<typeof TITLES['ko']>;
+
+// AI 풀이 섹션별 악센트 — SajuV4Report의 SECTION_ACCENTS 톤을 잇되 궁합은 끌림/관계 무드로.
+// 순서대로: 한눈에 → 끌림 → 갈등 → (질문은 별도) → 실전 가이드. index % len 로테이션.
+type CompatAccent = { icon: string; accent: string };
+const COMPAT_ACCENTS: Record<string, CompatAccent> = {
+  overview: { icon: '✦', accent: 'var(--orot-coral)' },
+  attraction: { icon: '❤️', accent: '#e899ad' },
+  conflict: { icon: '⚡', accent: '#e0a86b' },
+  questions: { icon: '💬', accent: '#b9a7ef' },
+  guide: { icon: '🧭', accent: '#7fc6c0' },
+  evidence: { icon: '📜', accent: 'var(--orot-ink-mute)' },
+};
+
+// 본문 첫 비어있지 않은 줄을 티저로 — summary 안 한 줄 미리보기. (SajuV4Report.extractTeaser 미러)
+function extractCompatTeaser(body: string, maxLen = 60): string {
+  const first = body
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l && !/^#{1,4}\s/.test(l) && !/^[-*]\s/.test(l));
+  if (!first) return '';
+  return first.length > maxLen ? first.slice(0, maxLen).trimEnd() + '…' : first;
+}
+
+// ✦ 디바이더 — SajuV4Report와 동일 모티프(globals.css의 sv4-divider).
+function CompatStarDivider() {
+  return (
+    <div className="sv4-divider" aria-hidden>
+      <span className="sv4-divider-line" />
+      <span className="sv4-divider-star">✦</span>
+      <span className="sv4-divider-line" />
+    </div>
+  );
+}
+
+// 줄글 AI 섹션 하나 — sv4-accordion(<details>), 기본 접힘. SajuV4Report.NarrativeSection 미러.
+function CompatNarrativeSection({
+  title,
+  body,
+  eyebrow,
+  accent,
+  showDivider,
+}: {
+  title: string;
+  body: string;
+  eyebrow: string;
+  accent: CompatAccent;
+  showDivider: boolean;
+}) {
+  if (!body || !body.trim()) return null;
+  const teaser = extractCompatTeaser(body);
+  return (
+    <>
+      {showDivider && <CompatStarDivider />}
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: showDivider ? 6 : 4 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': accent.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: accent.accent }}>{eyebrow}</span>
+            <span className="sv4-accordion-title" style={{ color: accent.accent }}>{title}</span>
+            {teaser && <span className="sv4-accordion-teaser">{teaser}</span>}
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: accent.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body">
+          <LeadBody text={body} accent={accent.accent} />
+        </div>
+      </details>
+    </>
+  );
+}
 
 export default function CompatV4Report({ api, lang = 'ko' }: { api: CompatV4ResultApi; lang?: 'ko' | 'en' }) {
   const T = TITLES[lang === 'en' ? 'en' : 'ko'];
@@ -102,18 +176,23 @@ export default function CompatV4Report({ api, lang = 'ko' }: { api: CompatV4Resu
       {/* 7. 3년 흐름 카드 (preview 데이터) */}
       <SectionFutureFlow api={api} T={T} />
 
-      {/* ── AI 카드들 (GPT 응답 후) ── */}
+      {/* ── AI 줄글 풀이 (GPT 응답 후) — night-sky 아코디언, 모두 기본 접힘 ── */}
       {!api.reportText ? (
         <SectionAiLoading T={T} />
       ) : parsed ? (
-        <>
-          <SectionAiOverview body={parsed.overview} T={T} />
-          <SectionAiAttraction body={parsed.attraction} T={T} />
-          <SectionAiConflict body={parsed.conflict} T={T} />
+        <div className="sv4" style={{ marginTop: 4 }}>
+          <CompatStarDivider />
+          <div className="sv4-eyebrow" style={{ color: 'var(--orot-coral)', marginBottom: 4 }}>
+            <span aria-hidden>✦</span>
+            <span>{T.aiReadingDivider}</span>
+          </div>
+          <CompatNarrativeSection title={T.aiOverview} body={parsed.overview} eyebrow={T.aiEyebrows.overview} accent={COMPAT_ACCENTS.overview} showDivider={false} />
+          <CompatNarrativeSection title={T.aiAttraction} body={parsed.attraction} eyebrow={T.aiEyebrows.attraction} accent={COMPAT_ACCENTS.attraction} showDivider />
+          <CompatNarrativeSection title={T.aiConflict} body={parsed.conflict} eyebrow={T.aiEyebrows.conflict} accent={COMPAT_ACCENTS.conflict} showDivider />
           <SectionAiQuestions items={parsed.questions} T={T} />
-          <SectionAiPracticalGuide body={parsed.practicalGuide} T={T} />
+          <CompatNarrativeSection title={T.aiPracticalGuide} body={parsed.practicalGuide} eyebrow={T.aiEyebrows.guide} accent={COMPAT_ACCENTS.guide} showDivider />
           <SectionAiEvidence body={parsed.evidence} T={T} />
-        </>
+        </div>
       ) : null}
     </div>
   );
@@ -313,86 +392,103 @@ function SectionAiLoading({ T }: { T: CompatTitles }) {
   );
 }
 
-function SectionAiOverview({ body, T }: { body: string; T: CompatTitles }) {
-  if (!body) return null;
-  return (
-    <div className="card" style={{ padding: 16 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>{T.aiOverview}</div>
-      <Body text={body} />
-    </div>
-  );
-}
-
-function SectionAiAttraction({ body, T }: { body: string; T: CompatTitles }) {
-  if (!body) return null;
-  return (
-    <div className="card" style={{ padding: 16 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>{T.aiAttraction}</div>
-      <Body text={body} />
-    </div>
-  );
-}
-
-function SectionAiConflict({ body, T }: { body: string; T: CompatTitles }) {
-  if (!body) return null;
-  return (
-    <div className="card" style={{ padding: 16 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>{T.aiConflict}</div>
-      <Body text={body} />
-    </div>
-  );
-}
-
+// 관계 유형별 10문항 — sv4-accordion 안에 중첩된 Q&A 아코디언.
+// 바깥 섹션은 다른 줄글 섹션과 같은 night-sky 카드, 안쪽 질문은 가벼운 <details>.
 function SectionAiQuestions({ items, T }: { items: Array<{ number: number; title: string; body: string }>; T: CompatTitles }) {
   if (!items.length) return null;
+  const accent = COMPAT_ACCENTS.questions;
+  const teaser = items[0] ? `Q1. ${items[0].title}` : '';
   return (
-    <div style={{ marginBottom: 0 }}>
-      <div className="section-divider" style={{ marginBottom: 12 }}>{T.aiQuestions}</div>
-      {items.map(q => (
-        <details key={q.number} className="card" style={{ padding: 14, marginBottom: 8 }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
-            <span style={{ color: 'var(--orot-coral)' }}>Q{q.number}.</span> {q.title}
-          </summary>
-          <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.7 }}>
-            <Body text={q.body} />
-          </div>
-        </details>
-      ))}
-    </div>
+    <>
+      <CompatStarDivider />
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: 6 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': accent.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: accent.accent }}>{T.aiEyebrows.questions}</span>
+            <span className="sv4-accordion-title" style={{ color: accent.accent }}>{T.aiQuestions}</span>
+            {teaser && <span className="sv4-accordion-teaser">{teaser}</span>}
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: accent.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {items.map(q => (
+            <details
+              key={q.number}
+              style={{
+                borderRadius: 10,
+                border: '1px solid var(--orot-hair)',
+                background: 'rgba(255,255,255,0.02)',
+                padding: '12px 14px',
+              }}
+            >
+              <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 14, listStyle: 'none', minHeight: 24, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--orot-ink)' }}>
+                <span style={{ color: accent.accent }}>Q{q.number}.</span>
+                <span>{q.title}</span>
+              </summary>
+              <div style={{ marginTop: 10 }}>
+                <LeadBody text={q.body} accent={accent.accent} />
+              </div>
+            </details>
+          ))}
+        </div>
+      </details>
+    </>
   );
 }
 
-function SectionAiPracticalGuide({ body, T }: { body: string; T: CompatTitles }) {
-  if (!body) return null;
-  return (
-    <div className="card" style={{ padding: 16 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>{T.aiPracticalGuide}</div>
-      <Body text={body} />
-    </div>
-  );
-}
-
+// 명리 근거 — 절제된 톤. sv4-accordion 이지만 ink-mute 악센트로 차분하게.
 function SectionAiEvidence({ body, T }: { body: string; T: CompatTitles }) {
   if (!body) return null;
+  const accent = COMPAT_ACCENTS.evidence;
   return (
-    <details className="card" style={{ padding: 16 }}>
-      <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--orot-ink-mute)' }}>{T.aiEvidence}</summary>
-      <div style={{ marginTop: 10, fontSize: 12, color: 'var(--orot-ink-mute)' }}>
-        <Body text={body} />
-      </div>
-    </details>
+    <>
+      <CompatStarDivider />
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: 6 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': 'var(--orot-hair-strong)' } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: accent.accent }}>{T.aiEyebrows.evidence}</span>
+            <span className="sv4-accordion-title" style={{ color: 'var(--orot-ink-soft)', fontSize: 15 }}>{T.aiEvidence}</span>
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: accent.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body" style={{ fontSize: 12, color: 'var(--orot-ink-mute)' }}>
+          <LeadBody text={body} accent={accent.accent} muted />
+        </div>
+      </details>
+    </>
   );
 }
 
-function Body({ text }: { text: string }) {
-  // 헤더·리스트·문단을 간단히 렌더
+// 줄글 본문 — SajuV4Report.NarrativeBody 미러. 첫 단락 리드인(sv4-lead), 하위 헤더는 accent 색,
+// 간단한 불릿만 처리. muted=true면 evidence용 차분한 작은 톤.
+function LeadBody({ text, accent, muted = false }: { text: string; accent?: string; muted?: boolean }) {
+  const headColor = accent ?? 'var(--orot-coral)';
   const lines = text.split('\n');
   const out: React.ReactElement[] = [];
   let para: string[] = [];
-  const flush = (key: string) => {
+  let paraCount = 0;
+  const flush = (k: string) => {
     if (para.length === 0) return;
+    const isLead = !muted && paraCount === 0;
+    paraCount += 1;
     out.push(
-      <p key={key} style={{ margin: '6px 0', fontSize: 13, lineHeight: 1.7 }}>{para.join(' ')}</p>
+      <p
+        key={k}
+        className={isLead ? 'sv4-lead' : undefined}
+        style={{
+          margin: '10px 0',
+          fontSize: muted ? 13 : isLead ? 16.5 : 15,
+          lineHeight: 1.85,
+          fontWeight: isLead ? 600 : 400,
+          color: muted ? 'var(--orot-ink-mute)' : isLead ? 'var(--orot-ink-soft)' : 'var(--orot-ink)',
+          letterSpacing: isLead ? '-0.005em' : undefined,
+          wordBreak: 'keep-all',
+        }}
+      >
+        {para.join(' ')}
+      </p>
     );
     para = [];
   };
@@ -401,12 +497,12 @@ function Body({ text }: { text: string }) {
     if (!trimmed) { flush('p-' + i); return; }
     if (/^#{2,4}\s+/.test(trimmed)) {
       flush('p-' + i);
-      out.push(<div key={'h-' + i} style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)', marginTop: 8 }}>{trimmed.replace(/^#+\s+/, '')}</div>);
+      out.push(<div key={'h-' + i} style={{ fontSize: 14, fontWeight: 700, color: headColor, marginTop: 14, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{trimmed.replace(/^#+\s+/, '')}</div>);
       return;
     }
     if (/^[-*]\s+/.test(trimmed)) {
       flush('p-' + i);
-      out.push(<div key={'li-' + i} style={{ fontSize: 13, lineHeight: 1.7, marginLeft: 10 }}>· {trimmed.replace(/^[-*]\s+/, '')}</div>);
+      out.push(<div key={'li-' + i} style={{ fontSize: muted ? 13 : 15, lineHeight: 1.85, marginLeft: 12, color: muted ? 'var(--orot-ink-mute)' : 'var(--orot-ink)' }}>· {trimmed.replace(/^[-*]\s+/, '')}</div>);
       return;
     }
     para.push(trimmed);

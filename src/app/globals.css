@@ -1822,3 +1822,194 @@ input:focus-visible,
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   ✦ sv4-* — Night-sky editorial accordion (SHARED source of truth)
+   Extracted from SajuV4Report.tsx's inline <style> so every result
+   surface can use one definition:
+     · 개인사주  (SajuV4Report.tsx)            — NarrativeSection / PaidReportProse
+     · 궁합      (CompatV4Report.tsx)          — AI reading accordions
+     · 올해운세·태교·v3사주 (SajuApp.tsx renderTOC) — streamed-markdown TOC
+   All accordion/editorial classes are intentionally UNSCOPED (no .sv4
+   ancestor required) so surfaces rendered inside .orot-results-screen
+   (not .sv4) pick them up too. prefers-reduced-motion is guarded
+   globally above. Native <details>/<summary> drive open/close.
+   ──────────────────────────────────────────────────────────────── */
+
+/* fade-in reveal — standalone (does not require a .sv4 ancestor) */
+.sv4-reveal {
+  animation: sv4FadeUp 620ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes sv4FadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* hero (개인사주 정체성 카드 — saju-only, but kept here as one source) */
+.sv4-hero {
+  position: relative;
+  border-radius: 22px;
+  padding: 30px 22px 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(243,160,146,0.12), transparent 60%),
+    linear-gradient(180deg, var(--orot-card-navy) 0%, var(--orot-card-purple) 130%);
+  border: 1px solid var(--orot-hair-strong);
+}
+.sv4-hero-glow {
+  position: absolute; inset: -40% 20% auto 20%; height: 220px;
+  background: radial-gradient(circle, rgba(196,181,253,0.20), transparent 70%);
+  filter: blur(18px); pointer-events: none;
+}
+.sv4-hero-inner { position: relative; text-align: center; }
+.sv4-hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em;
+  color: #c4b5fd; text-transform: uppercase; margin-bottom: 14px;
+}
+.sv4-hero-lead {
+  font-size: 14px; color: var(--orot-ink-mute); margin-bottom: 6px; letter-spacing: 0.02em;
+}
+.sv4-hero-title {
+  font-family: var(--orot-font);
+  font-size: 34px; line-height: 1.18; font-weight: 800;
+  letter-spacing: -0.02em; margin: 0 0 14px;
+  color: var(--orot-ink);
+  text-shadow: 0 2px 18px rgba(196,181,253,0.18);
+}
+.sv4-hero-desc {
+  font-size: 15px; line-height: 1.7; color: var(--orot-ink-soft);
+  max-width: 30em; margin: 0 auto 18px; word-break: keep-all;
+}
+.sv4-hero-chips {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 4px;
+}
+.sv4-chip {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+  padding: 6px 12px; border-radius: 999px;
+  color: var(--orot-ink-soft);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--orot-hair-strong);
+}
+.sv4-hero-share { position: relative; margin-top: 22px; }
+@media (min-width: 520px) {
+  .sv4-hero-title { font-size: 40px; }
+  .sv4-hero { padding: 38px 28px 26px; }
+}
+
+/* standalone eyebrow / h2 (e.g. guide header) */
+.sv4-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--orot-font);
+  font-size: 13px; font-weight: 700; letter-spacing: 0.04em;
+  margin-bottom: 9px;
+}
+.sv4-h2 {
+  font-family: var(--orot-font);
+  font-size: 23px; font-weight: 800; line-height: 1.32;
+  letter-spacing: -0.01em;
+  margin: 0 0 15px;
+  padding-left: 13px;
+  border-left: 3px solid currentColor;
+  word-break: keep-all;
+}
+
+/* ✦ star divider between sections */
+.sv4-divider {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin: 26px 0 18px;
+}
+.sv4-divider-line {
+  flex: 1; height: 1px; max-width: 120px;
+  background: linear-gradient(90deg, transparent, var(--orot-hair-strong), transparent);
+}
+.sv4-divider-star { color: var(--orot-ink-faint); font-size: 12px; }
+
+/* chevron — rotates 180° when its container is open ([open] details or .is-open) */
+.sv4-chevron { transition: transform 200ms ease; display: inline-block; }
+.sv4-chart-toggle summary::-webkit-details-marker { display: none; }
+.sv4-chart-toggle[open] .sv4-chevron { transform: rotate(180deg); }
+
+/* ── accordion (rounded dark card; border brightens to --sv4-accent when open) ── */
+.sv4-accordion {
+  border-radius: 14px;
+  border: 1px solid var(--orot-hair);
+  background: rgba(255,255,255,0.025);
+  overflow: hidden;
+  transition: border-color 180ms ease;
+}
+.sv4-accordion[open] {
+  border-color: var(--sv4-accent, var(--orot-hair-strong));
+  background: rgba(255,255,255,0.035);
+}
+.sv4-accordion-summary {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 16px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 56px; /* ≥44px tap target with padding */
+  user-select: none;
+}
+.sv4-accordion-summary::-webkit-details-marker { display: none; }
+.sv4-accordion-icon {
+  font-size: 18px; flex-shrink: 0; line-height: 1;
+}
+.sv4-accordion-header {
+  flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
+.sv4-accordion-eyebrow {
+  font-family: var(--orot-font);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; opacity: 0.85;
+}
+.sv4-accordion-title {
+  font-family: var(--orot-font);
+  font-size: 17px; font-weight: 800; line-height: 1.3;
+  letter-spacing: -0.01em; word-break: keep-all;
+}
+.sv4-accordion-teaser {
+  font-size: 12.5px; color: var(--orot-ink-mute);
+  line-height: 1.5; margin-top: 1px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.sv4-accordion[open] .sv4-accordion-teaser { display: none; }
+.sv4-accordion[open] .sv4-chevron { transform: rotate(180deg); }
+.sv4-accordion-body {
+  padding: 4px 16px 20px;
+  border-top: 1px solid var(--orot-hair);
+}
+
+/* lead-in first paragraph */
+.sv4-lead::first-letter { /* subtle emphasis hook — no drop-cap */ }
+
+/* button-driven accordion variant (e.g. SajuApp TOC keeps its own
+   expand/collapse state instead of native <details>) — open state set
+   via .is-open on the card shell and the chevron. */
+.sv4-accordion.is-open {
+  border-color: var(--sv4-accent, var(--orot-hair-strong));
+  background: rgba(255,255,255,0.035);
+}
+.sv4-accordion.is-open .sv4-accordion-teaser { display: none; }
+.sv4-accordion.is-open .sv4-chevron { transform: rotate(180deg); }
+.sv4-accordion-trigger {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+}
+
+/* TOC expanded body (dangerouslySetInnerHTML can't carry .sv4-lead) — give the
+   first paragraph the editorial lead-in, then settle into the night-sky body type. */
+.sv4-accordion-body .sv4-lead-body { padding: 0; }
+.sv4-accordion-body .sv4-lead-body > p:first-child,
+.sv4-accordion-body .sv4-lead-body > div:first-child {
+  font-size: 16.5px;
+  font-weight: 600;
+  line-height: 1.85;
+  letter-spacing: -0.005em;
+  color: var(--orot-ink-soft);
+}
+.sv4-accordion-body .sv4-lead-body p,
+.sv4-accordion-body .sv4-lead-body span { line-height: 1.85; }

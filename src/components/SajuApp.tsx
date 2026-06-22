@@ -687,51 +687,73 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       body: text.slice(cur.end, i + 1 < matches.length ? matches[i + 1].start : text.length).trim(),
     }));
     const tocIcons: Record<number, string> = { 1:'🪞',2:'🗺️',3:'💰',4:'💕',5:'🎯',6:'👥',7:'👨‍👩‍👧',8:'🏥',9:'📍',10:'🍀',11:'💌',12:'💌' };
+    // night-sky 악센트 팔레트 — 섹션 번호로 로테이션(SajuV4Report SECTION_ACCENTS 톤과 동일 계열).
+    const tocAccents = ['var(--orot-coral)', '#b9a7ef', '#7fc6c0', '#d3b87a', '#9cc99a', '#e899ad', '#8aa1c4', 'var(--primary, #f0c75e)'];
+    // collapsed 상태에서 보여줄 한 줄 티저 — 마크다운 헤더/불릿/별표 제거 후 첫 문장.
+    const tocTeaser = (body: string, maxLen = 60): string => {
+      const first = body
+        .split('\n')
+        .map(l => l.trim())
+        .find(l => l && !/^#{1,4}\s/.test(l) && !/^[-*]\s/.test(l) && !/^##/.test(l));
+      if (!first) return '';
+      const clean = first.replace(/[*#`]/g, '').trim();
+      return clean.length > maxLen ? clean.slice(0, maxLen).trimEnd() + '…' : clean;
+    };
     return (
-      <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '12px' }}>
-          {lang === 'en' ? '📋 Table of Contents' : '📋 목차 (탭하면 펼쳐져요)'}
+      <div style={{ marginBottom: '16px' }}>
+        <div className="sv4-eyebrow" style={{ color: 'var(--orot-coral)', marginBottom: '10px' }}>
+          <span aria-hidden>✦</span>
+          <span>{lang === 'en' ? 'Table of Contents' : '목차 · 탭하면 펼쳐져요'}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {sections.map(s => {
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {sections.map((s, i) => {
             const isExpanded = expandedSections.has(s.num);
+            const accent = tocAccents[(s.num - 1) % tocAccents.length] || tocAccents[i % tocAccents.length];
+            const teaser = tocTeaser(s.body);
             return (
-              <div key={s.num}>
-                <button onClick={() => {
-                  setExpandedSections(prev => {
-                    const next = new Set(prev);
-                    if (next.has(s.num)) next.delete(s.num); else next.add(s.num);
-                    return next;
-                  });
-                }} style={{
-                  width: '100%',
-                  background: isExpanded ? 'rgba(240,199,94,0.10)' : 'rgba(255,255,255,0.03)',
-                  border: '1px solid ' + (isExpanded ? 'rgba(240,199,94,0.30)' : 'rgba(240,199,94,0.08)'),
-                  borderRadius: '10px', padding: '12px 14px', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left',
-                  fontFamily: 'inherit', transition: 'background 0.2s, border-color 0.2s',
-                }}
-                aria-expanded={isExpanded}
-                aria-controls={'saju-sec-body-' + s.num}>
-                  <span style={{ fontSize: '16px' }}>{tocIcons[s.num] || '📌'}</span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary)', minWidth: '20px' }}>{s.num}</span>
-                  <span style={{ fontSize: '13px', color: 'var(--text)', flex: 1 }}>{s.title}</span>
-                  <span style={{
-                    fontSize: '14px', color: 'var(--text-dim)',
-                    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s',
-                    display: 'inline-block',
-                  }}>▸</span>
-                </button>
-                {isExpanded && (
-                  <div
-                    id={'saju-sec-body-' + s.num}
-                    className="llm-text"
-                    style={{ padding: '8px 4px 16px', marginTop: '2px', animation: 'fadeIn 0.2s ease-out' }}
-                    dangerouslySetInnerHTML={{ __html: formatLLMText(s.body, lang) }}
-                  />
+              <React.Fragment key={s.num}>
+                {i > 0 && (
+                  <div className="sv4-divider" aria-hidden style={{ margin: '6px 0' }}>
+                    <span className="sv4-divider-line" />
+                    <span className="sv4-divider-star">✦</span>
+                    <span className="sv4-divider-line" />
+                  </div>
                 )}
-              </div>
+                <div
+                  className={'sv4-accordion sv4-reveal' + (isExpanded ? ' is-open' : '')}
+                  style={{ ['--sv4-accent' as string]: accent } as React.CSSProperties}
+                >
+                  <button
+                    className="sv4-accordion-trigger sv4-accordion-summary"
+                    onClick={() => {
+                      setExpandedSections(prev => {
+                        const next = new Set(prev);
+                        if (next.has(s.num)) next.delete(s.num); else next.add(s.num);
+                        return next;
+                      });
+                    }}
+                    aria-expanded={isExpanded}
+                    aria-controls={'saju-sec-body-' + s.num}
+                  >
+                    <span className="sv4-accordion-icon" aria-hidden>{tocIcons[s.num] || '📌'}</span>
+                    <span className="sv4-accordion-header">
+                      <span className="sv4-accordion-eyebrow" style={{ color: accent }}>{lang === 'en' ? `Part ${s.num}` : `${s.num}장`}</span>
+                      <span className="sv4-accordion-title" style={{ color: accent }}>{s.title}</span>
+                      {!isExpanded && teaser && <span className="sv4-accordion-teaser">{teaser}</span>}
+                    </span>
+                    <span className="sv4-chevron" aria-hidden style={{ color: accent }}>▾</span>
+                  </button>
+                  {isExpanded && (
+                    <div className="sv4-accordion-body" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+                      <div
+                        id={'saju-sec-body-' + s.num}
+                        className="llm-text sv4-lead-body"
+                        dangerouslySetInnerHTML={{ __html: formatLLMText(s.body, lang) }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </React.Fragment>
             );
           })}
         </div>
@@ -4410,7 +4432,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             {!compatLoading && compatAiText && (
               <div className="card" style={{ marginTop: '16px', background: 'rgba(255,240,245,0.06)', border: '1px solid rgba(233,30,140,0.15)', borderRadius: '20px', padding: '24px' }}>
                 <h3 style={{ textAlign: 'center', marginBottom: '16px' }}>{t('momBabyReading', lang)}</h3>
-                <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(compatAiText, lang) }} />
+                {renderTOC(compatAiText) || (
+                  <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(compatAiText, lang) }} />
+                )}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
                   <button className="btn" style={{ flex: 1, background: 'rgba(233,30,140,0.12)', border: '1px solid rgba(233,30,140,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }} disabled={isTranslating} onClick={() => {
                     const targetLang = pregAiTranslated ? (lang === 'ko' ? 'ko' : 'en') : (lang === 'ko' ? 'en' : 'ko');
@@ -4546,7 +4570,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             </div>
             </BleedCard>
             <div className="section-divider">{t('aiReading', lang)}</div>
-            <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
+            {renderTOC(aiText) || (
+              <div className="llm-text" dangerouslySetInnerHTML={{ __html: formatLLMText(aiText, lang) }} />
+            )}
             <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
               <button className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)', fontSize: '13px' }} onClick={() => { setCurrentScreen(0); setAiText(''); }}>
                 {t('restart', lang)}
