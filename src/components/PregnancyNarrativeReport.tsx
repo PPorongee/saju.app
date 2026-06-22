@@ -458,15 +458,15 @@ function BabyNamesView({ report }: { report: PregnancyReport }) {
       <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: '0 0 14px', lineHeight: 1.6 }}>
         아래는 엄마와 아이의 기운에 어울리는 가벼운 태명 후보예요. 공식 이름이 아니라 부르기 편한 애칭이에요.
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         {cands.map((c, i) => (
-          <div key={i} style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.04)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{c.name}</span>
-              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, background: PINK_SOFT, color: PINK, fontWeight: 700 }}>{c.elementKo}</span>
-              <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{c.image}</span>
+          <div key={i}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: a.accent, fontFamily: 'var(--orot-font)' }}>{c.name}</span>
+              <span style={{ fontSize: 12, color: PINK, fontWeight: 700 }}>{c.elementKo}</span>
+              <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>{c.image}</span>
             </div>
-            <p style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.6, margin: '6px 0 0' }}>{c.reason}</p>
+            <Paragraphs text={c.reason} />
           </div>
         ))}
       </div>
