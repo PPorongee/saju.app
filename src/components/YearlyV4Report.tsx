@@ -27,7 +27,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import { FortuneVerdictSection } from '@/components/FortuneVerdictSection';
-import { usefulGodRelationLabel } from '@/components/evidence/notationGloss';
 import type {
   YearlyFortuneReport,
   YearlyRelationshipStatus,
@@ -162,25 +161,7 @@ export function buildYearlyMarkdown(report: YearlyFortuneReport): string {
     sec(fv.title, fvParts.join('\n\n'));
   }
 
-  // 8. 명리 근거 (evidenceView)
-  const ev = report.evidenceView;
-  const evParts: string[] = [
-    `세운 간지: ${ev.yearGanji.display} / 현재 대운: ${ev.currentDaewoonPillar}`,
-    `세운 십성: 천간 ${ev.yearStemTenGod} · 지지 ${ev.yearBranchTenGod} / 세운 오행: ${ev.yearElement}`,
-  ];
-  if (ev.natalSewoonInteractions.length) {
-    evParts.push(`세운-원국 작용: ${ev.natalSewoonInteractions.map((it) => `${it.pillar} ${it.kind}: ${it.plain}`).join(' / ')}`);
-  }
-  if (ev.daewoonSewoonInteractions.length) {
-    evParts.push(`대운-세운 작용: ${ev.daewoonSewoonInteractions.map((it) => `${it.kind}: ${it.plain}`).join(' / ')}`);
-  }
-  if (ev.monthlySummary.length) {
-    evParts.push(`월별 요약: ${ev.monthlySummary.map((m) => `${m.monthLabel}(${m.ganji}) ${m.keyword}`).join(' / ')}`);
-  }
-  if (ev.activatedSpecialStars.length) {
-    evParts.push(`활성 신살: ${ev.activatedSpecialStars.map((s) => `${s.name}(${s.source}): ${s.plain}`).join(' / ')}`);
-  }
-  sec('명리 근거', evParts.join('\n'));
+  // 명리 근거는 별도 섹션으로 빼지 않는다 — 본문(흐름의 구조·주제별 등)에 녹여 설명된다.
 
   return lines.join('\n');
 }
@@ -393,7 +374,6 @@ function ReportBody({ report }: { report: YearlyFortuneReport }) {
       {report.nextTwoYears.length > 0 && <NextTwoYearsView years={report.nextTwoYears} />}
 
       <FortuneVerdictSection verdict={report.fortuneVerdict} />
-      <EvidenceView ev={report.evidenceView} />
     </div>
   );
 }
@@ -585,58 +565,6 @@ function NextTwoYearsView({ years }: { years: YearlyFortuneReport['nextTwoYears'
         );
       })}
     </AccordionSection>
-  );
-}
-
-// ── evidenceView (deterministic — sv4 아코디언, 차분한 ink-mute 톤) ──
-function EvidenceView({ ev }: { ev: YearlyFortuneReport['evidenceView'] }) {
-  const a = YEARLY_ACCENTS.evidence;
-  return (
-    <>
-      <YearlyStarDivider />
-      <details className="sv4-accordion sv4-reveal" style={{ marginTop: 6 }}>
-        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': 'var(--orot-hair-strong)' } as React.CSSProperties}>
-          <span className="sv4-accordion-icon" aria-hidden>{a.icon}</span>
-          <span className="sv4-accordion-header">
-            <span className="sv4-accordion-eyebrow" style={{ color: a.accent }}>근거</span>
-            <span className="sv4-accordion-title" style={{ color: 'var(--orot-ink-soft)', fontSize: 15 }}>명리 근거 보기</span>
-          </span>
-          <span className="sv4-chevron" aria-hidden style={{ color: a.accent }}>▾</span>
-        </summary>
-        <div className="sv4-accordion-body" style={{ fontSize: 12, lineHeight: 1.8, color: 'var(--orot-ink-soft)' }}>
-        <p>
-          <b>세운 간지</b> {ev.yearGanji.display} / <b>현재 대운</b> {ev.currentDaewoonPillar}
-        </p>
-        <p>
-          <b>세운 십성</b> 천간 {ev.yearStemTenGod} · 지지 {ev.yearBranchTenGod} / <b>세운 오행</b> {ev.yearElement} (용신 관계: {usefulGodRelationLabel(ev.usefulGodRelation)})
-        </p>
-        {ev.natalSewoonInteractions.length > 0 && (
-          <p>
-            <b>세운–원국 작용</b>{' '}
-            {ev.natalSewoonInteractions.map((it) => `${it.pillar} ${it.kind}: ${it.plain}`).join(' / ')}
-          </p>
-        )}
-        {ev.daewoonSewoonInteractions.length > 0 && (
-          <p>
-            <b>대운–세운 작용</b>{' '}
-            {ev.daewoonSewoonInteractions.map((it) => `${it.kind}: ${it.plain}`).join(' / ')}
-          </p>
-        )}
-        {ev.monthlySummary.length > 0 && (
-          <p>
-            <b>월별 요약</b>{' '}
-            {ev.monthlySummary.map((m) => `${m.monthLabel}(${m.ganji}) ${m.keyword}`).join(' / ')}
-          </p>
-        )}
-        {ev.activatedSpecialStars.length > 0 && (
-          <p>
-            <b>활성 신살</b>{' '}
-            {ev.activatedSpecialStars.map((s) => `${s.name}(${s.source}): ${s.plain}`).join(' / ')}
-          </p>
-        )}
-        </div>
-      </details>
-    </>
   );
 }
 
