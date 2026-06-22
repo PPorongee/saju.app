@@ -1280,12 +1280,95 @@ function tenGodToCategory(tg: TenGod): TenGodCategory {
   }
 }
 
-const MONTH_KEYWORD_BY_CATEGORY: Record<TenGodCategory, string> = {
-  '비겁': '협업과 자기 기준이 같이 움직이는 달',
-  '식상': '쌓아둔 것을 밖으로 꺼내는 달',
-  '재성': '조건과 보상을 정리하는 달',
-  '관성': '책임과 평가가 무거워지는 달',
-  '인성': '공부·문서·정리가 자산이 되는 달',
+// 월별 키워드 — 십성 "카테고리"가 아니라 정확한 10십성으로 분리한다.
+// 월천간은 갑→을→병… 순서라 연속 두 달이 같은 오행(같은 카테고리)일 수 있는데
+// (예: 갑오월·을미월 = 둘 다 관성 카테고리), 정확한 십성은 항상 달라(갑=정관, 을=편관)
+// 연속 달이 동일 키워드/시드로 collapse되는 문제를 막는다.
+const MONTH_KEYWORD_BY_TENGOD: Record<TenGod, string> = {
+  '비견': '같은 결의 사람들과 나란히 서는 달',
+  '겁재': '추진력과 경쟁이 함께 세지는 달',
+  '식신': '꾸준히 만들어 내는 결이 살아나는 달',
+  '상관': '재능을 드러내되 말이 앞서기 쉬운 달',
+  '정재': '꾸준한 보상과 현실 관리가 중요한 달',
+  '편재': '기회와 유동적인 자원이 움직이는 달',
+  '정관': '역할과 규범이 또렷해지는 달',
+  '편관': '압박과 도전이 동시에 들어오는 달',
+  '정인': '배움과 정리가 나를 받쳐 주는 달',
+  '편인': '관점이 깊어지되 흐름이 들쭉날쭉한 달',
+};
+
+// 월별 본문 시드 — 정확한 10십성별. (plain/scene/good/caution)
+const TENGOD_SEED: Record<TenGod, { plain: string; scene: string; good: string; caution: string }> = {
+  '비견': {
+    plain: '비슷한 힘을 가진 사람들과 나란히 서며 내 몫과 자립을 시험받는 흐름이 강해질 수 있어요.',
+    scene: '동료·또래와 역할이 겹치거나 내 자리를 분명히 해야 하는 장면이 생길 수 있어요.',
+    good: '내 몫과 경계를 분명히 정해 두기.',
+    caution: '다 같이 한다는 분위기에 휩쓸려 내 기준을 놓는 자리.',
+  },
+  '겁재': {
+    plain: '추진력과 경쟁심이 함께 올라오고, 자원이 빠르게 들고 나는 흐름이 강해질 수 있어요.',
+    scene: '함께 벌이는 일에서 속도가 붙거나, 지출·분배를 두고 신경 쓸 장면이 생길 수 있어요.',
+    good: '함께 벌인 일의 몫과 비용을 미리 정해 두기.',
+    caution: '분위기에 밀려 무리하게 떠안는 자리.',
+  },
+  '식신': {
+    plain: '꾸준히 만들고 표현하는 결이 살아나며, 준비한 것이 자연스럽게 형태를 갖추는 흐름이 강해질 수 있어요.',
+    scene: '하던 일을 차분히 이어 결과물로 다듬는 장면이 생길 수 있어요.',
+    good: '작게라도 꾸준히 내보내며 반응으로 다듬기.',
+    caution: '편하다는 이유로 늘어져 마무리를 미루는 패턴.',
+  },
+  '상관': {
+    plain: '재능과 표현력이 강하게 드러나지만, 기존 규범·윗사람 기준과 부딪히기도 쉬운 흐름이에요.',
+    scene: '내 아이디어를 강하게 내세우다 평가·규칙과 마찰이 생기는 장면이 있을 수 있어요.',
+    good: '말보다 결과물로 보여 주고, 표현 수위를 한 번 점검하기.',
+    caution: '지적·비판이 앞서 관계를 깎는 자리.',
+  },
+  '정재': {
+    plain: '꾸준한 수입·자원·현실적인 조건을 차분히 관리하는 결이 강해질 수 있어요.',
+    scene: '정산·비용·일상 살림의 기준을 다시 맞추는 장면이 생길 수 있어요.',
+    good: '들어오고 나가는 기준을 한 번 정리해 두기.',
+    caution: '작은 손해를 귀찮다고 방치하는 패턴.',
+  },
+  '편재': {
+    plain: '기회·인맥·유동적인 자원이 활발히 움직이는 흐름이 강해질 수 있어요.',
+    scene: '새로운 제안이나 부수입·확장 기회가 들어오는 장면이 생길 수 있어요.',
+    good: '기회의 범위와 거둘 시점을 먼저 그려 두기.',
+    caution: '벌여 놓기만 하고 거두지 못해 흩어지는 자리.',
+  },
+  '정관': {
+    plain: '맡은 역할·규범·제도 안에서 자리가 또렷해지는 흐름이 강해질 수 있어요.',
+    scene: '공식적인 절차·직책·약속이 정리되는 장면이 생길 수 있어요.',
+    good: '맡은 역할의 권한과 책임 범위를 또렷이 해 두기.',
+    caution: '형식에 매여 융통성을 잃는 자리.',
+  },
+  '편관': {
+    plain: '외부의 압박·평가·갑작스러운 책임이 강하게 들어오고, 그만큼 단단해질 수 있는 흐름이에요.',
+    scene: '예상보다 무거운 일이나 급한 결정·평가가 몰리는 장면이 생길 수 있어요.',
+    good: '우선순위를 좁히고, 감당할 범위를 먼저 선 긋기.',
+    caution: '권한 없이 책임만 떠안거나 무리해서 버티는 자리.',
+  },
+  '정인': {
+    plain: '배움·문서·조언·자격 같은 보조 자산이 나를 받쳐 주는 흐름이 강해질 수 있어요.',
+    scene: '배운 것을 정리하거나 도움을 받아 기반을 다지는 장면이 생길 수 있어요.',
+    good: '입력을 내 언어로 정리해 기록으로 남기기.',
+    caution: '준비만 길어지고 실행이 미뤄지는 패턴.',
+  },
+  '편인': {
+    plain: '직관·전문성·남다른 관점이 깊어지지만, 리듬이 들쭉날쭉해지기 쉬운 흐름이에요.',
+    scene: '혼자 파고드는 공부나 비주류 방식에 끌리는 장면이 생길 수 있어요.',
+    good: '관심을 한두 가지로 좁혀 끝까지 가 보기.',
+    caution: '생각만 깊어지고 외부와 단절되는 패턴.',
+  },
+};
+
+// 월 지지 십성 카테고리 → 본문에 덧대는 짧은 보조 노트.
+// 지지는 매달 바뀌므로(午→未→申…) 같은 천간 십성 계열이 와도 결이 갈라진다.
+const BRANCH_NOTE_BY_CATEGORY: Record<TenGodCategory, string> = {
+  '비겁': '사람·자립 문제가 함께 따라옵니다.',
+  '식상': '표현하고 내보내려는 마음이 함께 따라옵니다.',
+  '재성': '현실 조건·자원 정리가 함께 따라옵니다.',
+  '관성': '책임·평가의 무게가 함께 따라옵니다.',
+  '인성': '배움·정리·안정 욕구가 함께 따라옵니다.',
 };
 
 const MONTH_TOPIC_BY_CATEGORY: Record<TenGodCategory, YearlyTopicKey[]> = {
@@ -1346,10 +1429,10 @@ function computeMonthUsefulGodEffect(
 
 // ── 월운 keyword 생성 — usefulGodEffect로 톤 조정 ──────────
 function buildMonthKeyword(
-  category: TenGodCategory,
+  stemTenGod: TenGod,
   effect: MonthlyFortuneAnalysis['usefulGodEffect'],
 ): string {
-  const base = MONTH_KEYWORD_BY_CATEGORY[category];
+  const base = MONTH_KEYWORD_BY_TENGOD[stemTenGod];
   // 너무 일반적인 keyword 금지 — base 자체가 구체적이므로 그대로 사용.
   // effect별 prefix 추가는 keyword 길이를 늘리므로, plainMeaning/goodChoice 톤에서만 반영.
   // (UI에 짧게 보여야 함)
@@ -1362,47 +1445,23 @@ function buildMonthKeyword(
 // ── 월운 본문 (plainMeaning / lifeSceneHint / goodChoice / caution) ──
 function buildMonthNarrative(args: {
   monthLabel: string;
-  category: TenGodCategory;
+  stemTenGod: TenGod;
+  branchTenGod: TenGod;
   effect: MonthlyFortuneAnalysis['usefulGodEffect'];
   topInteractions: Interaction[];
 }): { plainMeaning: string; lifeSceneHint: string; goodChoice: string; caution: string } {
-  const { category, effect, topInteractions } = args;
+  const { stemTenGod, branchTenGod, effect, topInteractions } = args;
 
-  // category 기반 시드
-  const categorySeed: Record<TenGodCategory, { plain: string; scene: string; good: string; caution: string }> = {
-    '비겁': {
-      plain: '협업·자기 기준·동료 결이 한꺼번에 움직이는 흐름이 강해질 수 있어요.',
-      scene: '같이 일하는 사람의 결정 속도와 내 기준이 부딪히는 장면이 생길 수 있어요.',
-      good: '내 기준을 한 줄로 정리해서 공유하기.',
-      caution: '경쟁심이 커질 때 혼자 끌고 가는 패턴.',
-    },
-    '식상': {
-      plain: '준비한 것을 밖으로 꺼내거나 결과물·표현·콘텐츠가 움직이는 흐름이 강해질 수 있어요.',
-      scene: '아이디어·기획·제안이 형태로 정리되는 장면이 생길 수 있어요.',
-      good: '작게라도 결과물을 외부에 보여주고 반응으로 다듬기.',
-      caution: '완벽해질 때까지 안 꺼내는 패턴.',
-    },
-    '재성': {
-      plain: '돈·자원·조건·사람·현실 책임이 함께 움직이는 흐름이 강해질 수 있어요.',
-      scene: '제안·정산·계약 조건·역할 보상이 구체화되는 장면이 생길 수 있어요.',
-      good: '작업 범위·기간·보상 기준을 먼저 정리하기.',
-      caution: '조건이 애매한 일을 그대로 받기.',
-    },
-    '관성': {
-      plain: '책임·평가·역할·외부 기준이 강하게 들어오는 흐름이 강해질 수 있어요.',
-      scene: '평가·결재·승인 같은 외부 기준이 자주 부각되는 장면이 생길 수 있어요.',
-      good: '책임을 맡기 전 권한·범위를 한 번 더 확인하기.',
-      caution: '권한 없이 책임만 떠안는 자리.',
-    },
-    '인성': {
-      plain: '학습·문서·정리·자격·조언 같은 보조 자산이 움직이는 흐름이 강해질 수 있어요.',
-      scene: '배운 것을 정리하거나 문서로 남기는 일이 자연스럽게 늘 수 있어요.',
-      good: '입력만 늘리지 말고 정리·자기 언어화까지 가져가기.',
-      caution: '준비만 길어지고 외부 출력이 없는 패턴.',
-    },
-  };
+  // 정확한 10십성별 시드 (연속 같은 오행 달도 정관/편관처럼 갈라짐).
+  const seed = TENGOD_SEED[stemTenGod];
 
-  const seed = categorySeed[category];
+  // 월 지지 십성이 천간과 다른 결을 더하면 보조 노트로 차별화 — 지지는 매달 바뀌므로
+  // 같은 천간 십성 계열이 연달아 와도 본문이 갈라진다.
+  const stemCategory = tenGodToCategory(stemTenGod);
+  const branchCategory = tenGodToCategory(branchTenGod);
+  const branchNote = branchCategory !== stemCategory
+    ? ` 안쪽 결로는 ${BRANCH_NOTE_BY_CATEGORY[branchCategory]}`
+    : '';
 
   // effect 톤 prefix
   let plainPrefix = '';
@@ -1422,7 +1481,7 @@ function buildMonthNarrative(args: {
   if (effect === 'burdensome') extraCaution = ' 무리하게 확장하지 않고 조건을 먼저 정리하는 편이 안전합니다.';
 
   return {
-    plainMeaning: plainPrefix + seed.plain + interactionAddon,
+    plainMeaning: plainPrefix + seed.plain + branchNote + interactionAddon,
     lifeSceneHint: seed.scene,
     goodChoice: seed.good,
     caution: seed.caution + extraCaution,
@@ -1527,7 +1586,7 @@ export function computeMonthlyFortuneAnalysis(args: {
   });
 
   const usefulGodEffect = computeMonthUsefulGodEffect(monthGanji, args.dayMaster, args.usefulGod, args.dayMasterStrength);
-  const keyword = buildMonthKeyword(category, usefulGodEffect);
+  const keyword = buildMonthKeyword(stemTenGod, usefulGodEffect);
   const activatedTopics = collectActivatedTopics({ monthStemCategory: category, interactions });
 
   // monthLabel — 양력 월 기반 (UI 친화) + 절기 한글 부가
@@ -1537,7 +1596,7 @@ export function computeMonthlyFortuneAnalysis(args: {
     : `${startMonth}월 흐름`;
   const periodLabel = `${segment.effectiveStartIso} ~ ${segment.endIso} (${segment.jieKo}~${segment.nextJieKo} 전)`;
 
-  const narrative = buildMonthNarrative({ monthLabel, category, effect: usefulGodEffect, topInteractions: interactions });
+  const narrative = buildMonthNarrative({ monthLabel, stemTenGod, branchTenGod, effect: usefulGodEffect, topInteractions: interactions });
 
   return {
     monthLabel,
