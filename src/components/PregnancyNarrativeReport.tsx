@@ -123,6 +123,120 @@ export interface PregnancyNarrativeReportProps {
   lang?: 'ko' | 'en';
   onRestart?: () => void;
   maxRepairAttempts?: number;
+  /** 공유/저장 기능 — SajuApp에서 주입 */
+  userName?: string;
+  isSharing?: boolean;
+  onShareText?: (text: string, title: string) => void;
+  onSaveText?: (text: string, title: string) => void;
+}
+
+// ============================================================
+// 마크다운 직렬화 — 저장/공유용. renderTOC가 ##N.제목## 패턴으로 파싱한다.
+// 제목 안에 '#' 미포함, 닫는 ## 동일 줄. 섹션 번호는 1부터 순차.
+// ============================================================
+export function buildPregnancyMarkdown(report: PregnancyReport): string {
+  const lines: string[] = [];
+  let n = 0;
+  const sec = (title: string, body: string) => {
+    if (!body.trim()) return;
+    n += 1;
+    lines.push(`##${n}.${title}##`, '', body.trim(), '');
+  };
+
+  // 1. 엄마와 아이의 별빛 카드 (motherBabyCard)
+  const c = report.motherBabyCard;
+  const cardBody = [
+    c.title,
+    c.snsPhrase ? `#${c.snsPhrase}` : '',
+    c.keywords?.length ? c.keywords.map((k) => `#${k}`).join(' ') : '',
+    c.taegyoDirection ? `태교 방향: ${c.taegyoDirection}` : '',
+  ].filter(Boolean).join('\n\n');
+  sec('엄마와 아이의 별빛 카드', cardBody);
+
+  // 2. 이 아이는 엄마에게 어떤 별처럼 오는가 (openingConnection)
+  const oc = report.openingConnection;
+  if (oc) {
+    const ocBody = [oc.oneLine ? `"${oc.oneLine}"` : '', oc.body ?? ''].filter(Boolean).join('\n\n');
+    sec('이 아이는 엄마에게 어떤 별처럼 오는가', ocBody);
+  }
+
+  // 3. 엄마와 아이의 기운이 만나는 방식 (motherChildMechanism)
+  if (report.motherChildMechanism?.body) {
+    sec('엄마와 아이의 기운이 만나는 방식', report.motherChildMechanism.body);
+  }
+
+  // 4. 엄마가 임신 기간에 편안해지는 방식 (motherComfortRhythm)
+  if (report.motherComfortRhythm?.body) {
+    sec('엄마가 임신 기간에 편안해지는 방식', report.motherComfortRhythm.body);
+  }
+
+  // 5. 아이 기운과 잘 맞는 지점 (babyEnergyAndFit)
+  if (report.babyEnergyAndFit?.body) {
+    sec('아이 예정일 기준으로 보이는 기운과 잘 맞는 지점', report.babyEnergyAndFit.body);
+  }
+
+  // 6. 태교 방향 (taegyoGuide)
+  if (report.taegyoGuide?.body) {
+    sec('이 조합에 맞는 태교 방향', report.taegyoGuide.body);
+  }
+
+  // 7. 엄마를 위한 개운 루틴 (motherFortuneRoutine)
+  if (report.motherFortuneRoutine?.body) {
+    sec('엄마를 위한 개운 루틴', report.motherFortuneRoutine.body);
+  }
+
+  // 8. 가족과 함께 읽는 마지막 이야기 (familySupportAndFinalMessage)
+  const fm = report.familySupportAndFinalMessage;
+  if (fm) {
+    const fmBody = [
+      fm.body ?? '',
+      fm.finalMessage ? `💫 ${fm.finalMessage}` : '',
+    ].filter(Boolean).join('\n\n');
+    sec('가족과 함께 읽는 마지막 이야기', fmBody);
+  }
+
+  // 9. fortuneVerdict (flag ON일 때만 present)
+  if (report.fortuneVerdict) {
+    const fv = report.fortuneVerdict;
+    const fvParts: string[] = [];
+    if (fv.lead) fvParts.push(fv.lead);
+    fv.sections.forEach((s) => {
+      fvParts.push(s.title);
+      fvParts.push(s.body.join('\n\n'));
+    });
+    if (fv.timingSummary) fvParts.push(fv.timingSummary);
+    if (fv.closing) fvParts.push(fv.closing);
+    sec(fv.title, fvParts.join('\n\n'));
+  }
+
+  // 10. 태명 후보 (babyNames)
+  const cands = report.babyNames?.candidates ?? [];
+  if (cands.length > 0) {
+    const nameBody = cands.map((cn) =>
+      `${cn.name} (${cn.elementKo}) — ${cn.image}\n${cn.reason}`
+    ).join('\n\n');
+    sec('태명 후보', nameBody);
+  }
+
+  // 11. 명리 근거 (evidenceView)
+  const ev = report.evidenceView;
+  if (ev) {
+    const distLine = (dist: Record<string, number>) =>
+      ['목', '화', '토', '금', '수'].map((k) => `${k} ${dist?.[k] ?? 0}`).join(' · ');
+    const evParts: string[] = [
+      `엄마 사주 — 일간 ${ev.mother.dayMaster}(${ev.mother.dayMasterElementKo}) · ${ev.mother.strengthLevel} · 용신 ${ev.mother.usefulGodKo}`,
+      `오행 분포: ${distLine(ev.mother.elementDistributionKo)}`,
+    ];
+    if (ev.baby) {
+      evParts.push(`아이 (${ev.baby.dueDateLabel} 예정) — 일간 ${ev.baby.dayMaster}(${ev.baby.dayMasterElementKo})`);
+    }
+    if (ev.connection?.dayMasterRelation?.plain) {
+      evParts.push(`엄마-아이 연결 — ${ev.connection.dayMasterRelation.plain}`);
+    }
+    sec('명리 근거', evParts.join('\n'));
+  }
+
+  return lines.join('\n');
 }
 
 export async function fetchPregnancyNarrativeReport(
@@ -155,8 +269,13 @@ export async function fetchPregnancyNarrativeReport(
 export default function PregnancyNarrativeReport({
   momInput,
   babyDueInput,
+  lang,
   onRestart,
   maxRepairAttempts,
+  userName,
+  isSharing,
+  onShareText,
+  onSaveText,
 }: PregnancyNarrativeReportProps) {
   const [data, setData] = useState<PregnancyNarrativeApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -190,15 +309,43 @@ export default function PregnancyNarrativeReport({
         <ReportBody report={data.report} />
       )}
 
-      {onRestart && data && (
+      {/* 공유 / 저장 / 처음으로 — 결과 로드 완료 시에만 표시 */}
+      {data && (
         <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
-          <button
-            onClick={onRestart}
-            className="btn"
-            style={{ flex: 1, minWidth: 140, background: PINK_SOFT, border: `1px solid rgba(233,30,140,0.3)`, color: 'var(--text)', fontSize: 14, padding: 12, borderRadius: 12 }}
-          >
-            처음으로
-          </button>
+          {onShareText && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              disabled={isSharing}
+              onClick={() => {
+                const title = (userName || '') + (lang === 'en' ? "'s Pregnancy Reading" : '의 태교 궁합');
+                onShareText(buildPregnancyMarkdown(data.report), title);
+              }}
+            >
+              {isSharing ? '🔗 생성 중...' : '🔗 링크 공유'}
+            </button>
+          )}
+          {onSaveText && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              onClick={() => {
+                const title = (userName || '') + (lang === 'en' ? "'s Pregnancy Reading" : '의 태교 궁합');
+                onSaveText(buildPregnancyMarkdown(data.report), title);
+              }}
+            >
+              💾 {lang === 'en' ? 'Save Result' : '결과 저장'}
+            </button>
+          )}
+          {onRestart && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              onClick={onRestart}
+            >
+              {lang === 'en' ? 'Restart' : '처음으로'}
+            </button>
+          )}
         </div>
       )}
     </div>

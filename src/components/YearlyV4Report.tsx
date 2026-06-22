@@ -62,6 +62,127 @@ export interface YearlyV4ReportProps {
   /** repair 시도 횟수 (기본 0 — 단일 wave로 maxDuration 90s 예산 보호; route live 기본값과 일치).
    *  repair 2nd wave는 무거운 remainingMonths 섹션과 겹치면 90s 초과 → 504 위험. */
   maxRepairAttempts?: number;
+  /** 공유/저장 기능 — SajuApp에서 주입 */
+  userName?: string;
+  isSharing?: boolean;
+  onShareText?: (text: string, title: string) => void;
+  onSaveText?: (text: string, title: string) => void;
+}
+
+// ============================================================
+// 마크다운 직렬화 — 저장/공유용. renderTOC가 ##N.제목## 패턴으로 파싱한다.
+// 제목 안에 '#' 미포함, 닫는 ## 동일 줄. 섹션 번호는 1부터 순차.
+// ============================================================
+export function buildYearlyMarkdown(report: YearlyFortuneReport): string {
+  const lines: string[] = [];
+  let n = 0;
+  const sec = (title: string, body: string) => {
+    n += 1;
+    lines.push(`##${n}.${title}##`, '', body.trim(), '');
+  };
+
+  // 1. 올해의 별빛 흐름 (yearFlowCard + yearlyOverview)
+  const card = report.yearFlowCard;
+  const ov = report.yearlyOverview;
+  const cardBody = [
+    card.title,
+    card.subtitle ? card.subtitle : '',
+    card.keywords.length ? card.keywords.map((k) => `#${k}`).join(' ') : '',
+    card.summary ? card.summary : '',
+    ov.oneLine ? `"${ov.oneLine}"` : '',
+    ov.body ? ov.body : '',
+  ].filter(Boolean).join('\n\n');
+  sec('올해의 별빛 흐름', cardBody);
+
+  // 2. 올해 운이 움직이는 방식 (yearlyMechanism)
+  if (report.yearlyMechanism.body) {
+    sec('올해 운이 움직이는 방식', report.yearlyMechanism.body);
+  }
+
+  // 3. 남은 올해 월별 흐름 (remainingMonths)
+  if (report.remainingMonths.length > 0) {
+    const monthBody = report.remainingMonths.map((m) => {
+      const parts = [
+        `${m.monthLabel}${m.periodLabel ? ' (' + m.periodLabel + ')' : ''}${m.keyword ? ' — ' + m.keyword : ''}`,
+        m.body ? m.body : '',
+        m.work ? `일: ${m.work}` : '',
+        m.money ? `돈: ${m.money}` : '',
+        m.relationship ? `관계: ${m.relationship}` : '',
+        m.goodChoice ? `좋은 선택: ${m.goodChoice}` : '',
+        m.caution ? `주의: ${m.caution}` : '',
+      ].filter(Boolean);
+      return parts.join('\n');
+    }).join('\n\n');
+    sec('남은 올해 월별 흐름', monthBody);
+  }
+
+  // 4. 주제별 흐름 (topicFortunes)
+  const tf = report.topicFortunes;
+  const topicBody = [
+    tf.career ? `일·커리어\n${tf.career}` : '',
+    tf.money ? `돈\n${tf.money}` : '',
+    tf.relationship ? `관계·연애\n${tf.relationship}` : '',
+    tf.rhythm ? `리듬·컨디션\n${tf.rhythm}` : '',
+  ].filter(Boolean).join('\n\n');
+  if (topicBody) sec('일·돈·관계·리듬에서 들어오는 변화', topicBody);
+
+  // 5. 올해의 선택 가이드 (actionGuide)
+  const ag = report.actionGuide;
+  const agParts: string[] = [];
+  if (ag.mustCatch.length) agParts.push(`꼭 잡으면 좋은 결\n${ag.mustCatch.map((c) => `- ${c}`).join('\n')}`);
+  if (ag.betterAvoid.length) agParts.push(`잠깐 멈춰서 볼 결\n${ag.betterAvoid.map((c) => `- ${c}`).join('\n')}`);
+  if (ag.bestStrategy) agParts.push(`올해의 한 수\n${ag.bestStrategy}`);
+  if (agParts.length) sec('올해의 선택 가이드', agParts.join('\n\n'));
+
+  // 6. 이후 2년 큰 흐름 (nextTwoYears)
+  if (report.nextTwoYears.length > 0) {
+    const nextBody = report.nextTwoYears.map((y) => {
+      const parts = [
+        `${y.year}${y.keyword ? ' — ' + y.keyword : ''}`,
+        y.summary ? y.summary : '',
+        y.opportunity ? `잡으면 좋은 결: ${y.opportunity}` : '',
+        y.caution ? `주의할 결: ${y.caution}` : '',
+      ].filter(Boolean);
+      return parts.join('\n');
+    }).join('\n\n');
+    sec('이후 2년 큰 흐름', nextBody);
+  }
+
+  // 7. fortuneVerdict (flag ON일 때만 present)
+  if (report.fortuneVerdict) {
+    const fv = report.fortuneVerdict;
+    const fvParts: string[] = [];
+    if (fv.lead) fvParts.push(fv.lead);
+    fv.sections.forEach((s) => {
+      fvParts.push(s.title);
+      fvParts.push(s.body.join('\n\n'));
+    });
+    if (fv.timingSummary) fvParts.push(fv.timingSummary);
+    if (fv.closing) fvParts.push(fv.closing);
+    sec(fv.title, fvParts.join('\n\n'));
+  }
+
+  // 8. 명리 근거 (evidenceView)
+  const ev = report.evidenceView;
+  const evParts: string[] = [
+    `세운 간지: ${ev.yearGanji.display} / 현재 대운: ${ev.currentDaewoonPillar}`,
+    `세운 십성: 천간 ${ev.yearStemTenGod} · 지지 ${ev.yearBranchTenGod} / 세운 오행: ${ev.yearElement}`,
+  ];
+  if (ev.natalSewoonInteractions.length) {
+    evParts.push(`세운-원국 작용: ${ev.natalSewoonInteractions.map((it) => `${it.pillar} ${it.kind}: ${it.plain}`).join(' / ')}`);
+  }
+  if (ev.daewoonSewoonInteractions.length) {
+    evParts.push(`대운-세운 작용: ${ev.daewoonSewoonInteractions.map((it) => `${it.kind}: ${it.plain}`).join(' / ')}`);
+  }
+  if (ev.monthlySummary.length) {
+    evParts.push(`월별 요약: ${ev.monthlySummary.map((m) => `${m.monthLabel}(${m.ganji}) ${m.keyword}`).join(' / ')}`);
+  }
+  if (ev.activatedSpecialStars.length) {
+    evParts.push(`활성 신살: ${ev.activatedSpecialStars.map((s) => `${s.name}(${s.source}): ${s.plain}`).join(' / ')}`);
+  }
+  sec('명리 근거', evParts.join('\n'));
+
+  return lines.join('\n');
 }
 
 // ============================================================
@@ -92,7 +213,10 @@ export async function fetchYearlyV4Report(
 // ============================================================
 // 메인 컴포넌트
 // ============================================================
-export default function YearlyV4Report({ input, onRestart, maxRepairAttempts = 0 }: YearlyV4ReportProps) {
+export default function YearlyV4Report({
+  input, onRestart, maxRepairAttempts = 0,
+  lang, userName, isSharing, onShareText, onSaveText,
+}: YearlyV4ReportProps) {
   const [data, setData] = useState<YearlyV4ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -139,15 +263,43 @@ export default function YearlyV4Report({ input, onRestart, maxRepairAttempts = 0
         <ReportBody report={data.report} />
       )}
 
-      {onRestart && (
+      {/* 공유 / 저장 / 처음으로 — 결과 로드 완료 시에만 표시 */}
+      {data && (
         <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
-          <button
-            className="btn"
-            style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)', fontSize: 13 }}
-            onClick={onRestart}
-          >
-            처음으로
-          </button>
+          {onShareText && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              disabled={isSharing}
+              onClick={() => {
+                const title = (userName || '') + (lang === 'en' ? "'s 2026 Fortune" : '의 2026 운세');
+                onShareText(buildYearlyMarkdown(data.report), title);
+              }}
+            >
+              {isSharing ? '🔗 생성 중...' : '🔗 링크 공유'}
+            </button>
+          )}
+          {onSaveText && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              onClick={() => {
+                const title = (userName || '') + (lang === 'en' ? "'s 2026 Fortune" : '의 2026 운세');
+                onSaveText(buildYearlyMarkdown(data.report), title);
+              }}
+            >
+              💾 {lang === 'en' ? 'Save Result' : '결과 저장'}
+            </button>
+          )}
+          {onRestart && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              onClick={onRestart}
+            >
+              {lang === 'en' ? 'Restart' : '처음으로'}
+            </button>
+          )}
         </div>
       )}
     </div>

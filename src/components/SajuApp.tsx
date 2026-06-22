@@ -4354,6 +4354,25 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             babyDueInput={babyDueInputV4}
             lang={lang === 'en' ? 'en' : 'ko'}
             onRestart={() => { setPregNarrativeRequested(false); }}
+            userName={userData.name || (lang === 'en' ? 'You' : '당신')}
+            isSharing={isSharingLink}
+            onShareText={(text, title) => shareLink(text, title)}
+            onSaveText={(text, title) => {
+              try {
+                const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
+                const entry = {
+                  name: userData.name || (lang === 'en' ? 'You' : '익명'),
+                  date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'),
+                  type: lang === 'en' ? 'Pregnancy' : '태교 궁합',
+                  text,
+                  user: userData,
+                };
+                const updated = [entry, ...results].slice(0, 20);
+                localStorage.setItem('saju-saved-results', JSON.stringify(updated));
+                setSavedResults(updated);
+                alert(t('resultSaved', lang));
+              } catch { /* quota or parse error */ }
+            }}
           />
         )}
 
@@ -4528,6 +4547,25 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           input={yearlyV4Input}
           lang={lang}
           onRestart={() => { setCurrentScreen(0); setAiText(''); setSajuResult(null); }}
+          userName={userData.name || (lang === 'en' ? 'You' : '당신')}
+          isSharing={isSharingLink}
+          onShareText={(text, title) => shareLink(text, title)}
+          onSaveText={(text, title) => {
+            try {
+              const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
+              const entry = {
+                name: userData.name || (lang === 'en' ? 'You' : '익명'),
+                date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'),
+                type: lang === 'en' ? '2026 Fortune' : '2026 운세',
+                text,
+                user: userData,
+              };
+              const updated = [entry, ...results].slice(0, 20);
+              localStorage.setItem('saju-saved-results', JSON.stringify(updated));
+              setSavedResults(updated);
+              alert(t('resultSaved', lang));
+            } catch { /* quota or parse error */ }
+          }}
         />
       );
     }
