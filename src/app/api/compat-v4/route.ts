@@ -4,16 +4,19 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { generateCompatibilityReport } from '@/domain/saju/compatibility/generateCompatibilityReport';
 import { createOpenAiCompatGptCaller } from '@/lib/compat-v4-gpt-caller';
+import { translateMarkdownToEnglish } from '@/domain/saju/i18n/translateReport';
+import { createOpenAiGptCaller } from '@/lib/saju-v4-gpt-caller';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType } from '@/domain/saju/compatibility/compatibilityTypes';
 
 export const runtime = 'nodejs';
-export const maxDuration = 90;
+export const maxDuration = 180;
 
 interface RequestBody {
   inputA: BirthInput;
   inputB: BirthInput;
   relationshipType: RelationshipType;
+  lang?: 'ko' | 'en';
 }
 
 export async function POST(req: Request) {
@@ -28,13 +31,20 @@ export async function POST(req: Request) {
       body.inputA, body.inputB, body.relationshipType,
       { callGpt: createOpenAiCompatGptCaller() },
     );
+    let reportText = result.reportText;
+    if (body.lang === 'en') {
+      reportText = await translateMarkdownToEnglish(
+        reportText,
+        createOpenAiGptCaller({ maxOutputTokens: 12000, temperature: 0.3 }),
+      );
+    }
     return NextResponse.json({
       relationshipType: result.gptInput.relationshipType,
       personA: result.gptInput.personA,
       personB: result.gptInput.personB,
       compatibilityAnalysis: result.gptInput.compatibilityAnalysis,
       relationshipQuestions: result.gptInput.relationshipQuestions,
-      reportText: result.reportText,
+      reportText,
       validation: result.validation,
       attempts: result.attempts,
     });

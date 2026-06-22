@@ -11,15 +11,20 @@ import type { NarrativeDepthOptions, NarrativeValidationResult } from '@/domain/
 import { buildPaidReportV1 } from '@/domain/saju/paidReport/buildPaidReportV1';
 import { renderPaidProse } from '@/domain/saju/paidReport/renderPaidProse';
 import { isPaidReportV1Enabled } from '@/domain/saju/paidReport/paidReportFlag';
+import { translateMarkdownToEnglish, translateStringsToEnglish } from '@/domain/saju/i18n/translateReport';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 90;
+// 영어(lang=en) 요청은 생성 후 번역 호출이 추가되어 시간이 더 걸린다 → 타임아웃 여유 상향.
+// 한국어는 ~15~40s로 영향 없음(상한일 뿐). 영어 실측 ~80s → 180s로 안전 마진 확보.
+export const maxDuration = 180;
 
 interface RequestBody {
   input: BirthInput;
   /** repair 재시도 최대 회수 (default 1) */
   maxRepairAttempts?: number;
+  /** 결과 언어. 'en'이면 생성된 한국어 결과를 영어로 번역해 반환. 미지정/그 외는 한국어. */
+  lang?: 'ko' | 'en';
   /**
    * 2026-05 Narrative Depth v1 — 요청 단위 토글 (verify script가 사용).
    * 미지정 시 서버 default (env SAJU_NARRATIVE_DEPTH=on이면 모두 true, 그 외엔 모두 false).
@@ -89,6 +94,49 @@ export async function POST(req: Request) {
       paidReport = await renderPaidProse(paidReport, createOpenAiGptCaller());
     }
 
+    // 결과 언어 — 'en'이면 생성된 한국어 결과(본문/실전가이드/별빛카드)를 영어로 번역.
+    // 한국어 경로는 번역 호출 없음 → 기존과 동일(byte-identical).
+    let reportText = result.reportText;
+    let starKeywordCard = result.starKeywordCard;
+    if (body.lang === 'en') {
+      const enCaller = createOpenAiGptCaller({ maxOutputTokens: 12000, temperature: 0.3 });
+      // 1) 메인 7섹션 줄글(마크다운) 번역
+      reportText = await translateMarkdownToEnglish(reportText, enCaller);
+      // 2) 실전 가이드(prose) 제목·본문 + 별빛 카드 텍스트를 한 번에 번역
+      const strMap: Record<string, string> = {};
+      (paidReport?.prose ?? []).forEach((s, i) => { strMap[`p${i}t`] = s.title; strMap[`p${i}b`] = s.body; });
+      if (starKeywordCard) {
+        strMap.sk_title = starKeywordCard.displayTitle;
+        strMap.sk_desc = starKeywordCard.shortDescription;
+        strMap.sk_bright = starKeywordCard.brightSide;
+        strMap.sk_shadow = starKeywordCard.shadowSide;
+        strMap.sk_kw = (starKeywordCard.keywords ?? []).join(' | ');
+      }
+      const tr = await translateStringsToEnglish(strMap, enCaller);
+      if (paidReport?.prose) {
+        paidReport = {
+          ...paidReport,
+          prose: paidReport.prose.map((s, i) => ({
+            ...s,
+            title: tr[`p${i}t`] ?? s.title,
+            body: tr[`p${i}b`] ?? s.body,
+          })),
+        };
+      }
+      if (starKeywordCard) {
+        starKeywordCard = {
+          ...starKeywordCard,
+          displayTitle: tr.sk_title ?? starKeywordCard.displayTitle,
+          shortDescription: tr.sk_desc ?? starKeywordCard.shortDescription,
+          brightSide: tr.sk_bright ?? starKeywordCard.brightSide,
+          shadowSide: tr.sk_shadow ?? starKeywordCard.shadowSide,
+          keywords: tr.sk_kw
+            ? tr.sk_kw.split(' | ').map((s) => s.trim()).filter(Boolean)
+            : starKeywordCard.keywords,
+        };
+      }
+    }
+
     return NextResponse.json({
       ruleVersion: result.gptInput.ruleConfig.version,
       birthChart: result.gptInput.birthChart,
@@ -102,11 +150,11 @@ export async function POST(req: Request) {
       timingAnchors: result.gptInput.timingAnchors,
       futureTimingAnalysis: result.gptInput.futureTimingAnalysis,
       fortune: result.gptInput.fortune,
-      reportText: result.reportText, // 7섹션 markdown
+      reportText, // 7섹션 markdown (lang=en이면 영어)
       validation: toPublicValidation(result.validation),
       attempts: result.attempts,
       // 별빛 키워드 카드 (개인사주 최상단 + SNS 공유용)
-      starKeywordCard: result.starKeywordCard,
+      starKeywordCard,
       // Fortune Questions Verdict V1 — flag OFF면 undefined → JSON 직렬화에서 키 누락(byte-identical).
       fortuneVerdict: result.fortuneVerdict,
       // Paid Report Productization V1 — flag OFF(=production)면 undefined → 키 누락(byte-identical).
