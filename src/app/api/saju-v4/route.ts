@@ -6,8 +6,11 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { generateNarrativePersonalSajuReport } from '@/domain/saju/generatePersonalSajuReport';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
-import { createOpenAiNarrativeGptCaller } from '@/lib/saju-v4-gpt-caller';
+import { createOpenAiNarrativeGptCaller, createOpenAiGptCaller } from '@/lib/saju-v4-gpt-caller';
 import type { NarrativeDepthOptions, NarrativeValidationResult } from '@/domain/saju/narrative/narrativeTypes';
+import { buildPaidReportV1 } from '@/domain/saju/paidReport/buildPaidReportV1';
+import { renderPaidProse } from '@/domain/saju/paidReport/renderPaidProse';
+import { isPaidReportV1Enabled } from '@/domain/saju/paidReport/paidReportFlag';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -73,6 +76,19 @@ export async function POST(req: Request) {
       depthOptions,
     });
 
+    // Paid Report Productization V1 — flag OFF(=production 기본)면 undefined → 키 누락(byte-identical).
+    // 결정론 빌드(GPT 호출 없음) 후, 줄글 "실전 가이드"(prose)를 GPT로 매끄럽게 다듬는다
+    // (renderPaidProse는 실패/위반 시 결정론 원문을 그대로 반환 — never throws).
+    let paidReport = isPaidReportV1Enabled()
+      ? buildPaidReportV1(result.gptInput, {
+          starKeywordCard: result.starKeywordCard,
+          detailedNarrativeText: result.reportText,
+        })
+      : undefined;
+    if (paidReport && process.env.SAJU_PAID_REPORT_MICROCOPY !== 'false') {
+      paidReport = await renderPaidProse(paidReport, createOpenAiGptCaller());
+    }
+
     return NextResponse.json({
       ruleVersion: result.gptInput.ruleConfig.version,
       birthChart: result.gptInput.birthChart,
@@ -93,6 +109,8 @@ export async function POST(req: Request) {
       starKeywordCard: result.starKeywordCard,
       // Fortune Questions Verdict V1 — flag OFF면 undefined → JSON 직렬화에서 키 누락(byte-identical).
       fortuneVerdict: result.fortuneVerdict,
+      // Paid Report Productization V1 — flag OFF(=production)면 undefined → 키 누락(byte-identical).
+      paidReport,
       narrative: true,
     });
   } catch (err: unknown) {
