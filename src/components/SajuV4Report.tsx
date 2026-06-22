@@ -113,9 +113,40 @@ export interface Props {
   /** @deprecated narrative 모드에서는 사용하지 않음 — api.reportText에서 직접 파싱 */
   parsed?: ParsedReport;
   birthSummary: string;  // 표시용 — "1995년 7월 6일 오시 (양력)"
+  /** 결과 언어. 'en'이면 섹션 제목/헤딩을 영어로 (본문은 API가 번역해 옴). */
+  lang?: 'ko' | 'en';
 }
 
-export function SajuV4Report({ api, birthSummary }: Props) {
+// 7섹션 narrative 제목 — 언어별. (본문 reportText는 API가 lang=en이면 영어로 번역해 전달.)
+const NARRATIVE_TITLES = {
+  ko: {
+    opening: { eyebrow: '✦ 시작', title: '이 사주를 한 문장으로 말하면' },
+    structure: { eyebrow: '✦ 기질과 내면', title: '당신이 이런 방식으로 살아온 이유' },
+    repeated: { eyebrow: '✦ 반복되는 결', title: '반복해서 찾아오는 삶의 패턴' },
+    career: { eyebrow: '✦ 일과 재능', title: '일과 재능: 어떤 역할에서 실력이 살아나는가' },
+    money: { eyebrow: '✦ 돈과 수익화', title: '돈과 수익화: 어떤 방식으로 돈이 붙는가' },
+    love: { eyebrow: '✦ 관계와 연애', title: '관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가' },
+    final: { eyebrow: '✦ 결론', title: '결국 이 사주는 이렇게 써야 해요' },
+    guideEyebrow: '✦ 이 사주 실전 가이드',
+    guideSub: '사람·돈·타이밍·행운 — 위 풀이를 실제 삶에서 쓰는 법',
+    star: { serviceName: '별빛 사주', label: '별빛 키워드', titleLead: '당신은', hashtag: '#별빛사주' },
+  },
+  en: {
+    opening: { eyebrow: '✦ Opening', title: 'Your chart in one sentence' },
+    structure: { eyebrow: '✦ Temperament & inner self', title: 'Why you have lived this way' },
+    repeated: { eyebrow: '✦ Recurring patterns', title: 'The life patterns that keep returning' },
+    career: { eyebrow: '✦ Work & talent', title: 'Work & talent: where your strengths come alive' },
+    money: { eyebrow: '✦ Money', title: 'Money: how wealth tends to come to you' },
+    love: { eyebrow: '✦ Relationships', title: 'Relationships: who opens and closes your heart' },
+    final: { eyebrow: '✦ Conclusion', title: 'How to make the most of this chart' },
+    guideEyebrow: '✦ Practical guide for your chart',
+    guideSub: 'People · Money · Timing · Luck — how to use this reading in real life',
+    star: { serviceName: 'Starlight Saju', label: 'Starlight Keyword', titleLead: 'You are', hashtag: '#StarlightSaju' },
+  },
+} as const;
+
+export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
+  const T = NARRATIVE_TITLES[lang === 'en' ? 'en' : 'ko'];
   // narrative 모드 — 7섹션 줄글
   const narrative = api.reportText ? parseNarrativeReport(api.reportText) : null;
   return (
@@ -127,15 +158,15 @@ export function SajuV4Report({ api, birthSummary }: Props) {
       {api.starKeywordCard && (
         <div style={{ marginTop: 20, marginBottom: 8 }}>
           <StarShareCardWithDownload
-            serviceName={api.starKeywordCard.serviceName}
-            label={api.starKeywordCard.label}
-            titleLead={api.starKeywordCard.titleLead}
+            serviceName={T.star.serviceName}
+            label={T.star.label}
+            titleLead={T.star.titleLead}
             archetypeTitle={api.starKeywordCard.displayTitle}
             shortDescription={api.starKeywordCard.shortDescription}
             brightSide={api.starKeywordCard.brightSide}
             shadowSide={api.starKeywordCard.shadowSide}
             keywords={api.starKeywordCard.keywords}
-            hashtag={api.starKeywordCard.hashtag}
+            hashtag={T.star.hashtag}
             theme="midnight"
             ratio="feed"
           />
@@ -151,44 +182,16 @@ export function SajuV4Report({ api, birthSummary }: Props) {
         <SectionAiLoading />
       ) : narrative && hasAnyNarrativeBody(narrative) ? (
         <div style={{ marginTop: 18 }}>
-          <NarrativeSection
-            title="이 사주를 한 문장으로 말하면"
-            body={narrative.openingDefinition}
-            eyebrow="✦ 시작"
-          />
-          <NarrativeSection
-            title="당신이 이런 방식으로 살아온 이유"
-            body={narrative.lifeStructureNarrative}
-            eyebrow="✦ 기질과 내면"
-          />
-          <NarrativeSection
-            title="반복해서 찾아오는 삶의 패턴"
-            body={narrative.repeatedPatternNarrative}
-            eyebrow="✦ 반복되는 결"
-          />
-          <NarrativeSection
-            title="일과 재능: 어떤 역할에서 실력이 살아나는가"
-            body={narrative.careerTalentNarrative}
-            eyebrow="✦ 일과 재능"
-          />
-          <NarrativeSection
-            title="돈과 수익화: 어떤 방식으로 돈이 붙는가"
-            body={narrative.moneyMonetizationNarrative}
-            eyebrow="✦ 돈과 수익화"
-          />
-          <NarrativeSection
-            title="관계와 연애: 어떤 사람에게 마음이 열리고 닫히는가"
-            body={narrative.relationshipLoveNarrative}
-            eyebrow="✦ 관계와 연애"
-          />
+          <NarrativeSection title={T.opening.title} body={narrative.openingDefinition} eyebrow={T.opening.eyebrow} />
+          <NarrativeSection title={T.structure.title} body={narrative.lifeStructureNarrative} eyebrow={T.structure.eyebrow} />
+          <NarrativeSection title={T.repeated.title} body={narrative.repeatedPatternNarrative} eyebrow={T.repeated.eyebrow} />
+          <NarrativeSection title={T.career.title} body={narrative.careerTalentNarrative} eyebrow={T.career.eyebrow} />
+          <NarrativeSection title={T.money.title} body={narrative.moneyMonetizationNarrative} eyebrow={T.money.eyebrow} />
+          <NarrativeSection title={T.love.title} body={narrative.relationshipLoveNarrative} eyebrow={T.love.eyebrow} />
           {narrative.futureFlowNarrative && (
             <NarrativeFutureFlow data={narrative.futureFlowNarrative} />
           )}
-          <NarrativeSection
-            title="결국 이 사주는 이렇게 써야 해요"
-            body={narrative.finalStrategyNarrative}
-            eyebrow="✦ 결론"
-          />
+          <NarrativeSection title={T.final.title} body={narrative.finalStrategyNarrative} eyebrow={T.final.eyebrow} />
         </div>
       ) : (
         // parser가 7섹션 헤더를 못 잡았으면 fallback — 원문 그대로 한 덩어리로
@@ -206,9 +209,9 @@ export function SajuV4Report({ api, birthSummary }: Props) {
             fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)',
             margin: '0 0 4px', letterSpacing: '-0.01em', lineHeight: 1.35,
             fontFamily: 'var(--orot-font)',
-          }}>✦ 이 사주 실전 가이드</h2>
+          }}>{T.guideEyebrow}</h2>
           <div style={{ fontSize: 12.5, color: 'var(--orot-ink-mute)', lineHeight: 1.55 }}>
-            사람·돈·타이밍·행운 — 위 풀이를 실제 삶에서 쓰는 법
+            {T.guideSub}
           </div>
           <PaidReportProse sections={api.paidReport.prose} evidenceMap={api.paidReport.evidenceMap} />
         </section>

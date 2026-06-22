@@ -994,7 +994,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       const reportRes = await fetch('/api/saju-v4', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ input: v4Input, maxRepairAttempts: 1 }),
+        body: JSON.stringify({ input: v4Input, maxRepairAttempts: 1, lang }),
         signal,
       });
       if (!reportRes.ok) {
@@ -2371,7 +2371,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           </BleedCard>
 
           {/* v4 본문 — Sajupan 명리 카드 + 차별화 4섹션 등 (자체 wrapper 포함) */}
-          <SajuV4Report api={v4Resp} parsed={parseSajuReport(v4Resp.reportText)} birthSummary={birthSummary} />
+          <SajuV4Report api={v4Resp} parsed={parseSajuReport(v4Resp.reportText)} birthSummary={birthSummary} lang={lang} />
 
           {/* v3 톤 공유/저장/재시작 */}
           <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
@@ -3114,7 +3114,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         const reportRes = await fetch('/api/compat-v4', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inputA, inputB, relationshipType }),
+          body: JSON.stringify({ inputA, inputB, relationshipType, lang }),
         });
         if (!reportRes.ok) throw new Error('report failed: ' + reportRes.status);
         const report = await reportRes.json();
@@ -3907,7 +3907,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             {/* v4 compat 결과 — preview 카드 즉시, AI 카드는 reportText 도착 후 자동 표시 */}
             {compatV4Resp && (
               <div data-compat-v4-result style={{ marginTop: 12 }}>
-                <CompatV4Report api={compatV4Resp} />
+                <CompatV4Report api={compatV4Resp} lang={lang} />
               </div>
             )}
             {!compatV4Resp && compatLoading && (
@@ -3955,7 +3955,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             이전엔 부모 조건(data && !compatV4Resp)에 갇혀 compatV4Resp set 시 unmount됐음. */}
         {compatV4Resp && (
           <div data-compat-v4-result style={{ marginTop: 16 }}>
-            <CompatV4Report api={compatV4Resp} />
+            <CompatV4Report api={compatV4Resp} lang={lang} />
           </div>
         )}
         {!compatV4Resp && compatLoading && (
