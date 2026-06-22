@@ -37,6 +37,79 @@ import { FortuneVerdictSection } from '@/components/FortuneVerdictSection';
 const PINK = '#E91E8C';
 const PINK_SOFT = 'rgba(233,30,140,0.15)';
 
+// ============================================================
+// sv4 night-sky 아코디언 — 섹션별 악센트/아이콘. (SajuV4Report / CompatV4Report 미러)
+// 임산부 무드: 부드러운 파스텔 로테이션 + 핑크 톤을 살려서.
+// ============================================================
+type SectionAccent = { icon: string; accent: string };
+const PREGNANCY_ACCENTS: Record<string, SectionAccent> = {
+  openingConnection:           { icon: '✦',  accent: 'var(--orot-coral)' },
+  motherChildMechanism:        { icon: '🌙', accent: '#b9a7ef' },
+  motherComfortRhythm:         { icon: '🌿', accent: '#9cc99a' },
+  babyEnergyAndFit:            { icon: '⭐', accent: 'var(--primary,#f0c75e)' },
+  taegyoGuide:                 { icon: '🎐', accent: '#7fc6c0' },
+  motherFortuneRoutine:        { icon: '🧭', accent: '#8aa1c4' },
+  familySupportAndFinalMessage:{ icon: '💫', accent: '#e899ad' },
+  babyNames:                   { icon: '🍼', accent: '#d3b87a' },
+  evidenceView:                { icon: '📜', accent: 'var(--orot-ink-mute)' },
+};
+
+// ✦ 디바이더 — 다른 v4 리포트와 동일 모티프.
+function PregnancyStarDivider() {
+  return (
+    <div className="sv4-divider" aria-hidden>
+      <span className="sv4-divider-line" />
+      <span className="sv4-divider-star">✦</span>
+      <span className="sv4-divider-line" />
+    </div>
+  );
+}
+
+// 본문 첫 비어있지 않은 줄을 티저로 — summary 한 줄 미리보기.
+function extractTeaser(body: string, maxLen = 60): string {
+  const first = (body ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l && !/^#{1,4}\s/.test(l) && !/^[-*]\s/.test(l));
+  if (!first) return '';
+  return first.length > maxLen ? first.slice(0, maxLen).trimEnd() + '…' : first;
+}
+
+// 줄글/구조 콘텐츠를 감싸는 sv4-accordion 섹션 하나. 기본 접힘(no open).
+function AccordionSection({
+  title,
+  eyebrow,
+  accent,
+  showDivider,
+  teaserText,
+  children,
+}: {
+  title: string;
+  eyebrow: string;
+  accent: SectionAccent;
+  showDivider: boolean;
+  teaserText?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      {showDivider && <PregnancyStarDivider />}
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: showDivider ? 6 : 4 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': accent.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: accent.accent }}>{eyebrow}</span>
+            <span className="sv4-accordion-title" style={{ color: accent.accent }}>{title}</span>
+            {teaserText && <span className="sv4-accordion-teaser">{teaserText}</span>}
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: accent.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body">{children}</div>
+      </details>
+    </>
+  );
+}
+
 export interface PregnancyNarrativeApiResponse {
   report: PregnancyReport;
   validation: { isValid: boolean; highCount: number; mediumCount: number };
@@ -196,23 +269,31 @@ function MotherBabyCardView({ report }: { report: PregnancyReport }) {
 // ============================================================
 // 줄글 섹션
 // ============================================================
-function ProseSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="card" style={{ background: 'rgba(255,240,245,0.06)', border: `1px solid ${PINK_SOFT}`, borderRadius: 20, padding: 24, marginBottom: 16 }}>
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 12px' }}>{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-function Paragraphs({ text }: { text: string }) {
+function Paragraphs({ text, lead = false }: { text: string; lead?: boolean }) {
   const paras = (text ?? '').split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
   const list = paras.length > 0 ? paras : [text];
   return (
     <>
-      {list.map((p, i) => (
-        <p key={i} style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--text)', margin: i === 0 ? 0 : '12px 0 0' }}>{p}</p>
-      ))}
+      {list.map((p, i) => {
+        const isLead = lead && i === 0;
+        return (
+          <p
+            key={i}
+            className={isLead ? 'sv4-lead' : undefined}
+            style={{
+              fontSize: isLead ? 16 : 14,
+              lineHeight: 1.85,
+              fontWeight: isLead ? 600 : 400,
+              color: isLead ? 'var(--orot-ink-soft)' : 'var(--text)',
+              letterSpacing: isLead ? '-0.005em' : undefined,
+              wordBreak: 'keep-all',
+              margin: i === 0 ? 0 : '12px 0 0',
+            }}
+          >
+            {p}
+          </p>
+        );
+      })}
     </>
   );
 }
@@ -223,8 +304,10 @@ function Paragraphs({ text }: { text: string }) {
 function BabyNamesView({ report }: { report: PregnancyReport }) {
   const cands = report.babyNames?.candidates ?? [];
   if (cands.length === 0) return null;
+  const a = PREGNANCY_ACCENTS.babyNames;
+  const teaser = cands.map((c) => c.name).slice(0, 3).join(' · ');
   return (
-    <ProseSection title={`${PREGNANCY_NARRATIVE_SECTION_TITLES.babyNames}`}>
+    <AccordionSection title={PREGNANCY_NARRATIVE_SECTION_TITLES.babyNames} eyebrow="태명" accent={a} showDivider teaserText={teaser}>
       <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: '0 0 14px', lineHeight: 1.6 }}>
         아래는 엄마와 아이의 기운에 어울리는 가벼운 태명 후보예요. 공식 이름이 아니라 부르기 편한 애칭이에요.
       </p>
@@ -240,7 +323,7 @@ function BabyNamesView({ report }: { report: PregnancyReport }) {
           </div>
         ))}
       </div>
-    </ProseSection>
+    </AccordionSection>
   );
 }
 
@@ -261,11 +344,21 @@ function CandidateDateCta() {
 function EvidenceFold({ report }: { report: PregnancyReport }) {
   const ev = report.evidenceView;
   if (!ev) return null;
+  const a = PREGNANCY_ACCENTS.evidenceView;
   const distLine = (dist: Record<string, number>) => ['목', '화', '토', '금', '수'].map(k => `${k} ${dist?.[k] ?? 0}`).join(' · ');
   return (
-    <details className="card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '14px 18px', marginBottom: 16 }}>
-      <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{PREGNANCY_NARRATIVE_SECTION_TITLES.evidenceView}</summary>
-      <div style={{ marginTop: 12, fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.7 }}>
+    <>
+      <PregnancyStarDivider />
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: 6 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': 'var(--orot-hair-strong)' } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{a.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: a.accent }}>근거</span>
+            <span className="sv4-accordion-title" style={{ color: 'var(--orot-ink-soft)', fontSize: 15 }}>{PREGNANCY_NARRATIVE_SECTION_TITLES.evidenceView}</span>
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: a.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body" style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.7 }}>
         <p style={{ margin: '0 0 8px' }}><b>엄마 사주</b> — 일간 {ev.mother.dayMaster}({ev.mother.dayMasterElementKo}) · {ev.mother.strengthLevel} · 용신 {ev.mother.usefulGodKo}</p>
         <p style={{ margin: '0 0 8px' }}>오행 분포: {distLine(ev.mother.elementDistributionKo)}</p>
         <p style={{ margin: '0 0 8px' }}><b>아이 ({ev.baby.dueDateLabel} 예정)</b> — 일간 {ev.baby.dayMaster}({ev.baby.dayMasterElementKo}){ev.baby.threeWeekBasis ? ' · 예정시간 미입력(출생예정일 기준 참고)' : ' · 예정시간 기준 참고'}</p>
@@ -280,8 +373,9 @@ function EvidenceFold({ report }: { report: PregnancyReport }) {
         {ev.recommendationBasis.babyNameElements.length > 0 && (
           <p style={{ margin: 0 }}>태명 참고 기운: {ev.recommendationBasis.babyNameElements.join('·')}</p>
         )}
-      </div>
-    </details>
+        </div>
+      </details>
+    </>
   );
 }
 
@@ -305,10 +399,24 @@ function ReportBody({ report }: { report: PregnancyReport }) {
     'openingConnection', 'motherChildMechanism', 'motherComfortRhythm',
     'babyEnergyAndFit', 'taegyoGuide', 'motherFortuneRoutine',
   ];
+  // 섹션별 짧은 eyebrow 라벨 (아이콘이 ✦를 보여주므로 텍스트만).
+  const EYEBROWS: Partial<Record<PregnancyNarrativeSectionId, string>> = {
+    openingConnection: '시작',
+    motherChildMechanism: '결의 구조',
+    motherComfortRhythm: '엄마의 리듬',
+    babyEnergyAndFit: '아이의 기운',
+    taegyoGuide: '태교',
+    motherFortuneRoutine: '엄마의 운',
+  };
+
+  // 줄글 섹션 중 실제 내용이 있는 첫 섹션 — divider/lead 판단용.
+  const firstVisibleIdx = proseOrder.findIndex((id) => !!sectionText(id));
 
   return (
     <div>
       <DisclaimerBanner text={report.disclaimer} />
+
+      {/* 리드 카드 — 항상 펼쳐진 별빛 카드 (아코디언 아님) */}
       <MotherBabyCardView report={report} />
 
       {/* openingConnection oneLine 강조 */}
@@ -318,26 +426,42 @@ function ReportBody({ report }: { report: PregnancyReport }) {
         </p>
       )}
 
-      {proseOrder.map((id) => {
+      {/* 줄글 섹션 — night-sky 아코디언, 모두 기본 접힘 */}
+      {proseOrder.map((id, idx) => {
         const txt = sectionText(id);
         if (!txt) return null;
+        const a = PREGNANCY_ACCENTS[id] ?? PREGNANCY_ACCENTS.openingConnection;
+        const isFirst = idx === firstVisibleIdx;
         return (
-          <ProseSection key={id} title={T[id]}>
-            <Paragraphs text={txt} />
-          </ProseSection>
+          <AccordionSection
+            key={id}
+            title={T[id]}
+            eyebrow={EYEBROWS[id] ?? ''}
+            accent={a}
+            showDivider={!isFirst}
+            teaserText={extractTeaser(txt)}
+          >
+            <Paragraphs text={txt} lead />
+          </AccordionSection>
         );
       })}
 
       {/* 가족 + 마지막 한 문장 */}
       {report.familySupportAndFinalMessage?.body && (
-        <ProseSection title={T.familySupportAndFinalMessage}>
-          <Paragraphs text={report.familySupportAndFinalMessage.body} />
+        <AccordionSection
+          title={T.familySupportAndFinalMessage}
+          eyebrow="가족"
+          accent={PREGNANCY_ACCENTS.familySupportAndFinalMessage}
+          showDivider
+          teaserText={extractTeaser(report.familySupportAndFinalMessage.body)}
+        >
+          <Paragraphs text={report.familySupportAndFinalMessage.body} lead />
           {report.familySupportAndFinalMessage.finalMessage && (
             <p style={{ fontSize: 14.5, fontWeight: 700, color: PINK, lineHeight: 1.7, margin: '16px 0 0', padding: '14px', background: 'rgba(233,30,140,0.06)', borderRadius: 12 }}>
               💫 {report.familySupportAndFinalMessage.finalMessage}
             </p>
           )}
-        </ProseSection>
+        </AccordionSection>
       )}
 
       <FortuneVerdictSection verdict={report.fortuneVerdict} />

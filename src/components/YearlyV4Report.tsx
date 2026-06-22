@@ -155,17 +155,91 @@ export default function YearlyV4Report({ input, onRestart, maxRepairAttempts = 0
 }
 
 // ============================================================
-// 리포트 본문 — 8개 섹션
+// sv4 night-sky 아코디언 — 섹션별 악센트/아이콘. (SajuV4Report.SECTION_ACCENTS 미러)
+// ============================================================
+type SectionAccent = { icon: string; accent: string };
+const YEARLY_ACCENTS: Record<string, SectionAccent> = {
+  mechanism: { icon: '🌙', accent: '#b9a7ef' },
+  months:    { icon: '🗓️', accent: '#7fc6c0' },
+  topics:    { icon: '🧭', accent: 'var(--orot-coral)' },
+  action:    { icon: '⭐', accent: 'var(--primary,#f0c75e)' },
+  next:      { icon: '🌠', accent: '#8aa1c4' },
+  evidence:  { icon: '📜', accent: 'var(--orot-ink-mute)' },
+};
+
+// ✦ 디바이더 — SajuV4Report / CompatV4Report와 동일 모티프.
+function YearlyStarDivider() {
+  return (
+    <div className="sv4-divider" aria-hidden>
+      <span className="sv4-divider-line" />
+      <span className="sv4-divider-star">✦</span>
+      <span className="sv4-divider-line" />
+    </div>
+  );
+}
+
+// 본문 첫 비어있지 않은 줄을 티저로 — summary 한 줄 미리보기.
+function extractTeaser(body: string, maxLen = 60): string {
+  const first = (body ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l && !/^#{1,4}\s/.test(l) && !/^[-*]\s/.test(l));
+  if (!first) return '';
+  return first.length > maxLen ? first.slice(0, maxLen).trimEnd() + '…' : first;
+}
+
+// 줄글/구조 콘텐츠를 감싸는 sv4-accordion 섹션 하나. 기본 접힘(no open).
+// teaser가 없으면(구조형 섹션) teaserText로 직접 한 줄 미리보기를 넣는다.
+function AccordionSection({
+  title,
+  eyebrow,
+  accent,
+  showDivider,
+  teaserText,
+  children,
+}: {
+  title: string;
+  eyebrow: string;
+  accent: SectionAccent;
+  showDivider: boolean;
+  teaserText?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      {showDivider && <YearlyStarDivider />}
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: showDivider ? 6 : 4 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': accent.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: accent.accent }}>{eyebrow}</span>
+            <span className="sv4-accordion-title" style={{ color: accent.accent }}>{title}</span>
+            {teaserText && <span className="sv4-accordion-teaser">{teaserText}</span>}
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: accent.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body">{children}</div>
+      </details>
+    </>
+  );
+}
+
+// ============================================================
+// 리포트 본문 — 리드 카드 + sv4 아코디언(모두 기본 접힘)
 // ============================================================
 function ReportBody({ report }: { report: YearlyFortuneReport }) {
   return (
     <div style={{ marginTop: 4 }}>
+      {/* 리드 카드 — 항상 펼쳐진 hero (아코디언 아님) */}
       <YearFlowCardView card={report.yearFlowCard} overview={report.yearlyOverview} />
+
+      {/* 이후 섹션은 night-sky 아코디언, 모두 기본 접힘 */}
       <MechanismView body={report.yearlyMechanism.body} />
       {report.remainingMonths.length > 0 && <RemainingMonthsView months={report.remainingMonths} />}
       <TopicFortunesView topics={report.topicFortunes} />
       <ActionGuideView guide={report.actionGuide} />
       {report.nextTwoYears.length > 0 && <NextTwoYearsView years={report.nextTwoYears} />}
+
       <FortuneVerdictSection verdict={report.fortuneVerdict} />
       <EvidenceView ev={report.evidenceView} />
     </div>
@@ -240,20 +314,23 @@ function YearFlowCardView({
   );
 }
 
-// ── yearlyMechanism ──
+// ── yearlyMechanism (줄글) ──
 function MechanismView({ body }: { body: string }) {
   if (!body) return null;
+  const a = YEARLY_ACCENTS.mechanism;
   return (
-    <Section title="올해 운이 움직이는 방식" eyebrow="✦ 흐름의 구조">
-      <Body text={body} />
-    </Section>
+    <AccordionSection title="올해 운이 움직이는 방식" eyebrow="흐름의 구조" accent={a} showDivider={false} teaserText={extractTeaser(body)}>
+      <Body text={body} lead accent={a.accent} />
+    </AccordionSection>
   );
 }
 
-// ── remainingMonths ──
+// ── remainingMonths (월별 구조 카드) ──
 function RemainingMonthsView({ months }: { months: YearlyFortuneReport['remainingMonths'] }) {
+  const a = YEARLY_ACCENTS.months;
+  const teaser = months[0] ? `${months[0].monthLabel}${months[0].keyword ? ' · ' + months[0].keyword : ''}` : '';
   return (
-    <Section title="남은 올해 월별 흐름" eyebrow="✦ 달마다 달라지는 결">
+    <AccordionSection title="남은 올해 월별 흐름" eyebrow="달마다 달라지는 결" accent={a} showDivider teaserText={teaser}>
       {months.map((m, i) => (
         <div key={i} className="card" style={{ padding: 14, marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
@@ -277,38 +354,42 @@ function RemainingMonthsView({ months }: { months: YearlyFortuneReport['remainin
           </div>
         </div>
       ))}
-    </Section>
+    </AccordionSection>
   );
 }
 
-// ── topicFortunes ──
+// ── topicFortunes (주제별 줄글) ──
 function TopicFortunesView({ topics }: { topics: YearlyFortuneReport['topicFortunes'] }) {
+  const a = YEARLY_ACCENTS.topics;
   const rows: Array<{ label: string; value: string }> = [
     { label: '일·커리어', value: topics.career },
     { label: '돈', value: topics.money },
     { label: '관계·연애', value: topics.relationship },
     { label: '리듬·컨디션', value: topics.rhythm },
   ];
+  const visible = rows.filter((r) => r.value);
   return (
-    <Section title="일·돈·관계·리듬에서 들어오는 변화" eyebrow="✦ 주제별 흐름">
-      {rows.filter((r) => r.value).map((r, i) => (
+    <AccordionSection title="일·돈·관계·리듬에서 들어오는 변화" eyebrow="주제별 흐름" accent={a} showDivider teaserText={visible.map((r) => r.label).join(' · ')}>
+      {visible.map((r, i) => (
         <div
           key={i}
           className="card"
-          style={{ padding: 14, marginBottom: 8, borderLeft: '3px solid var(--orot-coral-faint)' }}
+          style={{ padding: 14, marginBottom: 8, borderLeft: `3px solid ${a.accent}` }}
         >
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 6 }}>{r.label}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: a.accent, marginBottom: 6 }}>{r.label}</div>
           <Body text={r.value} />
         </div>
       ))}
-    </Section>
+    </AccordionSection>
   );
 }
 
 // ── actionGuide ──
 function ActionGuideView({ guide }: { guide: YearlyFortuneReport['actionGuide'] }) {
+  const a = YEARLY_ACCENTS.action;
+  const teaser = guide.mustCatch[0] ?? guide.bestStrategy?.split('\n').find((l) => l.trim()) ?? '올해의 한 수';
   return (
-    <Section title="올해의 선택 가이드" eyebrow="✦ 무엇을 잡고 무엇을 놓을까">
+    <AccordionSection title="올해의 선택 가이드" eyebrow="무엇을 잡고 무엇을 놓을까" accent={a} showDivider teaserText={teaser}>
       {guide.mustCatch.length > 0 && (
         <div className="card" style={{ padding: 14, marginBottom: 8 }}>
           <div className="orot-eyebrow" style={{ marginBottom: 8, color: 'rgba(120,200,140,0.9)' }}>
@@ -335,17 +416,19 @@ function ActionGuideView({ guide }: { guide: YearlyFortuneReport['actionGuide'] 
           style={{ padding: 16, background: 'rgba(240,199,94,0.08)', border: '1px solid var(--orot-coral-faint)' }}
         >
           <div className="orot-eyebrow" style={{ marginBottom: 6 }}>올해의 한 수</div>
-          <Body text={guide.bestStrategy} />
+          <Body text={guide.bestStrategy} lead accent={a.accent} />
         </div>
       )}
-    </Section>
+    </AccordionSection>
   );
 }
 
 // ── nextTwoYears ──
 function NextTwoYearsView({ years }: { years: YearlyFortuneReport['nextTwoYears'] }) {
+  const a = YEARLY_ACCENTS.next;
+  const teaser = years[0] ? `${years[0].year}${years[0].keyword ? ' · ' + years[0].keyword : ''}` : '';
   return (
-    <Section title="이후 2년 큰 흐름" eyebrow="✦ 앞으로">
+    <AccordionSection title="이후 2년 큰 흐름" eyebrow="앞으로" accent={a} showDivider teaserText={teaser}>
       {years.map((y, i) => (
         <div key={i} className="card" style={{ padding: 14, marginBottom: 8 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
@@ -363,18 +446,26 @@ function NextTwoYearsView({ years }: { years: YearlyFortuneReport['nextTwoYears'
           </div>
         </div>
       ))}
-    </Section>
+    </AccordionSection>
   );
 }
 
-// ── evidenceView (deterministic — 접힘 영역) ──
+// ── evidenceView (deterministic — sv4 아코디언, 차분한 ink-mute 톤) ──
 function EvidenceView({ ev }: { ev: YearlyFortuneReport['evidenceView'] }) {
+  const a = YEARLY_ACCENTS.evidence;
   return (
-    <details className="card" style={{ marginTop: 18, padding: 14 }}>
-      <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--orot-ink-mute)' }}>
-        📜 명리 근거 보기
-      </summary>
-      <div style={{ fontSize: 12, marginTop: 12, lineHeight: 1.8, color: 'var(--orot-ink-soft)' }}>
+    <>
+      <YearlyStarDivider />
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: 6 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': 'var(--orot-hair-strong)' } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{a.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: a.accent }}>근거</span>
+            <span className="sv4-accordion-title" style={{ color: 'var(--orot-ink-soft)', fontSize: 15 }}>명리 근거 보기</span>
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: a.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body" style={{ fontSize: 12, lineHeight: 1.8, color: 'var(--orot-ink-soft)' }}>
         <p>
           <b>세운 간지</b> {ev.yearGanji.display} / <b>현재 대운</b> {ev.currentDaewoonPillar}
         </p>
@@ -405,42 +496,40 @@ function EvidenceView({ ev }: { ev: YearlyFortuneReport['evidenceView'] }) {
             {ev.activatedSpecialStars.map((s) => `${s.name}(${s.source}): ${s.plain}`).join(' / ')}
           </p>
         )}
-      </div>
-    </details>
+        </div>
+      </details>
+    </>
   );
 }
 
 // ============================================================
 // 공통 UI helper
 // ============================================================
-function Section({ title, eyebrow, children }: { title: string; eyebrow?: string; children: React.ReactNode }) {
-  return (
-    <section style={{ marginTop: 24 }}>
-      {eyebrow && <div className="orot-eyebrow" style={{ marginBottom: 8 }}>{eyebrow}</div>}
-      <h2
-        style={{
-          fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)',
-          margin: '0 0 16px', letterSpacing: '-0.01em', lineHeight: 1.35,
-          fontFamily: 'var(--orot-font)',
-        }}
-      >
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Body({ text }: { text: string }) {
+// 줄글 본문. lead=true면 첫 단락을 리드인(sv4-lead, 크게/진하게)으로 렌더.
+function Body({ text, lead = false, accent }: { text: string; lead?: boolean; accent?: string }) {
   if (!text) return null;
   const paras = text.split(/\n{2,}/).filter((p) => p.trim());
   return (
     <div style={{ fontSize: 15, lineHeight: 1.85, color: 'var(--orot-ink)' }}>
-      {paras.map((p, i) => (
-        <p key={i} style={{ margin: '0 0 10px' }}>
-          {p.trim()}
-        </p>
-      ))}
+      {paras.map((p, i) => {
+        const isLead = lead && i === 0;
+        return (
+          <p
+            key={i}
+            className={isLead ? 'sv4-lead' : undefined}
+            style={{
+              margin: '0 0 10px',
+              fontSize: isLead ? 16.5 : 15,
+              fontWeight: isLead ? 600 : 400,
+              color: isLead ? 'var(--orot-ink-soft)' : 'var(--orot-ink)',
+              letterSpacing: isLead ? '-0.005em' : undefined,
+              wordBreak: 'keep-all',
+            }}
+          >
+            {p.trim()}
+          </p>
+        );
+      })}
     </div>
   );
 }
