@@ -13,6 +13,8 @@ import { StarShareCardWithDownload } from '@/components/star/StarShareCard';
 import { EasyEvidenceView } from '@/components/evidence/EasyEvidenceView';
 import { FortuneVerdictSection } from '@/components/FortuneVerdictSection';
 import type { FortuneVerdict } from '@/domain/saju/fortuneVerdict/fortuneVerdictTypes';
+import { PaidReportProse } from '@/components/paidReport/PaidReportProse';
+import type { PaidSajuReportV1 } from '@/domain/saju/paidReport/paidReportTypes';
 import type {
   SpecialPoint,
   TenGodAnalysis,
@@ -101,6 +103,9 @@ export interface SajuV4ApiResponse {
   };
   /** Fortune Questions Verdict V1 — flag ON일 때만 응답에 포함. 없으면 미렌더. */
   fortuneVerdict?: FortuneVerdict;
+  /** Paid Report Productization V1 — 있으면 메인 narrative(줄글) 아래에 prose "실전 가이드"를 덧붙인다.
+      메인 narrative는 paidReport 유무와 무관하게 항상 FULL/FIRST로 렌더. 없으면 기존과 byte-identical. */
+  paidReport?: PaidSajuReportV1;
 }
 
 export interface Props {
@@ -139,7 +144,9 @@ export function SajuV4Report({ api, birthSummary }: Props) {
 
       {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩.
             2026-05 hotfix: parser가 헤더를 못 잡았으면(7섹션 모두 비어있음)
-            reportText 원문을 fallback으로 보여줘 사용자에 빈 화면 노출 방지. ── */}
+            reportText 원문을 fallback으로 보여줘 사용자에 빈 화면 노출 방지.
+            줄글-first 전환(2026-06): paidReport 유무와 무관하게 메인 narrative를 FULL/FIRST로 렌더.
+            paidReport.prose가 있으면 narrative 아래에 "실전 가이드"로 덧붙인다(아래 별도 블록). ── */}
       {!api.reportText ? (
         <SectionAiLoading />
       ) : narrative && hasAnyNarrativeBody(narrative) ? (
@@ -189,6 +196,23 @@ export function SajuV4Report({ api, birthSummary }: Props) {
           {api.reportText}
         </div>
       )}
+
+      {/* ── Paid Report Productization V1 — prose "실전 가이드".
+            paidReport.prose가 present일 때만 메인 narrative 아래에 줄글 톤으로 덧붙인다.
+            paidReport(또는 prose) 없으면 전부 건너뛰어 기존 동작과 byte-identical 유지. ── */}
+      {api.paidReport?.prose?.length ? (
+        <section style={{ marginTop: 32 }}>
+          <h2 style={{
+            fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)',
+            margin: '0 0 4px', letterSpacing: '-0.01em', lineHeight: 1.35,
+            fontFamily: 'var(--orot-font)',
+          }}>✦ 이 사주 실전 가이드</h2>
+          <div style={{ fontSize: 12.5, color: 'var(--orot-ink-mute)', lineHeight: 1.55 }}>
+            사람·돈·타이밍·행운 — 위 풀이를 실제 삶에서 쓰는 법
+          </div>
+          <PaidReportProse sections={api.paidReport.prose} evidenceMap={api.paidReport.evidenceMap} />
+        </section>
+      ) : null}
 
       {/* ── Fortune Questions Verdict V1 (flag ON일 때만 응답에 포함; 없으면 미렌더) ── */}
       <FortuneVerdictSection verdict={api.fortuneVerdict} />
