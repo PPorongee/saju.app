@@ -621,6 +621,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const SAJU_PRECISION_INPUTS_ENABLED = process.env.NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED === 'true';
   // Y9: 올해운세 V4 입력/결과 흐름 게이트. on이면 v3 질문/fetchYearlyReading(/api/saju) 우회 → teaser→YearlyV4Report.
   const YEARLY_FORTUNE_UI_ENABLED = process.env.NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED === 'true';
+  // 오늘의 별빛(Daily Fortune) — on이면 홈 '오늘의 흐름' 히어로가 /daily-fortune로 진입.
+  // off(기본) → 기존처럼 장식용 배너 그대로(클릭 불가).
+  const DAILY_FORTUNE_UI_ENABLED = process.env.NEXT_PUBLIC_SAJU_DAILY_FORTUNE_UI_ENABLED === 'true';
   const [pregNarrativeRequested, setPregNarrativeRequested] = useState(false);
   // P7.4-fix: 엄마(실제 출생자) 정확입력(시/분) 상태 — 개인사주/궁합과 동일 정책. 아기 예정시간은 V1에서 제거.
   const [pregMomExact, setPregMomExact] = useState({ use: false, hour: -1, min: 0 });
@@ -1532,13 +1535,18 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           </p>
         </div>
 
-        {/* Hero BleedCard — 오늘의 흐름 */}
+        {/* Hero BleedCard — 오늘의 흐름. flag on이면 /daily-fortune 진입점. */}
         <BleedCard
           image="/images/orot/home-hero-character.webp"
           framingId="home-hero-character"
           veil="left"
           minHeight={300}
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 16, cursor: DAILY_FORTUNE_UI_ENABLED ? 'pointer' : undefined }}
+          {...(DAILY_FORTUNE_UI_ENABLED ? {
+            onClick: () => { window.location.href = '/daily-fortune'; },
+            role: 'button',
+            ariaLabel: isEn ? "Today's flow" : '오늘의 흐름 보기',
+          } : {})}
         >
           <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
             <div className="orot-eyebrow" style={{ marginBottom: 14 }}>
@@ -1551,6 +1559,19 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             }} suppressHydrationWarning>
               {hasMounted ? getTodayHeroLine(lang) : (lang === 'en' ? 'A new day begins\nwith small steps' : '오늘도 작은 걸음으로\n좋은 흐름을 만들어요')}
             </h2>
+            {DAILY_FORTUNE_UI_ENABLED && (
+              <>
+                <p style={{ fontSize: 13, color: 'var(--orot-ink-soft)', lineHeight: 1.6, margin: '10px 0 0' }}>
+                  {isEn ? 'See the energy entering your chart today.' : '오늘 내 사주에 들어오는 기운을 짧게 확인해보세요.'}
+                </p>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  marginTop: 12, fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)',
+                }}>
+                  {isEn ? 'See today’s fortune' : '오늘 운세 보기'} →
+                </span>
+              </>
+            )}
           </div>
         </BleedCard>
 
