@@ -88,7 +88,7 @@ export function renderPaidReportProse(report: Draft): PaidProseSection[] {
     const caution = (tg.cautionYears ?? []).slice(0, 2).map((y) => `${y.year}년`);
     const sentences: string[] = [];
     if (open.length) sentences.push(lead('운이 강하게 열리는 흐름은', open));
-    if (caution.length) sentences.push(`${caution.join(', ')}은 변동이 큰 만큼, 큰 결정은 한 박자 늦추는 게 좋아.`);
+    if (caution.length) sentences.push(`${caution.join(', ')}은 변동이 큰 만큼, 큰 결정은 한 박자 늦추는 게 좋아요.`);
     push('prose-timing', '운이 열리는 시기, 조심할 시기', sentences,
       [...(tg.openingYears ?? []).flatMap((y) => y.evidenceIds ?? []), ...(tg.cautionYears ?? []).flatMap((y) => y.evidenceIds ?? [])]);
   }
@@ -103,7 +103,7 @@ export function renderPaidReportProse(report: Draft): PaidProseSection[] {
     if (lg.routines?.length) env.push(`${lg.routines.slice(0, 3).join('·')} 같은 루틴`);
     if (env.length) sentences.push(`흐트러진 균형을 잡아주는 건 — ${env.join(', ')}.`);
     if (lg.blockingEnvironments?.length) {
-      sentences.push(`반대로 ${lg.blockingEnvironments.slice(0, 2).join('·')} 같은 환경은 운을 막으니 피하는 게 좋아.`);
+      sentences.push(`반대로 ${lg.blockingEnvironments.slice(0, 2).join('·')} 같은 환경은 운을 막으니 피하는 게 좋아요.`);
     }
     push('prose-luck', '운을 돕는 색·장소·루틴', sentences, lg.evidenceIds ?? []);
   }
