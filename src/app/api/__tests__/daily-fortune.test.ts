@@ -19,19 +19,22 @@ const VALID_BODY = {
 };
 
 const prev = process.env.SAJU_DAILY_FORTUNE_ENABLED;
-afterEach(() => { process.env.SAJU_DAILY_FORTUNE_ENABLED = prev; });
+afterEach(() => {
+  if (prev === undefined) delete process.env.SAJU_DAILY_FORTUNE_ENABLED;
+  else process.env.SAJU_DAILY_FORTUNE_ENABLED = prev;
+});
 
 describe('/api/saju-v4/daily-fortune', () => {
-  it('flag OFF → 503 daily_fortune_disabled', async () => {
-    delete process.env.SAJU_DAILY_FORTUNE_ENABLED;
+  it('명시적 false → 503 daily_fortune_disabled', async () => {
+    process.env.SAJU_DAILY_FORTUNE_ENABLED = 'false';
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(503);
     const json = await res.json();
     expect(json.error).toBe('daily_fortune_disabled');
   });
 
-  describe('flag ON', () => {
-    beforeEach(() => { process.env.SAJU_DAILY_FORTUNE_ENABLED = 'true'; });
+  describe('기본 ON (env 미설정)', () => {
+    beforeEach(() => { delete process.env.SAJU_DAILY_FORTUNE_ENABLED; });
 
     it('정상 body → 200 + ok:true + dailyFortune', async () => {
       const res = await POST(makeRequest(VALID_BODY));

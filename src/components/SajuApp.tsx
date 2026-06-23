@@ -621,9 +621,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   const SAJU_PRECISION_INPUTS_ENABLED = process.env.NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED === 'true';
   // Y9: 올해운세 V4 입력/결과 흐름 게이트. on이면 v3 질문/fetchYearlyReading(/api/saju) 우회 → teaser→YearlyV4Report.
   const YEARLY_FORTUNE_UI_ENABLED = process.env.NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED === 'true';
-  // 오늘의 별빛(Daily Fortune) — on이면 홈 '오늘의 흐름' 히어로가 /daily-fortune로 진입.
-  // off(기본) → 기존처럼 장식용 배너 그대로(클릭 불가).
-  const DAILY_FORTUNE_UI_ENABLED = process.env.NEXT_PUBLIC_SAJU_DAILY_FORTUNE_UI_ENABLED === 'true';
+  // 오늘의 별빛(Daily Fortune) — 기본 ON. 홈 '오늘의 흐름' 히어로가 /daily-fortune로 진입.
+  // 끄려면 NEXT_PUBLIC_SAJU_DAILY_FORTUNE_UI_ENABLED='false'. (런칭 전 기본 OFF였음.)
+  const DAILY_FORTUNE_UI_ENABLED = process.env.NEXT_PUBLIC_SAJU_DAILY_FORTUNE_UI_ENABLED !== 'false';
   const [pregNarrativeRequested, setPregNarrativeRequested] = useState(false);
   // P7.4-fix: 엄마(실제 출생자) 정확입력(시/분) 상태 — 개인사주/궁합과 동일 정책. 아기 예정시간은 V1에서 제거.
   const [pregMomExact, setPregMomExact] = useState({ use: false, hour: -1, min: 0 });
