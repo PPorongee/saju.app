@@ -144,8 +144,20 @@ export default function CompatNarrativeReport({
 }
 
 // ============================================================
-// 리포트 본문
+// 리포트 본문 — 개인사주(SajuV4Report)와 동일한 sv4 night-sky 디자인.
+//   히어로(관계 카드) → 줄글 섹션 아코디언(기본 접힘) → 3년흐름 → 근거 접힘.
 // ============================================================
+type CompatAccent = { icon: string; accent: string };
+const ACCENTS = {
+  overview:   { icon: '✦', accent: 'var(--orot-coral)' },
+  mechanism:  { icon: '🌙', accent: '#b9a7ef' },
+  attraction: { icon: '❤️', accent: '#e899ad' },
+  repeated:   { icon: '🔁', accent: '#7fc6c0' },
+  guide:      { icon: '🧭', accent: '#9cc99a' },
+  final:      { icon: '⭐', accent: 'var(--orot-primary, #f0c75e)' },
+  future:     { icon: '🌠', accent: '#8aa1c4' },
+} satisfies Record<string, CompatAccent>;
+
 function ReportBody({
   report,
   futureFlow,
@@ -153,42 +165,163 @@ function ReportBody({
   report: CompatibilityNarrativeReport;
   futureFlow: RelationshipYearFlow[];
 }) {
+  const ov = report.relationshipOverview;
+  const overviewBody = [ov.oneLine, ov.body].filter(Boolean).join('\n\n');
   return (
-    <div>
-      <CompatibilityCardView
-        card={report.compatibilityCard}
-        relationshipTypeKo={report.evidenceView.relationshipTypeKo}
-      />
-      <OverviewView overview={report.relationshipOverview} />
-      <ProseSection
-        title="이 관계가 이렇게 느껴지는 이유"
-        eyebrow="✦ 관계의 구조"
-        body={report.relationshipMechanism.body}
-      />
-      <ProseSection
-        title="서로에게 끌리는 지점과 엇갈리는 지점"
-        eyebrow="✦ 같은 뿌리"
-        body={report.attractionAndFriction.body}
-      />
-      <ProseSection
-        title="현실에서 반복되기 쉬운 관계 패턴"
-        eyebrow="✦ 반복되는 장면"
-        body={report.repeatedPattern.body}
-      />
-      <ProseSection
-        title="이 관계를 좋게 쓰는 방법"
-        eyebrow="✦ 관계 가이드"
-        body={report.relationshipGuide.body}
-      />
-      <ProseSection
-        title="마지막으로 드리는 조언"
-        eyebrow="✦ 정리하며"
-        body={report.finalAdvice.body}
-      />
-      {futureFlow.length > 0 && <FutureFlowView flow={futureFlow} />}
+    <div className="sv4">
+      <CompatHero card={report.compatibilityCard} relType={report.evidenceView.relationshipTypeKo} />
+      <CompatSvSection title="두 사람을 한 문장으로" body={overviewBody} eyebrow="첫인상" accent={ACCENTS.overview} showDivider={false} lead />
+      <CompatSvSection title="이 관계가 이렇게 느껴지는 이유" body={report.relationshipMechanism.body} eyebrow="관계의 구조" accent={ACCENTS.mechanism} showDivider lead />
+      <CompatSvSection title="서로에게 끌리는 지점과 엇갈리는 지점" body={report.attractionAndFriction.body} eyebrow="끌림과 균열" accent={ACCENTS.attraction} showDivider lead />
+      <CompatSvSection title="현실에서 반복되기 쉬운 관계 패턴" body={report.repeatedPattern.body} eyebrow="반복되는 장면" accent={ACCENTS.repeated} showDivider lead />
+      <CompatSvSection title="이 관계를 좋게 쓰는 방법" body={report.relationshipGuide.body} eyebrow="관계 가이드" accent={ACCENTS.guide} showDivider lead />
+      <CompatSvSection title="마지막으로 드리는 조언" body={report.finalAdvice.body} eyebrow="정리하며" accent={ACCENTS.final} showDivider lead />
+      {futureFlow.length > 0 && <FutureFlowSection flow={futureFlow} />}
       <FortuneVerdictSection verdict={report.fortuneVerdict} />
       <EvidenceFold ev={report.evidenceView} />
     </div>
+  );
+}
+
+// ✦ 디바이더 (globals.css의 sv4-divider).
+function CompatStarDivider() {
+  return (
+    <div className="sv4-divider" aria-hidden>
+      <span className="sv4-divider-line" />
+      <span className="sv4-divider-star">✦</span>
+      <span className="sv4-divider-line" />
+    </div>
+  );
+}
+
+function compatTeaser(body: string, maxLen = 60): string {
+  const first = body.split('\n').map((l) => l.trim()).find((l) => l && !/^#{1,4}\s/.test(l) && !/^[-*]\s/.test(l));
+  if (!first) return '';
+  return first.length > maxLen ? first.slice(0, maxLen).trimEnd() + '…' : first;
+}
+
+// 이 관계의 이름 — 개인사주 SectionIdentityHero(sv4-hero) 미러.
+function CompatHero({ card, relType }: { card: CompatibilityNarrativeReport['compatibilityCard']; relType?: string }) {
+  const chips = (card.keywords ?? []).filter(Boolean).slice(0, 6);
+  return (
+    <section className="sv4-hero sv4-reveal">
+      <div className="sv4-hero-glow" aria-hidden />
+      <div className="sv4-hero-inner">
+        <div className="sv4-hero-eyebrow">
+          <span aria-hidden>✦</span>
+          <span>{relType ? `두 사람의 관계 · ${relType}` : '두 사람의 관계 카드'}</span>
+        </div>
+        {card.title && <h1 className="sv4-hero-title">{card.title}</h1>}
+        {card.snsPhrase && <p className="sv4-hero-desc">{card.snsPhrase}</p>}
+        {chips.length > 0 && (
+          <div className="sv4-hero-chips">
+            {chips.map((k, i) => <span key={i} className="sv4-chip">#{k}</span>)}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// 줄글 섹션 — sv4-accordion(<details>), 기본 접힘. SajuV4Report.NarrativeSection 미러.
+function CompatSvSection({
+  title, body, eyebrow, accent, showDivider, lead = false,
+}: {
+  title: string; body: string; eyebrow: string; accent: CompatAccent; showDivider: boolean; lead?: boolean;
+}) {
+  if (!body || !body.trim()) return null;
+  const teaser = compatTeaser(body);
+  return (
+    <>
+      {showDivider && <CompatStarDivider />}
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: showDivider ? 6 : 24 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': accent.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: accent.accent }}>{eyebrow}</span>
+            <span className="sv4-accordion-title" style={{ color: accent.accent }}>{title}</span>
+            {teaser && <span className="sv4-accordion-teaser">{teaser}</span>}
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: accent.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body">
+          <NarrativeBodyView text={body} accent={accent.accent} lead={lead} />
+        </div>
+      </details>
+    </>
+  );
+}
+
+// 줄글 본문 — 첫 단락 리드인(sv4-lead), 하위 헤더 accent 색, 불릿 처리.
+function NarrativeBodyView({ text, accent, lead = false }: { text: string; accent?: string; lead?: boolean }) {
+  const headColor = accent ?? 'var(--orot-coral)';
+  const lines = text.split('\n');
+  const out: React.ReactElement[] = [];
+  let para: string[] = [];
+  let paraCount = 0;
+  const flush = (k: string) => {
+    if (para.length === 0) return;
+    const isLead = lead && paraCount === 0;
+    paraCount += 1;
+    out.push(
+      <p key={k} className={isLead ? 'sv4-lead' : undefined} style={{
+        margin: '10px 0', fontSize: isLead ? 16.5 : 15, lineHeight: 1.85, fontWeight: isLead ? 600 : 400,
+        color: isLead ? 'var(--orot-ink-soft)' : 'var(--orot-ink)', letterSpacing: isLead ? '-0.005em' : undefined,
+        wordBreak: 'keep-all',
+      }}>{para.join(' ')}</p>,
+    );
+    para = [];
+  };
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed) { flush('p-' + i); return; }
+    if (/^#{2,4}\s+/.test(trimmed)) {
+      flush('p-' + i);
+      out.push(<div key={'h-' + i} style={{ fontSize: 14, fontWeight: 700, color: headColor, marginTop: 14, marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{trimmed.replace(/^#+\s+/, '')}</div>);
+      return;
+    }
+    if (/^[-*]\s+/.test(trimmed)) {
+      flush('p-' + i);
+      out.push(<div key={'li-' + i} style={{ fontSize: 15, lineHeight: 1.85, marginLeft: 12, color: 'var(--orot-ink)' }}>· {trimmed.replace(/^[-*]\s+/, '')}</div>);
+      return;
+    }
+    para.push(trimmed);
+  });
+  flush('p-final');
+  return <>{out}</>;
+}
+
+// 3년 흐름 — sv4-accordion 안에 연도 카드.
+function FutureFlowSection({ flow }: { flow: RelationshipYearFlow[] }) {
+  const accent = ACCENTS.future;
+  return (
+    <>
+      <CompatStarDivider />
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: 6 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': accent.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: accent.accent }}>시간의 결</span>
+            <span className="sv4-accordion-title" style={{ color: accent.accent }}>앞으로 3년, 관계의 흐름</span>
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: accent.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body" style={{ display: 'grid', gap: 8 }}>
+          {flow.map((y, i) => (
+            <div key={i} style={{ borderRadius: 10, border: '1px solid var(--orot-hair)', background: 'rgba(255,255,255,0.02)', padding: '12px 14px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: accent.accent, marginBottom: 6 }}>
+                {y.year}{y.theme && <span style={{ color: 'var(--orot-ink-mute)', fontWeight: 400, fontSize: 13, marginLeft: 8 }}>· {y.theme}</span>}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', lineHeight: 1.7 }}>
+                {y.opportunity && <div><b style={{ color: '#7c8' }}>잡으면 좋은 결:</b> {y.opportunity}</div>}
+                {y.caution && <div style={{ marginTop: 3 }}><b style={{ color: '#c46' }}>주의할 결:</b> {y.caution}</div>}
+                {y.advice && <div style={{ marginTop: 3 }}><b style={{ color: 'var(--orot-ink-mute)' }}>조언:</b> {y.advice}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </details>
+    </>
   );
 }
 
