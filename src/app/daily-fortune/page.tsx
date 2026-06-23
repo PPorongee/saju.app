@@ -300,7 +300,7 @@ export default function DailyFortunePage() {
     try { localStorage.setItem('saju-lang', next); } catch { /* ignore */ }
   };
   const LangToggle = (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+    <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 100 }}>
       <button
         onClick={switchLang}
         aria-label={lang === 'ko' ? 'Switch to English' : '한국어로 전환'}
@@ -309,6 +309,7 @@ export default function DailyFortunePage() {
           borderRadius: 999, padding: '8px 12px', fontSize: 12, fontWeight: 600,
           color: 'var(--orot-ink-soft)', cursor: 'pointer', minHeight: 36, fontFamily: 'var(--orot-font)',
           backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.20)',
         }}
       >
         {t('langToggle', lang)}
@@ -318,17 +319,16 @@ export default function DailyFortunePage() {
 
   return (
     <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+      {LangToggle}
       <div className="app-container">
 
         {status === 'result' && result ? (
-          <div className="inner" style={{ paddingTop: 16, paddingBottom: 32 }}>
-            {LangToggle}
+          <div className="inner" style={{ paddingTop: 24, paddingBottom: 32 }}>
             <FortuneResult data={result} lang={lang} userName={resultName} notice={notice}
               onShare={handleShare} onReset={reset} />
           </div>
         ) : (
-          <div className="inner screen-enter orot-root orot-form-screen" style={{ paddingTop: 16, paddingBottom: 32 }}>
-            {LangToggle}
+          <div className="inner screen-enter orot-root orot-form-screen" style={{ paddingTop: 24, paddingBottom: 32 }}>
 
             <button onClick={() => { window.location.href = '/'; }} aria-label={L.home}
               style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
