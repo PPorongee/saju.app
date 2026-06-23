@@ -154,29 +154,25 @@ export default function CompatV4Report({ api, lang = 'ko' }: { api: CompatV4Resu
   const arch = ca.relationshipArchetype;
 
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
-      {/* 1. 관계 원국 카드 */}
-      <SectionRelationshipCard api={api} T={T} />
+    <div className="sv4" style={{ display: 'grid', gap: 14 }}>
+      {/* 1. 히어로 — 이 관계의 이름 (개인사주의 별빛 키워드 히어로와 동일 톤) */}
+      <CompatArchetypeHero archetype={arch} keywords={ca.relationshipKeywords} T={T} />
 
-      {/* 2. 이 관계의 이름 (아키타입) */}
-      <SectionArchetype archetype={arch} T={T} />
+      {/* 그림자 · 살리는 한 가지 */}
+      {(arch.shadowSide || arch.keyAdvice) && (
+        <div className="card" style={{ padding: 16 }}>
+          {arch.shadowSide && <Field label={T.archetype.shadow} text={arch.shadowSide} />}
+          {arch.keyAdvice && <Field label={T.archetype.key} text={arch.keyAdvice} />}
+        </div>
+      )}
 
-      {/* 3. 관계 키워드 */}
-      <SectionKeywords keywords={ca.relationshipKeywords} T={T} />
+      {/* 두 사람의 사주 원국 — 접힘으로 강등 (개인사주의 원국 토글과 동일) */}
+      <ToggleSection icon="🪐" title={lang === 'en' ? 'The two birth charts' : '두 사람의 사주 원국'}>
+        <SectionRelationshipCard api={api} T={T} />
+        <SectionPalaceAndElement api={api} T={T} />
+      </ToggleSection>
 
-      {/* 4. 일지/오행/십성 명리 카드 (preview 데이터) */}
-      <SectionPalaceAndElement api={api} T={T} />
-
-      {/* 5. 강점 / 위험 카드 (preview 데이터) */}
-      <SectionStrengthsRisks api={api} T={T} />
-
-      {/* 6. 살리는/망치는 선택 (preview 데이터) */}
-      <SectionChoices api={api} T={T} />
-
-      {/* 7. 3년 흐름 카드 (preview 데이터) */}
-      <SectionFutureFlow api={api} T={T} />
-
-      {/* ── AI 줄글 풀이 (GPT 응답 후) — night-sky 아코디언, 모두 기본 접힘 ── */}
+      {/* ── 본문: AI 줄글 풀이 — night-sky 아코디언 (개인사주 narrative와 동일) ── */}
       {!api.reportText ? (
         <SectionAiLoading T={T} />
       ) : parsed ? (
@@ -194,7 +190,63 @@ export default function CompatV4Report({ api, lang = 'ko' }: { api: CompatV4Resu
           <SectionAiEvidence body={parsed.evidence} T={T} />
         </div>
       ) : null}
+
+      {/* 관계를 더 깊이 보기 — 키워드·강점/위험·선택·3년흐름을 접힘으로 강등 */}
+      <ToggleSection icon="📑" title={lang === 'en' ? 'Go deeper into this match' : '관계를 더 깊이 보기'}>
+        <SectionKeywords keywords={ca.relationshipKeywords} T={T} />
+        <SectionStrengthsRisks api={api} T={T} />
+        <SectionChoices api={api} T={T} />
+        <SectionFutureFlow api={api} T={T} />
+      </ToggleSection>
     </div>
+  );
+}
+
+// 이 관계의 이름 — 개인사주 SectionIdentityHero(sv4-hero) 미러.
+function CompatArchetypeHero({ archetype, keywords, T }: {
+  archetype: CompatibilityAnalysisBundle['relationshipArchetype'];
+  keywords: CompatibilityAnalysisBundle['relationshipKeywords'];
+  T: CompatTitles;
+}) {
+  const chips = Array.from(
+    new Set([...(archetype.keywords ?? []), ...keywords.map((k) => k.keyword)].filter(Boolean)),
+  ).slice(0, 6);
+  return (
+    <section className="sv4-hero sv4-reveal">
+      <div className="sv4-hero-glow" aria-hidden />
+      <div className="sv4-hero-inner">
+        <div className="sv4-hero-eyebrow">
+          <span aria-hidden>✦</span>
+          <span>{T.archetype.eyebrow}</span>
+        </div>
+        <h1 className="sv4-hero-title">{archetype.title}</h1>
+        {archetype.brightSide && <p className="sv4-hero-desc">{archetype.brightSide}</p>}
+        {chips.length > 0 && (
+          <div className="sv4-hero-chips">
+            {chips.map((k) => <span key={k} className="sv4-chip">#{k}</span>)}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// 접힘 그룹 — 명리 카드들을 강등 수납(개인사주 원국 토글과 동일 행 스타일).
+function ToggleSection({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
+  return (
+    <details className="sv4-reveal">
+      <summary style={{
+        cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 8,
+        fontWeight: 700, fontSize: 14, color: 'var(--orot-ink-soft)', minHeight: 44,
+        padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--orot-hair)',
+        borderRadius: 'var(--orot-r-md)', fontFamily: 'var(--orot-font)',
+      }}>
+        <span aria-hidden style={{ fontSize: 16 }}>{icon}</span>
+        <span>{title}</span>
+        <span className="sv4-chevron" aria-hidden style={{ marginLeft: 'auto', color: 'var(--orot-ink-mute)', fontSize: 12 }}>▾</span>
+      </summary>
+      <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>{children}</div>
+    </details>
   );
 }
 
