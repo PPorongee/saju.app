@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import type { DailyFortuneV1, DailyLang } from '@/domain/saju/daily/dailyFortuneTypes';
 import { FLOW_LABEL_EN } from '@/domain/saju/daily/dailyTemplates';
 import PlaceSelect, { birthPlacePayloadPatch } from '@/components/PlaceSelect';
+import { t } from '@/lib/i18n';
 
 // ── 입력 상수 (SajuApp 입력 화면과 동일한 12시진 그리드) ──────────────────────
 const TIMES = [
@@ -217,6 +218,8 @@ export default function DailyFortunePage() {
   const L = STR[lang];
 
   useEffect(() => {
+    // 앱 전역 언어(saju-lang) 상속 — 다른 기능과 통일.
+    try { const sl = localStorage.getItem('saju-lang'); if (sl === 'en' || sl === 'ko') setLang(sl); } catch { /* ignore */ }
     try { setProfiles(JSON.parse(localStorage.getItem(PROFILE_KEY) || '[]')); } catch { /* ignore */ }
   }, []);
 
@@ -291,12 +294,25 @@ export default function DailyFortunePage() {
 
   const reset = () => { setStatus('idle'); setResult(null); setErrorMsg(''); setNotice(''); };
 
+  const switchLang = () => {
+    const next: DailyLang = lang === 'ko' ? 'en' : 'ko';
+    setLang(next);
+    try { localStorage.setItem('saju-lang', next); } catch { /* ignore */ }
+  };
   const LangToggle = (
     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-      <div className="pill-toggle" style={{ width: 'auto', display: 'inline-flex' }}>
-        <button className={lang === 'ko' ? 'active' : ''} onClick={() => setLang('ko')} aria-pressed={lang === 'ko'} style={{ minWidth: 48 }}>한국어</button>
-        <button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')} aria-pressed={lang === 'en'} style={{ minWidth: 48 }}>EN</button>
-      </div>
+      <button
+        onClick={switchLang}
+        aria-label={lang === 'ko' ? 'Switch to English' : '한국어로 전환'}
+        style={{
+          background: 'rgba(16, 20, 44, 0.55)', border: '1px solid var(--orot-hair-strong)',
+          borderRadius: 999, padding: '8px 12px', fontSize: 12, fontWeight: 600,
+          color: 'var(--orot-ink-soft)', cursor: 'pointer', minHeight: 36, fontFamily: 'var(--orot-font)',
+          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+        }}
+      >
+        {t('langToggle', lang)}
+      </button>
     </div>
   );
 
