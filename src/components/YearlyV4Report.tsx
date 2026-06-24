@@ -305,12 +305,12 @@ export default function YearlyV4Report({
 // ============================================================
 type SectionAccent = { icon: string; accent: string };
 const YEARLY_ACCENTS: Record<string, SectionAccent> = {
-  mechanism: { icon: '🌙', accent: '#b9a7ef' },
-  months:    { icon: '🗓️', accent: '#7fc6c0' },
-  topics:    { icon: '🧭', accent: 'var(--orot-coral)' },
-  action:    { icon: '⭐', accent: 'var(--primary,#f0c75e)' },
-  next:      { icon: '🌠', accent: '#8aa1c4' },
-  evidence:  { icon: '📜', accent: 'var(--orot-ink-mute)' },
+  mechanism: { icon: '✦', accent: '#b9a7ef' },
+  months:    { icon: '✦', accent: '#7fc6c0' },
+  topics:    { icon: '✦', accent: 'var(--orot-coral)' },
+  action:    { icon: '✦', accent: 'var(--primary,#f0c75e)' },
+  next:      { icon: '✦', accent: '#8aa1c4' },
+  evidence:  { icon: '✦', accent: 'var(--orot-ink-mute)' },
 };
 
 // ✦ 디바이더 — SajuV4Report / CompatV4Report와 동일 모티프.

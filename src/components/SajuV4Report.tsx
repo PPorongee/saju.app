@@ -122,14 +122,14 @@ export interface Props {
 type SectionAccent = { icon: string; accent: string; glow: string };
 const SECTION_ACCENTS: Record<string, SectionAccent> = {
   opening:   { icon: '✦', accent: 'var(--orot-coral)', glow: 'rgba(243,160,146,0.16)' },
-  structure: { icon: '🌙', accent: '#b9a7ef',           glow: 'rgba(185,167,239,0.14)' },
-  repeated:  { icon: '🔁', accent: '#7fc6c0',           glow: 'rgba(127,198,192,0.14)' },
-  career:    { icon: '💼', accent: 'var(--orot-el-earth)', glow: 'rgba(211,184,122,0.14)' },
-  money:     { icon: '💰', accent: '#9cc99a',           glow: 'rgba(156,201,154,0.14)' },
-  love:      { icon: '❤️', accent: '#e899ad',           glow: 'rgba(232,153,173,0.14)' },
-  future:    { icon: '🌠', accent: '#8aa1c4',           glow: 'rgba(138,161,196,0.14)' },
-  final:     { icon: '⭐', accent: 'var(--orot-primary, #f0c75e)', glow: 'rgba(240,199,94,0.16)' },
-  guide:     { icon: '🧭', accent: 'var(--orot-coral)', glow: 'rgba(243,160,146,0.14)' },
+  structure: { icon: '✦', accent: '#b9a7ef',           glow: 'rgba(185,167,239,0.14)' },
+  repeated:  { icon: '✦', accent: '#7fc6c0',           glow: 'rgba(127,198,192,0.14)' },
+  career:    { icon: '✦', accent: 'var(--orot-el-earth)', glow: 'rgba(211,184,122,0.14)' },
+  money:     { icon: '✦', accent: '#9cc99a',           glow: 'rgba(156,201,154,0.14)' },
+  love:      { icon: '✦', accent: '#e899ad',           glow: 'rgba(232,153,173,0.14)' },
+  future:    { icon: '✦', accent: '#8aa1c4',           glow: 'rgba(138,161,196,0.14)' },
+  final:     { icon: '✦', accent: 'var(--orot-primary, #f0c75e)', glow: 'rgba(240,199,94,0.16)' },
+  guide:     { icon: '✦', accent: 'var(--orot-coral)', glow: 'rgba(243,160,146,0.14)' },
 };
 
 // 7섹션 narrative 제목 — 언어별. (본문 reportText는 API가 lang=en이면 영어로 번역해 전달.)

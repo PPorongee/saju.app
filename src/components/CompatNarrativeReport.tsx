@@ -216,18 +216,18 @@ export default function CompatNarrativeReport({
 type CompatAccent = { icon: string; accent: string };
 const ACCENTS = {
   overview:   { icon: '✦', accent: 'var(--orot-coral)' },
-  mechanism:  { icon: '🌙', accent: '#b9a7ef' },
-  attraction: { icon: '❤️', accent: '#e899ad' },
-  repeated:   { icon: '🔁', accent: '#7fc6c0' },
-  guide:      { icon: '🧭', accent: '#9cc99a' },
-  conflict:   { icon: '⚡', accent: '#e0a86b' },
-  complement: { icon: '🌿', accent: '#86c79a' },
-  attachment: { icon: '💞', accent: '#e2a0c4' },
-  money:      { icon: '💰', accent: '#cdb574' },
-  bonus:      { icon: '🎁', accent: '#d6a8e6' },
-  nextStep:   { icon: '🌱', accent: '#8fc7a6' },
-  final:      { icon: '⭐', accent: 'var(--orot-primary, #f0c75e)' },
-  future:     { icon: '🌠', accent: '#8aa1c4' },
+  mechanism:  { icon: '✦', accent: '#b9a7ef' },
+  attraction: { icon: '✦', accent: '#e899ad' },
+  repeated:   { icon: '✦', accent: '#7fc6c0' },
+  guide:      { icon: '✦', accent: '#9cc99a' },
+  conflict:   { icon: '✦', accent: '#e0a86b' },
+  complement: { icon: '✦', accent: '#86c79a' },
+  attachment: { icon: '✦', accent: '#e2a0c4' },
+  money:      { icon: '✦', accent: '#cdb574' },
+  bonus:      { icon: '✦', accent: '#d6a8e6' },
+  nextStep:   { icon: '✦', accent: '#8fc7a6' },
+  final:      { icon: '✦', accent: 'var(--orot-primary, #f0c75e)' },
+  future:     { icon: '✦', accent: '#8aa1c4' },
 } satisfies Record<string, CompatAccent>;
 
 // 본문의 'A'/'B'(사람 지칭)를 실제 이름으로 치환. 단어경계만 — DNA/A4 등은 보존.
