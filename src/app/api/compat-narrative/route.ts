@@ -18,7 +18,7 @@ import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType } from '@/domain/saju/compatibility/compatibilityTypes';
 import { generateCompatNarrativeReport } from '@/domain/saju/compatibility/narrative/generateCompatNarrativeReport';
 import { createOpenAiCompatNarrativeGptCaller } from '@/lib/compat-narrative-gpt-caller';
-import { buildSharedActivities, buildRelationGauges, buildPersonTrait, buildBonusSection } from '@/domain/saju/compatibility/compatExtras';
+import { buildSharedActivities, buildRelationGauges, buildPersonTrait, buildBonusSection, buildChildrenFortune } from '@/domain/saju/compatibility/compatExtras';
 import { calculateAnalysisOnly } from '@/domain/saju/generatePersonalSajuReport';
 import {
   normalizeCompatNarrativeServerFlags,
@@ -83,17 +83,19 @@ export async function POST(req: Request) {
 
     // 7) 부가 콘텐츠 — bundle에서 평문 필드만 추려 노출(내부 evidence 토큰 제외).
     const bd = result.bundle;
-    // 두 사람 일간(기질 카드용) — 결정론. dayMaster만 필요하므로 가볍게 추출.
-    const aDayMaster = calculateAnalysisOnly(inputA).birthChart.dayMaster;
-    const bDayMaster = calculateAnalysisOnly(inputB).birthChart.dayMaster;
+    // 두 사람 원국(기질 카드 + 자녀운용) — 결정론.
+    const aAnalysis = calculateAnalysisOnly(inputA);
+    const bAnalysis = calculateAnalysisOnly(inputB);
     const extras = {
       persons: [
-        buildPersonTrait(inputA.name?.trim() || '첫 사람', aDayMaster),
-        buildPersonTrait(inputB.name?.trim() || '두 사람', bDayMaster),
+        buildPersonTrait(inputA.name?.trim() || '첫 사람', aAnalysis.birthChart.dayMaster),
+        buildPersonTrait(inputB.name?.trim() || '두 사람', bAnalysis.birthChart.dayMaster),
       ],
       scores: buildRelationGauges(bd),
       sharedActivities: buildSharedActivities(bd),
-      bonus: buildBonusSection(bd, relationshipType),
+      bonus: relationshipType === 'married'
+        ? buildChildrenFortune(aAnalysis, bAnalysis, inputA.gender, inputB.gender, bd)
+        : buildBonusSection(bd, relationshipType),
       conflict: {
         mainConflictTriggers: bd.conflictAnalysis?.mainConflictTriggers ?? [],
         repeatedPattern: bd.conflictAnalysis?.repeatedPattern ?? '',

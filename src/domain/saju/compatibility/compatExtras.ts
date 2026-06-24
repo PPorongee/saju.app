@@ -7,8 +7,10 @@
 //   - 함께 활동/음식/장소는 오행 룩업(LUCK 톤)으로, 관계가 더 채우면 좋은 오행 기준.
 
 import type { CompatibilityAnalysisBundle, RelationshipType } from './compatibilityTypes';
-import { type Element, ELEMENT_KO, STEM_ELEMENT } from '../rules/elements';
+import { type Element, ELEMENTS, ELEMENT_KO, STEM_ELEMENT, PRODUCES, RESTRAINS } from '../rules/elements';
 import type { HeavenlyStem } from '../rules/heavenlyStems';
+import type { PersonalSajuGptInput, TenGod } from '../report/sajuReportSchema';
+import { TEN_GOD_CATEGORY } from '../rules/tenGods';
 
 // ============================================================
 // 0) 일간(천간) 기질 — 두 사람의 기질 카드용 (표준 10천간)
@@ -269,6 +271,133 @@ export function buildBonusSection(
       return { eyebrow: '재회·이별', title: '다시 만난다면', body: lines.join('\n').trim() };
     }
     default:
-      return null; // married → 자녀운(별도 deriver)
+      return null; // married → 자녀운(buildChildrenFortune)
   }
+}
+
+// ============================================================
+// 4) 결혼 자녀운 (신규 명리 deriver) — 두 사람 원국 기반.
+//    자녀성: 남=관성, 여=식상(미상=식상). 자녀궁=시주. 강화 역학·나이(노산 포함)·터울·양육·기질.
+//    안전: 자녀 수/성별/임신 단정 금지, 노산은 사실+전문의 상담 권장(공포 X).
+// ============================================================
+type Cat = 'self' | 'output' | 'wealth' | 'authority' | 'support';
+
+const CHILD_TEMPERAMENT: Record<Element, string> = {
+  wood: '호기심 많고 쑥쑥 자라며 새로운 걸 좋아하는 결',
+  fire: '밝고 활발하고 표현이 풍부한 결',
+  earth: '듬직하고 마음이 넓어 안정적인 결',
+  metal: '야무지고 단단해 자기 기준이 분명한 결',
+  water: '영리하고 섬세하며 속이 깊은 결',
+};
+const PARENT_ROLE: Record<Cat, string> = {
+  output: '잘 놀아주고 감정을 읽어주는 — 정서와 표현을 채우는 역할',
+  authority: '생활습관과 울타리를 잡아주는 — 규율과 틀의 역할',
+  support: '가르치고 보듬는 — 교육과 정서적 안정의 역할',
+  wealth: '현실적으로 뒷받침하는 — 경제와 살림의 역할',
+  self: '친구처럼 함께 부대끼며 크는 — 같이 크는 역할',
+};
+
+function groupTotal(totals: Record<TenGod, number>, cat: Cat): number {
+  return (Object.keys(totals) as TenGod[]).reduce((s, g) => (TEN_GOD_CATEGORY[g] === cat ? s + (totals[g] ?? 0) : s), 0);
+}
+function childStarCat(gender?: string): Cat {
+  return gender === 'male' ? 'authority' : 'output'; // female/unknown → 식상
+}
+function childStarElement(dayMaster: string, cat: Cat): Element | undefined {
+  const myEl = STEM_ELEMENT[dayMaster as HeavenlyStem];
+  if (!myEl) return undefined;
+  if (cat === 'output') return PRODUCES[myEl];
+  return (Object.keys(RESTRAINS) as Element[]).find((el) => RESTRAINS[el] === myEl); // 관성: 나를 극하는 오행
+}
+function starLabel(total: number): string {
+  return total >= 3 ? '자녀 기운이 든든한 편' : total >= 1.3 ? '자녀 기운이 보통' : '자녀 자리가 약한 편';
+}
+
+export function buildChildrenFortune(
+  a: PersonalSajuGptInput,
+  b: PersonalSajuGptInput,
+  genderA: string | undefined,
+  genderB: string | undefined,
+  bundle: CompatibilityAnalysisBundle,
+): BonusSection {
+  const aCat = childStarCat(genderA);
+  const bCat = childStarCat(genderB);
+  const aEl = childStarElement(a.birthChart.dayMaster, aCat);
+  const bEl = childStarElement(b.birthChart.dayMaster, bCat);
+  const aTotal = groupTotal(a.coreAnalysis.tenGods.totals, aCat);
+  const bTotal = groupTotal(b.coreAnalysis.tenGods.totals, bCat);
+  const bStrong = b.coreAnalysis.elementStrength.strongest ?? [];
+  const aStrong = a.coreAnalysis.elementStrength.strongest ?? [];
+
+  // 강화 역학: 약한 쪽을 상대가 받쳐주는가
+  const reinforce: string[] = [];
+  if (aTotal < 1.3 && aEl && bStrong.includes(aEl)) {
+    reinforce.push(`A는 자녀 자리가 약한 편인데, B의 단단한 ${ELEMENT_KO[aEl]} 기운이 이를 받쳐줘서 만나서 보완되는 결이에요.`);
+  }
+  if (bTotal < 1.3 && bEl && aStrong.includes(bEl)) {
+    reinforce.push(`B는 자녀 자리가 약한 편인데, A의 ${ELEMENT_KO[bEl]} 기운이 그 부분을 채워줘요.`);
+  }
+
+  // 나이 / 노산
+  const ageA = a.userContext?.age ?? 0;
+  const ageB = b.userContext?.age ?? 0;
+  const femaleAges = [genderA === 'female' ? ageA : null, genderB === 'female' ? ageB : null].filter((x): x is number => x != null);
+  const femaleAge = femaleAges.length ? Math.min(...femaleAges) : undefined;
+  let timing: string;
+  if (femaleAge !== undefined && femaleAge >= 40) {
+    timing = `여성 나이 기준 만 40세를 넘기면 의학적으로는 노산 구간이에요. 사주의 자녀 기운과는 별개로, 몸의 준비와 전문의 상담을 가장 앞에 두는 게 좋아요. 계획이 있다면 미루지 않는 편이 현실적으로 수월합니다.`;
+  } else if (femaleAge !== undefined && femaleAge >= 36) {
+    timing = `여성 나이로 보면 시기적으로 너무 미루지 않는 편이 수월한 구간이에요. 준비가 됐다면 흐름을 타 두는 걸 권해요.`;
+  } else {
+    timing = `나이 면에서는 조급할 필요는 없어요. 두 사람의 자리가 안정될 때 자연스럽게 흐름을 보면 좋아요.`;
+  }
+
+  // 터울
+  const tul = (aTotal + bTotal) >= 4
+    ? '자녀 기운이 받쳐주는 편이라, 원한다면 터울을 촘촘히 둬도 무리가 적어요.'
+    : (femaleAge !== undefined && femaleAge >= 38)
+      ? '시기상 한 명에게 집중하거나, 터울을 너무 길게 끌지 않는 편이 현실적이에요.'
+      : '터울은 넉넉히 두고 한 명씩 충분히 품는 쪽이 두 사람 리듬에 더 맞아요.';
+
+  // 아이 기질 — 두 사람 합산 강한 오행
+  const sumScore: Record<Element, number> = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
+  for (const el of ELEMENTS) {
+    sumScore[el] = (a.coreAnalysis.elementStrength.scores?.[el] ?? 0) + (b.coreAnalysis.elementStrength.scores?.[el] ?? 0);
+  }
+  const childEl = ELEMENTS.reduce((m, el) => (sumScore[el] > sumScore[m] ? el : m), ELEMENTS[0]);
+
+  // 양육 분담
+  const aRole = PARENT_ROLE[(TEN_GOD_CATEGORY[a.coreAnalysis.tenGods.strongest?.[0]] as Cat) ?? 'support'];
+  const bRole = PARENT_ROLE[(TEN_GOD_CATEGORY[b.coreAnalysis.tenGods.strongest?.[0]] as Cat) ?? 'support'];
+
+  const hourNote = (!a.birthChart.hour || !b.birthChart.hour)
+    ? ' (출생시간을 모르면 자녀궁 해석은 큰 결만 봐요.)'
+    : '';
+
+  const lines = [
+    '## 아이를 가지면 좋은 시기',
+    timing,
+    '',
+    '## 두 사람의 자녀 기운',
+    `A는 ${starLabel(aTotal)}, B는 ${starLabel(bTotal)}이에요.${hourNote}`,
+    ...(reinforce.length ? ['', ...reinforce] : ['', '서로의 자녀 기운이 무난하게 맞물려, 한쪽으로 치우치지 않는 결이에요.']),
+    '',
+    '## 아이 기질은 이런 결이에요',
+    `두 사람의 기운을 합쳐 보면, 아이는 ${CHILD_TEMPERAMENT[childEl]}로 자랄 가능성이 커요. (정해진 게 아니라 경향이에요.)`,
+    '',
+    '## 양육은 이렇게 나누면 잘 맞아요',
+    `A는 ${aRole}, B는 ${bRole}이에요. 서로 다른 결이라 한 명에게 몰리지 않게 나누면 편해요.`,
+    '',
+    '## 터울은',
+    tul,
+    '',
+    '## 아이가 생기면 두 사람은',
+    j([
+      bundle.stabilityAnalysis?.dailyCompatibility,
+      '아이를 중심으로 생활 리듬이 다시 맞춰지면서, 둘만의 시간은 줄지만 같은 곳을 보는 힘은 커지는 결이에요.',
+    ]),
+    '',
+    '사주는 아이의 수나 성별을 정하는 게 아니라, 두 사람이 부모로서 어떤 결인지를 보는 거예요.',
+  ];
+  return { eyebrow: '결혼 · 자녀운', title: '두 사람의 자녀운', body: lines.join('\n').trim() };
 }
