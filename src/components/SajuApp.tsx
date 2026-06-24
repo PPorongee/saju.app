@@ -4674,6 +4674,14 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           ...birthPlacePayloadPatch(SAJU_PRECISION_INPUTS_ENABLED, birthPlaceId),
         },
         currentDate: new Date().toISOString().slice(0, 10),
+        // 질문화면(v4Ctx)에서 받은 연애상태·관심사·나이를 올해운세에 전달 → 엔진 맞춤 로직 활성화.
+        relationshipStatus: (({ single: 'single', dating: 'dating', married: 'married', divorced: 'divorced', widowed: 'unknown', unknown: 'unknown' } as const)[v4Ctx.relationshipStatus] ?? 'unknown'),
+        userContext: {
+          age: userData.year ? (new Date().getFullYear() - userData.year) : undefined,
+          relationshipStatus: v4Ctx.relationshipStatus,
+          currentConcerns: v4Ctx.concerns,
+          ...(v4Ctx.occupation ? { occupation: v4Ctx.occupation } : {}),
+        },
       };
       return (
         <YearlyV4Report

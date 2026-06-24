@@ -74,12 +74,15 @@ export async function POST(req: Request) {
       ? b.currentDate
       : (inputRaw.currentDate as string);
 
+  // relationshipStatus/userContext는 body 최상위 또는 input 내부 어느 쪽에 와도 수용.
+  const relationshipStatus = b.relationshipStatus ?? inputRaw.relationshipStatus;
+  const userContext = b.userContext ?? inputRaw.userContext;
   const input: YearlyFortuneInput = {
     birth: inputRaw.birth,
     currentDate,
     // targetYear override intentionally not exposed — desyncs 세운/월운 from currentDate (see ledger HIGH-2); re-wire in Phase 2.
-    ...(b.relationshipStatus !== undefined ? { relationshipStatus: b.relationshipStatus } : {}),
-    ...(b.userContext !== undefined ? { userContext: b.userContext } : {}),
+    ...(relationshipStatus !== undefined ? { relationshipStatus } : {}),
+    ...(userContext !== undefined ? { userContext } : {}),
   };
 
   const depthOptions = resolveYearlyDepthOptions(
