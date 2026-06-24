@@ -202,7 +202,7 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
         <SectionAiLoading />
       ) : narrative && hasAnyNarrativeBody(narrative) ? (
         <div style={{ marginTop: 8 }}>
-          <NarrativeSection title={T.opening.title} body={narrative.openingDefinition} eyebrow={T.opening.eyebrow} accent={SECTION_ACCENTS.opening} index={0} lead />
+          <NarrativeSection title={T.opening.title} body={narrative.openingDefinition} eyebrow={T.opening.eyebrow} accent={SECTION_ACCENTS.opening} index={0} lead defaultOpen />
           <NarrativeSection title={T.structure.title} body={narrative.lifeStructureNarrative} eyebrow={T.structure.eyebrow} accent={SECTION_ACCENTS.structure} index={1} lead />
           <NarrativeSection title={T.repeated.title} body={narrative.repeatedPatternNarrative} eyebrow={T.repeated.eyebrow} accent={SECTION_ACCENTS.repeated} index={2} lead />
           <NarrativeSection title={T.career.title} body={narrative.careerTalentNarrative} eyebrow={T.career.eyebrow} accent={SECTION_ACCENTS.career} index={3} lead />

@@ -304,7 +304,7 @@ function ReportBody({
         <PersonTraitsCard persons={extras.persons} relationLine={px(report.evidenceView.dayMasterRelation?.plain ?? '')} />
       ) : null}
       {extras?.scores?.length ? <GaugesCard gauges={extras.scores} /> : null}
-      <CompatSvSection title="두 사람을 한 문장으로" body={overviewBody} eyebrow="첫인상" accent={ACCENTS.overview} showDivider={false} lead />
+      <CompatSvSection title="두 사람을 한 문장으로" body={overviewBody} eyebrow="첫인상" accent={ACCENTS.overview} showDivider={false} lead defaultOpen />
       <CompatSvSection title="이 관계가 이렇게 느껴지는 이유" body={px(report.relationshipMechanism.body)} eyebrow="관계의 구조" accent={ACCENTS.mechanism} showDivider lead />
       <CompatSvSection title="서로에게 끌리는 지점과 엇갈리는 지점" body={px(report.attractionAndFriction.body)} eyebrow="끌림과 균열" accent={ACCENTS.attraction} showDivider lead />
       {extras?.attachment ? (
@@ -493,16 +493,16 @@ function CompatHero({ card, relType }: { card: CompatibilityNarrativeReport['com
 
 // 줄글 섹션 — sv4-accordion(<details>), 기본 접힘. SajuV4Report.NarrativeSection 미러.
 function CompatSvSection({
-  title, body, eyebrow, accent, showDivider, lead = false,
+  title, body, eyebrow, accent, showDivider, lead = false, defaultOpen = false,
 }: {
-  title: string; body: string; eyebrow: string; accent: CompatAccent; showDivider: boolean; lead?: boolean;
+  title: string; body: string; eyebrow: string; accent: CompatAccent; showDivider: boolean; lead?: boolean; defaultOpen?: boolean;
 }) {
   if (!body || !body.trim()) return null;
-  const teaser = compatTeaser(body);
+  const teaser = defaultOpen ? '' : compatTeaser(body);
   return (
     <>
       {showDivider && <CompatStarDivider />}
-      <details className="sv4-accordion sv4-reveal" style={{ marginTop: showDivider ? 6 : 24 }}>
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: showDivider ? 6 : 24 }} {...(defaultOpen ? { open: true } : {})}>
         <summary className="sv4-accordion-summary" style={{ '--sv4-accent': accent.accent } as React.CSSProperties}>
           <span className="sv4-accordion-icon" aria-hidden>{accent.icon}</span>
           <span className="sv4-accordion-header">

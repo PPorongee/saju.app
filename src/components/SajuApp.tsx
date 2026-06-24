@@ -588,8 +588,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   useEffect(() => {
     if (currentScreen !== 3) return;
     setLoadingStep(0);
-    const t1 = setTimeout(() => setLoadingStep(1), 1500);
-    const t2 = setTimeout(() => setLoadingStep(2), 3000);
+    const t1 = setTimeout(() => setLoadingStep(1), 900);
+    const t2 = setTimeout(() => setLoadingStep(2), 1800);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [currentScreen]);
 
@@ -1578,7 +1578,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         if (cachedYs) setLlmYongsin(cachedYs);
         fetchSajuReading(prompts, controller.signal);
       }
-    }, 4500);
+    }, 2600);
   }
 
   /* ===== SCREEN 0: Intro ===== */
@@ -1918,7 +1918,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                       if (controller.signal.aborted) return;
                       setCurrentScreen(8); // teaser/paywall first
                       fetchSajuReadingV4(controller.signal, profileV4Input);
-                    }, 4500);
+                    }, 2600);
                     return;
                   }
                   if (YEARLY_FORTUNE_UI_ENABLED && appMode === 'yearly') {
@@ -1942,7 +1942,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                         if (cachedYs2) setLlmYongsin(cachedYs2);
                         fetchSajuReading(buildSajuPrompts(sj, oh, { name: p.name, gender: p.gender, year: p.year, month: p.month, day: p.day, hour: p.hour, concern: p.concern, state: p.state, personality: p.personality, relationship: p.relationship, wantToKnow: p.wantToKnow, lang }, cachedYs2));
                       }
-                    }, 4500);
+                    }, 2600);
                   }
                 }}>
                   {p.name} ({p.year}.{p.month}.{p.day})
@@ -2460,6 +2460,32 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           }}>
             {steps[loadingStep] || ''}
           </div>
+
+          {/* 기다리는 동안 읽을거리 — 이미 계산된 사주 원국(결정론) 노출 */}
+          {sajuResult && (
+            <div className="orot-card" style={{ marginTop: 30, padding: '16px 16px', width: '100%', maxWidth: 360 }}>
+              <div style={{ fontSize: 11, color: 'var(--orot-coral)', fontWeight: 700, marginBottom: 12, fontFamily: 'var(--orot-font)', letterSpacing: '0.05em' }}>
+                {isEn ? 'YOUR CHART' : '당신의 사주 원국'}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                {[
+                  { l: isEn ? 'Hour' : '시', s: sajuResult.hStem, b: sajuResult.hBranch },
+                  { l: isEn ? 'Day' : '일', s: sajuResult.dStem, b: sajuResult.dBranch },
+                  { l: isEn ? 'Month' : '월', s: sajuResult.mStem, b: sajuResult.mBranch },
+                  { l: isEn ? 'Year' : '년', s: sajuResult.yStem, b: sajuResult.yBranch },
+                ].map((p, i) => (
+                  <div key={i} style={{ textAlign: 'center', borderRadius: 10, border: '1px solid var(--orot-hair)', background: 'rgba(255,255,255,0.02)', padding: '10px 4px' }}>
+                    <div style={{ fontSize: 10, color: 'var(--orot-ink-mute)', marginBottom: 6, fontFamily: 'var(--orot-font)' }}>{p.l}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)', lineHeight: 1.25 }}>{CG[p.s] ?? '–'}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)', lineHeight: 1.25 }}>{JJ[p.b] ?? '–'}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--orot-ink-soft)', marginTop: 12, fontFamily: 'var(--orot-font)', textAlign: 'center', wordBreak: 'keep-all' }}>
+                {isEn ? `Your day master is ${CG[sajuResult.dStem] ?? ''}.` : `당신의 일간은 ${CG[sajuResult.dStem] ?? ''}이에요. 이 한 글자에서 해석이 시작돼요.`}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
