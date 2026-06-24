@@ -30,7 +30,7 @@ import type { CompatibilityNarrativeReport } from '@/domain/saju/compatibility/n
 import { FortuneVerdictSection } from '@/components/FortuneVerdictSection';
 import type { RelationshipYearFlow } from '@/domain/saju/compatibility/compatibilityTypes';
 import { glossSajuNotations } from '@/components/evidence/notationGloss';
-import type { RelationGauge, SharedActivities, PersonTrait } from '@/domain/saju/compatibility/compatExtras';
+import type { RelationGauge, SharedActivities, PersonTrait, BonusSection } from '@/domain/saju/compatibility/compatExtras';
 import { type Element, ELEMENT_KO } from '@/domain/saju/rules/elements';
 
 // /api/compat-narrative 의 extras(평문 필드만)
@@ -38,6 +38,7 @@ export interface CompatExtras {
   persons?: PersonTrait[];
   scores: RelationGauge[];
   sharedActivities: SharedActivities | null;
+  bonus?: BonusSection | null;
   conflict: { mainConflictTriggers: string[]; repeatedPattern: string; emotionalMismatch: string; recoveryStyleMismatch: string };
   recovery: { likelyRecoveryPattern: string; whatAUsuallyNeeds: string; whatBUsuallyNeeds: string; bestRecoveryRule: string };
   stability: { dailyCompatibility: string; longTermRisk: string; relationshipTypeSpecificStability: string };
@@ -176,6 +177,7 @@ const ACCENTS = {
   guide:      { icon: '🧭', accent: '#9cc99a' },
   conflict:   { icon: '⚡', accent: '#e0a86b' },
   complement: { icon: '🌿', accent: '#86c79a' },
+  bonus:      { icon: '🎁', accent: '#d6a8e6' },
   final:      { icon: '⭐', accent: 'var(--orot-primary, #f0c75e)' },
   future:     { icon: '🌠', accent: '#8aa1c4' },
 } satisfies Record<string, CompatAccent>;
@@ -223,6 +225,9 @@ function ReportBody({
         <CompatSvSection title="이렇게 부딪히고, 이렇게 풀려요" body={px(conflictRecoveryBody(extras))} eyebrow="싸움과 화해" accent={ACCENTS.conflict} showDivider />
       ) : null}
       {extras ? <ComplementActivitiesSection ec={extras.elementComplement} act={extras.sharedActivities} nameA={nameA} nameB={nameB} /> : null}
+      {extras?.bonus ? (
+        <CompatSvSection title={extras.bonus.title} body={px(extras.bonus.body)} eyebrow={extras.bonus.eyebrow} accent={ACCENTS.bonus} showDivider />
+      ) : null}
       <CompatSvSection title="마지막으로 드리는 조언" body={px(report.finalAdvice.body)} eyebrow="정리하며" accent={ACCENTS.final} showDivider lead />
       <FortuneVerdictSection verdict={report.fortuneVerdict} />
       <EvidenceFold ev={report.evidenceView} />

@@ -18,7 +18,7 @@ import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType } from '@/domain/saju/compatibility/compatibilityTypes';
 import { generateCompatNarrativeReport } from '@/domain/saju/compatibility/narrative/generateCompatNarrativeReport';
 import { createOpenAiCompatNarrativeGptCaller } from '@/lib/compat-narrative-gpt-caller';
-import { buildSharedActivities, buildRelationGauges, buildPersonTrait } from '@/domain/saju/compatibility/compatExtras';
+import { buildSharedActivities, buildRelationGauges, buildPersonTrait, buildBonusSection } from '@/domain/saju/compatibility/compatExtras';
 import { calculateAnalysisOnly } from '@/domain/saju/generatePersonalSajuReport';
 import {
   normalizeCompatNarrativeServerFlags,
@@ -93,6 +93,7 @@ export async function POST(req: Request) {
       ],
       scores: buildRelationGauges(bd),
       sharedActivities: buildSharedActivities(bd),
+      bonus: buildBonusSection(bd, relationshipType),
       conflict: {
         mainConflictTriggers: bd.conflictAnalysis?.mainConflictTriggers ?? [],
         repeatedPattern: bd.conflictAnalysis?.repeatedPattern ?? '',

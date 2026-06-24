@@ -6,7 +6,7 @@
 //     정성 레벨(낮음/보통/좋음/아주 좋음)로만 표현. fill은 막대 길이용 보조값.
 //   - 함께 활동/음식/장소는 오행 룩업(LUCK 톤)으로, 관계가 더 채우면 좋은 오행 기준.
 
-import type { CompatibilityAnalysisBundle } from './compatibilityTypes';
+import type { CompatibilityAnalysisBundle, RelationshipType } from './compatibilityTypes';
 import { type Element, ELEMENT_KO, STEM_ELEMENT } from '../rules/elements';
 import type { HeavenlyStem } from '../rules/heavenlyStems';
 
@@ -168,4 +168,107 @@ export function buildRelationGauges(bundle: CompatibilityAnalysisBundle): Relati
     mk('recovery', '회복', recovery, '부딪힌 뒤 다시 가까워지는 힘'),
     mk('growth', '성장', growth, '서로의 부족한 결을 채워주는 정도'),
   ];
+}
+
+// ============================================================
+// 3) 관계 유형별 보너스 섹션 (deterministic, bundle 평문 기반)
+//    married(자녀운)은 별도 deriver에서 — 여기선 null.
+//    body는 ## 헤더 + 문단 마크다운. 본문 A/B는 UI에서 이름 치환.
+// ============================================================
+export interface BonusSection {
+  eyebrow: string;
+  title: string;
+  body: string;
+}
+
+const j = (a: (string | undefined)[]) => a.filter(Boolean).join(' ');
+
+export function buildBonusSection(
+  bundle: CompatibilityAnalysisBundle,
+  relationshipType: RelationshipType,
+): BonusSection | null {
+  const at = bundle.attractionAnalysis;
+  const cf = bundle.conflictAnalysis;
+  const rc = bundle.recoveryAnalysis;
+  const st = bundle.stabilityAnalysis;
+  const ec = bundle.elementComplement;
+  const tg = bundle.tenGodInteraction;
+  const trig = (cf?.mainConflictTriggers ?? []).slice(0, 3);
+  const press = (tg?.pressurePoints ?? []).slice(0, 2);
+  const need = Array.from(new Set([...(ec?.aNeedsFromB ?? []), ...(ec?.bNeedsFromA ?? [])]))
+    .map((e) => ELEMENT_KO[e]).filter(Boolean).join('·');
+
+  switch (relationshipType) {
+    case 'dating': {
+      const lines = [
+        '## 결혼까지 가면 잘 맞을까',
+        j([st?.relationshipTypeSpecificStability || st?.dailyCompatibility,
+          need && `오래 볼수록 ${need} 기운을 서로 채워주는 결이라, 같이 살아갈수록 균형이 잡히는 사이예요.`]),
+        '',
+        '## 결혼 전 넘어야 할 산',
+        j([st?.longTermRisk, cf?.repeatedPattern]),
+        rc?.bestRecoveryRule ? `\n결혼을 진지하게 본다면, ${rc.bestRecoveryRule}` : '',
+      ];
+      return { eyebrow: '연애 → 결혼', title: '결혼하면 어떨까', body: lines.join('\n').trim() };
+    }
+    case 'crush_or_something': {
+      const pace = at?.initialChemistry === 'strong'
+        ? '눈치싸움 길게 끌지 마요. 이 조합은 직진이 의외로 잘 먹혀요.'
+        : at?.initialChemistry === 'slow-burn'
+          ? '들이대면 도망가는 결이에요. 자주, 가볍게, 천천히 — 그게 정답이에요.'
+          : '한 번에 훅 들어가기보다, 공통 관심사로 자연스럽게 거리부터 좁히는 게 유리해요.';
+      const lines = [
+        '## 솔직히, 이렇게 다가가야 먹혀요',
+        j([at?.whyTheyNoticeEachOther, (at?.mainAttraction ?? []).slice(0, 2).join(' ')]),
+        pace,
+        '',
+        '## 네가 자꾸 식게 만드는 포인트 (팩폭)',
+        '냉정하게 말하면, 이런 행동이 다 된 분위기를 깨요 —',
+        ...(trig.length ? trig.map((t) => `- ${t}`) : press.map((t) => `- ${t}`)),
+        cf?.emotionalMismatch ? `\n특히 ${cf.emotionalMismatch} 이 지점은, 상대가 말 안 해도 속으로 식고 있을 수 있어요.` : '',
+      ];
+      return { eyebrow: '짝사랑·썸', title: '다가가는 법 & 내가 망치는 포인트', body: lines.join('\n').trim() };
+    }
+    case 'friendship': {
+      const lines = [
+        '## 이 우정이 오래가려면',
+        j([st?.dailyCompatibility, rc?.bestRecoveryRule && `틀어져도 ${rc.bestRecoveryRule}`]),
+        '',
+        '## 이 친구가 네 인생에 주는 것',
+        j([(at?.mainAttraction ?? []).slice(0, 2).join(' '),
+          need && `네게 부족하기 쉬운 ${need} 기운을 옆에서 채워주는 친구예요.`]),
+        '',
+        '## 살짝 배려하면 더 편해지는 점',
+        j(['비난이 아니라 결의 차이일 뿐이에요.', cf?.emotionalMismatch, '이 부분만 서로 살피면 훨씬 오래가요.']),
+      ];
+      return { eyebrow: '친구', title: '이 우정의 결', body: lines.join('\n').trim() };
+    }
+    case 'coworker': {
+      const lines = [
+        '## 이해관계(돈·평가)에서 조심할 결',
+        j([st?.longTermRisk, trig.length ? trig.map((t) => t).join(', ') + ' 같은 지점에서 특히 어긋나기 쉬워요.' : cf?.repeatedPattern]),
+        '',
+        '## 이 동료를 내 편으로 만드는 법',
+        j([(tg?.attractionPoints ?? []).slice(0, 2).join(' '),
+          rc?.whatBUsuallyNeeds && `이 사람은 ${rc.whatBUsuallyNeeds} 그 결을 채워줄 때 마음을 열어요.`,
+          need && `${need} 쪽으로 도움을 주고받으면 신뢰가 빨리 쌓여요.`]),
+      ];
+      return { eyebrow: '동료', title: '협업 & 내 편 만들기', body: lines.join('\n').trim() };
+    }
+    case 'reunion_or_breakup': {
+      const lines = [
+        '## 다시 만나면 달라질까',
+        j([cf?.repeatedPattern && `예전에 부딪히던 결(${cf.repeatedPattern})은 그냥 두면 다시 나올 여지가 있어요.`,
+          '다만 정해진 결말은 없어요 — 무엇을 바꾸느냐에 달려 있어요.']),
+        '',
+        '## 다시 가까워지고 싶다면',
+        j([rc?.bestRecoveryRule && `핵심은 ${rc.bestRecoveryRule}`,
+          rc?.whatAUsuallyNeeds && `한 사람은 ${rc.whatAUsuallyNeeds}`,
+          rc?.whatBUsuallyNeeds && `다른 한 사람은 ${rc.whatBUsuallyNeeds} — 이걸 먼저 헤아려주면 문이 열려요.`]),
+      ];
+      return { eyebrow: '재회·이별', title: '다시 만난다면', body: lines.join('\n').trim() };
+    }
+    default:
+      return null; // married → 자녀운(별도 deriver)
+  }
 }
