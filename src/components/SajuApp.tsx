@@ -15,6 +15,7 @@ import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer
 import CompatV4Report, { type CompatV4ResultApi } from '@/components/CompatV4Report';
 import PlaceSelect, { birthPlacePayloadPatch } from '@/components/PlaceSelect';
 import CompatPreviewTeaser, { type CompatPreviewData } from '@/components/CompatPreviewTeaser';
+import PersonalPreviewTeaser, { type PersonalPreviewData } from '@/components/PersonalPreviewTeaser';
 import { resolveBirthTimeFields, pregnancyMomBirthTimeFields } from '@/lib/birthTimePayload';
 import type { BirthInput as CompatBirthInputV4 } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType as RelationshipTypeV4 } from '@/domain/saju/compatibility/compatibilityTypes';
@@ -5049,6 +5050,34 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   /* ===== SCREEN 8: Teaser / Paywall ===== */
   function renderTeaser() {
     if (!sajuResult) return null;
+
+    // 개인사주 v4 — 새 호기심형 미리보기(PersonalPreviewTeaser). 결정론 v4Resp만 사용(GPT 전).
+    // 올해/v3는 아래 기존 teaser 유지.
+    if (isV4 && appMode === 'saju') {
+      const pv = v4Resp as unknown as PersonalPreviewData | null;
+      return (
+        <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+          <button
+            onClick={() => setCurrentScreen(0)}
+            aria-label={t('backBtn', lang)}
+            style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          >
+            <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+          </button>
+          <PersonalPreviewTeaser
+            preview={pv}
+            loading={!pv?.coreAnalysis}
+            userName={userData.name || t('anonymous', lang)}
+            lang={lang}
+            starBalance={starBalance}
+            cost={10}
+            onUnlock={() => { updateStarBalance(starBalance - 10); setTeaserUnlocked(true); setCurrentScreen(4); }}
+            onCharge={() => setCurrentScreen(9)}
+          />
+        </div>
+      );
+    }
+
     const sj = sajuResult;
     const ds = sj.dStem;
     const profile = PROFILES[ds];
