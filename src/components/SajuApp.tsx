@@ -5453,9 +5453,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   function renderChargeScreen() {
     const isEn = lang === 'en';
     const packages = [
-      { stars: 10, price: 990,  desc: isEn ? 'Unlock 1 full reading' : '전체 해석 1회', highlight: false },
-      { stars: 20, price: 1900, desc: isEn ? '2 readings (save ₩80)' : '2회 이용 (80원 절약)', highlight: true },
-      { stars: 30, price: 2700, desc: isEn ? '3 readings (save ₩270)' : '3회 이용 (270원 절약)', highlight: false },
+      { stars: 10, price: 990,  readings: 1, unit: 990, badge: null as null | 'popular' | 'best', highlight: false },
+      { stars: 20, price: 1900, readings: 2, unit: 950, badge: 'popular' as null | 'popular' | 'best', highlight: true },
+      { stars: 30, price: 2700, readings: 3, unit: 900, badge: 'best' as null | 'popular' | 'best', highlight: false },
     ];
     return (
       <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
@@ -5471,73 +5471,88 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
         </button>
 
-        {/* Hero BleedCard */}
-        <BleedCard veil="soft" minHeight={180} style={{ marginBottom: 20 }}>
-          <div style={{ paddingTop: 6, paddingBottom: 6, maxWidth: '70%' }}>
-            <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
-              {isEn ? 'Star shop' : '별빛 충전소'}
+        {/* Hero — sv4 night sky (결제 흐름 전체 톤 통일) */}
+        <section className="sv4-hero sv4-reveal" style={{ marginBottom: 16 }}>
+          <div className="sv4-hero-glow" aria-hidden />
+          <div className="sv4-hero-inner">
+            <div className="sv4-hero-eyebrow"><span aria-hidden>✦</span><span>{isEn ? 'Star shop' : '별빛 충전소'}</span></div>
+            <h1 className="sv4-hero-title">{isEn ? 'Light up your reading' : '별빛으로 사주를 열어요'}</h1>
+            <p className="sv4-hero-desc" style={{ marginBottom: 16 }}>
+              <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>{isEn ? 'In-person ₩50,000+' : '전문가 대면 상담 ₩50,000+'}</span>
+              {'  →  '}{isEn ? 'from ₩990' : '₩990부터'}
+            </p>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '9px 16px', borderRadius: 999, background: 'rgba(243,160,146,0.14)', border: '1px solid var(--orot-coral-faint)' }}>
+              <span style={{ fontSize: 13, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>{isEn ? 'My stars' : '보유 별빛'}</span>
+              <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)', lineHeight: 1 }}>⭐ {starBalance}{isEn ? '' : '개'}</span>
             </div>
-            <h1 style={{
-              fontSize: 22, fontWeight: 700, color: 'var(--orot-ink)',
-              letterSpacing: '-0.015em', lineHeight: 1.35, margin: 0,
-              fontFamily: 'var(--orot-font)',
-              background: 'none', WebkitTextFillColor: 'var(--orot-ink)',
-            }}>
-              {isEn ? 'Charge stars\nto unlock your readings.' : '별빛을 충전하고\n사주 해석을 열어보세요.'}
-            </h1>
           </div>
-        </BleedCard>
+        </section>
 
-        {/* Current balance */}
-        <div className="orot-card" style={{ textAlign: 'center', marginBottom: 16, padding: 22 }}>
-          <p style={{ fontSize: 13, color: 'var(--orot-ink-mute)', marginBottom: 6, fontFamily: 'var(--orot-font)' }}>
-            {isEn ? 'My Stars' : '보유 별빛'}
-          </p>
-          <div style={{ fontSize: 40, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)', lineHeight: 1.1 }}>
-            ⭐ {starBalance}{isEn ? '' : '개'}
+        {/* 별빛으로 할 수 있는 것 — 가치 한눈에 */}
+        <div className="orot-card" style={{ padding: '14px 16px', marginBottom: 18 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 10, fontFamily: 'var(--orot-font)' }}>
+            {isEn ? 'What stars unlock' : '별빛으로 열 수 있어요'}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {[
+              { icon: '🔮', label: isEn ? 'Personal saju' : '개인사주', cost: '⭐10' },
+              { icon: '📅', label: isEn ? '2026 fortune' : '올해운세', cost: '⭐10' },
+              { icon: '💕', label: isEn ? 'Compatibility' : '궁합', cost: '⭐5' },
+              { icon: '🤰', label: isEn ? 'Pregnancy' : '태교', cost: isEn ? 'Free' : '무료' },
+            ].map((v, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 10, border: '1px solid var(--orot-hair)', background: 'rgba(255,255,255,0.02)' }}>
+                <span style={{ fontSize: 17, flexShrink: 0 }}>{v.icon}</span>
+                <span style={{ flex: 1, fontSize: 13, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{v.label}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: v.cost === '무료' || v.cost === 'Free' ? '#7fc6a0' : 'var(--orot-coral)', fontFamily: 'var(--orot-font)', flexShrink: 0 }}>{v.cost}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Charge option cards */}
-        {packages.map((pkg, i) => (
+        <div className="section-divider">{isEn ? 'Choose a pack' : '충전 패키지'}</div>
+
+        {/* Charge packages */}
+        {packages.map((pkg, i) => {
+          const discount = Math.round((1 - pkg.unit / 990) * 100);
+          return (
           <div
             key={i}
             className="orot-card"
             style={{
-              padding: 22,
+              padding: '18px 18px',
               marginBottom: 12,
               position: 'relative',
               border: pkg.highlight ? '1.5px solid var(--orot-coral)' : '1px solid var(--orot-hair)',
               background: pkg.highlight
-                ? 'linear-gradient(180deg, rgba(243,160,146,0.12), rgba(243,160,146,0.05))'
-                : 'linear-gradient(180deg, var(--orot-card-navy) 0%, var(--orot-card-navy-2) 100%)',
+                ? 'linear-gradient(180deg, rgba(243,160,146,0.12), rgba(243,160,146,0.04))'
+                : undefined,
+              boxShadow: pkg.highlight ? '0 6px 24px rgba(243,160,146,0.14)' : undefined,
             }}
           >
-            {pkg.highlight && (
+            {pkg.badge && (
               <div style={{
-                position: 'absolute',
-                top: -10, right: 16,
-                background: 'var(--orot-coral)',
-                color: 'var(--orot-ink-on-pink)',
-                fontSize: 10, fontWeight: 700,
-                padding: '3px 12px',
-                borderRadius: 999,
-                letterSpacing: 0.04 + 'em',
-                fontFamily: 'var(--orot-font)',
+                position: 'absolute', top: -10, right: 16,
+                background: pkg.badge === 'popular' ? 'var(--orot-coral)' : 'var(--orot-ink-soft)',
+                color: '#fff', fontSize: 10, fontWeight: 800,
+                padding: '3px 12px', borderRadius: 999, letterSpacing: '0.04em', fontFamily: 'var(--orot-font)',
               }}>
-                ✦ {isEn ? 'BEST' : '인기'}
+                {pkg.badge === 'popular' ? (isEn ? '★ POPULAR' : '★ 인기') : (isEn ? 'BEST VALUE' : '✦ 최대 혜택')}
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>
-                  ⭐ {isEn ? pkg.stars + ' Stars' : '별빛 ' + pkg.stars + '개'}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>
+                  ⭐ {pkg.stars}{isEn ? ' Stars' : '개'}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>{pkg.desc}</div>
+                <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', marginTop: 5, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>
+                  {isEn ? `Unlock ${pkg.readings} reading${pkg.readings > 1 ? 's' : ''}` : `전체 해석 ${pkg.readings}회`}
+                  {isEn ? ` · or ${pkg.stars / 5} compat` : ` · 또는 궁합 ${pkg.stars / 5}회`}
+                </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
-                  ₩{pkg.price.toLocaleString()}
+              <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>₩{pkg.price.toLocaleString()}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--orot-ink-mute)', marginTop: 3, fontFamily: 'var(--orot-font)' }}>
+                  {isEn ? `₩${pkg.unit}/reading` : `1회당 ₩${pkg.unit}`}{discount > 0 ? ` · ${discount}%${isEn ? ' off' : ' 할인'}` : ''}
                 </div>
               </div>
             </div>
@@ -5546,26 +5561,23 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               className={pkg.highlight ? 'orot-btn orot-btn--primary orot-btn--full' : 'orot-btn orot-btn--ghost orot-btn--full'}
               style={{ textDecoration: 'none', fontSize: 15 }}
             >
-              {isEn ? 'Buy ' + pkg.stars + ' Stars — ₩' + pkg.price.toLocaleString() : '별빛 ' + pkg.stars + '개 구매 — ₩' + pkg.price.toLocaleString()} ›
+              {isEn ? 'Charge now' : '충전하기'} ›
             </a>
           </div>
-        ))}
+          );
+        })}
 
-        {/* Pricing info */}
-        <div className="orot-card" style={{ padding: 16, textAlign: 'center', fontSize: 13, lineHeight: 1.8, marginBottom: 20 }}>
-          <p style={{ marginBottom: 8, fontWeight: 700, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>
-            <span style={{ fontSize: 11, marginRight: 6 }}>✦</span>
-            {isEn ? 'How stars work' : '별빛 사용 안내'}
-          </p>
-          <p style={{ marginBottom: 4, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
-            {isEn ? '⭐ 10 stars = Full saju or yearly reading' : '⭐ 10개 = 개인 사주 또는 올해 운세 전체 해석'}
-          </p>
-          <p style={{ marginBottom: 4, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
-            {isEn ? '⭐ 5 stars = Compatibility reading' : '⭐ 5개 = 궁합 전체 해석'}
-          </p>
-          <p style={{ color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>
-            {isEn ? '🤰 Pregnancy reading = Free' : '🤰 임산부 사주 = 무료'}
-          </p>
+        {/* Trust / info */}
+        <div className="orot-card" style={{ padding: '15px 18px', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)', lineHeight: 1.6 }}>
+            <span style={{ flexShrink: 0 }}>🔒</span>
+            <span>{isEn ? 'Secure payment by Toss · prices include VAT' : '토스로 안전하게 결제 · 모든 금액 부가세(VAT) 포함'}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 16, marginTop: 11, fontSize: 12, fontFamily: 'var(--orot-font)' }}>
+            <a href="/refund" style={{ color: 'var(--orot-ink-mute)' }}>{isEn ? 'Refund policy' : '환불 안내'}</a>
+            <a href="/terms" style={{ color: 'var(--orot-ink-mute)' }}>{isEn ? 'Terms' : '이용약관'}</a>
+            <a href="/privacy" style={{ color: 'var(--orot-ink-mute)' }}>{isEn ? 'Privacy' : '개인정보'}</a>
+          </div>
         </div>
 
         {/* Free charge button for testing */}
