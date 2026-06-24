@@ -7,7 +7,41 @@
 //   - 함께 활동/음식/장소는 오행 룩업(LUCK 톤)으로, 관계가 더 채우면 좋은 오행 기준.
 
 import type { CompatibilityAnalysisBundle } from './compatibilityTypes';
-import { type Element, ELEMENT_KO } from '../rules/elements';
+import { type Element, ELEMENT_KO, STEM_ELEMENT } from '../rules/elements';
+import type { HeavenlyStem } from '../rules/heavenlyStems';
+
+// ============================================================
+// 0) 일간(천간) 기질 — 두 사람의 기질 카드용 (표준 10천간)
+// ============================================================
+export const STEM_TEMPERAMENT: Record<HeavenlyStem, string> = {
+  갑: '곧고 추진력 있는, 앞장서는 기질',
+  을: '유연하고 끈기 있는, 부드럽게 파고드는 기질',
+  병: '밝고 표현이 시원한, 분위기를 데우는 기질',
+  정: '은은하고 섬세한, 깊게 몰입하는 기질',
+  무: '듬직하고 품이 넓은, 중심을 잡아주는 기질',
+  기: '꼼꼼하고 현실적인, 조용히 챙기는 기질',
+  경: '결단력 있고 강단진, 직진하는 기질',
+  신: '예리하고 단정한, 완성도를 챙기는 기질',
+  임: '넓고 자유로운, 흐름을 타는 기질',
+  계: '차분하고 깊은, 속으로 읽어내는 기질',
+};
+
+export interface PersonTrait {
+  name: string;
+  /** 예: 갑목 */
+  dayMasterKo: string;
+  temperament: string;
+}
+
+export function buildPersonTrait(name: string, dayMaster: string): PersonTrait {
+  const stem = dayMaster as HeavenlyStem;
+  const el = STEM_ELEMENT[stem];
+  return {
+    name,
+    dayMasterKo: el ? `${dayMaster}${ELEMENT_KO[el]}` : dayMaster,
+    temperament: STEM_TEMPERAMENT[stem] ?? '',
+  };
+}
 
 // ============================================================
 // 1) 오행별 "둘이 함께하면 좋은" 활동/음식/장소

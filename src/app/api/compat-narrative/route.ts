@@ -18,7 +18,8 @@ import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType } from '@/domain/saju/compatibility/compatibilityTypes';
 import { generateCompatNarrativeReport } from '@/domain/saju/compatibility/narrative/generateCompatNarrativeReport';
 import { createOpenAiCompatNarrativeGptCaller } from '@/lib/compat-narrative-gpt-caller';
-import { buildSharedActivities, buildRelationGauges } from '@/domain/saju/compatibility/compatExtras';
+import { buildSharedActivities, buildRelationGauges, buildPersonTrait } from '@/domain/saju/compatibility/compatExtras';
+import { calculateAnalysisOnly } from '@/domain/saju/generatePersonalSajuReport';
 import {
   normalizeCompatNarrativeServerFlags,
   validateCompatNarrativeRequestBody,
@@ -82,7 +83,14 @@ export async function POST(req: Request) {
 
     // 7) 부가 콘텐츠 — bundle에서 평문 필드만 추려 노출(내부 evidence 토큰 제외).
     const bd = result.bundle;
+    // 두 사람 일간(기질 카드용) — 결정론. dayMaster만 필요하므로 가볍게 추출.
+    const aDayMaster = calculateAnalysisOnly(inputA).birthChart.dayMaster;
+    const bDayMaster = calculateAnalysisOnly(inputB).birthChart.dayMaster;
     const extras = {
+      persons: [
+        buildPersonTrait(inputA.name?.trim() || '첫 사람', aDayMaster),
+        buildPersonTrait(inputB.name?.trim() || '두 사람', bDayMaster),
+      ],
       scores: buildRelationGauges(bd),
       sharedActivities: buildSharedActivities(bd),
       conflict: {

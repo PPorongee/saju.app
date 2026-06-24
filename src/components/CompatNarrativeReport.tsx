@@ -30,11 +30,12 @@ import type { CompatibilityNarrativeReport } from '@/domain/saju/compatibility/n
 import { FortuneVerdictSection } from '@/components/FortuneVerdictSection';
 import type { RelationshipYearFlow } from '@/domain/saju/compatibility/compatibilityTypes';
 import { glossSajuNotations } from '@/components/evidence/notationGloss';
-import type { RelationGauge, SharedActivities } from '@/domain/saju/compatibility/compatExtras';
+import type { RelationGauge, SharedActivities, PersonTrait } from '@/domain/saju/compatibility/compatExtras';
 import { type Element, ELEMENT_KO } from '@/domain/saju/rules/elements';
 
 // /api/compat-narrative 의 extras(평문 필드만)
 export interface CompatExtras {
+  persons?: PersonTrait[];
   scores: RelationGauge[];
   sharedActivities: SharedActivities | null;
   conflict: { mainConflictTriggers: string[]; repeatedPattern: string; emotionalMismatch: string; recoveryStyleMismatch: string };
@@ -209,6 +210,9 @@ function ReportBody({
   return (
     <div className="sv4">
       <CompatHero card={heroCard} relType={report.evidenceView.relationshipTypeKo} />
+      {extras?.persons?.length === 2 ? (
+        <PersonTraitsCard persons={extras.persons} relationLine={px(report.evidenceView.dayMasterRelation?.plain ?? '')} />
+      ) : null}
       {extras?.scores?.length ? <GaugesCard gauges={extras.scores} /> : null}
       <CompatSvSection title="두 사람을 한 문장으로" body={overviewBody} eyebrow="첫인상" accent={ACCENTS.overview} showDivider={false} lead />
       <CompatSvSection title="이 관계가 이렇게 느껴지는 이유" body={px(report.relationshipMechanism.body)} eyebrow="관계의 구조" accent={ACCENTS.mechanism} showDivider lead />
@@ -222,6 +226,29 @@ function ReportBody({
       <CompatSvSection title="마지막으로 드리는 조언" body={px(report.finalAdvice.body)} eyebrow="정리하며" accent={ACCENTS.final} showDivider lead />
       <FortuneVerdictSection verdict={report.fortuneVerdict} />
       <EvidenceFold ev={report.evidenceView} />
+    </div>
+  );
+}
+
+// 두 사람의 기질 — 일간 기반 한눈 카드 ("이름은 ~한 기질").
+function PersonTraitsCard({ persons, relationLine }: { persons: PersonTrait[]; relationLine?: string }) {
+  return (
+    <div className="card sv4-reveal" style={{ padding: 16, marginTop: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>✦ 두 사람의 기질</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {persons.map((p, i) => (
+          <div key={i} style={{ background: 'rgba(243,231,207,0.04)', border: '1px solid var(--orot-hair)', borderRadius: 'var(--orot-r-md)', padding: '12px 13px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)' }}>{p.name}</span>
+              {p.dayMasterKo && <span style={{ fontSize: 11.5, color: 'var(--orot-ink-mute)' }}>{p.dayMasterKo} 일간</span>}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', lineHeight: 1.6, wordBreak: 'keep-all', fontFamily: 'var(--orot-font)' }}>{p.temperament}</div>
+          </div>
+        ))}
+      </div>
+      {relationLine && (
+        <p style={{ fontSize: 13.5, color: 'var(--orot-ink)', lineHeight: 1.7, margin: '12px 0 0', wordBreak: 'keep-all', fontFamily: 'var(--orot-font)' }}>{relationLine}</p>
+      )}
     </div>
   );
 }
