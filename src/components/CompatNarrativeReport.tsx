@@ -30,6 +30,18 @@ import type { CompatibilityNarrativeReport } from '@/domain/saju/compatibility/n
 import { FortuneVerdictSection } from '@/components/FortuneVerdictSection';
 import type { RelationshipYearFlow } from '@/domain/saju/compatibility/compatibilityTypes';
 import { glossSajuNotations } from '@/components/evidence/notationGloss';
+import type { RelationGauge, SharedActivities } from '@/domain/saju/compatibility/compatExtras';
+import { type Element, ELEMENT_KO } from '@/domain/saju/rules/elements';
+
+// /api/compat-narrative 의 extras(평문 필드만)
+export interface CompatExtras {
+  scores: RelationGauge[];
+  sharedActivities: SharedActivities | null;
+  conflict: { mainConflictTriggers: string[]; repeatedPattern: string; emotionalMismatch: string; recoveryStyleMismatch: string };
+  recovery: { likelyRecoveryPattern: string; whatAUsuallyNeeds: string; whatBUsuallyNeeds: string; bestRecoveryRule: string };
+  stability: { dailyCompatibility: string; longTermRisk: string; relationshipTypeSpecificStability: string };
+  elementComplement: { aNeedsFromB: Element[]; bNeedsFromA: Element[]; mutualComplement: string; oneSidednessRisk: string[] };
+}
 
 // ============================================================
 // API 응답 형태 (route.ts 응답과 정합 — issues는 노출 안 됨)
@@ -37,6 +49,7 @@ import { glossSajuNotations } from '@/components/evidence/notationGloss';
 export interface CompatNarrativeApiResponse {
   report: CompatibilityNarrativeReport;
   futureFlow: RelationshipYearFlow[];
+  extras?: CompatExtras;
   validation: { isValid: boolean; highCount: number; mediumCount: number };
   attempts: number;
   repairedSections: string[];
@@ -125,7 +138,7 @@ export default function CompatNarrativeReport({
       ) : !data ? (
         <LoadingCard />
       ) : (
-        <ReportBody report={data.report} futureFlow={data.futureFlow} />
+        <ReportBody report={data.report} futureFlow={data.futureFlow} extras={data.extras} />
       )}
 
       {onRestart && data && (
@@ -154,32 +167,135 @@ const ACCENTS = {
   attraction: { icon: '❤️', accent: '#e899ad' },
   repeated:   { icon: '🔁', accent: '#7fc6c0' },
   guide:      { icon: '🧭', accent: '#9cc99a' },
+  conflict:   { icon: '⚡', accent: '#e0a86b' },
+  complement: { icon: '🌿', accent: '#86c79a' },
   final:      { icon: '⭐', accent: 'var(--orot-primary, #f0c75e)' },
   future:     { icon: '🌠', accent: '#8aa1c4' },
 } satisfies Record<string, CompatAccent>;
 
 function ReportBody({
   report,
-  futureFlow,
+  extras,
 }: {
   report: CompatibilityNarrativeReport;
   futureFlow: RelationshipYearFlow[];
+  extras?: CompatExtras;
 }) {
   const ov = report.relationshipOverview;
   const overviewBody = [ov.oneLine, ov.body].filter(Boolean).join('\n\n');
   return (
     <div className="sv4">
       <CompatHero card={report.compatibilityCard} relType={report.evidenceView.relationshipTypeKo} />
+      {extras?.scores?.length ? <GaugesCard gauges={extras.scores} /> : null}
       <CompatSvSection title="두 사람을 한 문장으로" body={overviewBody} eyebrow="첫인상" accent={ACCENTS.overview} showDivider={false} lead />
       <CompatSvSection title="이 관계가 이렇게 느껴지는 이유" body={report.relationshipMechanism.body} eyebrow="관계의 구조" accent={ACCENTS.mechanism} showDivider lead />
       <CompatSvSection title="서로에게 끌리는 지점과 엇갈리는 지점" body={report.attractionAndFriction.body} eyebrow="끌림과 균열" accent={ACCENTS.attraction} showDivider lead />
       <CompatSvSection title="현실에서 반복되기 쉬운 관계 패턴" body={report.repeatedPattern.body} eyebrow="반복되는 장면" accent={ACCENTS.repeated} showDivider lead />
       <CompatSvSection title="이 관계를 좋게 쓰는 방법" body={report.relationshipGuide.body} eyebrow="관계 가이드" accent={ACCENTS.guide} showDivider lead />
+      {extras ? (
+        <CompatSvSection title="이렇게 부딪히고, 이렇게 풀려요" body={conflictRecoveryBody(extras)} eyebrow="싸움과 화해" accent={ACCENTS.conflict} showDivider />
+      ) : null}
+      {extras ? <ComplementActivitiesSection ec={extras.elementComplement} act={extras.sharedActivities} /> : null}
       <CompatSvSection title="마지막으로 드리는 조언" body={report.finalAdvice.body} eyebrow="정리하며" accent={ACCENTS.final} showDivider lead />
-      {futureFlow.length > 0 && <FutureFlowSection flow={futureFlow} />}
       <FortuneVerdictSection verdict={report.fortuneVerdict} />
       <EvidenceFold ev={report.evidenceView} />
     </div>
+  );
+}
+
+// 관계 결 요약 — 정성 레벨 + 막대(숫자 비노출). "점수 회귀 금지" 원칙 존중.
+function GaugesCard({ gauges }: { gauges: RelationGauge[] }) {
+  const COLOR: Record<string, string> = {
+    chemistry: '#e899ad', stability: '#9cc99a', recovery: '#7fc6c0', growth: 'var(--orot-coral)',
+  };
+  return (
+    <div className="card sv4-reveal" style={{ padding: 16, marginTop: 14 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>✦ 관계 결 요약</div>
+      <div style={{ display: 'grid', gap: 12 }}>
+        {gauges.map((g) => (
+          <div key={g.key}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--orot-ink)' }}>{g.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: COLOR[g.key] }}>{g.level}</span>
+            </div>
+            <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${g.fill}%`, background: COLOR[g.key], borderRadius: 999 }} />
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--orot-ink-mute)', marginTop: 4 }}>{g.note}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 싸움&화해 본문 조립 — conflict + recovery 평문을 헤더/불릿 마크다운으로.
+function conflictRecoveryBody(extras: CompatExtras): string {
+  const c = extras.conflict, r = extras.recovery;
+  const lines: string[] = [];
+  lines.push('## 이렇게 부딪혀요');
+  if (c.repeatedPattern) lines.push(c.repeatedPattern, '');
+  c.mainConflictTriggers.slice(0, 3).forEach((t) => lines.push(`- ${t}`));
+  if (c.mainConflictTriggers.length) lines.push('');
+  if (c.emotionalMismatch) lines.push(c.emotionalMismatch, '');
+  lines.push('## 이렇게 풀려요');
+  if (r.likelyRecoveryPattern) lines.push(r.likelyRecoveryPattern, '');
+  if (r.whatAUsuallyNeeds) lines.push(`- 한 사람은 ${r.whatAUsuallyNeeds}`);
+  if (r.whatBUsuallyNeeds) lines.push(`- 다른 한 사람은 ${r.whatBUsuallyNeeds}`);
+  if (r.whatAUsuallyNeeds || r.whatBUsuallyNeeds) lines.push('');
+  if (r.bestRecoveryRule) lines.push(`가장 빠른 화해 길은, ${r.bestRecoveryRule}`);
+  return lines.join('\n').trim();
+}
+
+// 서로 채워주는 결 + 함께하면 좋은 것 — sv4-accordion(칩 포함).
+function ComplementActivitiesSection({ ec, act }: { ec: CompatExtras['elementComplement']; act: SharedActivities | null }) {
+  const a = ACCENTS.complement;
+  const aKo = (ec.aNeedsFromB ?? []).map((e) => ELEMENT_KO[e]).filter(Boolean).join('·');
+  const bKo = (ec.bNeedsFromA ?? []).map((e) => ELEMENT_KO[e]).filter(Boolean).join('·');
+  const compLines: string[] = [];
+  compLines.push(
+    `이 관계에선 한 사람이 상대에게서 ${aKo || '안정된'} 기운을, 상대는 ${bKo || '새로운'} 기운을 받아 채워요. ` +
+    `서로의 빈 곳을 메워주는 결이라, 곁에 둘수록 균형이 잡히는 사이예요.`,
+  );
+  if ((ec.oneSidednessRisk ?? []).length) {
+    compLines.push('', `다만 ${ec.oneSidednessRisk[0]} — 한쪽으로 기울지 않게 조금만 신경 쓰면 좋아요.`);
+  }
+  const chipRow = (label: string, items: string[]) =>
+    items.length ? (
+      <div style={{ marginTop: 10 }}>
+        <div style={{ fontSize: 12, color: 'var(--orot-ink-mute)', marginBottom: 6 }}>{label}</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {items.map((it, i) => (
+            <span key={i} style={{ fontSize: 12.5, padding: '5px 11px', borderRadius: 999, background: 'rgba(134,199,154,0.10)', border: '1px solid var(--orot-hair)', color: 'var(--orot-ink-soft)' }}>{it}</span>
+          ))}
+        </div>
+      </div>
+    ) : null;
+  return (
+    <>
+      <CompatStarDivider />
+      <details className="sv4-accordion sv4-reveal" style={{ marginTop: 6 }}>
+        <summary className="sv4-accordion-summary" style={{ '--sv4-accent': a.accent } as React.CSSProperties}>
+          <span className="sv4-accordion-icon" aria-hidden>{a.icon}</span>
+          <span className="sv4-accordion-header">
+            <span className="sv4-accordion-eyebrow" style={{ color: a.accent }}>서로를 채우는 결</span>
+            <span className="sv4-accordion-title" style={{ color: a.accent }}>서로 채워주는 점 · 함께하면 좋은 것</span>
+          </span>
+          <span className="sv4-chevron" aria-hidden style={{ color: a.accent }}>▾</span>
+        </summary>
+        <div className="sv4-accordion-body">
+          <NarrativeBodyView text={compLines.join('\n')} accent={a.accent} lead />
+          {act && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--orot-hair)' }}>
+              <p style={{ fontSize: 14.5, lineHeight: 1.8, color: 'var(--orot-ink)', margin: 0, wordBreak: 'keep-all' }}>{act.intro}</p>
+              {chipRow('함께하면 좋은 활동', act.activities)}
+              {chipRow('잘 맞는 음식', act.foods)}
+              {chipRow('어울리는 장소', act.places)}
+            </div>
+          )}
+        </div>
+      </details>
+    </>
   );
 }
 

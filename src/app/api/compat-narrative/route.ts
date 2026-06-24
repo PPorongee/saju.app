@@ -18,6 +18,7 @@ import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType } from '@/domain/saju/compatibility/compatibilityTypes';
 import { generateCompatNarrativeReport } from '@/domain/saju/compatibility/narrative/generateCompatNarrativeReport';
 import { createOpenAiCompatNarrativeGptCaller } from '@/lib/compat-narrative-gpt-caller';
+import { buildSharedActivities, buildRelationGauges } from '@/domain/saju/compatibility/compatExtras';
 import {
   normalizeCompatNarrativeServerFlags,
   validateCompatNarrativeRequestBody,
@@ -79,11 +80,42 @@ export async function POST(req: Request) {
       maxRepairAttempts: resolveLiveCompatRepairAttempts(b.maxRepairAttempts),
     });
 
-    // 7) 응답 — 직렬화 가능한 부분만 포함
+    // 7) 부가 콘텐츠 — bundle에서 평문 필드만 추려 노출(내부 evidence 토큰 제외).
+    const bd = result.bundle;
+    const extras = {
+      scores: buildRelationGauges(bd),
+      sharedActivities: buildSharedActivities(bd),
+      conflict: {
+        mainConflictTriggers: bd.conflictAnalysis?.mainConflictTriggers ?? [],
+        repeatedPattern: bd.conflictAnalysis?.repeatedPattern ?? '',
+        emotionalMismatch: bd.conflictAnalysis?.emotionalMismatch ?? '',
+        recoveryStyleMismatch: bd.conflictAnalysis?.recoveryStyleMismatch ?? '',
+      },
+      recovery: {
+        likelyRecoveryPattern: bd.recoveryAnalysis?.likelyRecoveryPattern ?? '',
+        whatAUsuallyNeeds: bd.recoveryAnalysis?.whatAUsuallyNeeds ?? '',
+        whatBUsuallyNeeds: bd.recoveryAnalysis?.whatBUsuallyNeeds ?? '',
+        bestRecoveryRule: bd.recoveryAnalysis?.bestRecoveryRule ?? '',
+      },
+      stability: {
+        dailyCompatibility: bd.stabilityAnalysis?.dailyCompatibility ?? '',
+        longTermRisk: bd.stabilityAnalysis?.longTermRisk ?? '',
+        relationshipTypeSpecificStability: bd.stabilityAnalysis?.relationshipTypeSpecificStability ?? '',
+      },
+      elementComplement: {
+        aNeedsFromB: bd.elementComplement?.aNeedsFromB ?? [],
+        bNeedsFromA: bd.elementComplement?.bNeedsFromA ?? [],
+        mutualComplement: bd.elementComplement?.mutualComplement ?? 'moderate',
+        oneSidednessRisk: bd.elementComplement?.oneSidednessRisk ?? [],
+      },
+    };
+
+    // 8) 응답 — 직렬화 가능한 부분만 포함
     return NextResponse.json({
       report: result.report,
       // 3년 흐름(deterministic) — UI 카드용. 연속 중복 연도 변주 정규화 적용.
       futureFlow: result.futureFlow,
+      extras,
       // validation: issues[] 는 사용자 문장 + 내부 타입 토큰 포함 → 클라이언트에 노출 금지.
       // isValid/highCount/mediumCount 만 전달.
       validation: {
