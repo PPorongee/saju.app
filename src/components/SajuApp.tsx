@@ -3071,6 +3071,23 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             relationshipType={cnRelType}
             lang={lang}
             onRestart={() => { setCompatNarrativeRequested(false); setCurrentScreen(0); }}
+            isSharing={isSharingLink}
+            onShareText={(text, title) => shareLink(text, title)}
+            onSaveText={(text, title) => {
+              try {
+                const results = JSON.parse(localStorage.getItem('saju-saved-results') || '[]');
+                const entry = {
+                  name: title,
+                  date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'),
+                  type: lang === 'en' ? 'Compatibility' : '궁합',
+                  text,
+                };
+                const updated = [entry, ...results].slice(0, 20);
+                localStorage.setItem('saju-saved-results', JSON.stringify(updated));
+                setSavedResults(updated);
+                alert(t('resultSaved', lang));
+              } catch { /* quota or parse error */ }
+            }}
           />
         </div>
       );

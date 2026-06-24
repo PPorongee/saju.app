@@ -70,6 +70,12 @@ export interface CompatNarrativeReportProps {
   onRestart?: () => void;
   /** repair 시도 횟수 (기본 0 — live) */
   maxRepairAttempts?: number;
+  /** 공유 링크 생성 중 여부 (버튼 disable/문구용) */
+  isSharing?: boolean;
+  /** 공유: 본문 텍스트 + 제목을 받아 /api/share 처리 (SajuApp가 주입) */
+  onShareText?: (text: string, title: string) => void;
+  /** 저장: 본문 텍스트 + 제목을 받아 localStorage 저장 (SajuApp가 주입) */
+  onSaveText?: (text: string, title: string) => void;
 }
 
 // ============================================================
@@ -108,8 +114,12 @@ export default function CompatNarrativeReport({
   inputA,
   inputB,
   relationshipType,
+  lang,
   onRestart,
   maxRepairAttempts,
+  isSharing,
+  onShareText,
+  onSaveText,
 }: CompatNarrativeReportProps) {
   const [data, setData] = useState<CompatNarrativeApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -152,15 +162,47 @@ export default function CompatNarrativeReport({
         />
       )}
 
-      {onRestart && data && (
+      {/* 공유 / 저장 / 처음으로 — 결과 로드 완료 시에만 표시 */}
+      {data && (
         <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
-          <button
-            className="btn"
-            style={{ flex: 1, background: 'rgba(255,255,255,0.08)', color: 'var(--text)', fontSize: 13 }}
-            onClick={onRestart}
-          >
-            처음으로
-          </button>
+          {onShareText && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              disabled={isSharing}
+              onClick={() => {
+                const nameA = inputA.name?.trim() || '첫 사람';
+                const nameB = inputB.name?.trim() || '두 사람';
+                const title = lang === 'en' ? `${nameA} & ${nameB} Compatibility` : `${nameA} ♥ ${nameB} 궁합`;
+                onShareText(buildCompatMarkdown(data.report, data.extras, nameA, nameB), title);
+              }}
+            >
+              {isSharing ? (lang === 'en' ? '🔗 Creating...' : '🔗 생성 중...') : (lang === 'en' ? '🔗 Share Link' : '🔗 링크 공유')}
+            </button>
+          )}
+          {onSaveText && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              onClick={() => {
+                const nameA = inputA.name?.trim() || '첫 사람';
+                const nameB = inputB.name?.trim() || '두 사람';
+                const title = lang === 'en' ? `${nameA} & ${nameB} Compatibility` : `${nameA} ♥ ${nameB} 궁합`;
+                onSaveText(buildCompatMarkdown(data.report, data.extras, nameA, nameB), title);
+              }}
+            >
+              💾 {lang === 'en' ? 'Save Result' : '결과 저장'}
+            </button>
+          )}
+          {onRestart && (
+            <button
+              className="orot-btn orot-btn--ghost"
+              style={{ flex: 1, height: 44, fontSize: 13 }}
+              onClick={onRestart}
+            >
+              {lang === 'en' ? 'Restart' : '처음으로'}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -196,6 +238,46 @@ function personalize(text: string, nameA: string, nameB: string): string {
   if (nameA && nameA !== 'A') t = t.replace(/\bA\b/g, () => nameA);
   if (nameB && nameB !== 'B') t = t.replace(/\bB\b/g, () => nameB);
   return t;
+}
+
+// 공유/저장용 본문 텍스트 — 화면 섹션 순서대로 ##N.제목## 마크다운으로 직렬화.
+// A/B는 이름 치환, 추가 콘텐츠(애착/돈합/보너스/다음단계)도 포함.
+export function buildCompatMarkdown(
+  report: CompatibilityNarrativeReport,
+  extras: CompatExtras | undefined,
+  nameA: string,
+  nameB: string,
+): string {
+  const px = (s?: string) => personalize(s ?? '', nameA, nameB);
+  const lines: string[] = [];
+  let n = 0;
+  const sec = (title: string, body?: string) => {
+    const b = (body ?? '').trim();
+    if (!b) return;
+    n += 1;
+    lines.push(`##${n}.${title}##`, '', b, '');
+  };
+
+  const card = report.compatibilityCard;
+  const ov = report.relationshipOverview;
+  const headBody = [
+    px(card.title),
+    px(card.snsPhrase),
+    ov.oneLine ? `"${px(ov.oneLine)}"` : '',
+    px(ov.body),
+  ].filter(Boolean).join('\n\n');
+  sec('두 사람을 한 문장으로', headBody);
+  sec('이 관계가 이렇게 느껴지는 이유', px(report.relationshipMechanism.body));
+  sec('서로에게 끌리는 지점과 엇갈리는 지점', px(report.attractionAndFriction.body));
+  if (extras?.attachment) sec(extras.attachment.title, px(extras.attachment.body));
+  sec('현실에서 반복되기 쉬운 관계 패턴', px(report.repeatedPattern.body));
+  sec('이 관계를 좋게 쓰는 방법', px(report.relationshipGuide.body));
+  if (extras) sec('이렇게 부딪히고, 이렇게 풀려요', px(conflictRecoveryBody(extras)));
+  if (extras?.moneyFit) sec(extras.moneyFit.title, px(extras.moneyFit.body));
+  if (extras?.bonus) sec(extras.bonus.title, px(extras.bonus.body));
+  if (extras?.nextStep) sec(extras.nextStep.title, px(extras.nextStep.body));
+  sec('마지막으로 드리는 조언', px(report.finalAdvice.body));
+  return lines.join('\n').trim();
 }
 
 function ReportBody({
