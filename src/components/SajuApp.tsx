@@ -1808,6 +1808,35 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   }
 
   /* ===== SCREEN 1: Birth Input ===== */
+  // 진행 단계 표시 — 정보 입력 → 관심사 → 풀이. (입력=0, 질문=1)
+  function renderFlowSteps(active: number) {
+    const labels = lang === 'en' ? ['Your info', 'Interests', 'Reading'] : ['정보 입력', '관심사', '풀이'];
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 18, flexWrap: 'wrap' }}>
+        {labels.map((l, i) => (
+          <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              fontSize: 12, fontFamily: 'var(--orot-font)',
+              color: i === active ? 'var(--orot-coral)' : 'var(--orot-ink-mute)',
+              fontWeight: i === active ? 700 : 500,
+            }}>
+              <span style={{
+                width: 18, height: 18, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10.5, fontWeight: 700, flexShrink: 0,
+                background: i < active ? 'var(--orot-coral)' : i === active ? 'rgba(243,160,146,0.18)' : 'transparent',
+                border: '1px solid ' + (i <= active ? 'var(--orot-coral)' : 'var(--orot-hair-strong)'),
+                color: i < active ? '#fff' : i === active ? 'var(--orot-coral)' : 'var(--orot-ink-mute)',
+              }}>{i < active ? '✓' : i + 1}</span>
+              {l}
+            </span>
+            {i < labels.length - 1 && <span style={{ width: 14, height: 1, background: 'var(--orot-hair-strong)', margin: '0 2px' }} />}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function renderBirthInput() {
     const isEn = lang === 'en';
     const isYearly = appMode === 'yearly';
@@ -1835,6 +1864,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         >
           <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
         </button>
+        {renderFlowSteps(0)}
 
         {/* Hero BleedCard */}
         <BleedCard
@@ -2273,6 +2303,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
         </button>
+        {renderFlowSteps(1)}
         <div style={{ marginBottom: 16 }}>
           <div className="orot-eyebrow" style={{ marginBottom: 10 }}>
             {isEn ? `Question ${questionStep + 1} of 4` : `질문 ${questionStep + 1} / 4`}
@@ -5138,7 +5169,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       return (
         <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
           <button
-            onClick={() => setCurrentScreen(0)}
+            onClick={() => setCurrentScreen(2)}
             aria-label={t('backBtn', lang)}
             style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
@@ -5163,7 +5194,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       return (
         <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
           <button
-            onClick={() => setCurrentScreen(0)}
+            onClick={() => setCurrentScreen(2)}
             aria-label={t('backBtn', lang)}
             style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
