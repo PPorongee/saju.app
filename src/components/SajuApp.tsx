@@ -16,6 +16,7 @@ import CompatV4Report, { type CompatV4ResultApi } from '@/components/CompatV4Rep
 import PlaceSelect, { birthPlacePayloadPatch } from '@/components/PlaceSelect';
 import CompatPreviewTeaser, { type CompatPreviewData } from '@/components/CompatPreviewTeaser';
 import PersonalPreviewTeaser, { type PersonalPreviewData } from '@/components/PersonalPreviewTeaser';
+import YearlyPreviewTeaser, { type YearlyPreviewData } from '@/components/YearlyPreviewTeaser';
 import { resolveBirthTimeFields, pregnancyMomBirthTimeFields } from '@/lib/birthTimePayload';
 import type { BirthInput as CompatBirthInputV4 } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType as RelationshipTypeV4 } from '@/domain/saju/compatibility/compatibilityTypes';
@@ -485,6 +486,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   // 궁합 결제 전 미리보기(결정론 bundle) — GPT 없음. paywall 열릴 때 /api/compat-v4/preview로 1회 fetch.
   const [compatPreview, setCompatPreview] = useState<CompatPreviewData | null>(null);
   const [compatPreviewLoading, setCompatPreviewLoading] = useState(false);
+  // 올해운세 결제 전 미리보기(결정론). teaser(screen 8) 진입 시 /api/yearly-fortune/preview로 1회 fetch.
+  const [yearlyPreview, setYearlyPreview] = useState<YearlyPreviewData | null>(null);
+  const [yearlyPreviewLoading, setYearlyPreviewLoading] = useState(false);
   useEffect(() => {
     if (!storageConsent) return;
     try {
@@ -653,6 +657,39 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     return () => { aborted = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compatPaywall, compatKey]);
+
+  // 올해운세 teaser(screen 8) 진입 시 결정론 미리보기를 1회 가져온다. V4 UI 경로에서만.
+  useEffect(() => {
+    if (currentScreen !== 8 || appMode !== 'yearly') return;
+    if (process.env.NEXT_PUBLIC_YEARLY_FORTUNE_UI_ENABLED !== 'true') return;
+    const precision = process.env.NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED === 'true';
+    const { birthTime, birthTimeConfidence } = resolveBirthTimeFields({
+      sijuIndex: userData.hour, exact: { use: useExactTime, hour: exactHour, min: exactMinute },
+    });
+    const input = {
+      birth: {
+        name: userData.name || '익명',
+        gender: userData.gender === 'm' ? 'male' : userData.gender === 'f' ? 'female' : 'unknown',
+        calendarType: isLunar ? 'lunar' : 'solar',
+        birthDate: `${userData.year}-${String(userData.month).padStart(2, '0')}-${String(userData.day).padStart(2, '0')}`,
+        birthTime, birthTimeConfidence, timezone: 'Asia/Seoul',
+        ...birthPlacePayloadPatch(precision, birthPlaceId),
+      },
+      currentDate: new Date().toISOString().slice(0, 10),
+    };
+    let aborted = false;
+    setYearlyPreview(null);
+    setYearlyPreviewLoading(true);
+    fetch('/api/yearly-fortune/preview', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!aborted) { setYearlyPreview(d as YearlyPreviewData | null); setYearlyPreviewLoading(false); } })
+      .catch(() => { if (!aborted) setYearlyPreviewLoading(false); });
+    return () => { aborted = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScreen, appMode]);
   const [pregResult, setPregResult] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   // 임산부 narrative V4 — flag on일 때만 새 경로(기존 /api/saju·점수카드 미사용). 기본 off → 기존 모드 그대로.
@@ -5072,6 +5109,31 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             starBalance={starBalance}
             cost={10}
             onUnlock={() => { updateStarBalance(starBalance - 10); setTeaserUnlocked(true); setCurrentScreen(4); }}
+            onCharge={() => setCurrentScreen(9)}
+          />
+        </div>
+      );
+    }
+
+    // 올해사주 v4 — 새 호기심형 미리보기(YearlyPreviewTeaser). 결정론 preview만 사용(GPT 전).
+    if (appMode === 'yearly' && YEARLY_FORTUNE_UI_ENABLED) {
+      return (
+        <div className="inner screen-enter orot-root orot-results-screen" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
+          <button
+            onClick={() => setCurrentScreen(0)}
+            aria-label={t('backBtn', lang)}
+            style={{ background: 'transparent', border: 0, color: 'var(--orot-ink)', fontSize: 15, cursor: 'pointer', padding: '6px 4px', marginBottom: 12, fontFamily: 'var(--orot-font)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          >
+            <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span> {t('backBtn', lang)}
+          </button>
+          <YearlyPreviewTeaser
+            preview={yearlyPreview}
+            loading={yearlyPreviewLoading}
+            userName={userData.name || t('anonymous', lang)}
+            lang={lang}
+            starBalance={starBalance}
+            cost={10}
+            onUnlock={() => { updateStarBalance(starBalance - 10); setTeaserUnlocked(true); setCurrentScreen(7); }}
             onCharge={() => setCurrentScreen(9)}
           />
         </div>
