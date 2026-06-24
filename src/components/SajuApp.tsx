@@ -506,6 +506,15 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     safeSetItem('saju-stars', String(newBalance));
   }
 
+  // 인앱 토스트 — 네이티브 alert() 대체. 2.6초 후 자동 소멸.
+  const [toast, setToast] = useState<{ msg: string; kind: 'success' | 'error' } | null>(null);
+  const showToast = (msg: string, kind: 'success' | 'error' = 'success') => setToast({ msg, kind });
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 2600);
+    return () => clearTimeout(id);
+  }, [toast]);
+
 
   /* Compat state */
   const [compatPerson1, setCompatPerson1] = useState<{ name: string; year: number; month: number; day: number; hour: number; isLunar: boolean; gender: 'm' | 'f' | '' }>({ name: '', year: 1995, month: 1, day: 1, hour: -1, isLunar: false, gender: '' });
@@ -735,13 +744,13 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       // 클립보드 복사
       try {
         await navigator.clipboard.writeText(url);
-        alert(lang === 'en' ? 'Link copied!\n' + url : '공유 링크가 복사됐어!\n' + url);
+        showToast(lang === 'en' ? 'Link copied! 🔗' : '공유 링크를 복사했어요 🔗');
       } catch {
         prompt(lang === 'en' ? 'Copy this link:' : '이 링크를 복사해줘:', url);
       }
     } catch (err) {
       console.error('[shareLink]', err);
-      alert(lang === 'en' ? 'Failed to create share link.' : '공유 링크 생성에 실패했어.');
+      showToast(lang === 'en' ? 'Failed to create share link.' : '공유 링크 생성에 실패했어요.', 'error');
     }
     setIsSharingLink(false);
   }
@@ -3061,7 +3070,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 const entry = { name: userData.name, date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: currentScreen === 7 ? (lang === 'en' ? '2026 Fortune' : '2026 운세') : (lang === 'en' ? 'Saju Reading' : '사주 해설'), text: aiText, saju: sajuResult, user: userData };
                 const updated = [entry, ...results].slice(0, 10);
                 safeSetItem('saju-saved-results', JSON.stringify(updated));
-                alert(t('resultSaved', lang));
+                showToast(t('resultSaved', lang));
               } catch { /* ignore corrupted storage */ }
             }}>{t('saveResult', lang)}</button>
           )}
@@ -3160,7 +3169,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 const updated = [entry, ...results].slice(0, 20);
                 localStorage.setItem('saju-saved-results', JSON.stringify(updated));
                 setSavedResults(updated);
-                alert(t('resultSaved', lang));
+                showToast(t('resultSaved', lang));
               } catch { /* quota or parse error */ }
             }}
           />
@@ -4090,7 +4099,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                     const entry = { name: (userData.name || (lang === 'en' ? 'Me' : '나')) + ' & ' + (compatPerson2.name || (lang === 'en' ? 'Partner' : '상대')), date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: lang === 'en' ? 'Compatibility' : '궁합 분석', text: compatAiText };
                     const updated = [entry, ...results].slice(0, 10);
                     safeSetItem('saju-saved-results', JSON.stringify(updated));
-                    alert(t('compatSaved', lang));
+                    showToast(t('compatSaved', lang));
                   } catch { /* ignore corrupted storage */ }
                 }}>{t('compatSaveResult', lang)}</button>
                 <button className="btn" style={{ width: '100%', marginTop: '8px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: 'var(--text)', fontSize: '13px', padding: '10px' }}
@@ -4503,7 +4512,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 const updated = [entry, ...results].slice(0, 20);
                 localStorage.setItem('saju-saved-results', JSON.stringify(updated));
                 setSavedResults(updated);
-                alert(t('resultSaved', lang));
+                showToast(t('resultSaved', lang));
               } catch { /* quota or parse error */ }
             }}
           />
@@ -4600,7 +4609,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                       const entry = { name: (pregData.name || (lang === 'en' ? 'Mom' : '산모')) + (lang === 'en' ? ' & Baby' : ' & 아기'), date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: lang === 'en' ? 'Pregnancy Compatibility' : '임산부 궁합', text: compatAiText };
                       const updated = [entry, ...results].slice(0, 10);
                       safeSetItem('saju-saved-results', JSON.stringify(updated));
-                      alert(t('pregSaved', lang));
+                      showToast(t('pregSaved', lang));
                     } catch { /* ignore corrupted storage */ }
                   }}>{t('pregSaveResult', lang)}</button>
                 </div>
@@ -4704,7 +4713,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               const updated = [entry, ...results].slice(0, 20);
               localStorage.setItem('saju-saved-results', JSON.stringify(updated));
               setSavedResults(updated);
-              alert(t('resultSaved', lang));
+              showToast(t('resultSaved', lang));
             } catch { /* quota or parse error */ }
           }}
         />
@@ -5067,7 +5076,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 const entry = { name: userData.name, date: new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR'), type: currentScreen === 7 ? (lang === 'en' ? '2026 Fortune' : '2026 운세') : (lang === 'en' ? 'Saju Reading' : '사주 해설'), text: aiText, saju: sajuResult, user: userData };
                 const updated = [entry, ...results].slice(0, 10);
                 safeSetItem('saju-saved-results', JSON.stringify(updated));
-                alert(t('resultSaved', lang));
+                showToast(t('resultSaved', lang));
               } catch { /* ignore corrupted storage */ }
             }}>{t('saveResult', lang)}</button>
           )}
@@ -5672,6 +5681,26 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         {/* 사업자 정보 푸터 */}
         <Footer lang={lang} />
       </div>
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed', left: '50%', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 28px)',
+            transform: 'translateX(-50%)', zIndex: 200, maxWidth: 'min(92vw, 420px)',
+            display: 'flex', alignItems: 'center', gap: 9,
+            padding: '13px 18px', borderRadius: 14,
+            background: 'rgba(16,20,44,0.92)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid ' + (toast.kind === 'error' ? 'rgba(239,68,68,0.5)' : 'var(--orot-coral-faint)'),
+            boxShadow: '0 8px 30px rgba(0,0,0,0.35)',
+            color: 'var(--orot-ink)', fontSize: 14, fontWeight: 600, fontFamily: 'var(--orot-font)',
+            lineHeight: 1.5, whiteSpace: 'pre-line',
+          }}
+        >
+          <span style={{ fontSize: 16, flexShrink: 0 }}>{toast.kind === 'error' ? '⚠️' : '✓'}</span>
+          <span>{toast.msg}</span>
+        </div>
+      )}
       {hasMounted && !storageConsent && (
         <ConsentModal
           lang={lang}
