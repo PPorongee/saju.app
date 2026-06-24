@@ -38,7 +38,7 @@ interface FormState {
   hour: number; // 시진 index 0~11, -1 = 시간 모름
 }
 
-interface Profile { name: string; gender: string; year: number; month: number; day: number; hour: number }
+interface Profile { name: string; gender: string; year: number; month: number; day: number; hour: number; calendarType?: 'solar' | 'lunar'; birthPlaceId?: string }
 
 type PageStatus = 'idle' | 'loading' | 'result' | 'disabled' | 'error';
 
@@ -230,14 +230,18 @@ export default function DailyFortunePage() {
   const applyProfile = (p: Profile) => {
     setForm({
       name: p.name || '', gender: p.gender === 'm' ? 'm' : p.gender === 'f' ? 'f' : '',
-      calendarType: 'solar', year: p.year, month: p.month, day: p.day, hour: typeof p.hour === 'number' ? p.hour : -1,
+      calendarType: p.calendarType === 'lunar' ? 'lunar' : 'solar',
+      year: p.year, month: p.month, day: p.day, hour: typeof p.hour === 'number' ? p.hour : -1,
     });
+    setBirthPlaceId(p.birthPlaceId ?? '');
   };
 
   const saveProfile = () => {
     const entry = {
       name: form.name || (lang === 'en' ? 'Me' : '나'), gender: form.gender || 'm',
       year: form.year, month: form.month, day: form.day, hour: form.hour,
+      calendarType: form.calendarType,
+      ...(birthPlaceId ? { birthPlaceId } : {}),
       concern: -1, state: -1, personality: [], relationship: -1, wantToKnow: -1,
     };
     try {
@@ -355,7 +359,7 @@ export default function DailyFortunePage() {
                       background: 'rgba(243, 160, 146, 0.06)', border: '1px solid var(--orot-coral-faint)',
                       color: 'var(--orot-coral)', cursor: 'pointer', fontFamily: 'var(--orot-font)',
                     }}>
-                      {p.name || (lang === 'en' ? 'Profile' : '프로필')} ({p.year}.{p.month}.{p.day})
+                      {p.name || (lang === 'en' ? 'Profile' : '프로필')} ({p.year}.{p.month}.{p.day}{p.gender === 'm' ? (lang === 'en' ? '·M' : '·남') : p.gender === 'f' ? (lang === 'en' ? '·F' : '·여') : ''})
                     </button>
                   ))}
                 </div>

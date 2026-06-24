@@ -242,6 +242,8 @@ interface SavedProfile {
   month: number;
   day: number;
   hour: number;
+  /** precision-v1 출생지역 id. 미선택이면 생략. */
+  birthPlaceId?: string;
   concern: number;
   state: number;
   personality: number[];
@@ -1790,6 +1792,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                   // 2026-05: V4 분기 추가. 기존엔 항상 V3 흐름으로 떨어져서 저장된 프로필 클릭 시
                   // V4 모드여도 V3 결과 페이지가 나오는 버그가 있었음. isV4면 v4Ctx 복원 후 V4 fetch.
                   setUserData({ name: p.name, gender: p.gender, year: p.year, month: p.month, day: p.day, hour: p.hour, concern: p.concern, state: p.state, personality: [...p.personality], relationship: p.relationship, wantToKnow: p.wantToKnow });
+                  setBirthPlaceId(p.birthPlaceId ?? '');
                   if (isV4 && appMode === 'saju') {
                     // V4 컨텍스트 복원 (저장돼 있으면 그대로, 없으면 'unknown' 기본값 유지)
                     if (p.v4) {
@@ -2129,14 +2132,15 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               if (!exists && userData.name) {
                 const newProfile: SavedProfile = {
                   name: userData.name, gender: userData.gender, year: userData.year, month: userData.month, day: userData.day, hour: userData.hour,
-                  concern: userData.concern, state: userData.state, personality: [...userData.personality], relationship: userData.relationship, wantToKnow: userData.wantToKnow
+                  concern: userData.concern, state: userData.state, personality: [...userData.personality], relationship: userData.relationship, wantToKnow: userData.wantToKnow,
+                  ...(birthPlaceId ? { birthPlaceId } : {}),
                 };
                 const updated = [...profiles, newProfile].slice(-10);
                 saveProfiles(updated);
               } else if (exists) {
                 const updated = profiles.map(pr =>
                   (pr.name === userData.name && pr.year === userData.year && pr.month === userData.month && pr.day === userData.day)
-                  ? { ...pr, concern: userData.concern, state: userData.state, personality: [...userData.personality], relationship: userData.relationship, wantToKnow: userData.wantToKnow, hour: userData.hour, gender: userData.gender }
+                  ? { ...pr, concern: userData.concern, state: userData.state, personality: [...userData.personality], relationship: userData.relationship, wantToKnow: userData.wantToKnow, hour: userData.hour, gender: userData.gender, birthPlaceId: birthPlaceId || pr.birthPlaceId }
                   : pr
                 );
                 saveProfiles(updated);
@@ -2293,6 +2297,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                     year: userData.year, month: userData.month, day: userData.day, hour: userData.hour,
                     concern: userData.concern, state: userData.state,
                     personality: [...userData.personality], relationship: userData.relationship, wantToKnow: userData.wantToKnow,
+                    ...(birthPlaceId ? { birthPlaceId } : {}),
                     v4: v4Snapshot,
                   };
                   const updated = [...profiles, newProfile].slice(-10);
@@ -2300,7 +2305,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 } else {
                   const updated = profiles.map(pr =>
                     (pr.name === userData.name && pr.year === userData.year && pr.month === userData.month && pr.day === userData.day)
-                      ? { ...pr, hour: userData.hour, gender: userData.gender, v4: v4Snapshot }
+                      ? { ...pr, hour: userData.hour, gender: userData.gender, birthPlaceId: birthPlaceId || pr.birthPlaceId, v4: v4Snapshot }
                       : pr
                   );
                   saveProfiles(updated);
