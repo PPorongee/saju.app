@@ -14,6 +14,7 @@ import { buildCompatPrompt } from '@/lib/compatibility-prompt-builder';
 import { REL_TYPE_BY_IDX, type RelationType } from '@/lib/compatibility-analyzer';
 import CompatV4Report, { type CompatV4ResultApi } from '@/components/CompatV4Report';
 import PlaceSelect, { birthPlacePayloadPatch } from '@/components/PlaceSelect';
+import CompatPreviewTeaser, { type CompatPreviewData } from '@/components/CompatPreviewTeaser';
 import { resolveBirthTimeFields, pregnancyMomBirthTimeFields } from '@/lib/birthTimePayload';
 import type { BirthInput as CompatBirthInputV4 } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType as RelationshipTypeV4 } from '@/domain/saju/compatibility/compatibilityTypes';
@@ -480,6 +481,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   /* Star balance system - free 10 stars on first visit */
   const [starBalance, setStarBalance] = useState(0);
   const [compatPaywall, setCompatPaywall] = useState(false);
+  // 궁합 결제 전 미리보기(결정론 bundle) — GPT 없음. paywall 열릴 때 /api/compat-v4/preview로 1회 fetch.
+  const [compatPreview, setCompatPreview] = useState<CompatPreviewData | null>(null);
+  const [compatPreviewLoading, setCompatPreviewLoading] = useState(false);
   useEffect(() => {
     if (!storageConsent) return;
     try {
@@ -615,6 +619,39 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     resetCompatResult();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compatKey]);
+
+  // 궁합 paywall이 열리면 결정론 미리보기(GPT 없음)를 1회 가져온다. narrative UI 경로에서만.
+  useEffect(() => {
+    if (!compatPaywall) return;
+    if (process.env.NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED !== 'true' || appMode !== 'compat') return;
+    const typeArr = ['dating', 'married', 'friendship', 'coworker', 'reunion_or_breakup', 'crush_or_something'] as const;
+    const relType = typeArr[compatRelType] || 'dating';
+    const precision = process.env.NEXT_PUBLIC_SAJU_PRECISION_INPUTS_ENABLED === 'true';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const mk = (p: typeof compatPerson1, exact: typeof compatExact1, placeId: string, fb: string) => ({
+      name: p.name || fb,
+      gender: p.gender === 'm' ? 'male' : p.gender === 'f' ? 'female' : 'unknown',
+      calendarType: p.isLunar ? 'lunar' : 'solar',
+      birthDate: `${p.year}-${pad(p.month)}-${pad(p.day)}`,
+      ...resolveBirthTimeFields({ sijuIndex: p.hour, exact }),
+      timezone: 'Asia/Seoul',
+      ...birthPlacePayloadPatch(precision, placeId),
+    });
+    const inputA = mk(compatPerson1, compatExact1, compatPlaceId1, lang === 'en' ? 'Person 1' : '첫 번째');
+    const inputB = mk(compatPerson2, compatExact2, compatPlaceId2, lang === 'en' ? 'Partner' : '상대');
+    let aborted = false;
+    setCompatPreview(null);
+    setCompatPreviewLoading(true);
+    fetch('/api/compat-v4/preview', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputA, inputB, relationshipType: relType }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!aborted) { setCompatPreview(d as CompatPreviewData | null); setCompatPreviewLoading(false); } })
+      .catch(() => { if (!aborted) setCompatPreviewLoading(false); });
+    return () => { aborted = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compatPaywall, compatKey]);
   const [pregResult, setPregResult] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   // 임산부 narrative V4 — flag on일 때만 새 경로(기존 /api/saju·점수카드 미사용). 기본 off → 기존 모드 그대로.
@@ -3589,7 +3626,21 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           {t('analyzeCompat', lang)} ›
         </button>
 
-        {compatPaywall && !compatResult && (() => {
+        {compatPaywall && !compatResult && (
+          process.env.NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED === 'true' && appMode === 'compat' ? (
+            <CompatPreviewTeaser
+              preview={compatPreview}
+              loading={compatPreviewLoading}
+              relationshipType={(['dating', 'married', 'friendship', 'coworker', 'reunion_or_breakup', 'crush_or_something'][compatRelType] || 'dating') as RelationshipTypeV4}
+              nameA={compatPerson1.name || (lang === 'en' ? 'Person 1' : '첫 번째')}
+              nameB={compatPerson2.name || (lang === 'en' ? 'Partner' : '상대')}
+              lang={lang}
+              starBalance={starBalance}
+              cost={5}
+              onUnlock={() => { updateStarBalance(starBalance - 5); setCompatPaywall(false); setCompatNarrativeRequested(true); }}
+              onCharge={() => setCurrentScreen(9)}
+            />
+          ) : (() => {
           const compatSectionItems = compatRelType === 0 ? [
             { icon: '📖', title: lang === 'en' ? 'How to Read Compatibility' : '궁합 읽는 법' },
             { icon: '🔮', title: (compatPerson1.name || (lang === 'en' ? 'Person 1' : '첫 번째')) + (lang === 'en' ? "'s Saju Profile" : '의 사주적 특성') },
@@ -3763,7 +3814,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             </div>
           </div>
           );
-        })()}
+          })()
+        )}
 
         {data && !compatV4Resp && data.myDS !== undefined && data.theirDS !== undefined && PROFILES[data.myDS] && PROFILES[data.theirDS] && (
           <>
