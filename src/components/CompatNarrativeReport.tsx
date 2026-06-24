@@ -138,7 +138,13 @@ export default function CompatNarrativeReport({
       ) : !data ? (
         <LoadingCard />
       ) : (
-        <ReportBody report={data.report} futureFlow={data.futureFlow} extras={data.extras} />
+        <ReportBody
+          report={data.report}
+          futureFlow={data.futureFlow}
+          extras={data.extras}
+          nameA={inputA.name?.trim() || '첫 사람'}
+          nameB={inputB.name?.trim() || '두 사람'}
+        />
       )}
 
       {onRestart && data && (
@@ -173,30 +179,47 @@ const ACCENTS = {
   future:     { icon: '🌠', accent: '#8aa1c4' },
 } satisfies Record<string, CompatAccent>;
 
+// 본문의 'A'/'B'(사람 지칭)를 실제 이름으로 치환. 단어경계만 — DNA/A4 등은 보존.
+// 한글 이름은 \w가 아니라 'A는'/'B에게' 같은 조사 앞에서도 \bA\b가 매칭된다.
+function personalize(text: string, nameA: string, nameB: string): string {
+  if (!text) return text;
+  let t = text;
+  if (nameA && nameA !== 'A') t = t.replace(/\bA\b/g, () => nameA);
+  if (nameB && nameB !== 'B') t = t.replace(/\bB\b/g, () => nameB);
+  return t;
+}
+
 function ReportBody({
   report,
   extras,
+  nameA,
+  nameB,
 }: {
   report: CompatibilityNarrativeReport;
   futureFlow: RelationshipYearFlow[];
   extras?: CompatExtras;
+  nameA: string;
+  nameB: string;
 }) {
+  const px = (s?: string) => personalize(s ?? '', nameA, nameB);
   const ov = report.relationshipOverview;
-  const overviewBody = [ov.oneLine, ov.body].filter(Boolean).join('\n\n');
+  const overviewBody = px([ov.oneLine, ov.body].filter(Boolean).join('\n\n'));
+  const card = report.compatibilityCard;
+  const heroCard = { ...card, title: px(card.title), snsPhrase: px(card.snsPhrase) };
   return (
     <div className="sv4">
-      <CompatHero card={report.compatibilityCard} relType={report.evidenceView.relationshipTypeKo} />
+      <CompatHero card={heroCard} relType={report.evidenceView.relationshipTypeKo} />
       {extras?.scores?.length ? <GaugesCard gauges={extras.scores} /> : null}
       <CompatSvSection title="두 사람을 한 문장으로" body={overviewBody} eyebrow="첫인상" accent={ACCENTS.overview} showDivider={false} lead />
-      <CompatSvSection title="이 관계가 이렇게 느껴지는 이유" body={report.relationshipMechanism.body} eyebrow="관계의 구조" accent={ACCENTS.mechanism} showDivider lead />
-      <CompatSvSection title="서로에게 끌리는 지점과 엇갈리는 지점" body={report.attractionAndFriction.body} eyebrow="끌림과 균열" accent={ACCENTS.attraction} showDivider lead />
-      <CompatSvSection title="현실에서 반복되기 쉬운 관계 패턴" body={report.repeatedPattern.body} eyebrow="반복되는 장면" accent={ACCENTS.repeated} showDivider lead />
-      <CompatSvSection title="이 관계를 좋게 쓰는 방법" body={report.relationshipGuide.body} eyebrow="관계 가이드" accent={ACCENTS.guide} showDivider lead />
+      <CompatSvSection title="이 관계가 이렇게 느껴지는 이유" body={px(report.relationshipMechanism.body)} eyebrow="관계의 구조" accent={ACCENTS.mechanism} showDivider lead />
+      <CompatSvSection title="서로에게 끌리는 지점과 엇갈리는 지점" body={px(report.attractionAndFriction.body)} eyebrow="끌림과 균열" accent={ACCENTS.attraction} showDivider lead />
+      <CompatSvSection title="현실에서 반복되기 쉬운 관계 패턴" body={px(report.repeatedPattern.body)} eyebrow="반복되는 장면" accent={ACCENTS.repeated} showDivider lead />
+      <CompatSvSection title="이 관계를 좋게 쓰는 방법" body={px(report.relationshipGuide.body)} eyebrow="관계 가이드" accent={ACCENTS.guide} showDivider lead />
       {extras ? (
-        <CompatSvSection title="이렇게 부딪히고, 이렇게 풀려요" body={conflictRecoveryBody(extras)} eyebrow="싸움과 화해" accent={ACCENTS.conflict} showDivider />
+        <CompatSvSection title="이렇게 부딪히고, 이렇게 풀려요" body={px(conflictRecoveryBody(extras))} eyebrow="싸움과 화해" accent={ACCENTS.conflict} showDivider />
       ) : null}
-      {extras ? <ComplementActivitiesSection ec={extras.elementComplement} act={extras.sharedActivities} /> : null}
-      <CompatSvSection title="마지막으로 드리는 조언" body={report.finalAdvice.body} eyebrow="정리하며" accent={ACCENTS.final} showDivider lead />
+      {extras ? <ComplementActivitiesSection ec={extras.elementComplement} act={extras.sharedActivities} nameA={nameA} nameB={nameB} /> : null}
+      <CompatSvSection title="마지막으로 드리는 조언" body={px(report.finalAdvice.body)} eyebrow="정리하며" accent={ACCENTS.final} showDivider lead />
       <FortuneVerdictSection verdict={report.fortuneVerdict} />
       <EvidenceFold ev={report.evidenceView} />
     </div>
@@ -248,7 +271,7 @@ function conflictRecoveryBody(extras: CompatExtras): string {
 }
 
 // 서로 채워주는 결 + 함께하면 좋은 것 — sv4-accordion(칩 포함).
-function ComplementActivitiesSection({ ec, act }: { ec: CompatExtras['elementComplement']; act: SharedActivities | null }) {
+function ComplementActivitiesSection({ ec, act, nameA, nameB }: { ec: CompatExtras['elementComplement']; act: SharedActivities | null; nameA: string; nameB: string }) {
   const a = ACCENTS.complement;
   const aKo = (ec.aNeedsFromB ?? []).map((e) => ELEMENT_KO[e]).filter(Boolean).join('·');
   const bKo = (ec.bNeedsFromA ?? []).map((e) => ELEMENT_KO[e]).filter(Boolean).join('·');
@@ -284,7 +307,7 @@ function ComplementActivitiesSection({ ec, act }: { ec: CompatExtras['elementCom
           <span className="sv4-chevron" aria-hidden style={{ color: a.accent }}>▾</span>
         </summary>
         <div className="sv4-accordion-body">
-          <NarrativeBodyView text={compLines.join('\n')} accent={a.accent} lead />
+          <NarrativeBodyView text={personalize(compLines.join('\n'), nameA, nameB)} accent={a.accent} lead />
           {act && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--orot-hair)' }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.8, color: 'var(--orot-ink)', margin: 0, wordBreak: 'keep-all' }}>{act.intro}</p>
