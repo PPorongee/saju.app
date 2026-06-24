@@ -23,19 +23,44 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  /** 결제 시 지급되는 별빛 개수 (10★ = 개인·올해 1회 또는 궁합 2회) */
+  stars: number;
   deliveryMethod: string;
   deliveryTime: string;
 }
 
+const PRODUCT_DESC =
+  '본 서비스는 이용자가 입력한 정보를 바탕으로 사주 해석 결과를 제공하는 온라인 디지털 서비스입니다. 결제 시 별빛이 지급되며, 별빛으로 사주 해석을 열람합니다. 제공되는 해석 결과는 참고용 정보이며, 특정 결과나 효과를 보장하지 않습니다.';
+const PRODUCT_DELIVERY = '결제 완료 후 별빛이 즉시 충전되며, 웹페이지에서 사주 해석을 바로 확인 (무형 디지털 서비스, 배송 없음)';
+const PRODUCT_DELIVERY_TIME = '결제 즉시 자동 제공 (시스템 지연 시에도 최대 24시간 이내 제공)';
+
 export const PRODUCTS: Product[] = [
   {
     id: 'saju-reading-1',
-    name: 'AI 사주 해석 1회 이용권',
-    description:
-      '본 서비스는 이용자가 입력한 정보를 바탕으로 사주 해석 결과를 제공하는 온라인 디지털 서비스입니다. 제공되는 해석 결과는 참고용 정보이며, 특정 결과나 효과를 보장하지 않습니다.',
+    name: '별빛 10개 (AI 사주 해석 1회)',
+    description: PRODUCT_DESC,
     price: 990,
-    deliveryMethod: '결제 완료 후 웹페이지에서 즉시 결과 확인 (무형 디지털 서비스, 배송 없음)',
-    deliveryTime: '결제 즉시 자동 제공 (시스템 지연 시에도 최대 24시간 이내 제공)',
+    stars: 10,
+    deliveryMethod: PRODUCT_DELIVERY,
+    deliveryTime: PRODUCT_DELIVERY_TIME,
+  },
+  {
+    id: 'stars-20',
+    name: '별빛 20개 (AI 사주 해석 2회)',
+    description: PRODUCT_DESC,
+    price: 1900,
+    stars: 20,
+    deliveryMethod: PRODUCT_DELIVERY,
+    deliveryTime: PRODUCT_DELIVERY_TIME,
+  },
+  {
+    id: 'stars-30',
+    name: '별빛 30개 (AI 사주 해석 3회)',
+    description: PRODUCT_DESC,
+    price: 2700,
+    stars: 30,
+    deliveryMethod: PRODUCT_DELIVERY,
+    deliveryTime: PRODUCT_DELIVERY_TIME,
   },
 ];
 

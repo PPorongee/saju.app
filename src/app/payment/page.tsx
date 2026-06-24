@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import { PRODUCTS, BUSINESS_INFO, REFUND_POLICY, TOSS_CLIENT_KEY, generateOrderId } from '@/lib/payment-config';
 import { TossPaymentProvider } from '@/lib/payment-provider';
 
-const product = PRODUCTS[0];
-
 function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // 충전소에서 ?product=<id>로 패키지 선택 전달. 없으면 기본(별빛 10개).
+  const product = PRODUCTS.find(p => p.id === searchParams.get('product')) || PRODUCTS[0];
   const [checks, setChecks] = useState({ c1: false, c2: false, c3: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

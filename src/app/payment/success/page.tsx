@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { PRODUCTS } from '@/lib/payment-config';
 
 interface ConfirmResult {
   success: boolean;
@@ -147,7 +148,10 @@ function PaymentSuccessContent() {
     );
   }
 
-  const amountFormatted = (result?.amount ?? amount).toLocaleString('ko-KR');
+  const confirmedAmount = result?.amount ?? amount;
+  const amountFormatted = confirmedAmount.toLocaleString('ko-KR');
+  // 서버 검증된 결제 금액으로 지급 별빛 산출(상품 매칭). 앱 복귀 시 orderId 기준 1회만 지급.
+  const grantStars = PRODUCTS.find(p => p.price === confirmedAmount)?.stars ?? 0;
   const approvedAt = result?.approvedAt
     ? new Date(result.approvedAt).toLocaleString('ko-KR')
     : '';
@@ -209,13 +213,13 @@ function PaymentSuccessContent() {
 
       <button
         className="btn btn-primary btn-full"
-        onClick={() => router.push('/?returnOrderId=' + (result?.orderId || orderId) + (result?.readingCode ? '&readingCode=' + result.readingCode : ''))}
+        onClick={() => router.push('/?returnOrderId=' + (result?.orderId || orderId) + (result?.readingCode ? '&readingCode=' + result.readingCode : '') + (grantStars > 0 ? '&grantStars=' + grantStars : ''))}
         style={{ maxWidth: 320, marginBottom: 12 }}
       >
         사주 결과 보기
       </button>
       <button
-        onClick={() => router.push('/')}
+        onClick={() => router.push('/?returnOrderId=' + (result?.orderId || orderId) + (grantStars > 0 ? '&grantStars=' + grantStars : ''))}
         style={{
           background: 'transparent',
           border: 'none',

@@ -359,6 +359,24 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     const readingCode = params.get('readingCode');
     if (!returnOrderId) return;
 
+    // 결제 복귀 시 별빛 지급 — orderId 기준 1회만(중복지급 방지). 금액은 success에서 서버검증 후 산출.
+    const grantStarsParam = parseInt(params.get('grantStars') || '0', 10);
+    if (grantStarsParam > 0) {
+      try {
+        const grantedRaw = localStorage.getItem('saju-granted-orders');
+        const granted: string[] = grantedRaw ? JSON.parse(grantedRaw) : [];
+        if (!granted.includes(returnOrderId)) {
+          const cur = parseInt(localStorage.getItem('saju-stars') || '0', 10) || 0;
+          const next = cur + grantStarsParam;
+          localStorage.setItem('saju-stars', String(next));
+          setStarBalance(next);
+          granted.push(returnOrderId);
+          localStorage.setItem('saju-granted-orders', JSON.stringify(granted.slice(-200)));
+          showToast(lang === 'en' ? `+${grantStarsParam} stars charged ⭐` : `별빛 ${grantStarsParam}개가 충전됐어요 ⭐`);
+        }
+      } catch { /* storage restricted */ }
+    }
+
     function restoreFromData(saved: { userData?: unknown; sajuResult?: unknown; aiText?: string; appMode?: string }) {
       if (saved.userData) setUserData(saved.userData as UserData);
       if (saved.sajuResult) setSajuResult(saved.sajuResult as SajuResult);
@@ -5631,7 +5649,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               </div>
             </div>
             <a
-              href="/payment"
+              href={`/payment?product=${pkg.stars === 10 ? 'saju-reading-1' : 'stars-' + pkg.stars}`}
               className={pkg.highlight ? 'orot-btn orot-btn--primary orot-btn--full' : 'orot-btn orot-btn--ghost orot-btn--full'}
               style={{ textDecoration: 'none', fontSize: 15 }}
             >
