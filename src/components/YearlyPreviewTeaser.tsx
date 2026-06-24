@@ -36,6 +36,7 @@ function lockedSections(lang: 'ko' | 'en') {
     { icon: '🌙', title: ko ? '올해 운이 움직이는 방식' : 'How the year moves', teaser: ko ? '올해 운이 어떤 원리로 들어오는지.' : 'The mechanism of your year.' },
     { icon: '📅', title: ko ? '남은 올해 월별 흐름' : 'Month-by-month', teaser: ko ? '남은 달마다 달라지는 결과 타이밍.' : 'How each remaining month shifts.' },
     { icon: '🔀', title: ko ? '일·돈·관계·리듬의 변화' : 'Work·money·love·rhythm', teaser: ko ? '영역마다 올해 들어오는 변화.' : "This year's changes by area." },
+    { icon: '💞', title: ko ? '결혼·인연·시험 유리 시기' : 'Lucky timing', teaser: ko ? '인연·결혼·시험에 유리한 달·연도를 콕 짚어줘요.' : 'The exact months & years in your favor.' },
     { icon: '🧭', title: ko ? '올해의 선택 가이드' : "This year's choices", teaser: ko ? '무엇을 잡고 무엇을 놓을지.' : 'What to grab, what to let go.' },
     { icon: '🌠', title: ko ? '이후 2년 큰 흐름' : 'Next 2 years', teaser: ko ? '올해가 내년·후년으로 어떻게 이어지는지.' : 'How this year carries forward.' },
     { icon: '⭐', title: ko ? '사주가 말하는 올해의 큰 운' : 'Your big fortune', teaser: ko ? '올해를 관통하는 한마디.' : 'The headline of your year.' },

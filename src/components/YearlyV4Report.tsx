@@ -31,6 +31,7 @@ import type {
   YearlyFortuneReport,
   YearlyRelationshipStatus,
 } from '@/domain/saju/yearly/yearlyTypes';
+import type { YearlyTimingHints, TimingHint } from '@/domain/saju/yearly/yearlyLifeTiming';
 
 // ============================================================
 // 입력 — 호출자(SajuApp)가 만들어 넘기는 client용 input
@@ -46,6 +47,7 @@ export interface YearlyV4Input {
 
 export interface YearlyV4ApiResponse {
   analysisCore: unknown;
+  timingHints?: YearlyTimingHints;
   report: YearlyFortuneReport;
   validation: { isValid: boolean; issues: Array<{ type: string; reason: string }> };
   attempts: number;
@@ -72,7 +74,7 @@ export interface YearlyV4ReportProps {
 // 마크다운 직렬화 — 저장/공유용. renderTOC가 ##N.제목## 패턴으로 파싱한다.
 // 제목 안에 '#' 미포함, 닫는 ## 동일 줄. 섹션 번호는 1부터 순차.
 // ============================================================
-export function buildYearlyMarkdown(report: YearlyFortuneReport): string {
+export function buildYearlyMarkdown(report: YearlyFortuneReport, timingHints?: YearlyTimingHints): string {
   const lines: string[] = [];
   let n = 0;
   const sec = (title: string, body: string) => {
@@ -161,6 +163,17 @@ export function buildYearlyMarkdown(report: YearlyFortuneReport): string {
     sec(fv.title, fvParts.join('\n\n'));
   }
 
+  // 시기 포인트 (결정론) — 결혼·인연·시험
+  if (timingHints) {
+    const tItems = [timingHints.relationship, timingHints.study].filter(Boolean) as TimingHint[];
+    if (tItems.length) {
+      const body = tItems
+        .map((it) => `${it.label}: ${it.windows.join(', ')}\n${it.note}`)
+        .join('\n\n');
+      sec('올해의 시기 포인트', body);
+    }
+  }
+
   // 명리 근거는 별도 섹션으로 빼지 않는다 — 본문(흐름의 구조·주제별 등)에 녹여 설명된다.
 
   return lines.join('\n');
@@ -241,7 +254,7 @@ export default function YearlyV4Report({
       ) : !data ? (
         <LoadingCard />
       ) : (
-        <ReportBody report={data.report} />
+        <ReportBody report={data.report} timingHints={data.timingHints} />
       )}
 
       {/* 공유 / 저장 / 처음으로 — 결과 로드 완료 시에만 표시 */}
@@ -254,7 +267,7 @@ export default function YearlyV4Report({
               disabled={isSharing}
               onClick={() => {
                 const title = (userName || '') + (lang === 'en' ? "'s 2026 Fortune" : '의 2026 운세');
-                onShareText(buildYearlyMarkdown(data.report), title);
+                onShareText(buildYearlyMarkdown(data.report, data.timingHints), title);
               }}
             >
               {isSharing ? '🔗 생성 중...' : '🔗 링크 공유'}
@@ -266,7 +279,7 @@ export default function YearlyV4Report({
               style={{ flex: 1, height: 44, fontSize: 13 }}
               onClick={() => {
                 const title = (userName || '') + (lang === 'en' ? "'s 2026 Fortune" : '의 2026 운세');
-                onSaveText(buildYearlyMarkdown(data.report), title);
+                onSaveText(buildYearlyMarkdown(data.report, data.timingHints), title);
               }}
             >
               💾 {lang === 'en' ? 'Save Result' : '결과 저장'}
@@ -360,7 +373,7 @@ function AccordionSection({
 // ============================================================
 // 리포트 본문 — 리드 카드 + sv4 아코디언(모두 기본 접힘)
 // ============================================================
-function ReportBody({ report }: { report: YearlyFortuneReport }) {
+function ReportBody({ report, timingHints }: { report: YearlyFortuneReport; timingHints?: YearlyTimingHints }) {
   return (
     <div style={{ marginTop: 4 }}>
       {/* 리드 카드 — 항상 펼쳐진 hero (아코디언 아님) */}
@@ -369,12 +382,42 @@ function ReportBody({ report }: { report: YearlyFortuneReport }) {
       {/* 이후 섹션은 night-sky 아코디언, 모두 기본 접힘 */}
       <MechanismView body={report.yearlyMechanism.body} />
       {report.remainingMonths.length > 0 && <RemainingMonthsView months={report.remainingMonths} />}
+      <TimingHintsView hints={timingHints} />
       <TopicFortunesView topics={report.topicFortunes} />
       <ActionGuideView guide={report.actionGuide} />
       {report.nextTwoYears.length > 0 && <NextTwoYearsView years={report.nextTwoYears} />}
 
       <FortuneVerdictSection verdict={report.fortuneVerdict} />
     </div>
+  );
+}
+
+// ── 시기 포인트 (결정론) — 결혼·인연·시험을 월/연으로 ──
+function TimingHintsView({ hints }: { hints?: YearlyTimingHints }) {
+  if (!hints) return null;
+  const items = [hints.relationship, hints.study].filter(Boolean) as TimingHint[];
+  if (items.length === 0) return null;
+  return (
+    <>
+      <div className="sv4-divider" aria-hidden>
+        <span className="sv4-divider-line" /><span className="sv4-divider-star">✦</span><span className="sv4-divider-line" />
+      </div>
+      <div className="orot-card" style={{ padding: '18px 18px', marginTop: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>시간의 결</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 14, fontFamily: 'var(--orot-font)' }}>올해의 시기 포인트</div>
+        {items.map((it, i) => (
+          <div key={i} style={{ padding: '12px 0', borderTop: i > 0 ? '1px solid var(--orot-hair)' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginBottom: 7 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)', marginRight: 2 }}>{it.label}</span>
+              {it.windows.map((w, j) => (
+                <span key={j} style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--orot-coral)', background: 'rgba(243,160,146,0.12)', border: '1px solid var(--orot-coral-faint)', borderRadius: 999, padding: '2px 11px', fontFamily: 'var(--orot-font)' }}>{w}</span>
+              ))}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--orot-ink-soft)', lineHeight: 1.7, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{it.note}</div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

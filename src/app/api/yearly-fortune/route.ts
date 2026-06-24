@@ -15,6 +15,7 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import type { YearlyDepthOptions, YearlyFortuneInput } from '@/domain/saju/yearly/yearlyTypes';
 import { generateYearlyFortuneReport } from '@/domain/saju/yearly/generateYearlyFortuneReport';
+import { buildYearlyTimingHints } from '@/domain/saju/yearly/yearlyLifeTiming';
 import { createOpenAiYearlyGptCaller } from '@/lib/saju-v4-yearly-gpt-caller';
 import {
   normalizeYearlyServerFlags,
@@ -101,7 +102,16 @@ export async function POST(req: Request) {
 
     // 7) 응답 — analysis의 직렬화 가능한 부분만 포함
     const { analysis } = result;
+    // 시기 포인트(결정론) — 결혼·인연·시험을 월/연으로. fatalism 금지 톤.
+    const uc = (input.userContext ?? {}) as Record<string, any>;
+    const timingHints = buildYearlyTimingHints(analysis, {
+      gender: input.birth?.gender,
+      relationshipStatus: input.relationshipStatus,
+      age: typeof uc.age === 'number' ? uc.age : undefined,
+      studyConcern: Array.isArray(uc.currentConcerns) && uc.currentConcerns.includes('study'),
+    });
     return NextResponse.json({
+      timingHints,
       analysisCore: {
         targetYear: analysis.targetYear,
         targetYearGanji: analysis.targetYearGanji,
