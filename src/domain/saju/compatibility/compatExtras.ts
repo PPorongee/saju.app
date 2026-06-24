@@ -541,6 +541,40 @@ export function buildMoneyLifeFit(
 //    유형별 보너스(bonus)가 '지금의 깊은 분석'이라면, 여기선 '한 단계 앞'을 본다.
 //    단정/운명론 없음("정해진 답 없음"을 명시). bundle 평문만 사용.
 // ============================================================
+/** 선택지/키워드 텍스트의 앞쪽 [태그] 제거. */
+function cleanTag(s?: string): string {
+  return (s ?? '').replace(/^\s*\[[^\]]*\]\s*/, '').trim();
+}
+
+// 엔진이 계산한 구체 선택지(relationshipChoices)·강점(relationshipStrengths)을
+// '다음 단계' 플레이북으로. 보너스/본문에서 쓰지 않는 소스라 중복 없이 카드를 두껍게 만든다.
+// 초기 단계(썸 등)에 덜 맞는 '싸움·회복' 테마는 뒤로 미뤄 관련도를 높인다.
+function nextStepPlaybook(bundle: CompatibilityAnalysisBundle): string[] {
+  const choices = bundle.relationshipChoices;
+  const out: string[] = [];
+  const isRecovery = (s: string) => /싸운|싸움|회복|화해/.test(s);
+
+  const dosAll = Array.from(new Set(
+    (choices?.helpfulChoices ?? []).map((c) => cleanTag(c.practicalAction || c.title)).filter(Boolean),
+  ));
+  const dos = [...dosAll.filter((d) => !isRecovery(d)), ...dosAll.filter((d) => isRecovery(d))].slice(0, 2);
+  if (dos.length) out.push('## 이렇게 해보면 더 단단해져요', ...dos.map((d) => `- ${d}`));
+
+  const harms = (choices?.harmfulChoices ?? []).filter((h) => cleanTag(h.title));
+  const harm = harms.find((h) => !isRecovery(h.title)) ?? harms[0];
+  if (harm) {
+    const t = cleanTag(harm.title);
+    const fix = cleanTag(harm.correction);
+    out.push('', '## 이건 오히려 멀어지게 해요', fix ? `- ${t} → 대신 ${fix}` : `- ${t}`);
+  }
+
+  const stItem = (bundle.relationshipStrengths ?? [])[0];
+  if (stItem?.lifeScene) {
+    out.push('', '## 이미 둘이 가진 강점', j([stItem.title ? `${stItem.title} —` : '', stItem.lifeScene]));
+  }
+  return out;
+}
+
 export function buildNextStep(
   bundle: CompatibilityAnalysisBundle,
   relationshipType: RelationshipType,
@@ -548,78 +582,71 @@ export function buildNextStep(
   const at = bundle.attractionAnalysis;
   const st = bundle.stabilityAnalysis;
   const rc = bundle.recoveryAnalysis;
-  const ec = bundle.elementComplement;
   const chem = at?.initialChemistry;
-  const need = Array.from(new Set([...(ec?.aNeedsFromB ?? []), ...(ec?.bNeedsFromA ?? [])]))
-    .map((e) => ELEMENT_KO[e]).filter(Boolean).join('·');
+
+  let title: string;
+  const opening: string[] = [];
 
   switch (relationshipType) {
     case 'crush_or_something': {
+      title = '썸에서 연애로 가려면';
       const signal = chem === 'strong'
-        ? '이미 불씨는 있어요. 지금 필요한 건 용기보다 타이밍이에요 — 둘만 있는 자리를 한 번 만들면 빠르게 정리돼요.'
+        ? '이미 불씨는 있어요. 지금 필요한 건 용기보다 타이밍이에요 — 둘만 있는 자리를 한 번 만들면 관계가 빠르게 정리돼요.'
         : chem === 'slow-burn'
-          ? '천천히 데워지는 결이라, 조급해하면 오히려 늦어져요. 자주 보는 사이부터 자연스럽게 만들어 두세요.'
-          : '아직은 탐색 단계예요. 공통의 시간과 경험을 쌓는 게 연애로 가는 가장 빠른 길이에요.';
-      return {
-        eyebrow: '다음 단계', title: '썸에서 연애로 가려면',
-        body: ['## 지금 어디쯤일까', signal, '', '## 한 걸음 더',
-          j(['관계가 깊어질수록', need && `${need} 기운을 같이 채우는 시간이 둘을 더 붙여줘요.`])].join('\n').trim(),
-      };
+          ? '천천히 데워지는 결이라, 조급해하면 오히려 늦어져요. 자주 보는 사이부터 자연스럽게 만들어 두는 게 정답에 가까워요.'
+          : chem === 'unstable'
+            ? '끌림은 분명한데 온도 차가 들쭉날쭉한 결이에요. 밀당보다 한결같은 페이스가 이 관계를 안정시켜요.'
+            : '아직은 탐색 단계예요. 고백을 서두르기보다, 공통의 시간과 경험을 쌓는 게 연애로 가는 가장 빠른 길이에요.';
+      opening.push('## 지금 어디쯤일까', signal);
+      break;
     }
     case 'dating': {
-      return {
-        eyebrow: '다음 단계', title: '함께 사는 단계로 간다면',
-        body: [
-          '## 같이 살아본다는 것',
-          j([st?.relationshipTypeSpecificStability || st?.dailyCompatibility,
-            '같이 사는 건 설렘보다 리듬의 문제예요. 짧은 동행(여행이나 살아보기)으로 생활 패턴을 미리 겹쳐보면, 큰 결정이 한결 쉬워져요.']),
-          '',
-          '## 미리 맞춰두면 좋은 것',
-          j([st?.longTermRisk, need && `${need} 기운이 둘 사이의 빈칸이라, 이 부분의 역할을 미리 나눠두면 갈등이 줄어요.`]),
-        ].join('\n').trim(),
-      };
+      title = '함께 사는 단계로 간다면';
+      opening.push('## 같이 살아본다는 것',
+        j([st?.relationshipTypeSpecificStability || st?.dailyCompatibility,
+          '같이 사는 건 설렘보다 리듬의 문제예요. 짧은 동행(여행이나 살아보기)으로 생활 패턴을 미리 겹쳐보면, 큰 결정이 한결 쉬워져요.']));
+      if (st?.longTermRisk) opening.push('', '## 미리 맞춰두면 좋은 것', st.longTermRisk);
+      break;
     }
     case 'married': {
-      return {
-        eyebrow: '다음 단계', title: '권태기를 지혜롭게 지나는 법',
-        body: [
-          '## 오래 본 사이의 고비',
-          j([st?.longTermRisk || st?.dailyCompatibility,
-            '익숙함이 무심함으로 굳는 순간이 가장 위험해요. 큰 이벤트보다 작은 다정함의 빈도가 이 시기를 가릅니다.']),
-          '',
-          '## 다시 가까워지는 스위치',
-          j([rc?.bestRecoveryRule && `둘에겐 ${rc.bestRecoveryRule}`,
-            '새로운 걸 같이 시작해보는 것도 권태의 좋은 해독제예요.']),
-        ].join('\n').trim(),
-      };
+      title = '권태기를 지혜롭게 지나는 법';
+      opening.push('## 오래 본 사이의 고비',
+        j([st?.longTermRisk || st?.dailyCompatibility,
+          '익숙함이 무심함으로 굳는 순간이 가장 위험해요. 큰 이벤트보다 작은 다정함의 빈도가 이 시기를 가릅니다.']));
+      if (rc?.bestRecoveryRule) {
+        opening.push('', '## 다시 가까워지는 스위치',
+          j([`둘에겐 ${rc.bestRecoveryRule}`, '새로운 걸 같이 시작해보는 것도 권태의 좋은 해독제예요.']));
+      }
+      break;
     }
     case 'friendship': {
-      return {
-        eyebrow: '다음 단계', title: '친구, 그 이상도 될까',
-        body: ['## 솔직한 가능성',
-          j([(chem === 'strong' || chem === 'soft')
-            ? '서로에게 끌리는 결이 분명히 있어요. 다만 선을 넘는 순간 친구로는 못 돌아갈 수 있다는 것도 같이 생각해야 해요.'
-            : '지금은 편한 친구의 결이 더 강해요. 무리해서 관계를 바꾸기보다, 이 편안함을 지키는 게 더 이득일 수 있어요.',
-            '정해진 답은 없어요 — 잃을 것과 얻을 것을 저울에 올려보는 게 먼저예요.'])].join('\n').trim(),
-      };
+      title = '친구, 그 이상도 될까';
+      opening.push('## 솔직한 가능성',
+        j([(chem === 'strong' || chem === 'soft')
+          ? '서로에게 끌리는 결이 분명히 있어요. 다만 선을 넘는 순간 친구로는 못 돌아갈 수 있다는 것도 같이 생각해야 해요.'
+          : '지금은 편한 친구의 결이 더 강해요. 무리해서 관계를 바꾸기보다, 이 편안함을 지키는 게 더 이득일 수 있어요.',
+          '정해진 답은 없어요 — 잃을 것과 얻을 것을 저울에 올려보는 게 먼저예요.']));
+      break;
     }
     case 'coworker': {
-      return {
-        eyebrow: '다음 단계', title: '동료에서 진짜 내 편으로',
-        body: ['## 업무를 넘어서려면',
-          j([st?.dailyCompatibility,
-            '일로 만난 사이가 깊어지려면, 평가나 경쟁이 끼지 않는 자리에서 한 번쯤 사람 대 사람으로 만나는 시간이 필요해요.'])].join('\n').trim(),
-      };
+      title = '동료에서 진짜 내 편으로';
+      opening.push('## 업무를 넘어서려면',
+        j([st?.dailyCompatibility,
+          '일로 만난 사이가 깊어지려면, 평가나 경쟁이 끼지 않는 자리에서 한 번쯤 사람 대 사람으로 만나는 시간이 필요해요.']));
+      break;
     }
     case 'reunion_or_breakup': {
-      return {
-        eyebrow: '다음 단계', title: '여기서 어디로 갈까',
-        body: ['## 다시 시작하든, 정리하든',
-          j([rc?.bestRecoveryRule && `다시 본다면 핵심은 ${rc.bestRecoveryRule}`,
-            '무엇을 택하든, 예전과 같은 방식이면 같은 결말이 와요. 달라질 한 가지를 먼저 정하는 게 진짜 시작이에요.'])].join('\n').trim(),
-      };
+      title = '여기서 어디로 갈까';
+      opening.push('## 다시 시작하든, 정리하든',
+        j([rc?.bestRecoveryRule && `다시 본다면 핵심은 ${rc.bestRecoveryRule}`,
+          '무엇을 택하든, 예전과 같은 방식이면 같은 결말이 와요. 달라질 한 가지를 먼저 정하는 게 진짜 시작이에요.']));
+      break;
     }
     default:
       return null;
   }
+
+  const playbook = nextStepPlaybook(bundle);
+  const body = [...opening, ...(playbook.length ? ['', ...playbook] : [])].join('\n').trim();
+  return { eyebrow: '다음 단계', title, body };
 }
