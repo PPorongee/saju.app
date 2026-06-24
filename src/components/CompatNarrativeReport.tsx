@@ -39,6 +39,9 @@ export interface CompatExtras {
   scores: RelationGauge[];
   sharedActivities: SharedActivities | null;
   bonus?: BonusSection | null;
+  attachment?: BonusSection | null;
+  moneyFit?: BonusSection | null;
+  nextStep?: BonusSection | null;
   conflict: { mainConflictTriggers: string[]; repeatedPattern: string; emotionalMismatch: string; recoveryStyleMismatch: string };
   recovery: { likelyRecoveryPattern: string; whatAUsuallyNeeds: string; whatBUsuallyNeeds: string; bestRecoveryRule: string };
   stability: { dailyCompatibility: string; longTermRisk: string; relationshipTypeSpecificStability: string };
@@ -177,7 +180,10 @@ const ACCENTS = {
   guide:      { icon: '🧭', accent: '#9cc99a' },
   conflict:   { icon: '⚡', accent: '#e0a86b' },
   complement: { icon: '🌿', accent: '#86c79a' },
+  attachment: { icon: '💞', accent: '#e2a0c4' },
+  money:      { icon: '💰', accent: '#cdb574' },
   bonus:      { icon: '🎁', accent: '#d6a8e6' },
+  nextStep:   { icon: '🌱', accent: '#8fc7a6' },
   final:      { icon: '⭐', accent: 'var(--orot-primary, #f0c75e)' },
   future:     { icon: '🌠', accent: '#8aa1c4' },
 } satisfies Record<string, CompatAccent>;
@@ -219,14 +225,23 @@ function ReportBody({
       <CompatSvSection title="두 사람을 한 문장으로" body={overviewBody} eyebrow="첫인상" accent={ACCENTS.overview} showDivider={false} lead />
       <CompatSvSection title="이 관계가 이렇게 느껴지는 이유" body={px(report.relationshipMechanism.body)} eyebrow="관계의 구조" accent={ACCENTS.mechanism} showDivider lead />
       <CompatSvSection title="서로에게 끌리는 지점과 엇갈리는 지점" body={px(report.attractionAndFriction.body)} eyebrow="끌림과 균열" accent={ACCENTS.attraction} showDivider lead />
+      {extras?.attachment ? (
+        <CompatSvSection title={extras.attachment.title} body={px(extras.attachment.body)} eyebrow={extras.attachment.eyebrow} accent={ACCENTS.attachment} showDivider />
+      ) : null}
       <CompatSvSection title="현실에서 반복되기 쉬운 관계 패턴" body={px(report.repeatedPattern.body)} eyebrow="반복되는 장면" accent={ACCENTS.repeated} showDivider lead />
       <CompatSvSection title="이 관계를 좋게 쓰는 방법" body={px(report.relationshipGuide.body)} eyebrow="관계 가이드" accent={ACCENTS.guide} showDivider lead />
       {extras ? (
         <CompatSvSection title="이렇게 부딪히고, 이렇게 풀려요" body={px(conflictRecoveryBody(extras))} eyebrow="싸움과 화해" accent={ACCENTS.conflict} showDivider />
       ) : null}
       {extras ? <ComplementActivitiesSection ec={extras.elementComplement} act={extras.sharedActivities} nameA={nameA} nameB={nameB} /> : null}
+      {extras?.moneyFit ? (
+        <CompatSvSection title={extras.moneyFit.title} body={px(extras.moneyFit.body)} eyebrow={extras.moneyFit.eyebrow} accent={ACCENTS.money} showDivider />
+      ) : null}
       {extras?.bonus ? (
         <CompatSvSection title={extras.bonus.title} body={px(extras.bonus.body)} eyebrow={extras.bonus.eyebrow} accent={ACCENTS.bonus} showDivider />
+      ) : null}
+      {extras?.nextStep ? (
+        <CompatSvSection title={extras.nextStep.title} body={px(extras.nextStep.body)} eyebrow={extras.nextStep.eyebrow} accent={ACCENTS.nextStep} showDivider />
       ) : null}
       <CompatSvSection title="마지막으로 드리는 조언" body={px(report.finalAdvice.body)} eyebrow="정리하며" accent={ACCENTS.final} showDivider lead />
       <FortuneVerdictSection verdict={report.fortuneVerdict} />

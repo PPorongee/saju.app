@@ -18,7 +18,7 @@ import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import type { RelationshipType } from '@/domain/saju/compatibility/compatibilityTypes';
 import { generateCompatNarrativeReport } from '@/domain/saju/compatibility/narrative/generateCompatNarrativeReport';
 import { createOpenAiCompatNarrativeGptCaller } from '@/lib/compat-narrative-gpt-caller';
-import { buildSharedActivities, buildRelationGauges, buildPersonTrait, buildBonusSection, buildChildrenFortune } from '@/domain/saju/compatibility/compatExtras';
+import { buildSharedActivities, buildRelationGauges, buildPersonTrait, buildBonusSection, buildChildrenFortune, buildAttachmentStyles, buildMoneyLifeFit, buildNextStep } from '@/domain/saju/compatibility/compatExtras';
 import { calculateAnalysisOnly } from '@/domain/saju/generatePersonalSajuReport';
 import {
   normalizeCompatNarrativeServerFlags,
@@ -96,6 +96,10 @@ export async function POST(req: Request) {
       bonus: relationshipType === 'married'
         ? buildChildrenFortune(aAnalysis, bAnalysis, inputA.gender, inputB.gender, bd)
         : buildBonusSection(bd, relationshipType),
+      // 추가 콘텐츠(명리 계산 기반) — 애착·관계 스타일(십성), 돈·생활 합(재성), 다음 단계(트랜지션).
+      attachment: buildAttachmentStyles(aAnalysis, bAnalysis, relationshipType),
+      moneyFit: buildMoneyLifeFit(aAnalysis, bAnalysis, bd),
+      nextStep: buildNextStep(bd, relationshipType),
       conflict: {
         mainConflictTriggers: bd.conflictAnalysis?.mainConflictTriggers ?? [],
         repeatedPattern: bd.conflictAnalysis?.repeatedPattern ?? '',

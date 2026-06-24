@@ -401,3 +401,225 @@ export function buildChildrenFortune(
   ];
   return { eyebrow: '결혼 · 자녀운', title: '두 사람의 자녀운', body: lines.join('\n').trim() };
 }
+
+// ============================================================
+// 5) 애착·관계 스타일 (십성 기반) — 두 사람 각각 + 만남의 결.
+//    가장 강한 십성의 카테고리(Cat)로 애착 결을 도출. 연애형 관계면 "연애 결",
+//    그 외(친구·동료)면 "관계 결"로 라벨만 바꿈. fatalism/단정 없음.
+// ============================================================
+interface AttachmentStyle {
+  /** 예: 자립형 */
+  label: string;
+  /** 사람을 설명하는 결 */
+  desc: string;
+  /** 가까운 사이에서 드러나는 결 */
+  inRelation: string;
+  /** 이 사람에게 채워주면 좋은 것 */
+  needs: string;
+}
+const ATTACHMENT_BY_CAT: Record<Cat, AttachmentStyle> = {
+  self: {
+    label: '자립형',
+    desc: '혼자서도 단단하고 자기 페이스가 분명한',
+    inRelation: '가까워져도 자기 공간이 필요해서, 너무 밀착하면 부담스러워해요',
+    needs: '믿고 기다려주는 여백',
+  },
+  output: {
+    label: '표현형',
+    desc: '마음을 솔직하게 드러내는',
+    inRelation: '좋으면 티가 나고, 반응이 없으면 서운함을 금세 느껴요',
+    needs: '표현에 표현으로 답해주는 반응',
+  },
+  wealth: {
+    label: '헌신형',
+    desc: '챙겨주고 함께 누리는 걸 좋아하는',
+    inRelation: '뭔가 해주면서 마음을 표현하는 편이에요',
+    needs: '그 마음을 당연하게 여기지 않고 알아주는 인정',
+  },
+  authority: {
+    label: '책임형',
+    desc: '진중하고 한번 맺으면 끝까지 가는',
+    inRelation: '신뢰와 약속을 중요하게 여기고, 가벼운 태도를 싫어해요',
+    needs: '일관되고 예측 가능한 태도',
+  },
+  support: {
+    label: '안정추구형',
+    desc: '보살핌과 정서적 안정 속에서 편안해지는',
+    inRelation: '따뜻하게 받아주면 마음을 활짝 열고, 차가우면 깊이 위축돼요',
+    needs: '다정하고 안정적인 보살핌',
+  },
+};
+
+function catOf(input: PersonalSajuGptInput): Cat {
+  const strongest = input.coreAnalysis.tenGods.strongest?.[0];
+  return (TEN_GOD_CATEGORY[strongest] as Cat) ?? 'support';
+}
+
+const ROMANTIC_TYPES: RelationshipType[] = ['dating', 'married', 'crush_or_something', 'reunion_or_breakup'];
+
+export function buildAttachmentStyles(
+  a: PersonalSajuGptInput,
+  b: PersonalSajuGptInput,
+  relationshipType: RelationshipType,
+): BonusSection {
+  const aCat = catOf(a);
+  const bCat = catOf(b);
+  const A = ATTACHMENT_BY_CAT[aCat];
+  const B = ATTACHMENT_BY_CAT[bCat];
+  const romantic = ROMANTIC_TYPES.includes(relationshipType);
+  const ctx = romantic ? '연애 결' : '관계 결';
+
+  const meet = aCat === bCat
+    ? `둘 다 ${A.label}이라 서로를 깊이 이해해요. 다만 같은 결이라, 둘 다 ${A.needs}을 바라다 보면 누구 하나 먼저 내어주기 어려울 수 있어요. 번갈아 맞춰주기로 정해두면 한결 편해져요.`
+    : `${A.label}과 ${B.label}이 만난 결이에요. A에겐 ${A.needs}을, B에겐 ${B.needs}을 — 서로 원하는 지점이 다르다는 걸 알면 어긋남이 확 줄어요.`;
+
+  const lines = [
+    `## A의 ${ctx}`,
+    `A는 ${A.label}이에요. ${A.desc} 사람이라, ${A.inRelation}.`,
+    '',
+    `## B의 ${ctx}`,
+    `B는 ${B.label}이에요. ${B.desc} 사람이라, ${B.inRelation}.`,
+    '',
+    '## 둘이 만나면',
+    meet,
+  ];
+  return {
+    eyebrow: '애착·관계 스타일',
+    title: romantic ? '두 사람의 연애 결' : '두 사람의 관계 결',
+    body: lines.join('\n').trim(),
+  };
+}
+
+// ============================================================
+// 6) 돈·생활 합 (재성 기반) — 두 사람의 재성 강약 + 합쳐졌을 때의 결.
+// ============================================================
+function wealthDesc(total: number): string {
+  return total >= 3
+    ? '재물 감각이 또렷하고 현실을 단단히 챙기는'
+    : total >= 1.3
+      ? '돈과 마음의 균형을 잡는'
+      : '돈보다 의미와 마음을 앞에 두는';
+}
+
+export function buildMoneyLifeFit(
+  a: PersonalSajuGptInput,
+  b: PersonalSajuGptInput,
+  bundle: CompatibilityAnalysisBundle,
+): BonusSection {
+  const aw = groupTotal(a.coreAnalysis.tenGods.totals, 'wealth');
+  const bw = groupTotal(b.coreAnalysis.tenGods.totals, 'wealth');
+  const strong = (t: number) => t >= 3;
+  const weak = (t: number) => t < 1.3;
+
+  let fit: string;
+  if (strong(aw) && strong(bw)) {
+    fit = '둘 다 현실 감각이 좋아 모으는 힘은 강해요. 다만 씀씀이 주도권을 놓고 부딪히기 쉬우니, 큰 지출은 같이 정하기로 미리 약속해두면 잡음이 줄어요.';
+  } else if (weak(aw) && weak(bw)) {
+    fit = '둘 다 돈보다 마음·경험을 앞에 둬서 함께 있으면 따뜻하지만, 현실적인 관리에선 빈틈이 생기기 쉬워요. 한 명이 살림·예산 담당을 맡아두면 한결 편해져요.';
+  } else {
+    fit = '한 사람은 관리하고 한 사람은 누리는 쪽이라, 역할을 나누면 의외로 잘 굴러가요. 관리하는 쪽이 답답해하지 않게, 누리는 쪽도 큰 그림은 같이 챙겨주세요.';
+  }
+
+  const lines = [
+    '## 돈을 대하는 결',
+    `A는 ${wealthDesc(aw)} 편, B는 ${wealthDesc(bw)} 편이에요.`,
+    '',
+    '## 둘이 살림·돈을 합치면',
+    fit,
+    '',
+    '## 생활 리듬은',
+    j([
+      bundle.stabilityAnalysis?.dailyCompatibility,
+      '돈 이야기를 미루지 않고 가볍게 자주 나누는 습관 하나가, 이 부분에선 제일 큰 안전장치예요.',
+    ]),
+  ];
+  return { eyebrow: '돈·생활 합', title: '돈과 살림의 결', body: lines.join('\n').trim() };
+}
+
+// ============================================================
+// 7) 관계의 다음 단계 (type-adaptive) — "트랜지션" 관점.
+//    유형별 보너스(bonus)가 '지금의 깊은 분석'이라면, 여기선 '한 단계 앞'을 본다.
+//    단정/운명론 없음("정해진 답 없음"을 명시). bundle 평문만 사용.
+// ============================================================
+export function buildNextStep(
+  bundle: CompatibilityAnalysisBundle,
+  relationshipType: RelationshipType,
+): BonusSection | null {
+  const at = bundle.attractionAnalysis;
+  const st = bundle.stabilityAnalysis;
+  const rc = bundle.recoveryAnalysis;
+  const ec = bundle.elementComplement;
+  const chem = at?.initialChemistry;
+  const need = Array.from(new Set([...(ec?.aNeedsFromB ?? []), ...(ec?.bNeedsFromA ?? [])]))
+    .map((e) => ELEMENT_KO[e]).filter(Boolean).join('·');
+
+  switch (relationshipType) {
+    case 'crush_or_something': {
+      const signal = chem === 'strong'
+        ? '이미 불씨는 있어요. 지금 필요한 건 용기보다 타이밍이에요 — 둘만 있는 자리를 한 번 만들면 빠르게 정리돼요.'
+        : chem === 'slow-burn'
+          ? '천천히 데워지는 결이라, 조급해하면 오히려 늦어져요. 자주 보는 사이부터 자연스럽게 만들어 두세요.'
+          : '아직은 탐색 단계예요. 공통의 시간과 경험을 쌓는 게 연애로 가는 가장 빠른 길이에요.';
+      return {
+        eyebrow: '다음 단계', title: '썸에서 연애로 가려면',
+        body: ['## 지금 어디쯤일까', signal, '', '## 한 걸음 더',
+          j(['관계가 깊어질수록', need && `${need} 기운을 같이 채우는 시간이 둘을 더 붙여줘요.`])].join('\n').trim(),
+      };
+    }
+    case 'dating': {
+      return {
+        eyebrow: '다음 단계', title: '함께 사는 단계로 간다면',
+        body: [
+          '## 같이 살아본다는 것',
+          j([st?.relationshipTypeSpecificStability || st?.dailyCompatibility,
+            '같이 사는 건 설렘보다 리듬의 문제예요. 짧은 동행(여행이나 살아보기)으로 생활 패턴을 미리 겹쳐보면, 큰 결정이 한결 쉬워져요.']),
+          '',
+          '## 미리 맞춰두면 좋은 것',
+          j([st?.longTermRisk, need && `${need} 기운이 둘 사이의 빈칸이라, 이 부분의 역할을 미리 나눠두면 갈등이 줄어요.`]),
+        ].join('\n').trim(),
+      };
+    }
+    case 'married': {
+      return {
+        eyebrow: '다음 단계', title: '권태기를 지혜롭게 지나는 법',
+        body: [
+          '## 오래 본 사이의 고비',
+          j([st?.longTermRisk || st?.dailyCompatibility,
+            '익숙함이 무심함으로 굳는 순간이 가장 위험해요. 큰 이벤트보다 작은 다정함의 빈도가 이 시기를 가릅니다.']),
+          '',
+          '## 다시 가까워지는 스위치',
+          j([rc?.bestRecoveryRule && `둘에겐 ${rc.bestRecoveryRule}`,
+            '새로운 걸 같이 시작해보는 것도 권태의 좋은 해독제예요.']),
+        ].join('\n').trim(),
+      };
+    }
+    case 'friendship': {
+      return {
+        eyebrow: '다음 단계', title: '친구, 그 이상도 될까',
+        body: ['## 솔직한 가능성',
+          j([(chem === 'strong' || chem === 'soft')
+            ? '서로에게 끌리는 결이 분명히 있어요. 다만 선을 넘는 순간 친구로는 못 돌아갈 수 있다는 것도 같이 생각해야 해요.'
+            : '지금은 편한 친구의 결이 더 강해요. 무리해서 관계를 바꾸기보다, 이 편안함을 지키는 게 더 이득일 수 있어요.',
+            '정해진 답은 없어요 — 잃을 것과 얻을 것을 저울에 올려보는 게 먼저예요.'])].join('\n').trim(),
+      };
+    }
+    case 'coworker': {
+      return {
+        eyebrow: '다음 단계', title: '동료에서 진짜 내 편으로',
+        body: ['## 업무를 넘어서려면',
+          j([st?.dailyCompatibility,
+            '일로 만난 사이가 깊어지려면, 평가나 경쟁이 끼지 않는 자리에서 한 번쯤 사람 대 사람으로 만나는 시간이 필요해요.'])].join('\n').trim(),
+      };
+    }
+    case 'reunion_or_breakup': {
+      return {
+        eyebrow: '다음 단계', title: '여기서 어디로 갈까',
+        body: ['## 다시 시작하든, 정리하든',
+          j([rc?.bestRecoveryRule && `다시 본다면 핵심은 ${rc.bestRecoveryRule}`,
+            '무엇을 택하든, 예전과 같은 방식이면 같은 결말이 와요. 달라질 한 가지를 먼저 정하는 게 진짜 시작이에요.'])].join('\n').trim(),
+      };
+    }
+    default:
+      return null;
+  }
+}
