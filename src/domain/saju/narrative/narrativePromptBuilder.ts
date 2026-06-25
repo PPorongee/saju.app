@@ -413,7 +413,9 @@ export const SECTION_MAX_TOKENS: Record<string, number> = {
   moneyMonetizationNarrative: 1800,
   relationshipLoveNarrative: 1800,
   futureFlowNarrative: 1500,
-  finalStrategyNarrative: 1200,
+  // Engine-Coverage v1 (2026-06): 결론에 현재 대운 + 개운 방향 + 용신 행동조언이 함께 들어가
+  //   분량이 늘어 1200→1800 상향 (길어짐 허용 방향). 병렬 생성이라 전체 지연 영향 미미.
+  finalStrategyNarrative: 1800,
 };
 
 // ============================================================

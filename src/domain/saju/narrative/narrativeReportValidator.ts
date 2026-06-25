@@ -19,6 +19,11 @@ import type {
 import { buildNarrativeCoverageRequirements } from './narrativeContentLedger';
 import type { TopicCoverageMap, NarrativeTopicKey } from './topicCoverageTypes';
 import { TOPIC_KEYWORDS, REQUIRED_TOPICS_HARD } from './topicCoverageTypes';
+// Anti-Repeat V1 (2026-06): inert였던 convergenceGuard를 검증기에 배선.
+import {
+  findConvergencePhrases, extractChartSignals, isConvergencePhraseJustified,
+  CONVERGENCE_PHRASES,
+} from './convergenceGuard';
 
 interface Args {
   reportText: string;
@@ -342,6 +347,62 @@ function jaccard(a: Set<string>, b: Set<string>): number {
   return inter / (a.size + b.size - inter);
 }
 
+// ============================================================
+// Anti-Repeat V1 (2026-06) — 섹션 간 near-verbatim 문장 재탕 탐지
+//   섹션들이 병렬 독립 생성이라 서로를 못 봐서, 같은 핵심 특질을 "거의 같은 문장"으로
+//   여러 장에서 재서술하는 게 핵심 반복 증상. 문장 단위로 앞 섹션과 거의 동일한 문장을
+//   뒷 섹션이 갖고 있으면 그 뒷 섹션을 repair 대상으로 잡는다.
+// ============================================================
+function splitKoSentences(body: string): string[] {
+  return body
+    .replace(/```[\s\S]*?```/g, ' ')       // 코드블록 제거
+    .replace(/^#.*$/gm, ' ')                // 헤더 줄 제거
+    .replace(/\n+/g, ' ')
+    .split(/(?<=[.!?。…])\s+|(?<=다\.)\s+|(?<=요\.)\s+|(?<=죠\.)\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length >= 18);           // 짧은 문장은 우연 일치 가능 → 제외
+}
+
+export interface CrossSectionRepeat {
+  earlierId: string;
+  laterId: string;
+  sim: number;
+  earlierSentence: string;
+  laterSentence: string;
+}
+
+/**
+ * 섹션 쌍(앞<뒤)을 비교해 뒷 섹션이 앞 섹션 문장을 near-verbatim으로 재탕한 경우를 찾는다.
+ * - opening(1장)은 의도적으로 다음 장을 예고하므로 "앞"으로만 쓰고 약하게 취급.
+ * - 임계: 문장 char-shingle(n=4) Jaccard ≥ 0.62 그리고 두 문장 모두 ≥ 18자.
+ */
+export function findCrossSectionRepeats(
+  blocks: Array<{ id: string; index: number; body: string }>,
+  simThreshold = 0.62,
+): CrossSectionRepeat[] {
+  const sents = blocks.map(b => ({ id: b.id, index: b.index, list: splitKoSentences(b.body) }));
+  const out: CrossSectionRepeat[] = [];
+  for (let i = 0; i < sents.length; i++) {
+    for (let j = i + 1; j < sents.length; j++) {
+      const A = sents[i], B = sents[j];
+      let best: CrossSectionRepeat | null = null;
+      for (const sa of A.list) {
+        const setA = shingles(sa, 4);
+        for (const sb of B.list) {
+          // 길이 차이가 크면 스킵(부분 포함은 다른 검사가 담당)
+          if (Math.abs(sa.length - sb.length) > Math.max(sa.length, sb.length) * 0.5) continue;
+          const sim = jaccard(setA, shingles(sb, 4));
+          if (sim >= simThreshold && (!best || sim > best.sim)) {
+            best = { earlierId: A.id, laterId: B.id, sim, earlierSentence: sa, laterSentence: sb };
+          }
+        }
+      }
+      if (best) out.push(best);
+    }
+  }
+  return out;
+}
+
 /** futureFlowNarrative 본문에서 연도별 블록 분리 */
 function splitYearBlocks(body: string): Array<{ year: number; body: string }> {
   const re = /^#{2,}\s*(20\d{2})/gm;
@@ -396,6 +457,7 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   //    각 fact는 matchTokens 중 하나라도 본문에 포함되면 통과.
   //    빠지면 missing-narrative-fact로 실패 (섹션별 repair 시드).
   // ─────────────────────────────────────────────
+  let priorityFactMissing = 0;
   if (narrativePlans && narrativePlans.length > 0) {
     for (const plan of narrativePlans) {
       const block = byId.get(plan.sectionId);
@@ -404,10 +466,12 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
         if (!fact.matchTokens || fact.matchTokens.length === 0) continue;
         const matched = fact.matchTokens.some(t => t.length >= 2 && block.body.includes(t));
         if (!matched) {
+          const isPriority = !!(fact as { priority?: boolean }).priority;
+          if (isPriority) priorityFactMissing++;
           pushIssue(issues, {
             type: 'missing-narrative-fact', sectionId: plan.sectionId,
             sentence: `[${fact.id}/${fact.source}] ${fact.fact}`,
-            reason: `${plan.sectionId} 섹션에 mustUseFact "${fact.fact}" 흡수되지 않음 (matchTokens=${fact.matchTokens.slice(0, 4).join('|')})`,
+            reason: `${plan.sectionId} 섹션에 mustUseFact "${fact.fact}" 흡수되지 않음${isPriority ? ' (우선순위 — 반드시 복원)' : ''} (matchTokens=${fact.matchTokens.slice(0, 4).join('|')})`,
             severity: 'medium',
             suggestion: `${fact.narrativeHint} — 쉬운 풀이: "${fact.plainMeaning}"`,
           });
@@ -415,6 +479,8 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
       }
     }
   }
+  // Engine-Coverage v1: priority fact가 하나라도 빠지면 coverageSafe=false → repair 1회 강제.
+  const coverageSafe = priorityFactMissing === 0;
 
   // ─────────────────────────────────────────────
   // 1. 항목형 표현 남발
@@ -437,7 +503,8 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   // ─────────────────────────────────────────────
   for (const phrase of REPETITION_WATCH) {
     const hits = blocks.filter(b => b.body.includes(phrase)).map(b => b.id);
-    if (hits.length >= 4) {
+    // Anti-Repeat V1: 임계 4 → 3 (2~3장 재탕도 잡되, 핵심 특질 어휘는 soft warning=medium 유지).
+    if (hits.length >= 3) {
       pushIssue(issues, {
         type: 'repeated-theme-no-development', sectionId: hits.join(','),
         sentence: phrase,
@@ -1118,6 +1185,62 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   }
 
   // ─────────────────────────────────────────────
+  // Anti-Repeat V1 (2026-06) — 섹션 간 near-verbatim 재탕 + 근거 없는 수렴 문구
+  //   안전(exposureSafe)이 아니라 별도 repetitionSafe 게이트를 깨서 dedup repair 1회 유발.
+  // ─────────────────────────────────────────────
+  const SECTION_KO: Record<string, string> = {
+    openingDefinition: '1장(한 문장 정의)',
+    lifeStructureNarrative: '2장(살아온 이유)',
+    repeatedPatternNarrative: '3장(반복 패턴)',
+    careerTalentNarrative: '4장(일·재능)',
+    moneyMonetizationNarrative: '5장(돈·수익화)',
+    relationshipLoveNarrative: '6장(관계·연애)',
+    futureFlowNarrative: '앞으로 3년 장',
+    finalStrategyNarrative: '결론장',
+  };
+  const secTitle = (id: string) => SECTION_KO[id] ?? id;
+
+  // 1) 문장 단위 near-verbatim: 뒷 섹션이 앞 섹션 문장을 거의 그대로 재서술 → 뒷 섹션 1건만 issue化
+  const repeats = findCrossSectionRepeats(blocks);
+  const byLater = new Map<string, typeof repeats[number]>();
+  for (const r of repeats) {
+    const prev = byLater.get(r.laterId);
+    if (!prev || r.sim > prev.sim) byLater.set(r.laterId, r);
+  }
+  for (const r of byLater.values()) {
+    pushIssue(issues, {
+      type: 'repeated-theme-no-development',
+      sectionId: r.laterId,
+      sentence: r.laterSentence.slice(0, 60),
+      reason: `이 문장이 ${secTitle(r.earlierId)} 문장과 거의 같음(유사도 ${r.sim.toFixed(2)}) — 같은 특질을 다른 장에서 같은 말로 재서술`,
+      severity: 'medium',
+      suggestion: `이 특질은 ${secTitle(r.earlierId)}에서 이미 설명됨. 여기선 그 문장을 삭제하고, 꼭 필요하면 "앞서 본 그 결이 여기서는 …" 식으로 한 구절만 참조하라(재설명·재정의 금지). 이 장 고유의 각도로만 전개.`,
+    });
+  }
+
+  // 2) 근거 없는 수렴 문구 (inert였던 convergenceGuard 배선) — 차트 근거 없이 모두에게 들어가는 생활코치 문구
+  const chartSignals = extractChartSignals(gptInput);
+  const convergenceHits = new Set<string>();
+  for (const b of blocks) {
+    for (const cid of findConvergencePhrases(b.body)) {
+      if (isConvergencePhraseJustified(cid, chartSignals)) continue;
+      const key = cid + '@' + b.id;
+      if (convergenceHits.has(key)) continue;
+      convergenceHits.add(key);
+      const meta = CONVERGENCE_PHRASES.find(p => p.id === cid);
+      pushIssue(issues, {
+        type: 'generic',
+        sectionId: b.id,
+        sentence: cid,
+        reason: `차트 근거 없이 수렴하는 생활코치 문구(${cid}) — ${meta?.note ?? ''}`,
+        severity: 'medium',
+        suggestion: '이 사주 분석값으로 정당화되지 않는 일반 문구. 삭제하거나 mustUseFacts 근거에 묶인 문장으로 교체.',
+      });
+    }
+  }
+  const repetitionSafe = byLater.size === 0 && convergenceHits.size === 0;
+
+  // ─────────────────────────────────────────────
   // 종합 — 2026-05 stabilize: cross-leak 등이 high로 잡히면 repair 발동
   // medium 임계 강화 22 → 12
   // ─────────────────────────────────────────────
@@ -1133,6 +1256,8 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
     isValid: exposureSafe,
     issues,
     exposureSafe,
+    repetitionSafe,
+    coverageSafe,
     highCount: high,
     mediumCount: medium,
     lowCount: low,
@@ -1169,6 +1294,9 @@ export function collectFailingSectionsFromIssues(
     'missing-useful-god-advice',
     'special-star-too-shallow',
     'gaewoon-direction-missing',
+    // Anti-Repeat V1 (2026-06): 반복/수렴 문구가 잡힌 섹션을 dedup repair 대상으로 포함
+    'repeated-theme-no-development',
+    'generic',
   ]);
   for (const iss of issues) {
     // Repair Gating R1: high 이슈는 type과 무관하게 섹션을 repair 대상으로 포함

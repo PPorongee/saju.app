@@ -10,11 +10,11 @@
 import type { PersonalSajuGptInput, DayMasterStrengthAnalysis, UsefulGodAnalysis, SpecialStarInfo } from '../report/sajuReportSchema';
 import type {
   NarrativePlan, NarrativeMustUseFact, NarrativePlanSet,
-  NarrativeDepthOptions,
+  NarrativeDepthOptions, NarrativeFactSource, NarrativeCoverageSectionId,
 } from './narrativeTypes';
 import { DEFAULT_NARRATIVE_DEPTH_OPTIONS } from './narrativeTypes';
 import type { LifeSceneHint, LifeSceneSectionId, LifeSceneSource } from './lifeSceneHintBuilder';
-import { ELEMENT_KO } from '../rules/elements';
+import { ELEMENT_KO, type Element } from '../rules/elements';
 
 // ============================================================
 // hint pick — (sectionId, source)로 가장 첫 hint 찾기
@@ -359,7 +359,7 @@ function buildGaewoonDirectionFact(input: PersonalSajuGptInput): NarrativeMustUs
   return {
     id: 'gaewoon-direction',
     source: 'gaewoonDirection',
-    fact: `개운 방향 (신강/신약=${core}, 용신=${ug.primaryUseful ? String(ug.primaryUseful.value) : '균형'})`,
+    fact: `개운 방향 (신강약=${core}, 용신=${ug.primaryUseful ? String(ug.primaryUseful.value) : '균형'})`,
     plainMeaning: `${strengthFlavor} ${ugSummary}`,
     narrativeHint: '결론 본문 안에 "이 사주의 개운 방향은 ..." 단락 1개로 자연스럽게. 별도 헤더 X. 부적·색상·방향 같은 미신적 개운법 금지. 행동·구조화·역할 분담·문서화 중심으로.',
     matchTokens: ['개운', '운을 편하게', '운이 살아나', '운을 막는'],
@@ -830,6 +830,23 @@ function buildLifeStructurePlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
     '초년/가족 관련 내용은 단정하지 않고 "사주 구조상 ~할 가능성"으로 조건부 표현.',
   );
 
+  // Engine-Coverage v1: 십성 분포·결핍 / 합충형파해 / 오행 분포 (계산은 됐지만 버려지던 구조 신호)
+  const tenGodFact = buildTenGodDistributionFact(input);
+  if (tenGodFact) {
+    facts.push(tenGodFact);
+    requiredBeats.push('어떤 십성(기운)이 많고 어떤 게 비었는지 일상어로 풀어 성격·반응과 연결한다 — 없는 십성은 "부족"이 아니라 "다르게 채운다"로, 운명 단정 금지.');
+  }
+  const relationFact = buildRelationFact(input);
+  if (relationFact) {
+    facts.push(relationFact);
+    requiredBeats.push('합/충/형/해/파 같은 관계 구조가 있으면 용어를 즉시 일상어로 풀어 한 현실 장면으로(특히 자형은 "스스로를 몰아세우는 결"). 길흉 단정·공포 금지.');
+  }
+  const elementFacts = buildElementBalanceFacts(input);
+  if (elementFacts.length) {
+    facts.push(...elementFacts);
+    requiredBeats.push('오행 분포에서 가장 강한 기운(장점과 과함)을, 그리고 약한 기운이 있으면 그 보완 방향까지 일상어로 한 단락.');
+  }
+
   return {
     sectionId: 'lifeStructureNarrative',
     sectionGoal: '왜 이 사람이 이런 방식으로 생각하고 반응하는지 설명한다.',
@@ -1251,8 +1268,202 @@ function buildFutureFlowPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[
 // ============================================================
 // 섹션 6 — finalStrategyNarrative
 // ============================================================
+// ============================================================
+// Engine-Coverage v1 (2026-06) — 현재 대운 fact
+//   계산은 되지만 해설에서 사라지던 "지금 지나는 시기"를 복원.
+//   미래 예측이 아니라 현재 사실 → future-leak 가드(연도·세운)에 안 걸리게 현재형으로.
+// ============================================================
+function buildCurrentDaewoonFact(input: PersonalSajuGptInput): NarrativeMustUseFact | null {
+  const d = (input as any).fortune?.currentDaewoon;
+  if (!d || !d.pillar) return null;
+  const pillar: string = d.pillar;
+  const ageRange: string = d.ageRange ?? '';
+  const theme: string = d.theme ?? '';
+  // theme 예: "편인 대운 — 독창·통찰·자격"
+  const themeGod = theme.split(/\s*대운|—|-/)[0].trim();            // "편인"
+  const themeKeywords = (theme.split(/—|-/)[1] ?? '').trim();        // "독창·통찰·자격"
+  const warn = (d.relationToChart ?? []).find((s: string) => /기신|주의|⚠/.test(s)) ?? '';
+  const warnPlain = warn ? String(warn).replace(/^[^가-힣]*/, '').trim() : '';
+  const plain =
+    `지금은 ${pillar} 대운(${ageRange}세)을 지나는 시기예요. ` +
+    `${themeGod}의 기운이 도드라지는 흐름이라 ${themeKeywords || '그 결의 주제'}가 삶의 화두가 되기 쉬워요.` +
+    (warnPlain ? ` 다만 이 시기엔 무리·과잉을 특히 조심하는 게 좋아요(${warnPlain}).` : '');
+  return {
+    id: 'current-daewoon',
+    source: 'currentDaewoon',
+    priority: true,
+    fact: `현재 대운 ${pillar} (${ageRange}세) — ${theme}`,
+    plainMeaning: plain,
+    narrativeHint:
+      '이건 미래 예측이 아니라 "지금 지나는 시기"라는 사실이다. 연도(2026 등)·세운·"앞으로 N년" 단어는 절대 쓰지 말고, ' +
+      '"지금은 ~대운이라 ~한 결이 강해지는 시기예요" 식 현재형으로 한 단락. 대운 십성(예: 편인)은 즉시 일상어로 풀고, 경고가 있으면 "이 시기엔 무리 주의" 결로 자연스럽게 연결.',
+    matchTokens: [pillar, '대운', themeGod].filter((t: string) => t && t.length >= 2),
+  };
+}
+
+// ============================================================
+// Engine-Coverage v1 (2026-06) — 십성 분포 / 합충형파해 / 오행 분포 fact
+//   계산은 됐지만 해설에서 버려지던 "구조 신호"를 교과서 표준 의미로 풀어 2장에 배선.
+//   의미는 단정이 아니라 "결(경향)"로 — 운명 확정·길흉 공포 표현 금지.
+// ============================================================
+const TEN_GOD_PLAIN: Record<string, string> = {
+  비견: '자기 주체성과 독립심, 동료와 나란히 서는 힘',
+  겁재: '경쟁심과 추진력, 내 몫을 지키려는 힘',
+  식신: '표현과 여유, 꾸준히 결과물을 쌓는 힘',
+  상관: '재능과 말솜씨, 기존 틀을 깨는 돌파력',
+  편재: '큰 흐름의 자원·기회·네트워크를 다루는 감각',
+  정재: '실속 있게 관리하고 안정적으로 모으는 힘',
+  편관: '압박과 책임을 견디는 힘, 위기 돌파력',
+  정관: '직책·규범, 인정받는 자리에서의 책임감',
+  편인: '독창적 통찰과 비주류 학습, 직관',
+  정인: '안정적 학습·문서·돌봄과 인복',
+};
+function buildTenGodDistributionFact(input: PersonalSajuGptInput): NarrativeMustUseFact | null {
+  const totals = ((input.coreAnalysis as { tenGods?: { totals?: Record<string, number> } }).tenGods?.totals ?? {});
+  const names = Object.keys(TEN_GOD_PLAIN);
+  const present = names.filter(k => Number(totals[k]) > 0).sort((a, b) => Number(totals[b]) - Number(totals[a]));
+  if (present.length === 0) return null;
+  const absent = names.filter(k => !(Number(totals[k]) > 0));
+  const top = present.slice(0, 2);
+  const lacking = absent.slice(0, 2);
+  const topPlain = top.map(k => `${k}(${TEN_GOD_PLAIN[k]})`).join(', ');
+  const lackPlain = lacking.map(k => `${k}(${TEN_GOD_PLAIN[k]})`).join(', ');
+  const plain =
+    `십성으로 보면 ${topPlain} 기운이 두드러져요.` +
+    (lacking.length ? ` 반대로 ${lackPlain} 쪽은 약하거나 비어 있어, 그 영역은 타고난 기질보다 환경·관계·습관으로 채워가는 결이에요.` : '');
+  return {
+    id: 'tengod-distribution', source: 'tenGod', priority: true,
+    fact: `십성 분포 — 강: ${top.join('·')} / 결핍: ${lacking.join('·') || '없음'}`,
+    plainMeaning: plain,
+    narrativeHint: '2장에서 "어떤 기운이 많고 어떤 게 비었는지"를 일상어로 풀어 성격·반응과 연결. 없는 십성은 "부족·결함"이 아니라 "다르게 채운다"로. 운명 단정 금지.',
+    matchTokens: top.filter(t => t.length >= 2),
+  };
+}
+
+const RELATION_PLAIN: Record<string, { ko: string; meaning: string }> = {
+  combinations: { ko: '합', meaning: '두 기운이 묶여 한쪽으로 힘이 모이거나 협력·집중되는 결' },
+  conflicts:    { ko: '충', meaning: '두 기운이 부딪쳐 변화·이동·정리가 잦아지는 결' },
+  punishments:  { ko: '형', meaning: '안에서 스스로를 몰아세우거나 같은 문제로 반복해 부딪치는 결(특히 자형은 자기 자신을 향한 압박)' },
+  harms:        { ko: '해', meaning: '가까운 사이에서 은근히 깎이거나 어긋나는 결' },
+  destructions: { ko: '파', meaning: '쌓아온 것이 흩어지거나 방향이 갑자기 깨지는 결' },
+};
+function buildRelationFact(input: PersonalSajuGptInput): NarrativeMustUseFact | null {
+  const cc = (input.coreAnalysis.combinationsAndConflicts ?? {}) as unknown as Record<string, string[]>;
+  const segs: string[] = [];
+  const labels: string[] = [];
+  const tokens: string[] = [];
+  for (const key of Object.keys(RELATION_PLAIN)) {
+    const arr: string[] = cc[key] ?? [];
+    if (!arr.length) continue;
+    const { ko, meaning } = RELATION_PLAIN[key];
+    segs.push(`${arr.join('·')} 같은 ${ko}이 있어 ${meaning}`);
+    labels.push(arr.join('·'));
+    // 흡수 검사용 2자 이상 토큰 (지지쌍 또는 자형 등)
+    for (const raw of arr) for (const tk of raw.split(/\s+/)) if (tk.length >= 2) tokens.push(tk);
+  }
+  if (segs.length === 0) return null;
+  // 흡수 검사에 잘 걸리는 용어 토큰(반합·자형·삼합 등)을 우선 — 지지쌍보다 GPT가 실제로 쓸 말.
+  const termTokens = Array.from(new Set(tokens)).filter(t => /합|충|형|해|파/.test(t) && t.length >= 2);
+  const allTokens = Array.from(new Set(tokens)).filter(t => t.length >= 2);
+  return {
+    id: 'relation-combinations', source: 'combination', priority: true,
+    fact: `합충형파해 — ${labels.join(' / ')}`,
+    plainMeaning: `사주 안 기운들의 관계를 보면, ${segs.join('. ')}이 있어요.`,
+    narrativeHint: '2장에서 이 관계 용어(반합/충/자형 등)를 반드시 한 번 그대로 쓰고, 바로 다음 문장에서 일상어로 풀어 한 현실 장면으로 연결한다. 특히 자형은 "스스로를 몰아세우거나 같은 문제로 반복해 부딪치는 결"로. 길흉 단정·공포 표현 금지.',
+    matchTokens: termTokens.length ? termTokens : allTokens,
+  };
+}
+
+const ELEMENT_OVER: Record<string, string> = {
+  목: '시작·추진력이 좋지만 벌여놓고 마무리가 급해질 수 있는',
+  화: '표현·열정이 강하지만 과열돼 빨리 식을 수 있는',
+  토: '안정·신뢰가 단단하지만 변화가 더디고 고집이 될 수 있는',
+  금: '결단·원칙이 분명하지만 날카롭거나 융통성이 줄 수 있는',
+  수: '생각·유연함이 깊지만 생각이 많아 결정이 늦어질 수 있는',
+};
+const ELEMENT_LACK: Record<string, string> = {
+  목: '새 시작·추진을 외부 마감이나 동료의 자극으로 보완하면 좋은',
+  화: '표현·홍보·드러내기를 의식적으로 늘리면 좋은',
+  토: '중심·꾸준함을 루틴과 기록으로 받쳐주면 좋은',
+  금: '결단·마무리·끊어내기를 기준과 마감으로 보완하면 좋은',
+  수: '쉼·유연함·한 박자 늦추기를 의식하면 좋은',
+};
+function buildElementBalanceFacts(input: PersonalSajuGptInput): NarrativeMustUseFact[] {
+  const scores = ((input.coreAnalysis as { elementStrength?: { scores?: Record<string, number> } }).elementStrength?.scores ?? {});
+  const entries = Object.entries(scores).map(([k, v]) => [k, Number(v)] as [string, number]);
+  if (entries.length < 2) return [];
+  entries.sort((a, b) => b[1] - a[1]);
+  const [maxEng, maxVal] = entries[0];
+  const [minEng, minVal] = entries[entries.length - 1];
+  const maxKo = ELEMENT_KO[maxEng as Element];
+  const minKo = ELEMENT_KO[minEng as Element];
+  if (!maxKo || maxKo === minKo) return [];
+  const out: NarrativeMustUseFact[] = [];
+  // 과다(가장 강한 기운) — 항상
+  out.push({
+    id: 'element-over', source: 'elementBalance', priority: true,
+    fact: `오행 과다 — ${maxKo}`,
+    plainMeaning: `오행으로 보면 ${maxKo} 기운이 가장 강해 ${ELEMENT_OVER[maxKo]} 결이 있어요.`,
+    narrativeHint: '2장에서 가장 강한 오행의 장점과 과해질 때의 그림자를 일상어로. 오행은 "토 기운"처럼 한글로.',
+    matchTokens: [`${maxKo} 기운`],
+  });
+  // 결핍(가장 약한 기운) — 의미 있게 낮을 때만 별도 강제(평균의 절반 미만 또는 0.8 미만)
+  const avg = entries.reduce((s, e) => s + e[1], 0) / entries.length;
+  if (minKo && (minVal < 0.8 || minVal < avg * 0.5)) {
+    out.push({
+      id: 'element-lack', source: 'elementBalance', priority: true,
+      fact: `오행 결핍 — ${minKo}`,
+      plainMeaning: `반대로 ${minKo} 기운은 약한 편이라 ${ELEMENT_LACK[minKo]} 결이에요.`,
+      narrativeHint: '2장에서 약한 오행이 주는 보완 방향을 일상어로 한 문장. "부족·결함"이 아니라 "의식해서 채우면 좋은 결"로. 오행은 "금 기운"처럼 한글로.',
+      matchTokens: [`${minKo} 기운`],
+    });
+  }
+  return out;
+}
+
+// 용신이 "왜 그 기운인지"를 별도 priority fact로 — 모델이 용신 결론만 쓰고 이유를 생략하는 문제 해결.
+//   조후(climate)일 땐 오행 분포로 뜨겁/메마름 vs 차갑/습함 방향까지 결정론으로 정한다.
+function buildUsefulGodWhyFact(input: PersonalSajuGptInput): NarrativeMustUseFact | null {
+  const ug = input.coreAnalysis.usefulGod;
+  const ms = (ug?.methodScores ?? {}) as Record<string, number>;
+  const top = Object.entries(ms).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+  if (!top) return null;
+  const method = top[0];
+  const yongRaw = ug?.primaryUseful ? String(ug.primaryUseful.value) : '';
+  const yongKo = (ELEMENT_KO[yongRaw as Element] ?? yongRaw);
+  const yongPhrase = yongKo ? `${yongKo} 기운` : '이 기운';
+  let reason = '';
+  const tokens: string[] = ['치우', '균형을 잡'];
+  if (method === 'climate') {
+    const s = ((input.coreAnalysis as { elementStrength?: { scores?: Record<string, number> } }).elementStrength?.scores ?? {});
+    const hot = (Number(s.fire) || 0) + (Number(s.earth) || 0);
+    const cold = (Number(s.water) || 0) + (Number(s.metal) || 0);
+    if (hot >= cold) { reason = '사주가 뜨겁고 메마른 쪽으로 치우쳐 있어, 그 열기를 식혀 균형을 잡아주기 때문'; tokens.push('식혀'); }
+    else { reason = '사주가 차갑고 습한 쪽으로 치우쳐 있어, 그 기운을 데워 균형을 잡아주기 때문'; tokens.push('데워'); }
+  } else if (method === 'strength') {
+    reason = `일간의 힘이 ${strengthCoreLabel(input.coreAnalysis.dayMasterStrength.level)} 쪽이라, 그 균형을 잡아주기 때문`;
+  } else if (method === 'bridge') {
+    reason = '사주 안에서 서로 부딪치는 기운 사이를 이어 균형을 잡아주기 때문';
+  } else if (method === 'illnessMedicine') {
+    reason = '사주의 약한 고리를 직접 메워 균형을 잡아주기 때문';
+  } else {
+    reason = '타고난 구조(격국)를 완성해 균형을 잡아주기 때문';
+  }
+  return {
+    id: 'usefulgod-why', source: 'usefulGod', priority: true,
+    fact: `용신 근거(${method}) — ${yongPhrase}이 핵심인 이유`,
+    plainMeaning: `이 사주에서 ${yongPhrase}이 핵심인 이유는, ${reason}이에요.`,
+    narrativeHint: '결론에서 용신을 말할 때 "왜 하필 이 기운인지" 근거를 이 시드대로 한 문장 넣는다. 조후/억부 같은 관점 용어·점수는 빼고 쉬운 말로.',
+    matchTokens: tokens.filter(t => t.length >= 2),
+  };
+}
+
 function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHint[], depth: NarrativeDepthOptions = DEFAULT_NARRATIVE_DEPTH_OPTIONS): NarrativePlan {
   const facts: NarrativeMustUseFact[] = [];
+
+  // Engine-Coverage v1: 현재 대운("지금 지나는 시기")을 결론 도입에 — priority(빠지면 repair 강제).
+  const daewoonFact = buildCurrentDaewoonFact(input);
+  if (daewoonFact) facts.push(daewoonFact);
 
   // top 2 activating choices (첫 번째에 hint)
   input.fortuneTriggers.fortuneActivatingChoices.slice(0, 2).forEach((a, i) => {
@@ -1315,16 +1526,21 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
       plainMeaning: usefulGodPlainMeaning(ug),
       narrativeHint:
         '용신/기신을 명리 용어로만 끝내지 말고, 결론 본문에서 "용신은 이 사주를 편하게 살려주는 방향, 기신은 과해지면 운이 막히는 결" 식으로 풀어, 그 결을 어떤 행동·환경·선택으로 적용할지로 연결. ' +
+        '왜 하필 이 기운이 용신인지(조후/억부 등) 쉬운 말 근거 한 마디도 덧붙인다. ' +
         '미신적 개운법(부적·색상·방향) 절대 금지. 행동·구조화·역할 중심.',
       matchTokens: ['용신', '기신', '편하게 살려', '과해지면', '도와주는 결'],
       adviceHint: usefulGodAdviceHint(ug),
     });
+    // Engine-Coverage v1: 용신 "왜 그 기운인지" 근거를 별도 priority fact로 강제.
+    const whyFact = buildUsefulGodWhyFact(input);
+    if (whyFact) facts.push(whyFact);
   }
   if (depth.useFinalGaewoonDirection) {
     facts.push(buildGaewoonDirectionFact(input));
   }
 
   const requiredBeats: string[] = [
+    ...(daewoonFact ? ['지금 지나는 대운(현재 시기)을 한 단락으로 푼다 — 현재형, 미래 연도/세운 금지. 대운 십성을 일상어로 풀고, 이 시기에 맞는 사용법으로 자연스럽게 잇는다.'] : []),
     '이 사주의 핵심 사용법을 한 단락으로 정리한다.',
     '일에서의 사용법을 말한다 (책임 범위·권한 결).',
     '돈에서의 사용법을 말한다 (작업 범위·보상 기준 결).',
@@ -1334,6 +1550,7 @@ function buildFinalStrategyPlan(input: PersonalSajuGptInput, hints?: LifeSceneHi
   if (depth.useEvidenceNarrativeBlocks) {
     requiredBeats.push(
       '용신/기신을 명리 용어로만 끝내지 말고, 그 결을 어떤 행동·환경·선택으로 적용할지(행동 조언)로 연결.',
+      '왜 하필 이 기운이 용신인지 쉬운 말 근거를 한 마디 덧붙인다 (예: "사주가 뜨겁고 메말라서 식혀주는 물 기운이 필요" 식). plan의 용신 fact plainMeaning 근거만 사용.',
     );
   }
   if (depth.useFinalGaewoonDirection) {
@@ -1381,6 +1598,81 @@ export interface BuildNarrativePlansOptions {
   depthOptions?: NarrativeDepthOptions;
 }
 
+// ============================================================
+// Anti-Repeat V1 (2026-06) — 토대 fact 중앙 dedup (예방)
+//   신강·용신·대표신살처럼 "모든 장에 깔리는 근거"가 여러 섹션 mustUseFacts에 동시에 들어가면
+//   각 섹션이 병렬 독립 생성되며 같은 특질을 같은 말로 재설명한다(반복의 근본 원인).
+//   → fact 1개당 "전담 장 1개"에만 남기고, 다른 장에서는 제거 + avoidRepeating에 "N장에서 설명,
+//     재설명 금지" 메모를 넣어 GPT가 그 장 고유 각도로만 쓰게 한다.
+//   dayMaster(1장=한줄/2장=본격으로 의도적 분담)·identityKeyword(장별 고유)는 제외.
+// ============================================================
+const FOUNDATIONAL_SOURCES = new Set<NarrativeFactSource>([
+  'dayMasterStrength', 'usefulGod', 'specialStar', 'gaewoonDirection',
+]);
+// 차트당 1개뿐인 토대(신강/용신/개운방향)는 섹션마다 fact 문구가 달라도 같은 개념 →
+// source만으로 묶는다. 여러 개일 수 있는 specialStar는 source+star로 구분.
+const SINGLETON_FOUNDATIONAL = new Set<NarrativeFactSource>([
+  'dayMasterStrength', 'usefulGod', 'gaewoonDirection',
+]);
+const FACT_SOURCE_KO: Partial<Record<NarrativeFactSource, string>> = {
+  dayMasterStrength: '신강/신약 해석',
+  usefulGod: '용신/기신',
+  gaewoonDirection: '개운 방향',
+  specialStar: '대표 신살',
+};
+function foundationalKey(f: NarrativeMustUseFact): string {
+  return SINGLETON_FOUNDATIONAL.has(f.source)
+    ? f.source
+    : `${f.source}::${f.fact.trim().slice(0, 40)}`;
+}
+const FACT_HOME_SECTION: Partial<Record<NarrativeFactSource, NarrativeCoverageSectionId>> = {
+  dayMasterStrength: 'lifeStructureNarrative',
+  specialStar: 'lifeStructureNarrative',
+  usefulGod: 'finalStrategyNarrative',
+  gaewoonDirection: 'finalStrategyNarrative',
+};
+const SECTION_KO_LABEL: Record<string, string> = {
+  openingDefinition: '1장(한 문장 정의)',
+  lifeStructureNarrative: '2장(살아온 이유)',
+  repeatedPatternNarrative: '3장(반복 패턴)',
+  careerTalentNarrative: '4장(일·재능)',
+  moneyMonetizationNarrative: '5장(돈·수익화)',
+  relationshipLoveNarrative: '6장(관계·연애)',
+  futureFlowNarrative: '앞으로 3년 장',
+  finalStrategyNarrative: '결론장',
+};
+
+export function dedupeFoundationalFacts(plans: NarrativePlanSet): void {
+  // fact-key → 그 fact를 가진 plan들
+  const occur = new Map<string, { source: NarrativeFactSource; plans: NarrativePlan[] }>();
+  for (const plan of plans) {
+    for (const f of plan.mustUseFacts) {
+      if (!FOUNDATIONAL_SOURCES.has(f.source)) continue;
+      const key = foundationalKey(f);
+      const entry = occur.get(key) ?? { source: f.source, plans: [] };
+      entry.plans.push(plan);
+      occur.set(key, entry);
+    }
+  }
+  for (const [key, { source, plans: holderPlans }] of occur) {
+    // 같은 토대가 2개 이상 섹션에 있을 때만 정리
+    const uniqueSections = new Map(holderPlans.map(p => [p.sectionId, p]));
+    if (uniqueSections.size < 2) continue;
+    const homeId = FACT_HOME_SECTION[source];
+    // 전담 장: 우선순위 home이 이 토대를 갖고 있으면 그곳, 아니면 plan 순서상 첫 보유 섹션
+    const home = (homeId && uniqueSections.get(homeId)) || holderPlans[0];
+    const factLabel = FACT_SOURCE_KO[source] ?? source;
+    for (const plan of uniqueSections.values()) {
+      if (plan.sectionId === home.sectionId) continue;
+      // 1) 다른 장에서 이 토대 fact 제거 (같은 key의 fact 전부 — singleton은 문구가 달라도 제거)
+      plan.mustUseFacts = plan.mustUseFacts.filter(f => foundationalKey(f) !== key);
+      // 2) 재설명 금지 메모 (중복 방지)
+      const note = `${factLabel}는 ${SECTION_KO_LABEL[home.sectionId] ?? home.sectionId}에서 설명함 — 여기선 재정의·재설명 말고, 꼭 필요하면 한 구절로만 참조`;
+      if (!plan.avoidRepeating.includes(note)) plan.avoidRepeating.push(note);
+    }
+  }
+}
+
 export function buildNarrativePlans(
   input: PersonalSajuGptInput,
   lifeSceneHints?: LifeSceneHint[],
@@ -1399,5 +1691,7 @@ export function buildNarrativePlans(
     plans.push(buildFutureFlowPlan(input, lifeSceneHints));
   }
   plans.push(buildFinalStrategyPlan(input, lifeSceneHints, depth));
+  // Anti-Repeat V1: 토대 fact를 전담 장으로 정리(예방). 검증기 dedup 탐지(안전망)와 2단 방어.
+  dedupeFoundationalFacts(plans);
   return plans;
 }

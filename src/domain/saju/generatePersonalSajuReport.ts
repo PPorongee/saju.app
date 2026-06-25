@@ -432,7 +432,10 @@ export async function generateNarrativePersonalSajuReport(
   // Repair Gating R1 (2026-06): high(노출 위험) 이슈가 있을 때만 repair.
   //   medium/low(품질·coverage)만 있으면 1차 결과를 그대로 반환 — gpt-4o-mini가 medium을
   //   repair로 잘 못 잡으면서 시간만 2배로 쓰던 문제(40~70s) 제거. 노출 안전은 high로만 판정.
-  for (let i = 0; !validation.exposureSafe && i < maxAttempts; i++) {
+  // Anti-Repeat V1 (2026-06): 노출 안전(high) 외에, **섹션 간 near-verbatim 재탕/근거없는 수렴
+  //   문구**(repetitionSafe=false)도 repair 1회를 유발. 반복은 노출 위험은 아니지만 유료 리포트
+  //   체감 품질을 크게 깎으므로 별도 게이트로 dedup repair한다. maxAttempts로 지연은 bounded.
+  for (let i = 0; (!validation.exposureSafe || !validation.repetitionSafe || !validation.coverageSafe) && i < maxAttempts; i++) {
     attempts++;
     const failingSections = collectFailingSectionsFromIssues(validation.issues);
     if (failingSections.size === 0) break; // global-only high → 섹션 repair 불가 → deterministic fallback에 위임

@@ -389,8 +389,9 @@ describe('sanitizeUnsupportedUserContext — 단정 표현 중립 치환', () =>
 describe('Narrative Depth v1 — feature flag 기본값 계약', () => {
   // R1 (2026-06): 기본값에서 useEvidenceNarrativeBlocks 를 true 로 변경.
   //   신강약·대표신살(lifeStructure) + 용신(finalStrategy) fact를 복구해 A/B/C 수렴을 방지.
-  //   나머지 둘(luckOpeningCondition / gaewoonDirection)은 일반화·잡음 위험으로 계속 기본 OFF.
-  it('기본값(미지정) 시 evidence blocks 가 ON — lifeStructure에 dayMasterStrength, final에 usefulGod fact가 추가된다', () => {
+  //   Engine-Coverage v1 (2026-06): gaewoonDirection도 기본 ON으로 전환(용신→행동 명리 콘텐츠).
+  //   luckOpeningCondition만 도입 잡음 위험으로 계속 기본 OFF.
+  it('기본값(미지정) 시 evidence blocks + gaewoonDirection ON — lifeStructure에 dayMasterStrength, final에 usefulGod·gaewoonDirection fact가 추가된다', () => {
     for (const f of FIXTURES) {
       const gptInput = calculateAnalysisOnly(f.input, NOW);
       const plans = buildNarrativePlans(gptInput, undefined, { includeFutureFlow: false });
@@ -403,8 +404,9 @@ describe('Narrative Depth v1 — feature flag 기본값 계약', () => {
       // evidence blocks 기본 ON → 복구된 fact 존재
       expect(lifeSources).toContain('dayMasterStrength');
       expect(finalSources).toContain('usefulGod');
-      // 나머지 둘은 기본 OFF → 여전히 없음
-      expect(finalSources).not.toContain('gaewoonDirection');
+      // Engine-Coverage v1: gaewoonDirection 기본 ON
+      expect(finalSources).toContain('gaewoonDirection');
+      // luckOpeningCondition만 기본 OFF → 여전히 없음
       expect(openingSources).not.toContain('luckOpeningCondition');
     }
   });
@@ -736,7 +738,23 @@ describe('Repair Gating R1 — generator는 high가 있을 때만 repair', () =>
 
   it('high 없음(medium만) → repair 미실행: attempts=1, repairedSections=[], exposureSafe=true', async () => {
     let calls = 0;
-    const caller: NarrativeGptCaller = async () => { calls++; return SAFE_BODY; };
+    // Anti-Repeat V1: 섹션마다 고유 본문(동일 SAFE_BODY면 cross-section 재탕으로 잡힘).
+    // Engine-Coverage v1: 각 섹션의 priority fact(대운·십성·오행) matchToken을 흡수해야 coverageSafe=true →
+    //   medium만 남아 repair 미실행. 섹션별 priority 토큰을 그 섹션 본문에만 포함(다른 섹션에 넣으면 재탕).
+    const refPlans = buildNarrativePlans(calculateAnalysisOnly(FIXTURES[0].input, NOW));
+    const priorityToksBySection = new Map<string, string[]>();
+    for (const p of refPlans) {
+      const toks = p.mustUseFacts.filter(f => (f as { priority?: boolean }).priority)
+        .flatMap(f => f.matchTokens).filter(t => t.length >= 2);
+      if (toks.length) priorityToksBySection.set(p.sectionId, Array.from(new Set(toks)));
+    }
+    const caller: NarrativeGptCaller = async (prompt) => {
+      calls++;
+      const sid = sectionIdOf(prompt);
+      const base = `${sid} 장의 고유한 줄글입니다. 이 장은 ${sid} 주제만 일상어로 풀어 다룹니다. ${sid} 맥락의 회의·가족·관계 장면을 무리한 단정 없이 설명합니다. `.repeat(6);
+      const toks = priorityToksBySection.get(sid) ?? [];
+      return toks.length ? base + ` 이 장은 ${toks.join(', ')} 흐름을 현재형으로 함께 짚습니다.` : base;
+    };
     const res = await generateNarrativePersonalSajuReport(FIXTURES[0].input, { callGpt: caller, now: NOW });
     expect(res.attempts).toBe(1);                       // 1차 병렬 호출만 — repair 라운드 없음
     expect(res.repairedSections.length).toBe(0);

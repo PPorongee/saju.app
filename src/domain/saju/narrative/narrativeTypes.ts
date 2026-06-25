@@ -109,6 +109,18 @@ export interface NarrativeValidationResult {
   issues: NarrativeValidationIssue[];
   /** isValid와 동치 — 의미를 명시한 별칭(= highCount === 0). repair gating 기준. */
   exposureSafe: boolean;
+  /**
+   * 반복 안전 (2026-06 Anti-Repeat V1): 섹션 간 near-verbatim 문장 재탕 / 근거 없는 수렴 문구가
+   * 없으면 true. exposureSafe(노출 안전)와 **분리** — 반복은 노출 위험은 아니지만 품질을 깎으므로
+   * 별도 게이트로 repair 1회를 유발한다(지연 최소). false면 해당 섹션만 dedup repair.
+   */
+  repetitionSafe: boolean;
+  /**
+   * 커버리지 안전 (2026-06 Engine-Coverage v1): priority=true인 핵심 명리 fact가 모두 본문에
+   * 흡수됐으면 true. false면 그 섹션만 repair 1회 강제 — 계산된 신호(대운 등)가 해설에서
+   * 누락되는 것을 막는다. exposureSafe(안전)·repetitionSafe(반복)와 독립.
+   */
+  coverageSafe: boolean;
   highCount: number;
   mediumCount: number;
   lowCount: number;
@@ -170,7 +182,11 @@ export type NarrativeFactSource =
   | 'dayMasterStrength'    // 신강/신약/중화
   | 'usefulGod'            // 용신/희신/기신
   | 'gaewoonDirection'     // 개운 방향 (synthetic — 용신/기신·신강신약 종합)
-  | 'luckOpeningCondition'; // 운이 열리는 방식 (synthetic — opening 짧은 시드)
+  | 'luckOpeningCondition' // 운이 열리는 방식 (synthetic — opening 짧은 시드)
+  // 2026-06 Engine-Coverage v1 — 계산은 됐지만 해설에 안 쓰이던 구조·시기 신호 복원
+  | 'currentDaewoon'       // 현재 대운 (지금 지나는 시기 — 미래 예측 아님, 사실)
+  | 'combination'          // 합충형파해 (지지 관계 구조)
+  | 'elementBalance';      // 오행 분포 (과다·결핍)
 
 /**
  * 한 섹션에 반드시 흡수되어야 하는 단일 데이터 조각.
@@ -188,6 +204,12 @@ export interface NarrativeMustUseFact {
   narrativeHint: string;
   /** validator가 본문에서 흡수 여부를 검사할 토큰들. 하나라도 부분 매칭되면 OK */
   matchTokens: string[];
+  /**
+   * Engine-Coverage v1 (2026-06): "반드시 본문에 살아야 하는" 우선순위 fact 표시.
+   * true면 흡수 실패 시 coverageSafe=false → repair 1회 강제(medium도 출고 안 함).
+   * 계산은 됐는데 해설에서 사라지던 핵심 명리 신호(대운·합충·십성분포 등)를 보장하는 용도.
+   */
+  priority?: boolean;
   /** 이 fact에 묶인 실제 장면 힌트 (있으면 GPT가 줄글로 풀어서 흡수) */
   lifeSceneHint?: {
     situation: string;
@@ -255,7 +277,9 @@ export const DEFAULT_NARRATIVE_DEPTH_OPTIONS: NarrativeDepthOptions = {
   // R1 (2026-06): 신강약 + 대표 신살을 plan에 복구해 A/B/C 차별 신호를 살린다.
   //   (audit: OFF면 신강약·대표신살이 plan에 안 들어가 결과가 수렴) — 최소 신호만 ON.
   useEvidenceNarrativeBlocks: true,
-  // 아래 둘은 일반화·잡음 위험이 있어 R1에서는 계속 OFF (필요 최소만 복구).
+  // 2026-06 Engine-Coverage v1: 개운 방향(용신→행동) ON — 사용자가 원하는 "계산이 녹은 명리 콘텐츠".
+  //   "일반화 위험"은 plan의 결정론 시드(buildGaewoonDirectionFact)로 통제한다.
+  useFinalGaewoonDirection: true,
+  // opening 운조건은 도입 잡음 위험이 있어 계속 OFF (결론의 개운 방향으로 충분).
   useSajuOpeningLuckCondition: false,
-  useFinalGaewoonDirection: false,
 };
