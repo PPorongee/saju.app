@@ -391,7 +391,7 @@ export function computeDaewoonSewoonInteractions(
       label: branchHalf.name,
       between: `대운 ${dBranch} + 세운 ${sBranch} → ${branchHalf.name}`,
       scopeTag: 'daewoon-sewoon-branch-half',
-      plainMeaning: `${branchHalf.name}이 작동하여 한 오행 결(${branchHalf.produces}) 쪽으로 흐름이 모입니다.`,
+      plainMeaning: `${branchHalf.name}이 작동하여 한 오행 결(${ELEMENT_KO[branchHalf.produces]}) 쪽으로 흐름이 모입니다.`,
       lifeSceneHint: '특정 주제(돈·관계·일 중 하나)에 관심과 시간이 자연스럽게 쏠리는 장면이 생길 수 있어요.',
       adviceHint: {
         actionable: '쏠리는 쪽이 분명해질수록 다른 영역에서의 균형을 의식해두는 편이 좋습니다.',
@@ -671,7 +671,7 @@ function detectPair(stemA: HeavenlyStem, branchA: EarthlyBranch, stemB: Heavenly
   const branchHalf = BRANCH_HALF.find(c =>
     (c.pair[0] === branchA && c.pair[1] === branchB) || (c.pair[0] === branchB && c.pair[1] === branchA),
   );
-  if (branchHalf) out.push({ kind: '합', target: 'branch', label: branchHalf.name, scopeBase: 'branch-half', basePlainMeaning: `${branchHalf.name}이 작동하여 한 오행(${branchHalf.produces}) 결로 모이는 흐름입니다.`, intensity: 'medium' });
+  if (branchHalf) out.push({ kind: '합', target: 'branch', label: branchHalf.name, scopeBase: 'branch-half', basePlainMeaning: `${branchHalf.name}이 작동하여 한 오행(${ELEMENT_KO[branchHalf.produces]}) 결로 모이는 흐름입니다.`, intensity: 'medium' });
   // 지지 충
   const branchConflict = BRANCH_CONFLICTS.find(p =>
     (p[0] === branchA && p[1] === branchB) || (p[0] === branchB && p[1] === branchA),
@@ -804,7 +804,7 @@ export function detectNatalSewoonAdvancedHints(
           kind: '삼합완성',
           involves: [`세운 ${sBranch}`, `원국 ${matchA.key} ${matchA.branch}`, `원국 ${matchB.key} ${matchB.branch}`],
           label: `${tri.name} (세운+${matchA.key}+${matchB.key})`,
-          plainMeaning: `세운이 원국과 함께 ${tri.name}을 완성하는 흐름이 만들어집니다. 한 오행(${tri.produces}) 결로 모이는 신호로 보세요.`,
+          plainMeaning: `세운이 원국과 함께 ${tri.name}을 완성하는 흐름이 만들어집니다. 한 오행(${ELEMENT_KO[tri.produces]}) 결로 모이는 신호로 보세요.`,
           intensity: 'strong',
         });
       }
@@ -821,7 +821,7 @@ export function detectNatalSewoonAdvancedHints(
           kind: '방합완성',
           involves: [`세운 ${sBranch}`, `원국 ${matchA.key} ${matchA.branch}`, `원국 ${matchB.key} ${matchB.branch}`],
           label: `${dir.name} (세운+${matchA.key}+${matchB.key})`,
-          plainMeaning: `세운이 원국과 함께 ${dir.name}을 완성합니다. 계절적 결(${dir.produces})이 한 방향으로 강해지는 신호입니다.`,
+          plainMeaning: `세운이 원국과 함께 ${dir.name}을 완성합니다. 계절적 결(${ELEMENT_KO[dir.produces]})이 한 방향으로 강해지는 신호입니다.`,
           intensity: 'strong',
         });
       }
