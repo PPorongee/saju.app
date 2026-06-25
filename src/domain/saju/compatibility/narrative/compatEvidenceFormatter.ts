@@ -90,7 +90,7 @@ function buildMechanismFacts(b: CompatibilityAnalysisBundle): CompatMustUseFact[
     ownerSection: 'relationshipMechanism',
     fact: `십성 작용: A→B ${joinNonEmpty(b.tenGodInteraction.aFeelsBAs) || '두드러진 작용 적음'} / B→A ${joinNonEmpty(b.tenGodInteraction.bFeelsAAs) || '두드러진 작용 적음'}`,
     plainMeaning: '상대가 나에게 어떤 역할(책임·표현·현실·보호·동료)로 느껴지는지의 결입니다.',
-    narrativeHint: '"상대가 나에게 어떤 사람으로 느껴지는가"를 십성 용어 즉시 풀이로. 끌림 포인트와 부담 포인트가 같은 뿌리임을 mechanism 차원에서 1번 짚음.',
+    narrativeHint: '"상대가 나에게 어떤 십성으로 작용하는지"를, 그 십성 이름(정관·식상·재성 등 fact에 있는 값)을 한 번 드러내고 바로 "어떤 사람으로 느껴지는지(책임 일깨움/표현 끌어냄/현실 조언자 등)"로 풀이. 끌림과 부담이 같은 뿌리임을 1번 짚음.',
     matchTokens: ['느껴', '역할'],
     role: 'support',
   });
@@ -102,7 +102,7 @@ function buildMechanismFacts(b: CompatibilityAnalysisBundle): CompatMustUseFact[
     ownerSection: 'relationshipMechanism',
     fact: `용신/기신 상호 자극: ${b.usefulGodInteraction.interpretation}`,
     plainMeaning: firstNonEmpty(b.usefulGodInteraction.evidence, '상대가 나에게 필요한 기운을 건드리는지, 부담스러운 기운을 건드리는지의 결입니다.'),
-    narrativeHint: '용신/기신을 부적·방향 같은 미신으로 풀지 말고, "상대가 내게 편한 기운인지 부담스러운 기운인지"를 환경·행동 결로.',
+    narrativeHint: '"상대의 기운이 내 용신(곁에 있으면 편한 기운)인지 기신(과하면 부담스러운 기운)인지"를, **"용신" 또는 "기신"이라는 말을 한 번 드러내고** 바로 일상어로 풀이. 부적·방향 같은 미신 금지, 환경·행동 결로.',
     matchTokens: ['용신', '기신'],
     role: 'support',
   });
@@ -114,8 +114,8 @@ function buildMechanismFacts(b: CompatibilityAnalysisBundle): CompatMustUseFact[
     ownerSection: 'relationshipMechanism',
     fact: `일지(배우자궁) 관계: ${joinNonEmpty(b.spousePalaceRelation.relationTypes) || 'none'} (강도 ${b.spousePalaceRelation.intensity})`,
     plainMeaning: joinNonEmpty([b.spousePalaceRelation.attractionEffect, b.spousePalaceRelation.conflictEffect], ' / '),
-    narrativeHint: '"가장 가까운 자리(일상·잠자리·생활 리듬)에서 어떻게 맞물리는가"의 결. 합/충/형/파/해는 좋다/나쁘다 단정 금지, 연결·흔들림 톤.',
-    matchTokens: ['일지', '가까운'],
+    narrativeHint: '"일지(가장 가까운 자리 — 일상·생활 리듬)가 서로 어떻게 맞물리는가"를, **"일지"라는 말을 한 번 가볍게 드러내고** 바로 일상어로 풀이. 합/충 같은 작용이 있으면 "당기는 결/흔들리는 결"로 1번 짚되, 좋다/나쁘다 단정 금지.',
+    matchTokens: ['일지'],
     role: b.spousePalaceRelation.intensity === 'high' ? 'tension' : 'support',
   });
 
