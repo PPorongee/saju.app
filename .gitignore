@@ -11,3 +11,9 @@ node_modules/
 # 사주 비교 검증용 임시 출력
 eseo-*.txt
 *.gpt-result.txt
+batch-result-*.txt
+test-v3-*.txt
+batch-summary.json
+*.build-log.txt
+*.vitest-targeted.txt
+tmp/
