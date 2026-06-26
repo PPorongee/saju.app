@@ -347,7 +347,11 @@ export async function generateCompatNarrativeReport(
         // 호출/파싱 실패 → 빈 섹션 (validator가 section-missing/parse-failed 처리)
         parsed = null;
       }
-      if (parsed === null) jsonParseFailedSet.add(sectionId);
+      if (parsed === null) {
+        jsonParseFailedSet.add(sectionId);
+        // (A) 드롭 감지 — 섹션이 비면 함수 로그에 남겨 조용한 회귀를 잡는다.
+        console.warn(`[compat] 섹션 "${sectionId}" 생성/파싱 실패 → 빈 섹션 처리`);
+      }
       parsedBySection.set(sectionId, parsed);
     }),
   );
