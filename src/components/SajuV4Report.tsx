@@ -193,6 +193,11 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
         </div>
       </details>
 
+      {/* ── 차별화 포인트 — 이 사주만의 두드러진 결을 본문 줄글 전에 카드로 강조.
+            specialPoints는 본문에도 녹지만(상위 2개), 여기서 상위 3개를 눈에 띄게 따로 보여줘
+            긴 풀이 전에 "나만의 특별함"으로 몰입시킨다. 없으면 통째 스킵(기존과 동일). ── */}
+      <SectionDiffPoints points={api.specialPoints} lang={lang === 'en' ? 'en' : 'ko'} />
+
       {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩.
             2026-05 hotfix: parser가 헤더를 못 잡았으면(7섹션 모두 비어있음)
             reportText 원문을 fallback으로 보여줘 사용자에 빈 화면 노출 방지.
@@ -277,6 +282,68 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
 
       {/* 2026-05: validation 로그는 사용자에게 절대 노출하지 않는다 (내부 repair 전용). */}
     </div>
+  );
+}
+
+// ============================================================
+// 차별화 포인트 카드 — 이 사주만의 두드러진 명리 구조를 강조
+//   · 본문 줄글 전에 상위 3개를 카드로 보여줘 "나만의 특별함"으로 후킹.
+//   · 용어(name)를 드러내되 바로 coreMeaning으로 풀이(de-jargon 일관).
+//   · 희귀도는 level 라벨만 — "만 명 중 n명" 통계는 절대 표기 안 함
+//     (estimatedPer10000 null 가드 + 과거 "1만명중 200명" 클리셰 회귀 방지).
+//   · 카탈로그가 한국어라 V1은 KO 전용 렌더(EN은 본문 번역으로 커버, EN 카탈로그는 후속).
+// ============================================================
+const SP_RARITY_LABEL: Record<string, string> = {
+  noticeable: '눈에 띄는 결',
+  uncommon: '드문 결',
+  rare: '귀한 결',
+  'very-rare': '아주 귀한 결',
+};
+
+function SectionDiffPoints({ points, lang }: { points: SpecialPoint[]; lang: 'ko' | 'en' }) {
+  if (lang === 'en') return null;              // 카탈로그 한국어 — EN 후속
+  const top = [...(points ?? [])]
+    .sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))
+    .slice(0, 3);
+  if (top.length === 0) return null;            // 차별점 없으면 통째 스킵(기존과 byte-identical)
+  const accent = SECTION_ACCENTS.structure;     // 보라톤
+  return (
+    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 16px' }}>
+      <div className="sv4-eyebrow" style={{ color: accent.accent }}>
+        <span aria-hidden>{accent.icon}</span>
+        <span>이 사주만의 차별화 포인트</span>
+      </div>
+      <p style={{ margin: '4px 0 14px', fontSize: 13, color: 'var(--orot-ink-mute)', lineHeight: 1.6 }}>
+        수많은 사주 중에서 이 사주를 눈에 띄게 만드는 결입니다.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {top.map((p) => {
+          const rarityLabel = SP_RARITY_LABEL[p.rarity?.level] ?? '';
+          return (
+            <div key={p.id} style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', borderLeft: `3px solid ${accent.accent}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: accent.accent, background: accent.glow, padding: '2px 9px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+                  {p.name}
+                </span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-ink-soft)', letterSpacing: '-0.01em' }}>
+                  {p.title}
+                </span>
+                {rarityLabel && (
+                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--orot-ink-mute)', whiteSpace: 'nowrap' }}>
+                    {rarityLabel}
+                  </span>
+                )}
+              </div>
+              {p.narrative?.coreMeaning && (
+                <p style={{ margin: '8px 0 0', fontSize: 13.5, lineHeight: 1.72, color: 'var(--orot-ink-soft)' }}>
+                  {p.narrative.coreMeaning}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
