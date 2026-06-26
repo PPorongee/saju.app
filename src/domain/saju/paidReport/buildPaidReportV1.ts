@@ -324,6 +324,15 @@ function buildMoneyGuide(g: PersonalSajuGptInput, ev: EvidenceCollector): PaidMo
       why: `재성이 약해(${jaeseong.toFixed(1)}) 축적보다 결과물·자격으로 굳히는 단계가 핵심이기 때문`,
       evidenceIds: [id],
     });
+  } else {
+    // 재성 중화 [1.0, 1.5) — 과하지도 약하지도 않은 구간. 위 두 분기에 안 걸려 earnRoutes가
+    // 비던 콘텐츠 갭(moneyMakingStyle까지 비면 '돈이 붙는 길'이 통째 공백) 보완.
+    const id = ev.add('tenGod', '재성중화', '재성 중화', `재성 ${jaeseong.toFixed(2)} — 과하지도 약하지도 않은 중화. 기복 큰 한 방보다 꾸준한 수입원·반복 거래에서 안정적으로 붙는 구조`);
+    earnRoutes.push({
+      text: '한 방보다 꾸준한 수입원을 쌓을 때 돈이 안정적으로 붙는다',
+      why: `재성이 중화(${jaeseong.toFixed(1)})라 기복 큰 베팅보다 반복되는 수익 구조가 잘 맞기 때문`,
+      evidenceIds: [id],
+    });
   }
   if (siksang >= 1.0) {
     const id = ev.add('tenGod', '식상강', '식상 있음', `식상 ${siksang.toFixed(2)} — 내가 만든 결과물이 수익으로 이어지는 결`);
