@@ -27,7 +27,9 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 90;
+// 가장 무거운 remainingMonths(월별 풀이)는 실측 ~83s 생성 → 90s로는 빠듯해 드롭됨.
+// saju-v4/compat-v4와 동일하게 180s로 상향(섹션 병렬이라 전체≈가장 느린 섹션).
+export const maxDuration = 180;
 
 export async function POST(req: NextRequest) {
   // Rate limiting — 공개·비인증·유료 OpenAI 호출 보호 (IP당 시간당 20회).

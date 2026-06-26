@@ -59,12 +59,13 @@ export function createOpenAiYearlyGptCaller(opts: YearlyCallerOptions = {}): Yea
           { role: 'user',   content: prompt.user   },
         ],
       },
-      // per-call 60s timeout + 재시도 0회.
+      // per-call 110s timeout + 재시도 0회.
       // - generator는 callGpt가 throw하면 해당 섹션을 빈 섹션(null)으로 처리(section-missing).
       // - maxRetries 0: 기본 재시도(2회)면 timeout이 곱해져 함수 전체 예산(maxDuration)을 잠식.
-      // - repair 0(live 기본)이라 단일 wave뿐 → 가장 무거운 remainingMonths(3800토큰)가 ~45-55s 걸려도
-      //   60s 안에 완료, maxDuration 90s 한도 내에서 관리 가능.
-      { timeout: 60_000, maxRetries: 0 },
+      // - 섹션은 병렬 생성이라 전체 시간 = 가장 느린 섹션. 가장 무거운 remainingMonths
+      //   (3800토큰, ~8개월×9필드)는 실측 ~83s 소요 → 기존 60s timeout에 걸려 통째 드롭됐음
+      //   (월별 풀이 사라짐 회귀). 110s로 상향해 완성 보장(maxDuration 180s 내 병렬이라 안전).
+      { timeout: 110_000, maxRetries: 0 },
     );
     const text = res.choices[0]?.message?.content;
     if (!text) throw new Error('OpenAI returned empty response');
