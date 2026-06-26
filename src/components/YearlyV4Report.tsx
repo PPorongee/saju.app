@@ -174,6 +174,13 @@ export function buildYearlyMarkdown(report: YearlyFortuneReport, timingHints?: Y
     }
   }
 
+  // 올해 동하는 신살 (결정론) — 역마/도화/문창 등
+  const stars = report.evidenceView?.activatedSpecialStars ?? [];
+  if (stars.length) {
+    const body = stars.map((s) => `${s.name}: ${s.yearlyMeaning}`).join('\n\n');
+    sec('올해 동하는 기운', body);
+  }
+
   // 명리 근거는 별도 섹션으로 빼지 않는다 — 본문(흐름의 구조·주제별 등)에 녹여 설명된다.
 
   return lines.join('\n');
@@ -383,6 +390,7 @@ function ReportBody({ report, timingHints }: { report: YearlyFortuneReport; timi
       <MechanismView body={report.yearlyMechanism.body} />
       {report.remainingMonths.length > 0 && <RemainingMonthsView months={report.remainingMonths} />}
       <TimingHintsView hints={timingHints} />
+      <SpecialStarsView stars={report.evidenceView?.activatedSpecialStars} />
       <TopicFortunesView topics={report.topicFortunes} />
       <ActionGuideView guide={report.actionGuide} />
       {report.nextTwoYears.length > 0 && <NextTwoYearsView years={report.nextTwoYears} />}
@@ -414,6 +422,39 @@ function TimingHintsView({ hints }: { hints?: YearlyTimingHints }) {
               ))}
             </div>
             <div style={{ fontSize: 14, color: 'var(--orot-ink-soft)', lineHeight: 1.7, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{it.note}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ── 올해 활성 신살 (결정론) — 역마→이사·이동 / 도화→인연 / 문창→시험 ──
+//   evidenceView.activatedSpecialStars(4-C에서 계산)를 카드로. GPT 무관, 없으면 통째 스킵.
+const STAR_ICON: Record<string, string> = {
+  역마: '🚚', 도화: '💞', 문창귀인: '📚', 화개: '🪷', 천을귀인: '🍀',
+};
+function SpecialStarsView({ stars }: { stars?: Array<{ name: string; source: string; plain: string; yearlyMeaning: string }> }) {
+  const list = stars ?? [];
+  if (list.length === 0) return null;  // 동한 신살 없으면 미렌더(기존과 동일)
+  return (
+    <>
+      <div className="sv4-divider" aria-hidden>
+        <span className="sv4-divider-line" /><span className="sv4-divider-star">✦</span><span className="sv4-divider-line" />
+      </div>
+      <div className="orot-card" style={{ padding: '18px 18px', marginTop: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>올해 켜지는 별</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>올해 동하는 기운</div>
+        <div style={{ fontSize: 13, color: 'var(--orot-ink-mute)', marginBottom: 14, lineHeight: 1.6, fontFamily: 'var(--orot-font)' }}>
+          올해 세운이 사주 속 특정 기운을 깨우는 흐름입니다.
+        </div>
+        {list.map((s, i) => (
+          <div key={i} style={{ padding: '12px 0', borderTop: i > 0 ? '1px solid var(--orot-hair)' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
+              <span aria-hidden style={{ fontSize: 16 }}>{STAR_ICON[s.name] ?? '✦'}</span>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--orot-coral)', background: 'rgba(243,160,146,0.12)', border: '1px solid var(--orot-coral-faint)', borderRadius: 999, padding: '2px 11px', fontFamily: 'var(--orot-font)' }}>{s.name}</span>
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--orot-ink-soft)', lineHeight: 1.7, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{s.yearlyMeaning}</div>
           </div>
         ))}
       </div>

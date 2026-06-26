@@ -229,7 +229,7 @@ function buildEvidenceView(analysis: YearlyFortuneAnalysis): YearlyFortuneEviden
       monthLabel: m.monthLabel, ganji: m.monthGanji.display, keyword: m.keyword,
     })),
     activatedSpecialStars: analysis.specialStarsActivated.map(s => ({
-      name: s.name, source: s.source, plain: s.plainMeaning,
+      name: s.name, source: s.source, plain: s.plainMeaning, yearlyMeaning: s.yearlyMeaning,
     })),
   };
 }

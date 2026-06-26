@@ -574,7 +574,7 @@ export interface YearlyFortuneEvidenceView {
   natalSewoonInteractions: Array<{ pillar: string; kind: InteractionKind; plain: string }>;
   daewoonSewoonInteractions: Array<{ kind: InteractionKind; plain: string }>;
   monthlySummary: Array<{ monthLabel: string; ganji: string; keyword: string }>;
-  activatedSpecialStars: Array<{ name: string; source: string; plain: string }>;
+  activatedSpecialStars: Array<{ name: string; source: string; plain: string; yearlyMeaning: string }>;
   /** raw — 접힘 영역에서만 노출 */
   raw?: unknown;
 }
