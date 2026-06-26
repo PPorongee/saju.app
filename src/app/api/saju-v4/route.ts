@@ -3,7 +3,8 @@
 // 출력은 책처럼 읽히는 7섹션 줄글 (사주원국 카드 + 명리 근거 보기는 UI에서 별도 렌더).
 
 import 'server-only';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { generateNarrativePersonalSajuReport } from '@/domain/saju/generatePersonalSajuReport';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
 import { createOpenAiNarrativeGptCaller, createOpenAiGptCaller } from '@/lib/saju-v4-gpt-caller';
@@ -56,7 +57,11 @@ function toPublicValidation(v: NarrativeValidationResult): NarrativeValidationRe
   return { isValid: v.isValid, issues: v.issues };
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // Rate limiting — 공개·비인증·유료 OpenAI 호출 보호 (IP당 시간당 20회).
+  const rateLimited = await checkRateLimit(req, RATE_LIMITS.sajuV4);
+  if (rateLimited) return rateLimited;
+
   let body: RequestBody;
   try {
     body = (await req.json()) as RequestBody;

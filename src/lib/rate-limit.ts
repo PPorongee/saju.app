@@ -105,4 +105,8 @@ export const RATE_LIMITS = {
   paymentConfirm: { limit: 10, windowSecs: 60 } satisfies RateLimitConfig,
   refund: { limit: 3, windowSecs: 3600 } satisfies RateLimitConfig,
   readingsGet: { limit: 10, windowSecs: 60 } satisfies RateLimitConfig,
+  // v4 유료성 엔드포인트(공개·비인증·유료 OpenAI 호출) — IP당 시간당 20회.
+  // 정상 사용자(시간당 2~5회)는 절대 안 걸리고, 대량 악용·비용 폭주만 차단.
+  sajuV4: { limit: 20, windowSecs: 3600 } satisfies RateLimitConfig,
+  yearlyFortune: { limit: 20, windowSecs: 3600 } satisfies RateLimitConfig,
 } as const;

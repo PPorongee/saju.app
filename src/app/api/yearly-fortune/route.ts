@@ -12,7 +12,8 @@
 //   503  yearly_api_disabled — YEARLY_FORTUNE_API_ENABLED !== 'true'
 
 import 'server-only';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import type { YearlyDepthOptions, YearlyFortuneInput } from '@/domain/saju/yearly/yearlyTypes';
 import { generateYearlyFortuneReport } from '@/domain/saju/yearly/generateYearlyFortuneReport';
 import { buildYearlyTimingHints } from '@/domain/saju/yearly/yearlyLifeTiming';
@@ -28,7 +29,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 90;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // Rate limiting — 공개·비인증·유료 OpenAI 호출 보호 (IP당 시간당 20회).
+  const rateLimited = await checkRateLimit(req, RATE_LIMITS.yearlyFortune);
+  if (rateLimited) return rateLimited;
+
   // 0) payload 크기 사전 차단 (Content-Length 기준; 32 KiB 초과 → 413)
   const len = Number(req.headers.get('content-length') ?? '0');
   if (Number.isFinite(len) && len > 32768) {
