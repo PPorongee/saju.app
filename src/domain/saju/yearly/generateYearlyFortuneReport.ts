@@ -37,6 +37,7 @@ import {
 import { buildYearlyPlans, YEARLY_LLM_SECTION_IDS } from './yearlyPlanBuilder';
 import {
   buildYearlyPromptsAll,
+  buildYearlyPromptForSection,
   buildYearlyRepairPrompt,
   type BuiltYearlyPrompt,
   type YearlyPromptContext,
@@ -376,6 +377,62 @@ function applySectionToReport(
 // Phase 2에서 섹션 게이팅을 구현할 때 validateYearlyReport도 depth-aware로 만들어야 한다.
 // 그 전까지 depthOptions는 forward-compat용으로만 accept. (see ledger HIGH-1)
 // ============================================================
+// ============================================================
+// remainingMonths 분할 생성 (B) — 가장 무거운 월별 섹션을 2배치로 쪼개 병렬 호출.
+//   한 번에 ~8개월(3800토큰, 실측 ~83s)을 쓰면 per-call 타임아웃에 걸려 통째 드롭됨.
+//   절반씩(~4개월) 병렬로 부르면 각 ~40s → 타임아웃 여유 + 한 배치 실패해도 절반은 생존.
+//   월이 적으면(≤4) 분할 불필요 → 단일 호출. 0개면 호출 자체를 생략.
+//   (A) 기대 월수 대비 누락 시 console.warn — Vercel 함수 로그에 남아 "조용한 회귀"를 잡음.
+// ============================================================
+const REMAINING_MONTHS_BATCH_MAX_TOKENS = 2400;
+const REMAINING_MONTHS_SPLIT_THRESHOLD = 4; // 월 4개 초과일 때만 분할
+
+async function generateRemainingMonthsParsed(
+  plans: ReturnType<typeof buildYearlyPlans>,
+  ctx: YearlyPromptContext,
+  callGpt: (prompt: BuiltYearlyPrompt, callOpts: { maxTokens: number }) => Promise<string>,
+): Promise<{ sectionId: 'remainingMonths'; remainingMonths: any[] } | null> {
+  const plan = plans.find(p => p.sectionId === 'remainingMonths');
+  if (!plan) return null;
+  const facts = plan.mustUseFacts ?? [];
+  if (facts.length === 0) return { sectionId: 'remainingMonths', remainingMonths: [] };
+
+  const callOne = async (subPlan: typeof plan): Promise<any[]> => {
+    const built = buildYearlyPromptForSection(subPlan, ctx);
+    if (!built) return [];
+    try {
+      const raw = await callGpt(built, { maxTokens: built.maxTokens });
+      const parsed = parseSectionJson(raw);
+      return Array.isArray(parsed?.remainingMonths) ? parsed.remainingMonths : [];
+    } catch {
+      return [];
+    }
+  };
+
+  let months: any[];
+  if (facts.length <= REMAINING_MONTHS_SPLIT_THRESHOLD) {
+    months = await callOne(plan); // 적은 월수 — 단일 호출(원래 maxTokens 사용)
+  } else {
+    const mid = Math.ceil(facts.length / 2);
+    const batches = [facts.slice(0, mid), facts.slice(mid)].map(subFacts => ({
+      ...plan,
+      mustUseFacts: subFacts,
+      maxTokens: REMAINING_MONTHS_BATCH_MAX_TOKENS,
+    }));
+    const results = await Promise.all(batches.map(callOne)); // 2배치 병렬
+    months = results.flat(); // 앞→뒤 순서 보존
+  }
+
+  // (A) 드롭/부분 누락 감지
+  if (months.length === 0) {
+    console.warn(`[yearly] remainingMonths 전체 누락 — ${facts.length}개월 기대 / 0개 생성 (타임아웃 드롭 의심)`);
+  } else if (months.length < facts.length) {
+    console.warn(`[yearly] remainingMonths 부분 누락 — ${facts.length}개월 기대 / ${months.length}개 생성 (한 배치 실패 의심)`);
+  }
+
+  return { sectionId: 'remainingMonths', remainingMonths: months };
+}
+
 export async function generateYearlyFortuneReport(
   input: YearlyFortuneInput,
   opts: GenerateYearlyOptions,
@@ -423,6 +480,11 @@ export async function generateYearlyFortuneReport(
   // 개인사주 generator와 동일한 병렬(Promise.all) 스타일
   await Promise.all(
     YEARLY_LLM_SECTION_IDS.map(async sectionId => {
+      // remainingMonths(가장 무거운 섹션)는 2배치 병렬 분할 생성으로 타임아웃 드롭 방지(B).
+      if (sectionId === 'remainingMonths') {
+        parsedBySection.set(sectionId, await generateRemainingMonthsParsed(plans, promptCtx, opts.callGpt));
+        return;
+      }
       const built = prompts.get(sectionId);
       if (!built) return;
       let parsed: any = null;
@@ -433,6 +495,8 @@ export async function generateYearlyFortuneReport(
         // 호출/파싱 실패 → 빈 섹션 (validator가 section-missing)
         parsed = null;
       }
+      // (A) 드롭 감지 — 섹션이 비면 함수 로그에 남겨 조용한 회귀를 잡는다.
+      if (parsed === null) console.warn(`[yearly] 섹션 "${sectionId}" 생성/파싱 실패 → 빈 섹션 처리`);
       parsedBySection.set(sectionId, parsed);
     }),
   );
