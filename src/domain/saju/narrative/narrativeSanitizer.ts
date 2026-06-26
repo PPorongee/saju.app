@@ -238,6 +238,10 @@ export function sanitizeUnsupportedUserContext(text: string, ctx: UnsupportedCon
     if (!hasKids) {
       out = out.replace(/자녀(?=[를는이가와과에도의]|$|\s)/g, '후배·제자·돌봄이 필요한 대상');
       out = out.replace(/아이(?=[를는이가와과에도의]|$|\s)/g, '돌봄이 필요한 대상');
+      // 아들/딸/자식 — validator는 unsupported로 잡는데 기존 치환엔 빠져 있어 누수+HIGH 유발했음(sanitizer/validator 미스매치 보완).
+      out = out.replace(/아들(?=[를는이가와과에도의]|$|\s)/g, '돌봄이 필요한 대상');
+      out = out.replace(/딸(?=[을는이가와과에도의]|$|\s)/g, '돌봄이 필요한 대상');
+      out = out.replace(/자식(?=[을는이가와과에도의]|$|\s)/g, '돌봄이 필요한 대상');
       out = out.replace(/자녀\s*양육/g, '책임지는 대상의 성장 지원');
       out = out.replace(/자녀\s*교육/g, '후배·제자의 성장 지원');
     }
