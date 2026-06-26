@@ -28,6 +28,8 @@ import { isYearlyFortuneVerdictEnabled } from '../fortuneVerdict/fortuneVerdictF
 import { buildYearlyFortuneVerdictEvidence } from '../fortuneVerdict/fortuneVerdictEvidence';
 import { generateFortuneVerdict } from '../fortuneVerdict/generateFortuneVerdict';
 import type { HeavenlyStem } from '../rules/heavenlyStems';
+import type { EarthlyBranch } from '../rules/earthlyBranches';
+import { buildYearlySpecialStars } from './yearlySpecialStars';
 
 import {
   buildY2a, buildY2b, buildY2c, buildY2d, buildY2e, buildY2f, buildY2g,
@@ -146,7 +148,11 @@ export function buildYearlyAnalysis(
     daewoonSewoonInteraction: y2c,
     natalSewoonInteractions: y2d.natalSewoonInteractions,
     activatedTopics: [],
-    specialStarsActivated: [],
+    specialStarsActivated: buildYearlySpecialStars(
+      pr.pillars,
+      y2a.ganji.branch as EarthlyBranch,
+      pr.pillars.dayMaster as HeavenlyStem,
+    ),
     remainingMonthlyFortunes: y2f,
     nextTwoYears: y2g,
     carriedOver: {

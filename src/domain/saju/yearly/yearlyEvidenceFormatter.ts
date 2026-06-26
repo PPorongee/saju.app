@@ -219,6 +219,19 @@ function buildTopicFortunesEvidence(a: YearlyFortuneAnalysis): YearlyMustUseFact
 
   const facts: YearlyMustUseFact[] = [];
 
+  // 활성 신살 → 토픽별 정밀 신호 (역마→이사·이동/rhythm, 도화→인연/relationship,
+  //   문창·천을→시험·귀인/career, 화개→정리·몰입/rhythm). 동한 신살이 없으면 빈 문자열.
+  //   신살 이름을 한 번 드러내고 yearlyMeaning으로 즉시 풀이(de-jargon 일관).
+  const starByTopic: Record<'career' | 'relationship' | 'rhythm', string[]> = { career: [], relationship: [], rhythm: [] };
+  for (const s of a.specialStarsActivated ?? []) {
+    const line = `올해 ${s.name}이(가) 동함 — ${s.yearlyMeaning}`;
+    if (s.name === '문창귀인' || s.name === '천을귀인') starByTopic.career.push(line);
+    else if (s.name === '도화') starByTopic.relationship.push(line);
+    else if (s.name === '역마' || s.name === '화개') starByTopic.rhythm.push(line);
+  }
+  const starLine = (topic: 'career' | 'relationship' | 'rhythm') =>
+    starByTopic[topic].length ? ' ★ 활성 신살(이름 한 번 드러내고 즉시 풀이): ' + starByTopic[topic].join(' / ') : '';
+
   // 1) 일·커리어 (일/공부/이동/계약)
   facts.push({
     id: 'tf-career',
@@ -226,7 +239,8 @@ function buildTopicFortunesEvidence(a: YearlyFortuneAnalysis): YearlyMustUseFact
     fact: '일·커리어 흐름',
     plainMeaning: '올해 일운은 직업 추천보다 "어떤 흐름이 들어오는가"가 핵심. 역할 변화·평가·인정·공부·자격·환경 변화 신호로 봅니다.',
     narrativeHint: '"이직한다"·"승진한다" 같은 단정 예측 금지. "변화 신호가 생길 수 있다" 톤.' +
-      (topicHasActivity('일','공부','이동','계약') ? ' 활성된 주제: 일/공부/계약/이동.' : ' 큰 변화 신호는 적음.'),
+      (topicHasActivity('일','공부','이동','계약') ? ' 활성된 주제: 일/공부/계약/이동.' : ' 큰 변화 신호는 적음.') +
+      starLine('career'),
     matchTokens: ['일', '커리어', '역할', '환경'],
     adviceHint: {
       actionable: '맡고 있는 일의 범위·권한·평가 기준을 다시 확인하는 편이 좋습니다.',
@@ -257,7 +271,8 @@ function buildTopicFortunesEvidence(a: YearlyFortuneAnalysis): YearlyMustUseFact
     fact: '관계·연애 흐름',
     plainMeaning: '관계운은 가까워지는 사람/멀어지는 사람 결의 변화와 관계의 기준 정리 결로 봅니다.',
     narrativeHint: 'relationshipStatus가 unknown이면 "아내/남편/배우자/자녀" 단정 금지. "가까운 관계 / 장기적 관계를 생각한다면" 중립 표현.' +
-      (topicHasActivity('관계','연애','가족') ? ' 관계/연애 주제 활성된 흐름 있음.' : ''),
+      (topicHasActivity('관계','연애','가족') ? ' 관계/연애 주제 활성된 흐름 있음.' : '') +
+      starLine('relationship'),
     matchTokens: ['관계', '연애', '가까운', '신뢰'],
     adviceHint: {
       actionable: '감정이 커지기 전 짧게 기준을 나누는 편이 좋습니다.',
@@ -272,7 +287,8 @@ function buildTopicFortunesEvidence(a: YearlyFortuneAnalysis): YearlyMustUseFact
     fact: '생활 리듬·멘탈 흐름',
     plainMeaning: '리듬은 의학적 진단이 아니라 과로·수면·생각 과부하·감정 소모 결의 신호로 봅니다.',
     narrativeHint: '질병/치료/약물/진단 절대 금지. 루틴·휴식·생각 정리 결로만.' +
-      (topicHasActivity('건강리듬') ? ' 리듬 주제 활성됨.' : ''),
+      (topicHasActivity('건강리듬') ? ' 리듬 주제 활성됨.' : '') +
+      starLine('rhythm'),
     matchTokens: ['리듬', '루틴', '수면', '회복'],
     adviceHint: {
       actionable: '체력보다 생각을 내려놓는 루틴을 한 가지 더 두는 편이 좋습니다.',
