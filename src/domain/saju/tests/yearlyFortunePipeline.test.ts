@@ -1451,6 +1451,7 @@ function buildAnalysisForFixture(idx: number): YearlyFortuneAnalysis {
       dayMasterStrength: dms,
       usefulGod: ug,
       specialStars: elements ? [] : [],
+      elementStrength: elements,
     },
   };
 }
@@ -1996,6 +1997,7 @@ function buildValidMockReport(): YearlyFortuneReport {
       { year: Y5_ANALYSIS.targetYear + 2, keyword: '결산과 다음 판', summary: '쌓은 것을 정리해 다음 판으로 옮기는 흐름.', opportunity: '결산과 재정리', caution: '쉬는 시간 없이 다음 판으로 넘어가기' },
     ],
     evidenceView: {
+      healthHints: [],
       yearGanji: Y5_ANALYSIS.targetYearGanji,
       currentDaewoonPillar: Y5_ANALYSIS.currentDaewoon.pillar.pillarKo,
       yearStemTenGod: Y5_ANALYSIS.yearTenGod.stemTenGod,

@@ -15,6 +15,7 @@ import type {
   DayMasterStrengthAnalysis,
   UsefulGodAnalysis,
   SpecialStarInfo,
+  ElementStrengthAnalysis,
 } from '../report/sajuReportSchema';
 import type { Element } from '../rules/elements';
 // Fortune Questions Verdict V1 출력 타입.
@@ -371,6 +372,7 @@ export interface YearlyFortuneAnalysis {
     dayMasterStrength: DayMasterStrengthAnalysis;
     usefulGod: UsefulGodAnalysis;
     specialStars: SpecialStarInfo[];
+    elementStrength: ElementStrengthAnalysis;
   };
 
   /** Phase 2 확장 자리 — 본 plan에서는 미사용 */
@@ -575,8 +577,18 @@ export interface YearlyFortuneEvidenceView {
   daewoonSewoonInteractions: Array<{ kind: InteractionKind; plain: string }>;
   monthlySummary: Array<{ monthLabel: string; ganji: string; keyword: string }>;
   activatedSpecialStars: Array<{ name: string; source: string; plain: string; yearlyMeaning: string }>;
+  /** 올해 살펴볼 건강 결 (결정론, 오행 약→장부 경향+생활돌봄. 진단 아님) */
+  healthHints: YearlyHealthHint[];
   /** raw — 접힘 영역에서만 노출 */
   raw?: unknown;
+}
+
+/** 오행 균형상 약한 장부 계통 경향 + 생활 돌봄 (의학적 진단 아님). */
+export interface YearlyHealthHint {
+  element: string;          // 약한 오행 (한글)
+  organ: string;            // 장부 계통 (예: '소화기(비·위)')
+  aggravatedByYear: boolean; // 올해 세운 오행이 그 장부를 더 누르는지(상극)
+  note: string;             // 경향 + 생활 돌봄 한 문단
 }
 
 export interface YearlyFortuneReport {

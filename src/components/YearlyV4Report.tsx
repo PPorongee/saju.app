@@ -181,6 +181,14 @@ export function buildYearlyMarkdown(report: YearlyFortuneReport, timingHints?: Y
     sec('올해 동하는 기운', body);
   }
 
+  // 올해 살펴볼 건강 결 (결정론) — 진단 아님, 면책 포함
+  const health = report.evidenceView?.healthHints ?? [];
+  if (health.length) {
+    const body = health.map((h) => `${h.organ}: ${h.note}`).join('\n\n')
+      + '\n\n※ 명리적 경향일 뿐 의학적 진단이 아니에요. 불편하면 전문의와 상담하세요.';
+    sec('올해 살펴볼 건강 결', body);
+  }
+
   // 명리 근거는 별도 섹션으로 빼지 않는다 — 본문(흐름의 구조·주제별 등)에 녹여 설명된다.
 
   return lines.join('\n');
@@ -391,6 +399,7 @@ function ReportBody({ report, timingHints }: { report: YearlyFortuneReport; timi
       {report.remainingMonths.length > 0 && <RemainingMonthsView months={report.remainingMonths} />}
       <TimingHintsView hints={timingHints} />
       <SpecialStarsView stars={report.evidenceView?.activatedSpecialStars} />
+      <HealthHintsView hints={report.evidenceView?.healthHints} />
       <TopicFortunesView topics={report.topicFortunes} />
       <ActionGuideView guide={report.actionGuide} />
       {report.nextTwoYears.length > 0 && <NextTwoYearsView years={report.nextTwoYears} />}
@@ -457,6 +466,39 @@ function SpecialStarsView({ stars }: { stars?: Array<{ name: string; source: str
             <div style={{ fontSize: 14, color: 'var(--orot-ink-soft)', lineHeight: 1.7, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{s.yearlyMeaning}</div>
           </div>
         ))}
+      </div>
+    </>
+  );
+}
+
+// ── 올해 살펴볼 건강 결 (결정론) — 오행 약→장부 경향 + 생활 돌봄. 진단 아님(면책 고정). ──
+//   evidenceView.healthHints(약한 오행 없으면 빈 배열) → 없으면 미렌더.
+function HealthHintsView({ hints }: { hints?: Array<{ element: string; organ: string; aggravatedByYear: boolean; note: string }> }) {
+  const list = hints ?? [];
+  if (list.length === 0) return null; // 약한 오행 없으면 카드 자체를 안 띄움
+  return (
+    <>
+      <div className="sv4-divider" aria-hidden>
+        <span className="sv4-divider-line" /><span className="sv4-divider-star">✦</span><span className="sv4-divider-line" />
+      </div>
+      <div className="orot-card" style={{ padding: '18px 18px', marginTop: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>몸의 결</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 14, fontFamily: 'var(--orot-font)' }}>올해 살펴볼 건강 결</div>
+        {list.map((h, i) => (
+          <div key={i} style={{ padding: '12px 0', borderTop: i > 0 ? '1px solid var(--orot-hair)' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
+              <span aria-hidden style={{ fontSize: 16 }}>🩺</span>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--orot-coral)', background: 'rgba(243,160,146,0.12)', border: '1px solid var(--orot-coral-faint)', borderRadius: 999, padding: '2px 11px', fontFamily: 'var(--orot-font)' }}>{h.organ}</span>
+              {h.aggravatedByYear && (
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--orot-ink-mute)', fontFamily: 'var(--orot-font)' }}>올해 특히</span>
+              )}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--orot-ink-soft)', lineHeight: 1.7, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{h.note}</div>
+          </div>
+        ))}
+        <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--orot-ink-mute)', lineHeight: 1.6, fontFamily: 'var(--orot-font)' }}>
+          ⓘ 명리적 경향일 뿐 의학적 진단이 아니에요. 불편한 곳이 있으면 전문의와 상담하세요.
+        </div>
       </div>
     </>
   );

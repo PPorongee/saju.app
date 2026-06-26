@@ -30,6 +30,8 @@ import { generateFortuneVerdict } from '../fortuneVerdict/generateFortuneVerdict
 import type { HeavenlyStem } from '../rules/heavenlyStems';
 import type { EarthlyBranch } from '../rules/earthlyBranches';
 import { buildYearlySpecialStars } from './yearlySpecialStars';
+import { buildYearlyHealthHints } from './yearlyHealthHints';
+import { KO_TO_ELEMENT } from '../rules/elements';
 
 import {
   buildY2a, buildY2b, buildY2c, buildY2d, buildY2e, buildY2f, buildY2g,
@@ -160,6 +162,7 @@ export function buildYearlyAnalysis(
       dayMasterStrength: dms,
       usefulGod: ug,
       specialStars: [],
+      elementStrength: elements,
     },
   };
 }
@@ -232,6 +235,10 @@ function buildEvidenceView(analysis: YearlyFortuneAnalysis): YearlyFortuneEviden
     activatedSpecialStars: analysis.specialStarsActivated.map(s => ({
       name: s.name, source: s.source, plain: s.plainMeaning, yearlyMeaning: s.yearlyMeaning,
     })),
+    healthHints: buildYearlyHealthHints(
+      analysis.carriedOver.elementStrength,
+      KO_TO_ELEMENT[analysis.yearElementEffect.element],
+    ),
   };
 }
 
