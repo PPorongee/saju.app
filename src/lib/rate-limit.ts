@@ -52,8 +52,10 @@ export async function checkRateLimit(
   req: NextRequest,
   config: RateLimitConfig
 ): Promise<NextResponse | null> {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel Marketplace의 Upstash 통합은 KV_REST_API_* 이름으로 주입하고,
+  // 수동 설정 시엔 UPSTASH_REDIS_REST_* 이름을 쓴다 — 둘 다 인식.
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
   if (!url || !token) {
     console.warn('[rate-limit] Redis not configured — using in-process fallback');
