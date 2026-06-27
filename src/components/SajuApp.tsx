@@ -1610,20 +1610,20 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
     // 홈 카드 배경 일러스트 불투명도 — 또렷하게(레퍼런스 톤). veil/그림자로 글씨 가독성 확보.
     const HOME_ART_OPACITY = 0.9;
     return (
-      <div className="inner screen-enter orot-root orot-home-sky" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', paddingTop: 16, paddingBottom: 14 }}>
-        {/* Logo + Welcome — 좌측 정렬, 한 묶음 (스크롤 없는 한 화면) */}
-        <div style={{ flexShrink: 0, paddingLeft: 2 }}>
+      <div className="inner screen-enter orot-root orot-home-sky" style={{ paddingTop: 28, paddingBottom: 40 }}>
+        {/* Logo + Welcome — 좌측 정렬 */}
+        <div style={{ paddingLeft: 2 }}>
           <img
             src={isEn ? '/images/orot/logo-en.png' : '/images/orot/logo-new.png'}
             alt={isEn ? 'Starlight Saju' : '별빛사주'}
-            style={{ width: '100%', maxWidth: isEn ? 140 : 108, display: 'block', margin: '0 0 16px' }}
+            style={{ width: '100%', maxWidth: isEn ? 150 : 122, display: 'block', margin: '0 0 22px' }}
           />
           <h1 style={{
-            fontSize: 19,
+            fontSize: 23,
             fontWeight: 700,
             color: 'var(--orot-ink)',
             letterSpacing: '0.02em',
-            lineHeight: 1.45,
+            lineHeight: 1.5,
             margin: 0,
             background: 'none',
             WebkitTextFillColor: 'var(--orot-ink)',
@@ -1632,11 +1632,11 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             {greetingLine}
           </h1>
           <p style={{
-            fontSize: 12,
+            fontSize: 14,
             color: 'var(--orot-ink-mute)',
-            lineHeight: 1.6,
+            lineHeight: 1.7,
             letterSpacing: '0.01em',
-            margin: '11px 0 0',
+            margin: '13px 0 0',
             fontFamily: 'var(--orot-font)',
           }}>
             {isEn
@@ -1651,8 +1651,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           framingId="home-hero-character"
           imageOpacity={HOME_ART_OPACITY}
           veil="left"
-          minHeight={0}
-          style={{ flex: '1.35 1 0', minHeight: 0, marginTop: 26, marginBottom: 0, cursor: DAILY_FORTUNE_UI_ENABLED ? 'pointer' : undefined }}
+          minHeight={210}
+          style={{ marginTop: 26, marginBottom: 0, cursor: DAILY_FORTUNE_UI_ENABLED ? 'pointer' : undefined }}
           {...(DAILY_FORTUNE_UI_ENABLED ? {
             onClick: () => { window.location.href = '/daily-fortune'; },
             role: 'button',
@@ -1661,8 +1661,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         >
           <div style={{ maxWidth: '74%' }}>
             <h2 style={{
-              fontSize: 16.5, fontWeight: 700, color: 'var(--orot-ink)',
-              letterSpacing: '-0.012em', lineHeight: 1.35, margin: 0,
+              fontSize: 19, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.012em', lineHeight: 1.4, margin: 0,
               whiteSpace: 'pre-line', wordBreak: 'keep-all', fontFamily: 'var(--orot-font)',
               textShadow: '0 1px 6px rgba(16,20,44,0.85)',
             }} suppressHydrationWarning>
@@ -1671,7 +1671,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             {DAILY_FORTUNE_UI_ENABLED && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                marginTop: 11, fontSize: 14, fontWeight: 700, color: 'var(--orot-coral)',
+                marginTop: 14, fontSize: 15, fontWeight: 700, color: 'var(--orot-coral)',
               }}>
                 {isEn ? 'See today’s fortune' : '오늘 운세 보기'} →
               </span>
@@ -1679,13 +1679,13 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           </div>
         </BleedCard>
 
-        {/* 2×2 Feature Grid — 남은 높이를 채워 4개 버튼이 한 화면에 */}
-        <div style={{ flex: '2.2 1 0', minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 10, marginTop: 10, marginBottom: 0 }}>
+        {/* 2×2 Feature Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 18, marginBottom: 0 }}>
           <FeatureCard
             image="/images/orot/home-feat-saju.webp"
             framingId="home-feat-saju"
             imageOpacity={HOME_ART_OPACITY}
-            minHeight={88}
+            minHeight={158}
             title={t('sajuTitle', lang)}
             sub={t('sajuDesc', lang)}
             onClick={() => { setAppMode('saju'); setCurrentScreen(1); }}
@@ -1694,7 +1694,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             image="/images/orot/home-feat-compat.webp"
             framingId="home-feat-compat"
             imageOpacity={HOME_ART_OPACITY}
-            minHeight={88}
+            minHeight={158}
             title={t('compatTitle', lang)}
             sub={t('compatDesc', lang)}
             onClick={() => { setAppMode('compat'); setCurrentScreen(5); }}
@@ -1703,7 +1703,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             image="/images/orot/home-feat-year.webp"
             framingId="home-feat-year"
             imageOpacity={HOME_ART_OPACITY}
-            minHeight={88}
+            minHeight={158}
             title={t('yearlyTitle', lang)}
             sub={t('yearlyDesc', lang)}
             onClick={() => { setAppMode('yearly'); setCurrentScreen(1); }}
@@ -1712,7 +1712,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             image="/images/orot/home-feat-baby.webp"
             framingId="home-feat-baby"
             imageOpacity={HOME_ART_OPACITY}
-            minHeight={88}
+            minHeight={158}
             title={t('pregTitle', lang)}
             sub={t('pregDesc', lang)}
             onClick={() => { setAppMode('pregnancy'); setCurrentScreen(6); }}
@@ -1726,11 +1726,11 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               onClick={() => setShowSavedResults(!showSavedResults)}
               aria-label={t('prevResults', lang)}
               style={{
-                flexShrink: 0, marginTop: 10, width: '100%',
+                marginTop: 18, width: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                padding: '6px 13px', borderRadius: 'var(--orot-r-sm)',
+                padding: '10px 15px', borderRadius: 'var(--orot-r-md)',
                 background: 'rgba(243,231,207,0.05)', border: '1px solid var(--orot-hair)',
-                cursor: 'pointer', fontFamily: 'var(--orot-font)', minHeight: 32,
+                cursor: 'pointer', fontFamily: 'var(--orot-font)', minHeight: 40,
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--orot-coral)' }}>

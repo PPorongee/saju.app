@@ -48,7 +48,7 @@ export default function FeatureCard({
         {emoji && <div style={{ fontSize: 22, marginBottom: 8 }}>{emoji}</div>}
         <h3 style={{
           margin: 0,
-          fontSize: 14,
+          fontSize: 15.5,
           fontWeight: 700,
           color: 'var(--orot-coral)',
           letterSpacing: '-0.012em',
@@ -59,11 +59,11 @@ export default function FeatureCard({
         </h3>
         {sub && (
           <p style={{
-            margin: '4px 0 0',
-            fontSize: 10.5,
+            margin: '6px 0 0',
+            fontSize: 11.5,
             // 레퍼런스 톤: 부제는 연한 파란색(periwinkle)
             color: '#9bb6e8',
-            lineHeight: 1.45,
+            lineHeight: 1.5,
             maxWidth: '95%',
             textShadow: '0 1px 4px rgba(16,20,44,0.9)',
           }}>

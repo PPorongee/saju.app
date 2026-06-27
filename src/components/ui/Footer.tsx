@@ -7,13 +7,13 @@ export default function Footer({ lang = 'ko' }: { lang?: Lang }) {
   const ls = { color: 'rgba(245,240,232,0.65)', textDecoration: 'underline' as const, textUnderlineOffset: '3px' };
   return (
     <div style={{
-      padding: '7px 12px 9px',
+      padding: '14px 14px 20px',
       textAlign: 'center',
-      fontSize: '8px',
-      lineHeight: 1.4,
-      color: 'rgba(245,240,232,0.48)',
+      fontSize: '9.5px',
+      lineHeight: 1.6,
+      color: 'rgba(245,240,232,0.5)',
       borderTop: '1px solid rgba(255,255,255,0.04)',
-      marginTop: '8px'
+      marginTop: '20px'
     }}>
       {/* 사업자 정보 — 2줄로 압축 (법적 필수정보 유지) */}
       <div>{BUSINESS_INFO.companyName} | {en ? 'CEO' : '대표'} {BUSINESS_INFO.ceoName} | {en ? 'Biz Reg.' : '사업자등록번호'} {BUSINESS_INFO.businessNumber}</div>
