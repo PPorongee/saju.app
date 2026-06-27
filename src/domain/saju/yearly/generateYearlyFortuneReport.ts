@@ -81,6 +81,12 @@ export interface GenerateYearlyOptions {
   callGpt: YearlyGptCaller;
   /** 섹션별 repair 최대 시도 횟수 (기본 1). */
   maxRepairAttempts?: number;
+  /**
+   * 라이브 안전망 — maxRepairAttempts가 0이어도 첫 검증에 HIGH(환각/안전 위반: invented-evidence,
+   * unsupported-user-context 등)가 있으면 1회는 재생성해 출고 전 걸러낸다. HIGH가 없으면(대부분)
+   * 재생성 안 함 → 지연 영향 없음. (월별 분할 + maxDuration 180으로 예산 확보돼 가능.)
+   */
+  highOnlyRepair?: boolean;
   /** 기준 시각 (대운/normalize 기준). 미지정 시 new Date(). */
   now?: Date;
   depthOptions?: Partial<YearlyDepthOptions>;
@@ -445,7 +451,7 @@ export async function generateYearlyFortuneReport(
   opts: GenerateYearlyOptions,
 ): Promise<GenerateYearlyResult> {
   const now = opts.now ?? new Date();
-  const maxAttempts = opts.maxRepairAttempts ?? 1;
+  const baseMaxAttempts = opts.maxRepairAttempts ?? 1;
 
   // 1) 분석 + plan
   const analysis = buildYearlyAnalysis(input, now);
@@ -514,6 +520,13 @@ export async function generateYearlyFortuneReport(
 
   // 5) validate
   let validation = validateYearlyReport({ report, analysis, plans, ctx: validatorCtx });
+
+  // 라이브 기본 repair 0이라도 첫 검증에 HIGH(환각/안전 위반)가 있으면 1회는 재생성해 걸러낸다.
+  // HIGH 없으면(대부분) 0 유지 → 지연 영향 없음.
+  const maxAttempts = Math.max(
+    baseMaxAttempts,
+    opts.highOnlyRepair && validation.highCount > 0 ? 1 : 0,
+  );
 
   // 6) repair loop (bounded)
   const repairedSections = new Set<YearlyFortuneSectionId>();

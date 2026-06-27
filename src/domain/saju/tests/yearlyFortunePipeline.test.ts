@@ -30,6 +30,7 @@ import {
 } from '../yearly/yearlyAnalysisBuilder';
 import { formatYearlyEvidence, getOwnerSectionOf } from '../yearly/yearlyEvidenceFormatter';
 import { buildYearlyPlans, YEARLY_LLM_SECTION_IDS } from '../yearly/yearlyPlanBuilder';
+import { generateYearlyFortuneReport } from '../yearly/generateYearlyFortuneReport';
 import {
   buildYearlyPromptForSection,
   buildYearlyPromptsAll,
@@ -2394,5 +2395,51 @@ describe('Y5-11 배우자궁 보존 (validator)', () => {
     expect(hasIssue(res, 'unsupported-user-context')).toBe(false);
     // 궁 언급이 있으므로 palace-impact medium도 없어야 함
     expect(hasIssue(res, 'missing-palace-impact')).toBe(false);
+  });
+});
+
+// ============================================================
+// highOnlyRepair — 라이브 안전망: HIGH(환각/안전 위반)일 때만 1회 재생성
+//   (generator+caller+repair 통합 경로 — 기존엔 validator 단위만 테스트됨)
+// ============================================================
+describe('highOnlyRepair — HIGH일 때만 1회 재생성', () => {
+  const valid = buildValidMockReport();
+  // sectionId → 해당 섹션의 valid JSON (mock caller가 반환).
+  const jsonFor = (sectionId: string): string => {
+    switch (sectionId) {
+      case 'yearFlowCard': return JSON.stringify({ sectionId, yearFlowCard: valid.yearFlowCard, yearlyOverview: valid.yearlyOverview });
+      case 'yearlyMechanism': return JSON.stringify({ sectionId, yearlyMechanism: valid.yearlyMechanism });
+      case 'remainingMonths': return JSON.stringify({ sectionId, remainingMonths: valid.remainingMonths });
+      case 'topicFortunes': return JSON.stringify({ sectionId, topicFortunes: valid.topicFortunes });
+      case 'actionGuide': return JSON.stringify({ sectionId, actionGuide: valid.actionGuide });
+      case 'nextTwoYears': return JSON.stringify({ sectionId, nextTwoYears: valid.nextTwoYears });
+      default: return '{}';
+    }
+  };
+  const INPUT = { birth: FIXTURES[0].input, currentDate: CURRENT_DATE, relationshipStatus: 'unknown' as const };
+  // yearlyMechanism 첫 호출만 깨진 JSON → section-missing HIGH 유발, 재생성(2번째)은 valid.
+  const makeCaller = () => {
+    let mechCalls = 0;
+    return (async (prompt: any) => {
+      if (prompt.sectionId === 'yearlyMechanism') {
+        mechCalls++;
+        if (mechCalls === 1) return 'NOT_JSON';
+      }
+      return jsonFor(prompt.sectionId);
+    }) as any;
+  };
+
+  it('첫 생성에 HIGH면 highOnlyRepair로 1회 재생성 → HIGH 해소', async () => {
+    const res = await generateYearlyFortuneReport(INPUT, { callGpt: makeCaller(), maxRepairAttempts: 0, highOnlyRepair: true, now: NOW_DATE });
+    expect(res.attempts).toBe(2);                                // 재생성 1회 수행
+    expect(res.repairedSections).toContain('yearlyMechanism');   // 해당 섹션 재생성됨
+    expect(res.validation.highCount).toBe(0);                    // HIGH 해소
+    expect(res.report.yearlyMechanism.body.length).toBeGreaterThan(0);
+  });
+
+  it('highOnlyRepair 미설정이면 HIGH 있어도 재생성 안 함 (게이트 OFF)', async () => {
+    const res = await generateYearlyFortuneReport(INPUT, { callGpt: makeCaller(), maxRepairAttempts: 0, now: NOW_DATE });
+    expect(res.attempts).toBe(1);                                // 재생성 안 함
+    expect(res.validation.highCount).toBeGreaterThan(0);         // HIGH 그대로 남음
   });
 });

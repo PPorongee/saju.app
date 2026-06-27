@@ -102,8 +102,10 @@ export async function POST(req: NextRequest) {
   try {
     const result = await generateYearlyFortuneReport(input, {
       callGpt: createOpenAiYearlyGptCaller(),
-      // live 기본 0 (repair 없음 → 90s 예산 보호). body에서 명시적으로 1을 주면 repair 수행.
+      // live 기본 0 (medium 누적엔 repair 안 함). body로 명시 시 그 횟수.
       maxRepairAttempts: resolveLiveRepairAttempts(b.maxRepairAttempts),
+      // 안전망: HIGH(환각/안전 위반)가 있으면 1회는 재생성해 출고 전 걸러냄(없으면 영향 0).
+      highOnlyRepair: true,
       depthOptions,
     });
 
