@@ -1651,6 +1651,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           framingId="home-hero-character"
           imageOpacity={HOME_ART_OPACITY}
           veil="left"
+          contentAlign="bottom"
           minHeight={210}
           style={{ marginTop: 26, marginBottom: 0, cursor: DAILY_FORTUNE_UI_ENABLED ? 'pointer' : undefined }}
           {...(DAILY_FORTUNE_UI_ENABLED ? {
@@ -1673,7 +1674,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 marginTop: 14, fontSize: 15, fontWeight: 700, color: 'var(--orot-coral)',
               }}>
-                {isEn ? 'See today’s fortune' : '오늘 운세 보기'} →
+                {isEn ? 'See today’s fortune' : '오늘 운세 보기'}
               </span>
             )}
           </div>
