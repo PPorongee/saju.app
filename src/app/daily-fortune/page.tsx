@@ -55,9 +55,9 @@ const STR = {
     submit: '오늘 운세 보기', loading: '오늘의 별빛을 읽는 중…',
     disabled: '오늘의 별빛은 지금 준비 중이에요. 잠시 후 다시 찾아주세요.',
     today: '오늘 일진', sGood: '잘 풀리는 일', sCaution: '조심할 일', sPoints: '일 · 돈 · 관계', sLuck: '오늘의 행운',
-    evidence: '사주 근거 보기', share: '링크 공유', save: '결과 저장', restart: '처음으로',
+    evidence: '사주 근거 보기', share: '링크 공유', restart: '처음으로',
     ctaLead: '내 사주의 전체 구조가 궁금하다면', cta: '개인사주 리포트 보기',
-    past: '지난 오늘의 별빛', saved: '저장됐어요', copied: '링크가 복사됐어요', profileSaved: '프로필을 저장했어요',
+    copied: '링크가 복사됐어요', profileSaved: '프로필을 저장했어요',
     yearU: '년', monthU: '월', dayU: '일',
   },
   en: {
@@ -71,9 +71,9 @@ const STR = {
     submit: "See today's fortune", loading: "Reading today's starlight…",
     disabled: "Today's Starlight is being prepared. Please check back soon.",
     today: 'Day pillar', sGood: 'Goes well today', sCaution: 'Go easy on', sPoints: 'Work · Money · People', sLuck: "Today's luck",
-    evidence: 'See the saju basis', share: 'Share link', save: 'Save', restart: 'Start over',
+    evidence: 'See the saju basis', share: 'Share link', restart: 'Start over',
     ctaLead: 'Curious about your full chart?', cta: 'See your full reading',
-    past: 'Past readings', saved: 'Saved', copied: 'Link copied', profileSaved: 'Profile saved',
+    copied: 'Link copied', profileSaved: 'Profile saved',
     yearU: '', monthU: '', dayU: '',
   },
 } as const;
