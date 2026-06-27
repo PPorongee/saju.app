@@ -26,7 +26,8 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 90;
+// 7개 섹션 병렬 wave1 + HIGH 발생 시 highOnlyRepair wave1회 여유 확보 (Vercel 기본 300s).
+export const maxDuration = 150;
 
 /** babyDueInput 방어적 정규화 — 예정시간 유무로 birthTimeConfidence 결정 (성별 unknown). */
 function normalizeBabyDueInput(raw: Record<string, any>): BirthInput {
@@ -110,6 +111,8 @@ export async function POST(req: Request) {
     const result = await generatePregnancyNarrativeReport(momInput, babyDueInput, {
       callGpt: createOpenAiPregnancyNarrativeGptCaller(),
       maxRepairAttempts: resolveLivePregnancyRepairAttempts(b.maxRepairAttempts),
+      // 첫 검증에 HIGH가 있으면 1회만 재생성 — 422 차단(본문 노출 금지) 전 마지막 기회.
+      highOnlyRepair: true,
     });
 
     // 6-1) 안전 게이트 — HIGH 1+ 이면 본문 노출 금지 (의료/출산 민감)

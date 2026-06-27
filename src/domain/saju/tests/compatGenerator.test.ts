@@ -344,6 +344,51 @@ describe('C5-5 repair maxRepairAttempts:1', () => {
 });
 
 // ============================================================
+// C5-7 highOnlyRepair (라이브 안전망: maxRepairAttempts 0이어도 HIGH면 1회 재생성)
+// ============================================================
+describe('C5-7 highOnlyRepair — HIGH 1+ 시 maxRepairAttempts 0이어도 1회 재생성', () => {
+  it('highOnlyRepair:true + invented HIGH → attempts 2, mechanism repaired, highCount 0', async () => {
+    const ctx = buildCompatNarrativeContext('dating');
+    const res = await generateCompatNarrativeReport(PAIR.a, PAIR.b, 'dating', {
+      callGpt: makeRepairCaller(ctx),
+      now: NOW,
+      // maxRepairAttempts 미지정(=0)이지만 highOnlyRepair가 1회 끌어올림
+      highOnlyRepair: true,
+    });
+
+    expect(res.attempts).toBe(2);
+    expect(res.repairedSections).toContain('relationshipMechanism');
+    expect(res.validation.highCount).toBe(0);
+  });
+
+  it('highOnlyRepair 미설정 + invented HIGH → 게이트 OFF, attempts 1, highCount > 0', async () => {
+    const ctx = buildCompatNarrativeContext('dating');
+    const res = await generateCompatNarrativeReport(PAIR.a, PAIR.b, 'dating', {
+      callGpt: makeRepairCaller(ctx),
+      now: NOW,
+      // highOnlyRepair 미설정 → 재생성 안 함
+    });
+
+    expect(res.attempts).toBe(1);
+    expect(res.repairedSections).toHaveLength(0);
+    expect(res.validation.highCount).toBeGreaterThan(0);
+  });
+
+  it('highOnlyRepair:true + HIGH 없음(happy) → 재생성 안 함, attempts 1 (지연 영향 0)', async () => {
+    const ctx = buildCompatNarrativeContext('dating');
+    const res = await generateCompatNarrativeReport(PAIR.a, PAIR.b, 'dating', {
+      callGpt: makeGoodCaller(ctx),
+      now: NOW,
+      highOnlyRepair: true,
+    });
+
+    expect(res.validation.highCount).toBe(0);
+    expect(res.attempts).toBe(1);
+    expect(res.repairedSections).toHaveLength(0);
+  });
+});
+
+// ============================================================
 // C5-6 모든 relationshipType
 // ============================================================
 describe('C5-6 모든 relationshipType', () => {

@@ -68,6 +68,12 @@ export interface GenerateCompatNarrativeOptions {
   callGpt: CompatNarrativeGptCaller;
   /** 섹션별 repair 최대 시도 횟수 (LIVE 기본 0 — single wave). */
   maxRepairAttempts?: number;
+  /**
+   * 라이브 안전망: maxRepairAttempts가 0이어도 첫 검증에 HIGH(환각/안전 위반)가 있으면
+   * 1회만 재생성해 걸러낸다. HIGH 없으면 0 유지 → 지연 영향 없음.
+   * 궁합은 HIGH여도 본문을 출고하므로(라우트가 422로 막지 않음), 환각이 그대로 나가는 것을 막는다.
+   */
+  highOnlyRepair?: boolean;
   /** 기준 시각 (normalize/대운 기준). 미지정 시 new Date(). */
   now?: Date;
 }
@@ -296,7 +302,7 @@ export async function generateCompatNarrativeReport(
   opts: GenerateCompatNarrativeOptions,
 ): Promise<GenerateCompatNarrativeResult> {
   const now = opts.now ?? new Date();
-  const maxAttempts = opts.maxRepairAttempts ?? 0; // LIVE 기본 0
+  const baseMaxAttempts = opts.maxRepairAttempts ?? 0; // LIVE 기본 0
 
   // 1) 결정적 분석 (기존 궁합 계산 재사용) + context + plan + prompt
   // P6: compat diagnostic (별도 flag, 기본 OFF). flag ON일 때만 A/B 진단 force-attach.
@@ -371,6 +377,13 @@ export async function generateCompatNarrativeReport(
       finishLengthSections: [...finishLengthSet],
     },
   });
+
+  // 라이브 기본 repair 0이라도 첫 검증에 HIGH(환각/안전 위반)가 있으면 1회는 재생성해 걸러낸다.
+  // HIGH 없으면(대부분) 0 유지 → 지연 영향 없음.
+  const maxAttempts = Math.max(
+    baseMaxAttempts,
+    opts.highOnlyRepair && validation.highCount > 0 ? 1 : 0,
+  );
 
   // 4) repair loop (bounded, target 섹션만 재호출 + 수렴 조기 종료)
   const repairedSections = new Set<CompatNarrativeSectionId>();

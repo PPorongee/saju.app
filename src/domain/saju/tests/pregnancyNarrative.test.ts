@@ -259,6 +259,33 @@ describe('P9-3 repair', () => {
 });
 
 // ============================================================
+// P9-3b highOnlyRepair (라이브 안전망: maxRepairAttempts 0이어도 HIGH면 1회 재생성 → 422 차단 전 마지막 기회)
+// ============================================================
+describe('P9-3b highOnlyRepair', () => {
+  it('highOnlyRepair:true + invented HIGH → attempts 2, mechanism repaired, high 0', async () => {
+    const res = await generatePregnancyNarrativeReport(MOM, BABY_NO_TIME, {
+      callGpt: makeRepairCaller(), now: NOW, highOnlyRepair: true,
+      // maxRepairAttempts 미지정(=0)이지만 highOnlyRepair가 1회 끌어올림
+    });
+    expect(res.attempts).toBe(2);
+    expect(res.repairedSections).toContain('motherChildMechanism');
+    expect(res.validation.highCount).toBe(0);
+  });
+  it('highOnlyRepair 미설정 + invented HIGH → 게이트 OFF, attempts 1, high 잔존', async () => {
+    const res = await generatePregnancyNarrativeReport(MOM, BABY_NO_TIME, { callGpt: makeRepairCaller(), now: NOW });
+    expect(res.attempts).toBe(1);
+    expect(res.repairedSections).toHaveLength(0);
+    expect(res.validation.highCount).toBeGreaterThan(0);
+  });
+  it('highOnlyRepair:true + HIGH 없음(happy) → 재생성 안 함, attempts 1 (지연 영향 0)', async () => {
+    const res = await generatePregnancyNarrativeReport(MOM, BABY_NO_TIME, { callGpt: makeGoodCaller(), now: NOW, highOnlyRepair: true });
+    expect(res.validation.highCount).toBe(0);
+    expect(res.attempts).toBe(1);
+    expect(res.repairedSections).toHaveLength(0);
+  });
+});
+
+// ============================================================
 // P9-4 sanitizer
 // ============================================================
 describe('P9-4 sanitizer', () => {

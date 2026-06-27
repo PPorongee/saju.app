@@ -55,6 +55,13 @@ export interface GeneratePregnancyNarrativeOptions {
   callGpt: PregnancyNarrativeGptCaller;
   /** 섹션별 repair 최대 시도 횟수 (LIVE 기본 0). */
   maxRepairAttempts?: number;
+  /**
+   * 라이브 안전망: maxRepairAttempts가 0이어도 첫 검증에 HIGH가 있으면 1회만 재생성해 걸러낸다.
+   * HIGH 없으면 0 유지 → 지연 영향 없음.
+   * 임산부는 HIGH 1+면 라우트가 422로 본문을 통째로 막으므로(유료 사용자가 콘텐츠를 못 받음),
+   * 차단 전에 한 번 재생성해 콘텐츠를 받을 확률을 높인다.
+   */
+  highOnlyRepair?: boolean;
   now?: Date;
 }
 
@@ -187,7 +194,7 @@ export async function generatePregnancyNarrativeReport(
   opts: GeneratePregnancyNarrativeOptions,
 ): Promise<GeneratePregnancyNarrativeResult> {
   const now = opts.now ?? new Date();
-  const maxAttempts = opts.maxRepairAttempts ?? 0;
+  const baseMaxAttempts = opts.maxRepairAttempts ?? 0;
 
   // 1) 결정적 분석
   // P6: 임산부 diagnostic은 엄마(母) 사주에만. 아기 예정 사주에는 미적용. flag OFF면 기존 동작 동일.
@@ -253,6 +260,13 @@ export async function generatePregnancyNarrativeReport(
       finishLengthSections: [...finishLengthSet],
     },
   });
+
+  // 라이브 기본 repair 0이라도 첫 검증에 HIGH가 있으면 1회는 재생성해 걸러낸다(차단 전 마지막 기회).
+  // HIGH 없으면(대부분) 0 유지 → 지연 영향 없음.
+  const maxAttempts = Math.max(
+    baseMaxAttempts,
+    opts.highOnlyRepair && validation.highCount > 0 ? 1 : 0,
+  );
 
   // 4) bounded repair loop
   const repairedSections = new Set<PregnancyNarrativeSectionId>();

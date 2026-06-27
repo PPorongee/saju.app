@@ -28,7 +28,8 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 90;
+// 6~7개 섹션 병렬 wave1 + HIGH 발생 시 highOnlyRepair wave1회 여유 확보 (Vercel 기본 300s).
+export const maxDuration = 150;
 
 export async function POST(req: Request) {
   // 0) payload 크기 사전 차단 (Content-Length 기준; 32 KiB 초과 → 413)
@@ -77,8 +78,10 @@ export async function POST(req: Request) {
   try {
     const result = await generateCompatNarrativeReport(inputA, inputB, relationshipType, {
       callGpt: createOpenAiCompatNarrativeGptCaller(),
-      // live 기본 0 (repair 없음 → 90s 예산 보호). body에서 명시적으로 1을 주면 repair 수행.
+      // live 기본 0 (repair 없음 → 예산 보호). body에서 명시적으로 1을 주면 repair 수행.
       maxRepairAttempts: resolveLiveCompatRepairAttempts(b.maxRepairAttempts),
+      // 첫 검증에 HIGH(환각/안전 위반)가 있으면 1회만 재생성해 걸러낸다 — 출고 전 안전망.
+      highOnlyRepair: true,
     });
 
     // 7) 부가 콘텐츠 — bundle에서 평문 필드만 추려 노출(내부 evidence 토큰 제외).
