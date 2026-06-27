@@ -20,7 +20,7 @@
 
 html, body {
   height: 100%;
-  font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   background: linear-gradient(170deg, #0A0E2A 0%, #141850 40%, #0D1235 70%, #080B20 100%);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -1284,8 +1284,8 @@ input:focus-visible,
   --orot-el-metal: #b5b7c7;
   --orot-el-water: #8aa1c4;
 
-  /* Type */
-  --orot-font: 'Pretendard Variable', 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Type — Noto Sans KR(깔끔한 고딕, 둥글지 않음). Pretendard는 미로드라 폴백이 들쭉날쭉이던 문제 해결. */
+  --orot-font: 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Spacing */
   --orot-s-1: 4px;
@@ -1314,6 +1314,8 @@ input:focus-visible,
   letter-spacing: -0.005em;
 }
 .orot-root *, .orot-root *::before, .orot-root *::after { box-sizing: border-box; }
+/* 전역 h1,h2,h3에 걸린 둥근 폰트(Gamja Flower)를 orot 화면에서는 무력화 — 깔끔한 고딕으로 통일. */
+.orot-root h1, .orot-root h2, .orot-root h3, .orot-root h4 { font-family: var(--orot-font); }
 
 /* Night sky / starfield backdrop */
 .orot-sky {
@@ -1339,6 +1341,41 @@ input:focus-visible,
     radial-gradient(1px 1px at 86% 90%, rgba(243,231,207,0.5), transparent 60%);
 }
 
+/* 홈 전용: 카드 뒤(여백)로 별이 보이는 밤하늘 배경 (단색 네이비 대신).
+   .orot-root의 solid 배경을 덮어쓴다. 별은 요소 자체 배경이라 카드/글씨 뒤에 깔린다. */
+.orot-home-sky {
+  background:
+    /* 큰 글로우 별 (소프트하게 번지는 빛) */
+    radial-gradient(5px 5px at 16% 7%, rgba(255,241,214,0.95), rgba(255,241,214,0.15) 35%, transparent 70%),
+    radial-gradient(4px 4px at 84% 16%, rgba(243,160,146,0.9), rgba(243,160,146,0.12) 35%, transparent 70%),
+    radial-gradient(4.5px 4.5px at 70% 40%, rgba(255,241,214,0.85), rgba(255,241,214,0.12) 35%, transparent 70%),
+    radial-gradient(4px 4px at 24% 52%, rgba(243,160,146,0.8), rgba(243,160,146,0.1) 35%, transparent 70%),
+    radial-gradient(4.5px 4.5px at 88% 70%, rgba(255,241,214,0.8), rgba(255,241,214,0.1) 35%, transparent 70%),
+    radial-gradient(4px 4px at 12% 82%, rgba(243,160,146,0.8), rgba(243,160,146,0.1) 35%, transparent 70%),
+    /* 작은 또렷한 별 (점) */
+    radial-gradient(2px 2px at 40% 4%, rgba(255,247,230,0.98), transparent 60%),
+    radial-gradient(2px 2px at 92% 6%, rgba(255,247,230,0.95), transparent 60%),
+    radial-gradient(1.8px 1.8px at 58% 12%, rgba(243,160,146,0.9), transparent 60%),
+    radial-gradient(2px 2px at 8% 20%, rgba(255,247,230,0.95), transparent 60%),
+    radial-gradient(1.8px 1.8px at 34% 24%, rgba(255,247,230,0.9), transparent 60%),
+    radial-gradient(2px 2px at 76% 26%, rgba(243,160,146,0.9), transparent 60%),
+    radial-gradient(1.8px 1.8px at 50% 34%, rgba(255,247,230,0.9), transparent 60%),
+    radial-gradient(2px 2px at 14% 40%, rgba(255,247,230,0.92), transparent 60%),
+    radial-gradient(1.8px 1.8px at 94% 44%, rgba(243,160,146,0.88), transparent 60%),
+    radial-gradient(2px 2px at 44% 50%, rgba(255,247,230,0.9), transparent 60%),
+    radial-gradient(1.8px 1.8px at 64% 58%, rgba(255,247,230,0.9), transparent 60%),
+    radial-gradient(2px 2px at 30% 64%, rgba(243,160,146,0.88), transparent 60%),
+    radial-gradient(1.8px 1.8px at 82% 62%, rgba(255,247,230,0.9), transparent 60%),
+    radial-gradient(2px 2px at 6% 72%, rgba(255,247,230,0.92), transparent 60%),
+    radial-gradient(1.8px 1.8px at 52% 74%, rgba(243,160,146,0.85), transparent 60%),
+    radial-gradient(2px 2px at 38% 84%, rgba(255,247,230,0.9), transparent 60%),
+    radial-gradient(1.8px 1.8px at 74% 88%, rgba(255,247,230,0.9), transparent 60%),
+    radial-gradient(2px 2px at 20% 94%, rgba(243,160,146,0.85), transparent 60%),
+    radial-gradient(1.8px 1.8px at 90% 95%, rgba(255,247,230,0.88), transparent 60%),
+    /* 네이비 밤하늘 베이스 */
+    radial-gradient(150% 95% at 50% 0%, #1d2350 0%, #181e40 45%, #12162e 100%);
+}
+
 /* Bleed image layer */
 .orot-bleed {
   position: absolute; inset: 0;
@@ -1358,8 +1395,10 @@ input:focus-visible,
     rgba(16,20,44,0.2) 70%, transparent 100%);
 }
 .orot-veil--bottom {
+  /* 일러스트를 진하게(opacity↑) 해도 아래쪽 글씨가 읽히도록 하단을 더 어둡게 + 그라데이션 길게. */
   background: linear-gradient(to top,
-    rgba(16,20,44,0.85) 0%, rgba(16,20,44,0.4) 40%, transparent 80%);
+    rgba(16,20,44,0.94) 0%, rgba(16,20,44,0.78) 32%,
+    rgba(16,20,44,0.35) 60%, transparent 88%);
 }
 .orot-veil--soft {
   background: linear-gradient(180deg, rgba(16,20,44,0.4) 0%, rgba(16,20,44,0.25) 100%);

@@ -1602,40 +1602,46 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   /* ===== SCREEN 0: Intro ===== */
   function renderIntro() {
     const isEn = lang === 'en';
+    // 인사말 개인화 — 가장 최근 저장 프로필 이름(없으면 userData.name) 사용. 둘 다 없으면 이름 없는 인사.
+    const greetName = ([...profiles].reverse().find(p => p.name && p.name.trim())?.name || userData.name || '').trim();
+    const greetingLine = isEn
+      ? (greetName ? `Hello, ${greetName}` : 'Welcome')
+      : (greetName ? `안녕하세요, ${greetName}님` : '안녕하세요');
+    // 홈 카드 배경 일러스트 불투명도 — 또렷하게(레퍼런스 톤). veil/그림자로 글씨 가독성 확보.
+    const HOME_ART_OPACITY = 0.9;
     return (
-      <div className="inner screen-enter orot-root" style={{ paddingTop: '24px', paddingBottom: '32px' }}>
-        {/* Logo banner — lang-aware (ko/en) */}
-        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+      <div className="inner screen-enter orot-root orot-home-sky" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', paddingTop: 16, paddingBottom: 14 }}>
+        {/* Logo + Welcome — 좌측 정렬, 한 묶음 (스크롤 없는 한 화면) */}
+        <div style={{ flexShrink: 0, paddingLeft: 2 }}>
           <img
-            src={isEn ? '/images/orot/logo-en.png' : '/images/orot/logo-ko.png'}
-            alt={isEn ? 'Starlight Saju' : '별빛 사주'}
-            style={{ width: '100%', maxWidth: 220, display: 'block', margin: '0 auto' }}
+            src={isEn ? '/images/orot/logo-en.png' : '/images/orot/logo-new.png'}
+            alt={isEn ? 'Starlight Saju' : '별빛사주'}
+            style={{ width: '100%', maxWidth: isEn ? 140 : 108, display: 'block', margin: '0 0 16px' }}
           />
-        </div>
-
-        {/* Welcome block */}
-        <div style={{ padding: '0 4px 18px', textAlign: 'center' }}>
           <h1 style={{
-            fontSize: 24,
+            fontSize: 19,
             fontWeight: 700,
-            color: 'var(--orot-coral)',
-            letterSpacing: '-0.012em',
-            lineHeight: 1.3,
+            color: 'var(--orot-ink)',
+            letterSpacing: '0.02em',
+            lineHeight: 1.45,
             margin: 0,
             background: 'none',
-            WebkitTextFillColor: 'var(--orot-coral)',
+            WebkitTextFillColor: 'var(--orot-ink)',
+            fontFamily: 'var(--orot-font)',
           }}>
-            {isEn ? 'Welcome' : '오신 걸 환영해요'}
+            {greetingLine}
           </h1>
           <p style={{
-            fontSize: 14,
-            color: 'var(--orot-ink-soft)',
+            fontSize: 12,
+            color: 'var(--orot-ink-mute)',
             lineHeight: 1.6,
-            margin: '6px 0 0',
+            letterSpacing: '0.01em',
+            margin: '11px 0 0',
+            fontFamily: 'var(--orot-font)',
           }}>
             {isEn
-              ? 'Understanding yourself brings clarity to your path.'
-              : '나를 이해하면, 삶의 방향이 선명해져요.'}
+              ? 'Understanding today’s you brings clarity to your path.'
+              : '오늘의 나를 이해하면, 삶의 방향이 선명해져요.'}
           </p>
         </div>
 
@@ -1643,48 +1649,43 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         <BleedCard
           image="/images/orot/home-hero-character.webp"
           framingId="home-hero-character"
+          imageOpacity={HOME_ART_OPACITY}
           veil="left"
-          minHeight={300}
-          style={{ marginBottom: 16, cursor: DAILY_FORTUNE_UI_ENABLED ? 'pointer' : undefined }}
+          minHeight={0}
+          style={{ flex: '1.35 1 0', minHeight: 0, marginTop: 26, marginBottom: 0, cursor: DAILY_FORTUNE_UI_ENABLED ? 'pointer' : undefined }}
           {...(DAILY_FORTUNE_UI_ENABLED ? {
             onClick: () => { window.location.href = '/daily-fortune'; },
             role: 'button',
             ariaLabel: isEn ? "Today's flow" : '오늘의 흐름 보기',
           } : {})}
         >
-          <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '62%' }}>
-            <div className="orot-eyebrow" style={{ marginBottom: 14 }}>
-              {isEn ? "Today's flow" : '오늘의 흐름'}
-            </div>
+          <div style={{ maxWidth: '74%' }}>
             <h2 style={{
-              fontSize: 26, fontWeight: 700, color: 'var(--orot-ink)',
-              letterSpacing: '-0.015em', lineHeight: 1.3, margin: 0,
-              whiteSpace: 'pre-line', fontFamily: 'var(--orot-font)',
+              fontSize: 16.5, fontWeight: 700, color: 'var(--orot-ink)',
+              letterSpacing: '-0.012em', lineHeight: 1.35, margin: 0,
+              whiteSpace: 'pre-line', wordBreak: 'keep-all', fontFamily: 'var(--orot-font)',
+              textShadow: '0 1px 6px rgba(16,20,44,0.85)',
             }} suppressHydrationWarning>
               {hasMounted ? getTodayHeroLine(lang) : (lang === 'en' ? 'A new day begins\nwith small steps' : '오늘도 작은 걸음으로\n좋은 흐름을 만들어요')}
             </h2>
             {DAILY_FORTUNE_UI_ENABLED && (
-              <>
-                <p style={{ fontSize: 13, color: 'var(--orot-ink-soft)', lineHeight: 1.6, margin: '10px 0 0' }}>
-                  {isEn ? 'See the energy entering your chart today.' : '오늘 내 사주에 들어오는 기운을 짧게 확인해보세요.'}
-                </p>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                  marginTop: 12, fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)',
-                }}>
-                  {isEn ? 'See today’s fortune' : '오늘 운세 보기'} →
-                </span>
-              </>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                marginTop: 11, fontSize: 14, fontWeight: 700, color: 'var(--orot-coral)',
+              }}>
+                {isEn ? 'See today’s fortune' : '오늘 운세 보기'} →
+              </span>
             )}
           </div>
         </BleedCard>
 
-        {/* 2×2 Feature Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        {/* 2×2 Feature Grid — 남은 높이를 채워 4개 버튼이 한 화면에 */}
+        <div style={{ flex: '2.2 1 0', minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 10, marginTop: 10, marginBottom: 0 }}>
           <FeatureCard
             image="/images/orot/home-feat-saju.webp"
             framingId="home-feat-saju"
-            emoji="📜"
+            imageOpacity={HOME_ART_OPACITY}
+            minHeight={88}
             title={t('sajuTitle', lang)}
             sub={t('sajuDesc', lang)}
             onClick={() => { setAppMode('saju'); setCurrentScreen(1); }}
@@ -1692,7 +1693,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           <FeatureCard
             image="/images/orot/home-feat-compat.webp"
             framingId="home-feat-compat"
-            emoji="💞"
+            imageOpacity={HOME_ART_OPACITY}
+            minHeight={88}
             title={t('compatTitle', lang)}
             sub={t('compatDesc', lang)}
             onClick={() => { setAppMode('compat'); setCurrentScreen(5); }}
@@ -1700,7 +1702,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           <FeatureCard
             image="/images/orot/home-feat-year.webp"
             framingId="home-feat-year"
-            emoji="🗓️"
+            imageOpacity={HOME_ART_OPACITY}
+            minHeight={88}
             title={t('yearlyTitle', lang)}
             sub={t('yearlyDesc', lang)}
             onClick={() => { setAppMode('yearly'); setCurrentScreen(1); }}
@@ -1708,7 +1711,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           <FeatureCard
             image="/images/orot/home-feat-baby.webp"
             framingId="home-feat-baby"
-            emoji="👶"
+            imageOpacity={HOME_ART_OPACITY}
+            minHeight={88}
             title={t('pregTitle', lang)}
             sub={t('pregDesc', lang)}
             onClick={() => { setAppMode('pregnancy'); setCurrentScreen(6); }}
@@ -1718,36 +1722,29 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         {/* History BleedCard — 지난 해석 보기 (savedResults가 있을 때만) */}
         {savedResults.length > 0 && (
           <>
-            <BleedCard
-              image="/images/orot/home-history-character.webp"
-              framingId="home-history-character"
-              veil="left"
-              minHeight={180}
-              next
+            <button
               onClick={() => setShowSavedResults(!showSavedResults)}
-              style={{ marginBottom: showSavedResults ? 12 : 24, cursor: 'pointer' }}
-              role="button"
-              ariaLabel={t('prevResults', lang)}
+              aria-label={t('prevResults', lang)}
+              style={{
+                flexShrink: 0, marginTop: 10, width: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                padding: '6px 13px', borderRadius: 'var(--orot-r-sm)',
+                background: 'rgba(243,231,207,0.05)', border: '1px solid var(--orot-hair)',
+                cursor: 'pointer', fontFamily: 'var(--orot-font)', minHeight: 32,
+              }}
             >
-              <div style={{ paddingTop: 8, paddingBottom: 8, maxWidth: '70%' }}>
-                <div className="orot-eyebrow" style={{ marginBottom: 12 }}>
-                  📚 {t('prevResults', lang)}
-                </div>
-                <h3 style={{
-                  fontSize: 21, fontWeight: 700, color: 'var(--orot-coral)',
-                  letterSpacing: '-0.012em', lineHeight: 1.3, margin: 0,
-                }}>
-                  {isEn ? 'Past readings' : '지난 풀이를 모아뒀어요'}
-                </h3>
-                <p style={{ fontSize: 12, color: 'var(--orot-ink-soft)', margin: '8px 0 0', lineHeight: 1.6 }}>
-                  {savedResults.length}{isEn ? ' saved reading(s)' : '개의 저장된 해석'}
-                </p>
-              </div>
-            </BleedCard>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--orot-coral)' }}>
+                {isEn ? 'Past readings' : '이전 결과 보기'}
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--orot-ink-mute)' }}>{savedResults.length}{isEn ? '' : '개'}</span>
+              </span>
+              <span aria-hidden style={{ color: 'var(--orot-ink-mute)', fontSize: 14 }}>{showSavedResults ? '▾' : '›'}</span>
+            </button>
 
             {showSavedResults && (
               <div style={{
-                marginBottom: 24,
+                flexShrink: 0,
+                marginTop: 8,
+                marginBottom: 8,
                 borderRadius: 'var(--orot-r-lg)',
                 background: 'rgba(243, 231, 207, 0.04)',
                 border: '1px solid var(--orot-hair)',
@@ -1809,18 +1806,6 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
           </>
         )}
 
-        {/* Tagline */}
-        <p style={{
-          fontSize: 12,
-          color: 'var(--orot-ink-mute)',
-          textAlign: 'center',
-          margin: '24px 22px 0',
-          lineHeight: 1.6,
-        }}>
-          {isEn
-            ? 'Starlight Saju reads your texture through Korean cosmology.'
-            : '별빛 사주는 당신의 결을 명리학으로 다시 읽어드립니다.'}
-        </p>
       </div>
     );
   }

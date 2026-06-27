@@ -13,7 +13,7 @@ const FRAMING: Record<string, Frame> = {
   'home-feat-year-hero':   { scale: 1, offsetX: -11.67, offsetY: 0 },
   'home-feat-compat-hero': { scale: 1, offsetX: 20, offsetY: 0 },
   'home-feat-baby-hero':   { scale: 1, offsetX: 8.47, offsetY: 40 },
-  'home-feat-year':      { scale: 1, offsetX: -11.67, offsetY: 0 },
+  'home-feat-year':      { scale: 1, offsetX: 12, offsetY: 0 },
   'home-history-character': { scale: 1, offsetX: -3.31, offsetY: 0 },
   'year-character':      { scale: 1, offsetX: 0, offsetY: 0 },
   'compat-character':    { scale: 1, offsetX: -25.81, offsetY: 0 },
