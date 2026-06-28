@@ -446,6 +446,43 @@ function pushIssue(arr: NarrativeValidationIssue[], i: NarrativeValidationIssue)
   arr.push(i);
 }
 
+// ============================================================
+// Punch-up v1 (2026-06) — styleExamples.goodExample 베끼기 탐지
+// 작은 모델이 예시 문장을 통째로 복사하는 문제 차단. 공백 제거 후 20자 연속 일치면
+// parroting으로 보고 high(=repair 강제). 통쾌 예시 도입의 필수 안전망.
+// ============================================================
+function detectExampleParroting(
+  blocks: SectionBlock[],
+  plans?: NarrativePlanSet,
+): NarrativeValidationIssue[] {
+  const out: NarrativeValidationIssue[] = [];
+  if (!plans) return out;
+  const WIN = 20;
+  const byId = new Map(blocks.map(b => [b.id, b]));
+  for (const plan of plans) {
+    const ex = plan.styleExamples?.goodExample;
+    const block = byId.get(plan.sectionId);
+    if (!ex || !block) continue;
+    const exN = ex.replace(/\s+/g, '');
+    const bodyN = block.body.replace(/\s+/g, '');
+    if (exN.length < WIN) continue;
+    for (let i = 0; i + WIN <= exN.length; i++) {
+      const w = exN.slice(i, i + WIN);
+      if (bodyN.includes(w)) {
+        out.push({
+          type: 'example-parroting', sectionId: plan.sectionId,
+          sentence: w,
+          reason: `styleExamples 예시 문구 "${w}…"를 본문이 거의 그대로 복사함 — 예시는 리듬만 모방, 이 사주 결로 새로 써야`,
+          severity: 'high',
+          suggestion: '예시 문장을 베끼지 말고, 이 사람의 일간·신살·키워드로 새 문장을 작성',
+        });
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 export function validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap }: Args): NarrativeValidationResult {
   const blocks = splitSections(reportText, narrativePlans);
   const byId = new Map(blocks.map(b => [b.id, b]));
@@ -481,6 +518,9 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   }
   // Engine-Coverage v1: priority fact가 하나라도 빠지면 coverageSafe=false → repair 1회 강제.
   const coverageSafe = priorityFactMissing === 0;
+
+  // Punch-up v1: 예시 베끼기 탐지 (high → repair 강제)
+  issues.push(...detectExampleParroting(blocks, narrativePlans));
 
   // ─────────────────────────────────────────────
   // 1. 항목형 표현 남발
@@ -580,16 +620,18 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   // ─────────────────────────────────────────────
   // 6. underdeveloped-section — 본문 너무 짧음
   // ─────────────────────────────────────────────
+  // Punch-up v1 (2026-06, 개인사주): 통쾌·간결 우선. 길이 최소를 대폭 하향해
+  // 짧고 센 문장이 underdeveloped로 반려→repair로 다시 길어지는 것을 막는다.
+  // (1~2문장 스텁만 막을 정도의 하한만 유지.)
   const MIN_BODY_LEN: Record<string, number> = {
-    openingDefinition: 350,
-    lifeStructureNarrative: 600,
-    repeatedPatternNarrative: 600,
-    // 2026-05: 일/돈/관계 독립 장 — 각 600자 이상 권장
-    careerTalentNarrative: 700,
-    moneyMonetizationNarrative: 600,
-    relationshipLoveNarrative: 600,
-    futureFlowNarrative: 500,
-    finalStrategyNarrative: 600,
+    openingDefinition: 180,
+    lifeStructureNarrative: 300,
+    repeatedPatternNarrative: 300,
+    careerTalentNarrative: 350,
+    moneyMonetizationNarrative: 300,
+    relationshipLoveNarrative: 300,
+    futureFlowNarrative: 300,
+    finalStrategyNarrative: 300,
   };
   for (const b of blocks) {
     const compactLen = b.body.replace(/\s+/g, '').length;
@@ -740,7 +782,7 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
     }
     let found = 0;
     for (const w of careerWords) if (w && careerSection.body.includes(w)) found++;
-    if (found < 3) {
+    if (found < 2) { // punch-up v1: 3→2 (간결 허용)
       pushIssue(issues, {
         type: 'career-section-too-thin', sectionId: 'careerTalentNarrative',
         sentence: '일과 재능 섹션',
@@ -763,7 +805,7 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
     // 환경/리더십/동료/독립 — 4개 키워드 중 2개 이상 보이는지
     const careerKeywords = ['환경', '리더십', '동료', '같이 일', '독립', '프리랜서', '이직'];
     const hitKw = careerKeywords.filter(k => careerSection.body.includes(k)).length;
-    if (hitKw < 2) {
+    if (hitKw < 1) { // punch-up v1: 2→1
       pushIssue(issues, {
         type: 'career-section-too-thin', sectionId: 'careerTalentNarrative',
         sentence: '환경·리더십·동료·독립',
@@ -779,7 +821,7 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   if (moneySection) {
     const moneyMustHave = ['돈이 붙', '돈이 새', '수익', '가격', '계약', '범위', '상품', '포트폴리오', '컨설팅', '강의', '월급', '프로젝트', '사업'];
     const moneyHits = moneyMustHave.filter(k => moneySection.body.includes(k)).length;
-    if (moneyHits < 5) {
+    if (moneyHits < 3) { // punch-up v1: 5→3
       pushIssue(issues, {
         type: 'money-section-too-thin', sectionId: 'moneyMonetizationNarrative',
         sentence: '돈·수익화 섹션',
@@ -795,7 +837,7 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
   if (relSection) {
     const relMustHave = ['편한 사람', '지치는', '마음이 열', '마음이 닫', '신뢰', '약속을 지', '서운', '갈등', '장기 관계'];
     const relHits = relMustHave.filter(k => relSection.body.includes(k)).length;
-    if (relHits < 4) {
+    if (relHits < 2) { // punch-up v1: 4→2
       pushIssue(issues, {
         type: 'relationship-section-too-thin', sectionId: 'relationshipLoveNarrative',
         sentence: '관계·연애 섹션',
@@ -813,7 +855,7 @@ export function validateNarrativeReport({ reportText, gptInput, narrativePlans, 
     const block = byId.get(sid);
     if (!block) continue;
     const hits = SUGGESTION_MARKERS.filter(m => block.body.includes(m)).length;
-    if (hits < 2) {
+    if (hits < 1) { // punch-up v1: 2→1 (설교조 완화)
       pushIssue(issues, {
         type: 'suggestion-coverage-missing', sectionId: sid,
         sentence: sid,

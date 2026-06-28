@@ -88,7 +88,9 @@ export type NarrativeValidationIssueType =
   | 'missing-strength-interpretation' // lifeStructureNarrative에 신강/신약/중화 해석 없음
   | 'missing-useful-god-advice'      // finalStrategyNarrative에 용신/기신이 행동 조언으로 연결 안 됨
   | 'special-star-too-shallow'       // 대표 신살이 단어만 언급되고 현실 장면·조언으로 풀리지 않음
-  | 'gaewoon-direction-missing';     // finalStrategyNarrative에 운을 편하게 쓰는 방법/개운 방향 없음
+  | 'gaewoon-direction-missing'      // finalStrategyNarrative에 운을 편하게 쓰는 방법/개운 방향 없음
+  // Punch-up v1 (2026-06)
+  | 'example-parroting';             // styleExamples.goodExample 문구를 본문이 거의 그대로 복사
 
 export interface NarrativeValidationIssue {
   type: NarrativeValidationIssueType;

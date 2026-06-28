@@ -42,6 +42,7 @@ import { validateReport } from './report/reportValidator';
 import {
   buildNarrativePersonalSajuPrompt, type BuiltNarrativePrompt,
   buildSectionPrompt, SECTION_MAX_TOKENS,
+  PUNCH_EDITOR_SYSTEM, PUNCH_SECTION_MAX_TOKENS,
 } from './narrative/narrativePromptBuilder';
 import { sanitizeNarrativeText, sanitizeUnsupportedUserContext, sanitizeFinancialAdviceRisk, applyFinalSanitizers } from './narrative/narrativeSanitizer';
 import { validateNarrativeReport, collectFailingSectionsFromIssues } from './narrative/narrativeReportValidator';
@@ -435,7 +436,11 @@ export async function generateNarrativePersonalSajuReport(
   // Anti-Repeat V1 (2026-06): 노출 안전(high) 외에, **섹션 간 near-verbatim 재탕/근거없는 수렴
   //   문구**(repetitionSafe=false)도 repair 1회를 유발. 반복은 노출 위험은 아니지만 유료 리포트
   //   체감 품질을 크게 깎으므로 별도 게이트로 dedup repair한다. maxAttempts로 지연은 bounded.
-  for (let i = 0; (!validation.exposureSafe || !validation.repetitionSafe || !validation.coverageSafe) && i < maxAttempts; i++) {
+  // Punch-up v2 (2026-06): SAJU_PUNCHY_COVERAGE_RELAX=true면 coverage(필수사실 누락)로는 repair를
+  //   발동하지 않는다 — 통쾌한 1차 초안이 "사실 욱여넣기" repair로 다시 길고 빽빽해지는 것을 막음.
+  //   노출안전(high)·반복은 그대로 repair 유지.
+  const punchyRelax = process.env.SAJU_PUNCHY_COVERAGE_RELAX === 'true';
+  for (let i = 0; (!validation.exposureSafe || !validation.repetitionSafe || (!punchyRelax && !validation.coverageSafe)) && i < maxAttempts; i++) {
     attempts++;
     const failingSections = collectFailingSectionsFromIssues(validation.issues);
     if (failingSections.size === 0) break; // global-only high → 섹션 repair 불가 → deterministic fallback에 위임
@@ -500,6 +505,34 @@ export async function generateNarrativePersonalSajuReport(
     validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 
+  // ── 4) 통쾌 2차 패스 (SAJU_PUNCHY_NARRATIVE=true, 기본 OFF) ──
+  // 검증·안전이 끝난 초안을 "통쾌하게만 다시 쓰는" 단일작업 패스로 톤을 끌어올린다.
+  // 패스 후 (a) deterministic sanitizer 재적용 + (b) 재검증 → 노출위험(high)/베끼기가 생기면
+  // 원본 초안을 그대로 유지(절대 더 위험해지지 않음). 한 가지 일만 시키므로 작은 모델도 통쾌+안전 동시 달성.
+  if (process.env.SAJU_PUNCHY_NARRATIVE === 'true') {
+    try {
+      const sections = splitReportSections(reportText);
+      if (sections.length > 0) {
+        const punchedSecs = await Promise.all(sections.map(async (sec) => {
+          try {
+            const t = await opts.callGpt({ system: PUNCH_EDITOR_SYSTEM, user: sec }, { maxTokens: PUNCH_SECTION_MAX_TOKENS });
+            return t && t.trim().length > 0 ? t.trim() : sec;
+          } catch { return sec; }
+        }));
+        let punched = punchedSecs.join('\n\n');
+        const stripFuture = !narrativePlans.some(p => p.sectionId === 'futureFlowNarrative');
+        punched = applyFinalSanitizers(punched, { stripFuture, userContext: uctx, sanitizeFinancial: true });
+        const pv = validateNarrativeReport({ reportText: punched, gptInput, narrativePlans, topicCoverageMap });
+        const noParrot = !pv.issues.some(i => i.type === 'example-parroting');
+        // 원본보다 더 위험해지지 않을 때만 채택 (노출안전 + 베끼기 없음)
+        if (pv.exposureSafe && noParrot) {
+          reportText = punched;
+          validation = pv;
+        }
+      }
+    } catch { /* 패스 전체 실패 → 원본 초안 유지 */ }
+  }
+
   // ── Fortune Questions Verdict V1 (flag ON일 때만 1회 추가 호출) ──
   // 메인 리포트와 독립(섹션 프롬프트 무수정). 실패해도 null → 미부착(기존 결과 무영향).
   let fortuneVerdict: FortuneVerdict | undefined;
@@ -516,6 +549,19 @@ export async function generateNarrativePersonalSajuReport(
   }
 
   return { gptInput, narrativePlans, topicCoverageMap, starKeywordCard, prompt, reportText, validation, attempts, repairedSections: Array.from(repairedSections), fortuneVerdict };
+}
+
+// 통쾌 2차 패스용 — reportText를 "# N. 헤더" 기준으로 섹션 문자열 배열로 분할.
+function splitReportSections(text: string): string[] {
+  const idx: number[] = [];
+  const re = /^#\s+\d+\.\s+/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) idx.push(m.index);
+  const out: string[] = [];
+  for (let i = 0; i < idx.length; i++) {
+    out.push(text.slice(idx[i], i + 1 < idx.length ? idx[i + 1] : text.length).trim());
+  }
+  return out;
 }
 
 // ============================================================
