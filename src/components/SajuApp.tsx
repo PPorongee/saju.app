@@ -39,6 +39,28 @@ import YearlyV4Report, { type YearlyV4Input } from '@/components/YearlyV4Report'
 // Phase 6: 궁합 줄글(narrative) V4 — NEXT_PUBLIC_COMPAT_NARRATIVE_UI_ENABLED==='true'일 때만 렌더.
 import CompatNarrativeReport from '@/components/CompatNarrativeReport';
 
+/* ===== 엔진 통합: 사주팔자 계산을 v4 결정론 엔진으로 ==========================
+ * 화면 사주판/오행/십성은 v3 SajuResult 모양을 그대로 쓰되, 계산만 v4(정확한 절기)로.
+ * v4 엔진은 무거운 lunar-javascript를 끌어오므로 홈 초기 번들 보호를 위해 동적 import 한다.
+ * - preloadCalcV4(): 마운트 시 백그라운드 로드(별도 청크).
+ * - calcPillars(): 동기 래퍼. 로드 완료면 v4, 아주 드문 로드前 레이스에서만 v3로 폴백.
+ *   (v3는 비절기일 100% 동일하므로 폴백도 안전. v3 제거 단계에서 폴백도 정리 예정.)
+ */
+let _calcV4: ((y: number, m: number, d: number, hourIdx: number) => SajuResult) | null = null;
+let _calcV4Promise: Promise<void> | null = null;
+function preloadCalcV4(): Promise<void> {
+  if (_calcV4) return Promise.resolve();
+  if (!_calcV4Promise) {
+    _calcV4Promise = import('@/lib/saju-v4-pillars')
+      .then((m) => { _calcV4 = m.calcSajuV4; })
+      .catch(() => { _calcV4Promise = null; }); // 실패 시 재시도 허용
+  }
+  return _calcV4Promise;
+}
+function calcPillars(y: number, m: number, d: number, hourIdx: number): SajuResult {
+  return (_calcV4 ?? calcSaju)(y, m, d, hourIdx);
+}
+
 /* ===== Stars Background - SVG Star Illustrations ===== */
 const STAR_COLORS = ['#F0C75E', '#FFD080', '#FF6B9D', '#7DD3FC', '#C4B5FD', '#6EE7B7', '#FF8A8A', '#FFF0C8'];
 
@@ -297,6 +319,9 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       } catch { /* swallow */ }
     })();
   }, []);
+
+  /* 엔진 통합: v4 사주 계산 모듈을 백그라운드 preload (계산 시점엔 이미 로드돼 v4 사용) */
+  useEffect(() => { preloadCalcV4(); }, []);
 
   /* Privacy consent */
   const [storageConsent, setStorageConsent] = useState(false);
@@ -1567,7 +1592,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
       calcDay = solar.day;
     }
 
-    const sj = calcSaju(calcYear, calcMonth, calcDay, userData.hour);
+    const sj = calcPillars(calcYear, calcMonth, calcDay, userData.hour);
     setSajuResult(sj);
     setCurrentScreen(3);
 
@@ -1921,7 +1946,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                         concerns: [...p.v4.concerns],
                       });
                     }
-                    const sj = calcSaju(p.year, p.month, p.day, p.hour);
+                    const sj = calcPillars(p.year, p.month, p.day, p.hour);
                     setSajuResult(sj);
                     setCurrentScreen(3);
                     cancelLoading();
@@ -1957,12 +1982,12 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
                   }
                   if (YEARLY_FORTUNE_UI_ENABLED && appMode === 'yearly') {
                     // 올해운세 V4: 저장 프로필 클릭도 v3 질문/fetch 우회 → teaser(8) 직행 (concern/state 불필요).
-                    setSajuResult(calcSaju(p.year, p.month, p.day, p.hour));
+                    setSajuResult(calcPillars(p.year, p.month, p.day, p.hour));
                     setCurrentScreen(8);
                     return;
                   }
                   if (p.concern >= 0 && p.state >= 0) {
-                    const sj = calcSaju(p.year, p.month, p.day, p.hour);
+                    const sj = calcPillars(p.year, p.month, p.day, p.hour);
                     setSajuResult(sj);
                     setCurrentScreen(3);
                     setTimeout(() => {
@@ -4001,8 +4026,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               if (p1.isLunar) { const s = lunarToSolar(y1, m1, d1); y1 = s.year; m1 = s.month; d1 = s.day; }
               let y2 = p2.year, m2 = p2.month, d2 = p2.day;
               if (p2.isLunar) { const s = lunarToSolar(y2, m2, d2); y2 = s.year; m2 = s.month; d2 = s.day; }
-              const s1 = sajuResult || calcSaju(y1, m1, d1, p1.hour);
-              const s2 = calcSaju(y2, m2, d2, p2.hour);
+              const s1 = sajuResult || calcPillars(y1, m1, d1, p1.hour);
+              const s2 = calcPillars(y2, m2, d2, p2.hour);
               const oh1 = getOhCount(s1);
               const oh2 = getOhCount(s2);
               const ohKeys = ['목','화','토','금','수'] as const;
@@ -4204,8 +4229,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
   function renderPregnancy() {
 
     function runPregnancyCompat() {
-      const momSaju = calcSaju(pregData.year, pregData.month, pregData.day, pregData.hour);
-      const babySaju = calcSaju(pregData.dueYear, pregData.dueMonth, pregData.dueDay, -1);
+      const momSaju = calcPillars(pregData.year, pregData.month, pregData.day, pregData.hour);
+      const babySaju = calcPillars(pregData.dueYear, pregData.dueMonth, pregData.dueDay, -1);
       const momOh = getOhCount(momSaju);
       const babyOh = getOhCount(babySaju);
       const ohKeys = ['목', '화', '토', '금', '수'];
@@ -4348,7 +4373,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
 
     function runDailyGuide() {
       const now = new Date();
-      const todaySaju = calcSaju(now.getFullYear(), now.getMonth() + 1, now.getDate(), -1);
+      const todaySaju = calcPillars(now.getFullYear(), now.getMonth() + 1, now.getDate(), -1);
       const todayEl = OH_CG[todaySaju.dStem];
       const dailyGuide: Record<string, { color: string; food: string; activity: string; music: string; mood: string }> = {
         '목': { color: t('daily_wood_color', lang), food: t('daily_wood_food', lang), activity: t('daily_wood_activity', lang), music: t('daily_wood_music', lang), mood: t('daily_wood_mood', lang) },
