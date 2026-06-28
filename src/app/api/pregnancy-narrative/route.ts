@@ -128,13 +128,12 @@ export async function POST(req: Request) {
     }
 
     // 7) 응답 — 직렬화 가능 부분만 (issues[] 미노출)
+    // 카운트 diagnostics도 prod에선 숨기고 isValid만(클라 미사용). dev/디버그에선 카운트 유지.
     return NextResponse.json({
       report: result.report,
-      validation: {
-        isValid: result.validation.isValid,
-        highCount: result.validation.highCount,
-        mediumCount: result.validation.mediumCount,
-      },
+      validation: (process.env.NODE_ENV !== 'production' || process.env.SAJU_EXPOSE_VALIDATION_DIAGNOSTICS === 'true')
+        ? { isValid: result.validation.isValid, highCount: result.validation.highCount, mediumCount: result.validation.mediumCount }
+        : { isValid: result.validation.isValid },
       attempts: result.attempts,
       repairedSections: result.repairedSections,
     });

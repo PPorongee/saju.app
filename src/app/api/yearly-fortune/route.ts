@@ -130,13 +130,11 @@ export async function POST(req: NextRequest) {
         strengthImpact: analysis.strengthImpact,
       },
       report: result.report,
-      // validation: issues[] 는 사용자 문장 + 내부 타입 토큰 포함 → 클라이언트에 노출 금지.
-      // isValid/highCount/mediumCount 만 전달.
-      validation: {
-        isValid: result.validation.isValid,
-        highCount: result.validation.highCount,
-        mediumCount: result.validation.mediumCount,
-      },
+      // validation: issues[] 는 사용자 문장 + 내부 타입 토큰 포함 → 항상 미노출.
+      // 카운트 diagnostics도 prod에선 숨기고 isValid만(클라 미사용). dev/디버그에선 카운트 유지.
+      validation: (process.env.NODE_ENV !== 'production' || process.env.SAJU_EXPOSE_VALIDATION_DIAGNOSTICS === 'true')
+        ? { isValid: result.validation.isValid, highCount: result.validation.highCount, mediumCount: result.validation.mediumCount }
+        : { isValid: result.validation.isValid },
       attempts: result.attempts,
       repairedSections: result.repairedSections,
     });

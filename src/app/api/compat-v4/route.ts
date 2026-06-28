@@ -38,6 +38,11 @@ export async function POST(req: Request) {
         createOpenAiGptCaller({ maxOutputTokens: 12000, temperature: 0.3 }),
       );
     }
+    // validation.issues[] 는 문제 문장 + 내부 타입 토큰을 담아 클라이언트에 노출 금지.
+    // 클라(CompatV4ResultApi)는 validation을 읽지 않음. prod에선 isValid만, dev/디버그에선 전체.
+    const exposeDiagnostics =
+      process.env.NODE_ENV !== 'production' ||
+      process.env.SAJU_EXPOSE_VALIDATION_DIAGNOSTICS === 'true';
     return NextResponse.json({
       relationshipType: result.gptInput.relationshipType,
       personA: result.gptInput.personA,
@@ -45,8 +50,8 @@ export async function POST(req: Request) {
       compatibilityAnalysis: result.gptInput.compatibilityAnalysis,
       relationshipQuestions: result.gptInput.relationshipQuestions,
       reportText,
-      validation: result.validation,
-      attempts: result.attempts,
+      validation: exposeDiagnostics ? result.validation : { isValid: result.validation.isValid },
+      attempts: exposeDiagnostics ? result.attempts : undefined,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'unknown_error';
