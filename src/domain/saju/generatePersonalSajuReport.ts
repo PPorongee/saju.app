@@ -505,11 +505,11 @@ export async function generateNarrativePersonalSajuReport(
     validation = validateNarrativeReport({ reportText, gptInput, narrativePlans, topicCoverageMap });
   }
 
-  // ── 4) 통쾌 2차 패스 (SAJU_PUNCHY_NARRATIVE=true, 기본 OFF) ──
+  // ── 4) 통쾌 2차 패스 (기본 ON, 끄려면 SAJU_PUNCHY_NARRATIVE='false') ──
   // 검증·안전이 끝난 초안을 "통쾌하게만 다시 쓰는" 단일작업 패스로 톤을 끌어올린다.
   // 패스 후 (a) deterministic sanitizer 재적용 + (b) 재검증 → 노출위험(high)/베끼기가 생기면
   // 원본 초안을 그대로 유지(절대 더 위험해지지 않음). 한 가지 일만 시키므로 작은 모델도 통쾌+안전 동시 달성.
-  if (process.env.SAJU_PUNCHY_NARRATIVE === 'true') {
+  if (process.env.SAJU_PUNCHY_NARRATIVE !== 'false') {
     try {
       const sections = splitReportSections(reportText);
       if (sections.length > 0) {
