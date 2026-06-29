@@ -28,6 +28,7 @@ import type {
   LifeWeapon,
   LifeTrap,
   FortuneTriggerAnalysis,
+  CareerSpecificAnalysis,
 } from '@/domain/saju/report/sajuReportSchema';
 import Sajupan, { type SajupanChart, type OrotElement } from '@/components/orot/Sajupan';
 import WuxingStrip from '@/components/orot/WuxingStrip';
@@ -84,6 +85,7 @@ export interface SajuV4ApiResponse {
   identityKeywords: IdentityKeyword[];
   lifeWeapons: LifeWeapon[];
   lifeTraps: LifeTrap[];
+  careerSpecificAnalysis?: CareerSpecificAnalysis;
   fortuneTriggers: FortuneTriggerAnalysis;
   fortune: FortuneCycleInfo;
   reportText: string;
@@ -203,6 +205,10 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
 
       {/* ── 무기 vs 함정 — 궁합 밝은면/그림자의 개인판. 결정론, GPT 0회. ── */}
       <SectionWeaponTrap weapons={api.lifeWeapons} traps={api.lifeTraps} lang={lang === 'en' ? 'en' : 'ko'} />
+
+      {/* ── 오행 밸런스 / 어울리는 일 — 결정론 한눈 카드. ── */}
+      <SectionWuxingGlance elements={api.coreAnalysis?.elementStrength} />
+      <SectionCareerGlance career={api.careerSpecificAnalysis} lang={lang === 'en' ? 'en' : 'ko'} />
 
       {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩.
             2026-05 hotfix: parser가 헤더를 못 잡았으면(7섹션 모두 비어있음)
@@ -454,6 +460,62 @@ export function SectionWeaponTrap({ weapons, traps, lang }: { weapons?: LifeWeap
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-ink)', letterSpacing: '-0.01em' }}>{t.name}</span>
           </div>
           {t.patternDescription && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, color: 'var(--orot-ink-soft)' }}>{t.patternDescription}</p>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── 오행 밸런스 카드 (한눈 막대) — 결정론, GPT 0회. 상세 SectionWuxing은 명리 근거 안에 별도. ──
+const EL_COLOR: Record<OrotElement, string> = { wood: '#94b88f', fire: '#e88578', earth: '#d3b87a', metal: '#b5b7c7', water: '#8aa1c4' };
+const EL_BAR_ORDER: OrotElement[] = ['wood', 'fire', 'earth', 'metal', 'water'];
+
+export function SectionWuxingGlance({ elements }: { elements?: ElementStrengthAnalysis }) {
+  const scores = elements?.scores;
+  if (!scores) return null;
+  const max = Math.max(...EL_BAR_ORDER.map((e) => scores[e] ?? 0), 1);
+  const strong = elements?.strongest?.[0] as OrotElement | undefined;
+  const weak = elements?.weakest?.[0] as OrotElement | undefined;
+  return (
+    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 16px' }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>✦ 오행 밸런스</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        {EL_BAR_ORDER.map((e) => {
+          const pct = Math.round(((scores[e] ?? 0) / max) * 100);
+          return (
+            <div key={e} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ width: 16, fontSize: 13, fontWeight: 700, color: EL_COLOR[e], flexShrink: 0, textAlign: 'center' }}>{EL_KO[e]}</span>
+              <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                <div style={{ width: `${pct}%`, height: '100%', background: EL_COLOR[e], borderRadius: 999 }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {(strong || weak) && (
+        <p style={{ margin: '12px 0 0', fontSize: 12.5, color: 'var(--orot-ink-mute)' }}>
+          {strong && `강한 ${EL_KO[strong]}`}{strong && weak && ' · '}{weak && `약한 ${EL_KO[weak]}`}
+        </p>
+      )}
+    </section>
+  );
+}
+
+// ── 어울리는 일 카드 (업계 + 직무 칩) — 결정론, GPT 0회. KO 전용. ──
+export function SectionCareerGlance({ career, lang }: { career?: CareerSpecificAnalysis; lang: 'ko' | 'en' }) {
+  if (lang === 'en') return null;
+  const top = career?.topCareerMatches?.[0];
+  if (!top) return null;
+  const roles = (top.roles ?? []).map((r) => r.trim()).filter(Boolean).slice(0, 4);
+  return (
+    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 16px' }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>✦ 어울리는 일</div>
+      <p style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: 'var(--orot-ink)', letterSpacing: '-0.01em' }}>{top.industry}</p>
+      {roles.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          {roles.map((r, i) => (
+            <span key={i} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--orot-coral)', background: 'rgba(243,160,146,0.08)', border: '1px solid var(--orot-coral-faint)', borderRadius: 999, padding: '5px 11px' }}>{r}</span>
+          ))}
         </div>
       )}
     </section>
