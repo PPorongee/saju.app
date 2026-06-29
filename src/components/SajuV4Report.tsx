@@ -181,6 +181,9 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
         <SectionIdentityHero card={api.starKeywordCard} T={T} />
       )}
 
+      {/* ── 1.5 기질 한 컷 카드 — 정체성 아래, 줄글 전. GPT 0회. ── */}
+      <SectionTemperamentCard api={api} lang={lang} />
+
       {/* ── 2. 사주 원국 — 히어로 아래로 강등. 기본 접힘(<details>), 내용은 그대로. ── */}
       <details className="sv4-chart-toggle card" style={{ marginTop: api.starKeywordCard ? 14 : 0, padding: '14px 16px' }}>
         <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13.5, color: 'var(--orot-ink-soft)', minHeight: 24 }}>
@@ -409,6 +412,72 @@ function SectionIdentityHero({
           theme="midnight"
           ratio="feed"
         />
+      </div>
+    </section>
+  );
+}
+
+// ── 기질 한 컷 카드 (한 줄 요약 + 스탯 칩) ──
+// 정체성 히어로 아래, 긴 줄글 전. GPT 0회 — api(birthChart·coreAnalysis·identityKeywords)만 사용.
+const TEMPERAMENT_METAPHOR: Record<string, { ko: string; en: string }> = {
+  갑: { ko: '큰 나무', en: 'a tall tree' },
+  을: { ko: '여린 화초', en: 'a tender plant' },
+  병: { ko: '한낮의 태양', en: 'the midday sun' },
+  정: { ko: '은은한 촛불', en: 'a steady candle' },
+  무: { ko: '큰 산', en: 'a great mountain' },
+  기: { ko: '기름진 논밭', en: 'fertile fields' },
+  경: { ko: '잘 벼린 칼', en: 'a sharpened blade' },
+  신: { ko: '세공된 보석', en: 'a cut jewel' },
+  임: { ko: '큰 강과 바다', en: 'a great river' },
+  계: { ko: '이슬과 시냇물', en: 'dew and streams' },
+};
+const TEMP_ELEMENT_LABEL: Record<string, { ko: string; en: string }> = {
+  wood: { ko: '목', en: 'Wood' }, fire: { ko: '화', en: 'Fire' }, earth: { ko: '토', en: 'Earth' },
+  metal: { ko: '금', en: 'Metal' }, water: { ko: '수', en: 'Water' },
+};
+const TEMP_STRENGTH_LABEL: Record<string, { ko: string; en: string }> = {
+  'very-strong': { ko: '매우 신강', en: 'Very strong' }, strong: { ko: '신강', en: 'Strong' },
+  balanced: { ko: '중화', en: 'Balanced' }, weak: { ko: '신약', en: 'Weak' }, 'very-weak': { ko: '매우 신약', en: 'Very weak' },
+};
+
+export function SectionTemperamentCard({ api, lang }: { api: SajuV4ApiResponse; lang: 'ko' | 'en' }) {
+  const en = lang === 'en';
+  const dm = api.birthChart?.dayMaster;
+  const ca = api.coreAnalysis;
+  const meta = dm ? TEMPERAMENT_METAPHOR[dm] : undefined;
+  if (!dm || !ca || !meta) return null;
+
+  const hanja = STEM_HANJA[dm] ?? '';
+  const dmElKey = STEM_EL[dm] ?? 'earth';
+  const dmEl = TEMP_ELEMENT_LABEL[dmElKey];
+  const strongest = ca.elementStrength?.strongest?.[0];
+  const weakest = ca.elementStrength?.weakest?.[0];
+  const level = ca.dayMasterStrength?.level;
+  const metaphor = en ? meta.en : meta.ko;
+
+  // 헤드라인: 핵심 키워드 + 일간 비유(KO). EN은 키워드가 미번역이라 비유 중심으로.
+  const kwRaw = (api.identityKeywords?.[0]?.keyword || '').trim();
+  const kwCore = kwRaw.replace(/\s*(사람|타입|스타일)$/, '').trim();
+  const headline = en
+    ? `Like ${metaphor}`
+    : (kwCore ? `${kwCore}, ${metaphor} 같은 사람` : `${metaphor} 같은 사람`);
+
+  const chips: string[] = [];
+  chips.push(en ? `${hanja} · ${dmEl?.en ?? ''}` : `${hanja} ${dm}${dmEl?.ko ?? ''}`);
+  if (level && TEMP_STRENGTH_LABEL[level]) chips.push(en ? TEMP_STRENGTH_LABEL[level].en : TEMP_STRENGTH_LABEL[level].ko);
+  if (strongest && TEMP_ELEMENT_LABEL[strongest]) chips.push(en ? `Strong ${TEMP_ELEMENT_LABEL[strongest].en} ▲` : `강한 ${TEMP_ELEMENT_LABEL[strongest].ko} ▲`);
+  if (weakest && TEMP_ELEMENT_LABEL[weakest]) chips.push(en ? `Weak ${TEMP_ELEMENT_LABEL[weakest].en} ▽` : `약한 ${TEMP_ELEMENT_LABEL[weakest].ko} ▽`);
+
+  return (
+    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 18px 16px' }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>✦ {en ? 'You in one line' : '한 줄로 보는 나'}</div>
+      <p style={{ margin: 0, fontSize: 18, fontWeight: 800, lineHeight: 1.45, color: 'var(--orot-ink)', letterSpacing: '-0.01em' }}>
+        {en ? headline : `“${headline}”`}
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+        {chips.map((c, i) => (
+          <span key={i} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--orot-ink-soft)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 999, padding: '5px 11px' }}>{c}</span>
+        ))}
       </div>
     </section>
   );
