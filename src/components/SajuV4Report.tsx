@@ -201,6 +201,9 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
             긴 풀이 전에 "나만의 특별함"으로 몰입시킨다. 없으면 통째 스킵(기존과 동일). ── */}
       <SectionDiffPoints points={api.specialPoints} lang={lang === 'en' ? 'en' : 'ko'} />
 
+      {/* ── 무기 vs 함정 — 궁합 밝은면/그림자의 개인판. 결정론, GPT 0회. ── */}
+      <SectionWeaponTrap weapons={api.lifeWeapons} traps={api.lifeTraps} lang={lang === 'en' ? 'en' : 'ko'} />
+
       {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩.
             2026-05 hotfix: parser가 헤더를 못 잡았으면(7섹션 모두 비어있음)
             reportText 원문을 fallback으로 보여줘 사용자에 빈 화면 노출 방지.
@@ -422,6 +425,37 @@ function SectionIdentityHero({
           ratio="feed"
         />
       </div>
+    </section>
+  );
+}
+
+// ── 무기 vs 함정 카드 (궁합 밝은면/그림자의 개인판) — 결정론, GPT 0회. KO 전용. ──
+export function SectionWeaponTrap({ weapons, traps, lang }: { weapons?: LifeWeapon[]; traps?: LifeTrap[]; lang: 'ko' | 'en' }) {
+  if (lang === 'en') return null;
+  const w = [...(weapons ?? [])].sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))[0];
+  const t = [...(traps ?? [])].sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))[0];
+  if (!w && !t) return null;
+  return (
+    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 16px' }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>✦ 나의 무기와 함정</div>
+      {w && (
+        <div style={{ marginBottom: t ? 14 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--orot-coral)', background: 'rgba(243,160,146,0.10)', border: '1px solid var(--orot-coral-faint)', borderRadius: 999, padding: '2px 9px', whiteSpace: 'nowrap' }}>⚔️ 무기</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-ink)', letterSpacing: '-0.01em' }}>{w.name}</span>
+          </div>
+          {w.howToUse && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, color: 'var(--orot-ink-soft)' }}>{w.howToUse}</p>}
+        </div>
+      )}
+      {t && (
+        <div style={{ paddingTop: w ? 12 : 0, borderTop: w ? '1px solid var(--orot-hair)' : 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#d8b24a', background: 'rgba(216,178,74,0.12)', border: '1px solid rgba(216,178,74,0.3)', borderRadius: 999, padding: '2px 9px', whiteSpace: 'nowrap' }}>⚠ 함정</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-ink)', letterSpacing: '-0.01em' }}>{t.name}</span>
+          </div>
+          {t.patternDescription && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, color: 'var(--orot-ink-soft)' }}>{t.patternDescription}</p>}
+        </div>
+      )}
     </section>
   );
 }
