@@ -5689,7 +5689,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
             onClick={() => {
               const pw = prompt(isEn ? 'Enter code:' : '코드를 입력해주세요:');
               if (!pw || pw !== '5386') return;
-              updateStarBalance(starBalance + 10);
+              updateStarBalance(starBalance + 100);
             }}
             style={{
               background: 'transparent',
@@ -5703,7 +5703,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               transition: 'opacity 160ms ease',
             }}
           >
-            {isEn ? '🎁 Add 10 Free Stars (Testing)' : '🎁 무료 별빛 10개 충전 (테스트용)'}
+            {isEn ? '🎁 Add 100 Free Stars (Testing)' : '🎁 무료 별빛 100개 충전 (테스트용)'}
           </button>
         </div>
       </div>
