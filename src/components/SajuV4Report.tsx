@@ -303,7 +303,7 @@ const SP_RARITY_LABEL: Record<string, string> = {
   'very-rare': '아주 귀한 결',
 };
 
-function SectionDiffPoints({ points, lang }: { points: SpecialPoint[]; lang: 'ko' | 'en' }) {
+export function SectionDiffPoints({ points, lang }: { points: SpecialPoint[]; lang: 'ko' | 'en' }) {
   if (lang === 'en') return null;              // 카탈로그 한국어 — EN 후속
   const top = [...(points ?? [])]
     .sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))
@@ -321,7 +321,10 @@ function SectionDiffPoints({ points, lang }: { points: SpecialPoint[]; lang: 'ko
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {top.map((p) => {
-          const rarityLabel = SP_RARITY_LABEL[p.rarity?.level] ?? '';
+          // "만 명 중 N명"은 estimatedPer10000 있을 때만(validator fake-rarity 규칙 준수). 없으면 정성 라벨.
+          const per = p.rarity?.estimatedPer10000;
+          const hasPer = typeof per === 'number' && per > 0;
+          const rarityText = hasPer ? `만 명 중 약 ${Math.round(per as number)}명` : (SP_RARITY_LABEL[p.rarity?.level] ?? '');
           return (
             <div key={p.id} style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', borderLeft: `3px solid ${accent.accent}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -331,9 +334,15 @@ function SectionDiffPoints({ points, lang }: { points: SpecialPoint[]; lang: 'ko
                 <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-ink-soft)', letterSpacing: '-0.01em' }}>
                   {p.title}
                 </span>
-                {rarityLabel && (
-                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--orot-ink-mute)', whiteSpace: 'nowrap' }}>
-                    {rarityLabel}
+                {rarityText && (
+                  <span style={{
+                    marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap', borderRadius: 999,
+                    color: hasPer ? 'var(--orot-coral)' : 'var(--orot-ink-mute)',
+                    background: hasPer ? 'rgba(243,160,146,0.10)' : 'transparent',
+                    border: hasPer ? '1px solid var(--orot-coral-faint)' : 'none',
+                    padding: hasPer ? '3px 9px' : 0,
+                  }}>
+                    {hasPer ? `✨ ${rarityText}` : rarityText}
                   </span>
                 )}
               </div>
