@@ -26,6 +26,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { BirthInput } from '@/domain/saju/calendar/normalizeBirthInput';
+import { GlanceCard } from '@/components/orot/GlanceCard';
 import { FortuneVerdictSection } from '@/components/FortuneVerdictSection';
 import type {
   YearlyFortuneReport,
@@ -409,8 +410,7 @@ export function YearlyOneShotCard({ core }: { core: unknown }) {
     chips.push(`${c.strengthImpact.natalStrength} · ${YEAR_EFFECT_CHIP[c.strengthImpact.yearlyEffect ?? 'neutral'] ?? '무난'}`);
   }
   return (
-    <section className="orot-card" style={{ padding: '18px 18px 16px', marginBottom: 10 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>✦ 올해 한 컷</div>
+    <GlanceCard icon="📅" accent="#d8b24a" title="올해 한 컷" style={{ marginBottom: 10 }}>
       <p style={{ margin: 0, fontSize: 18, fontWeight: 800, lineHeight: 1.45, color: 'var(--orot-ink)', letterSpacing: '-0.01em', fontFamily: 'var(--orot-font)' }}>
         “{c.targetYear}년, {ten}의 해”
       </p>
@@ -419,7 +419,7 @@ export function YearlyOneShotCard({ core }: { core: unknown }) {
           <span key={i} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--orot-ink-soft)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 999, padding: '5px 11px' }}>{ch}</span>
         ))}
       </div>
-    </section>
+    </GlanceCard>
   );
 }
 
@@ -432,8 +432,7 @@ export function YearlyChoiceCard({ guide }: { guide?: { mustCatch?: string[]; be
   if (!keep && !drop && !strategy) return null;
   const hr = (on: boolean) => (on ? { paddingTop: 12, borderTop: '1px solid var(--orot-hair)' } : {});
   return (
-    <section className="orot-card" style={{ padding: '18px 18px 16px', marginBottom: 10 }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>✦ 올해의 선택</div>
+    <GlanceCard icon="🧭" accent="#7fb88a" title="올해의 선택" style={{ marginBottom: 10 }}>
       {keep && (
         <div style={{ marginBottom: drop || strategy ? 12 : 0 }}>
           <div style={{ fontSize: 12.5, fontWeight: 800, color: 'rgba(120,200,140,0.95)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>✅ 잡을 것</div>
@@ -452,7 +451,7 @@ export function YearlyChoiceCard({ guide }: { guide?: { mustCatch?: string[]; be
           <p style={{ margin: 0, fontSize: 14.5, fontWeight: 600, lineHeight: 1.65, color: 'var(--orot-ink)' }}>{strategy}</p>
         </div>
       )}
-    </section>
+    </GlanceCard>
   );
 }
 

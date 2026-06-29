@@ -30,6 +30,7 @@ import type {
   FortuneTriggerAnalysis,
   CareerSpecificAnalysis,
 } from '@/domain/saju/report/sajuReportSchema';
+import { GlanceCard } from '@/components/orot/GlanceCard';
 import Sajupan, { type SajupanChart, type OrotElement } from '@/components/orot/Sajupan';
 import WuxingStrip from '@/components/orot/WuxingStrip';
 
@@ -318,14 +319,10 @@ export function SectionDiffPoints({ points, lang }: { points: SpecialPoint[]; la
     .sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))
     .slice(0, 3);
   if (top.length === 0) return null;            // 차별점 없으면 통째 스킵(기존과 byte-identical)
-  const accent = SECTION_ACCENTS.structure;     // 보라톤
+  const accent = { accent: '#e6b450', glow: 'rgba(230,180,80,0.14)' };  // 차별화=골드(희소·특별)
   return (
-    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 16px' }}>
-      <div className="sv4-eyebrow" style={{ color: accent.accent }}>
-        <span aria-hidden>{accent.icon}</span>
-        <span>이 사주만의 차별화 포인트</span>
-      </div>
-      <p style={{ margin: '4px 0 14px', fontSize: 13, color: 'var(--orot-ink-mute)', lineHeight: 1.6 }}>
+    <GlanceCard icon="🔮" accent={accent.accent} title="이 사주만의 차별화 포인트">
+      <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--orot-ink-mute)', lineHeight: 1.6 }}>
         수많은 사주 중에서 이 사주를 눈에 띄게 만드는 결입니다.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -364,7 +361,7 @@ export function SectionDiffPoints({ points, lang }: { points: SpecialPoint[]; la
           );
         })}
       </div>
-    </section>
+    </GlanceCard>
   );
 }
 
@@ -442,8 +439,7 @@ export function SectionWeaponTrap({ weapons, traps, lang }: { weapons?: LifeWeap
   const t = [...(traps ?? [])].sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))[0];
   if (!w && !t) return null;
   return (
-    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 16px' }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>✦ 나의 무기와 함정</div>
+    <GlanceCard icon="⚔️" accent="#79b3a0" title="나의 무기와 함정">
       {w && (
         <div style={{ marginBottom: t ? 14 : 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
@@ -462,7 +458,7 @@ export function SectionWeaponTrap({ weapons, traps, lang }: { weapons?: LifeWeap
           {t.patternDescription && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, color: 'var(--orot-ink-soft)' }}>{t.patternDescription}</p>}
         </div>
       )}
-    </section>
+    </GlanceCard>
   );
 }
 
@@ -477,8 +473,7 @@ export function SectionWuxingGlance({ elements }: { elements?: ElementStrengthAn
   const strong = elements?.strongest?.[0] as OrotElement | undefined;
   const weak = elements?.weakest?.[0] as OrotElement | undefined;
   return (
-    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 16px' }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>✦ 오행 밸런스</div>
+    <GlanceCard icon="⚖️" accent="#8aa1c4" title="오행 밸런스">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {EL_BAR_ORDER.map((e) => {
           const pct = Math.round(((scores[e] ?? 0) / max) * 100);
@@ -497,7 +492,7 @@ export function SectionWuxingGlance({ elements }: { elements?: ElementStrengthAn
           {strong && `강한 ${EL_KO[strong]}`}{strong && weak && ' · '}{weak && `약한 ${EL_KO[weak]}`}
         </p>
       )}
-    </section>
+    </GlanceCard>
   );
 }
 
@@ -508,8 +503,7 @@ export function SectionCareerGlance({ career, lang }: { career?: CareerSpecificA
   if (!top) return null;
   const roles = (top.roles ?? []).map((r) => r.trim()).filter(Boolean).slice(0, 4);
   return (
-    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 16px' }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>✦ 어울리는 일</div>
+    <GlanceCard icon="🎯" accent="#5fb6c9" title="어울리는 일">
       <p style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: 'var(--orot-ink)', letterSpacing: '-0.01em' }}>{top.industry}</p>
       {roles.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
@@ -518,7 +512,7 @@ export function SectionCareerGlance({ career, lang }: { career?: CareerSpecificA
           ))}
         </div>
       )}
-    </section>
+    </GlanceCard>
   );
 }
 
@@ -574,8 +568,7 @@ export function SectionTemperamentCard({ api, lang }: { api: SajuV4ApiResponse; 
   if (weakest && TEMP_ELEMENT_LABEL[weakest]) chips.push(en ? `Weak ${TEMP_ELEMENT_LABEL[weakest].en} ▽` : `약한 ${TEMP_ELEMENT_LABEL[weakest].ko} ▽`);
 
   return (
-    <section className="card sv4-reveal" style={{ marginTop: 14, padding: '18px 18px 16px' }}>
-      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>✦ {en ? 'You in one line' : '한 줄로 보는 나'}</div>
+    <GlanceCard icon="🧭" accent="#b79bf5" title={en ? 'YOU IN ONE LINE' : '한 줄로 보는 나'}>
       <p style={{ margin: 0, fontSize: 18, fontWeight: 800, lineHeight: 1.45, color: 'var(--orot-ink)', letterSpacing: '-0.01em' }}>
         {en ? headline : `“${headline}”`}
       </p>
@@ -584,7 +577,7 @@ export function SectionTemperamentCard({ api, lang }: { api: SajuV4ApiResponse; 
           <span key={i} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--orot-ink-soft)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 999, padding: '5px 11px' }}>{c}</span>
         ))}
       </div>
-    </section>
+    </GlanceCard>
   );
 }
 
