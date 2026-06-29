@@ -423,6 +423,39 @@ export function YearlyOneShotCard({ core }: { core: unknown }) {
   );
 }
 
+// ── 올해의 선택 카드 (잡을 것 / 놓을 것 / 올해의 한 수) — 상단 한눈. 상세는 아래 선택가이드 아코디언. ──
+export function YearlyChoiceCard({ guide }: { guide?: { mustCatch?: string[]; betterAvoid?: string[]; bestStrategy?: string } }) {
+  if (!guide) return null;
+  const keep = (guide.mustCatch ?? []).map((s) => s.trim()).filter(Boolean)[0];
+  const drop = (guide.betterAvoid ?? []).map((s) => s.trim()).filter(Boolean)[0];
+  const strategy = guide.bestStrategy?.trim();
+  if (!keep && !drop && !strategy) return null;
+  const hr = (on: boolean) => (on ? { paddingTop: 12, borderTop: '1px solid var(--orot-hair)' } : {});
+  return (
+    <section className="orot-card" style={{ padding: '18px 18px 16px', marginBottom: 10 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 12 }}>✦ 올해의 선택</div>
+      {keep && (
+        <div style={{ marginBottom: drop || strategy ? 12 : 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: 'rgba(120,200,140,0.95)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>✅ 잡을 것</div>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: 'var(--orot-ink-soft)' }}>{keep}</p>
+        </div>
+      )}
+      {drop && (
+        <div style={{ marginBottom: strategy ? 12 : 0, ...hr(!!keep) }}>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: 'rgba(240,140,140,0.95)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>⛔ 놓을 것</div>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: 'var(--orot-ink-soft)' }}>{drop}</p>
+        </div>
+      )}
+      {strategy && (
+        <div style={hr(!!keep || !!drop)}>
+          <div className="orot-eyebrow" style={{ marginBottom: 5, color: 'var(--orot-coral)' }}>🔑 올해의 한 수</div>
+          <p style={{ margin: 0, fontSize: 14.5, fontWeight: 600, lineHeight: 1.65, color: 'var(--orot-ink)' }}>{strategy}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ============================================================
 // 리포트 본문 — 리드 카드 + sv4 아코디언(모두 기본 접힘)
 // ============================================================
@@ -431,6 +464,9 @@ function ReportBody({ report, timingHints, analysisCore }: { report: YearlyFortu
     <div style={{ marginTop: 4 }}>
       {/* 올해 한 컷 — 결정론 한눈 카드(맨 위, 흥미 유발) */}
       <YearlyOneShotCard core={analysisCore} />
+
+      {/* 올해의 선택 — 잡을 것/놓을 것/한 수 한눈(상세는 아래 선택 가이드 아코디언) */}
+      <YearlyChoiceCard guide={report.actionGuide} />
 
       {/* 리드 카드 — 항상 펼쳐진 hero (아코디언 아님) */}
       <YearFlowCardView card={report.yearFlowCard} overview={report.yearlyOverview} />
