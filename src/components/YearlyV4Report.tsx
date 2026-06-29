@@ -269,7 +269,7 @@ export default function YearlyV4Report({
       ) : !data ? (
         <LoadingCard />
       ) : (
-        <ReportBody report={data.report} timingHints={data.timingHints} />
+        <ReportBody report={data.report} timingHints={data.timingHints} analysisCore={data.analysisCore} />
       )}
 
       {/* 공유 / 저장 / 처음으로 — 결과 로드 완료 시에만 표시 */}
@@ -385,12 +385,53 @@ function AccordionSection({
   );
 }
 
+// ── 올해 한 컷 카드 (한 줄 요약 + 스탯 칩) — 결정론, GPT 0회. analysisCore만 사용. ──
+interface YearlyCoreLite {
+  targetYear: number;
+  targetYearGanji?: { display?: string };
+  yearTenGod?: { stemTenGod?: string };
+  yearElementEffect?: { element?: string; relationToUsefulGod?: 'useful' | 'favorable' | 'unfavorable' | 'neutral' };
+  strengthImpact?: { natalStrength?: string; yearlyEffect?: 'supportive' | 'burdensome' | 'mixed' | 'neutral' };
+}
+const YEAR_REL_CHIP: Record<string, string> = { useful: '유리 ▲', favorable: '유리 ▲', unfavorable: '주의 ▽', neutral: '무난' };
+const YEAR_EFFECT_CHIP: Record<string, string> = { supportive: '힘 실리는 해 ▲', burdensome: '부담 늘 수 있는 해 ▽', mixed: '기복 있는 해', neutral: '무난한 해' };
+
+export function YearlyOneShotCard({ core }: { core: unknown }) {
+  const c = core as YearlyCoreLite | undefined;
+  const ten = c?.yearTenGod?.stemTenGod;
+  const ganji = c?.targetYearGanji?.display;
+  if (!c || !c.targetYear || !ten || !ganji) return null;
+  const chips: string[] = [`${c.targetYear} ${ganji}`, `세운 ${ten}`];
+  if (c.yearElementEffect?.element) {
+    chips.push(`${c.yearElementEffect.element} 기운 · ${YEAR_REL_CHIP[c.yearElementEffect.relationToUsefulGod ?? 'neutral'] ?? '무난'}`);
+  }
+  if (c.strengthImpact?.natalStrength) {
+    chips.push(`${c.strengthImpact.natalStrength} · ${YEAR_EFFECT_CHIP[c.strengthImpact.yearlyEffect ?? 'neutral'] ?? '무난'}`);
+  }
+  return (
+    <section className="orot-card" style={{ padding: '18px 18px 16px', marginBottom: 10 }}>
+      <div className="orot-eyebrow" style={{ marginBottom: 10 }}>✦ 올해 한 컷</div>
+      <p style={{ margin: 0, fontSize: 18, fontWeight: 800, lineHeight: 1.45, color: 'var(--orot-ink)', letterSpacing: '-0.01em', fontFamily: 'var(--orot-font)' }}>
+        “{c.targetYear}년, {ten}의 해”
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+        {chips.map((ch, i) => (
+          <span key={i} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--orot-ink-soft)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 999, padding: '5px 11px' }}>{ch}</span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ============================================================
 // 리포트 본문 — 리드 카드 + sv4 아코디언(모두 기본 접힘)
 // ============================================================
-function ReportBody({ report, timingHints }: { report: YearlyFortuneReport; timingHints?: YearlyTimingHints }) {
+function ReportBody({ report, timingHints, analysisCore }: { report: YearlyFortuneReport; timingHints?: YearlyTimingHints; analysisCore?: unknown }) {
   return (
     <div style={{ marginTop: 4 }}>
+      {/* 올해 한 컷 — 결정론 한눈 카드(맨 위, 흥미 유발) */}
+      <YearlyOneShotCard core={analysisCore} />
+
       {/* 리드 카드 — 항상 펼쳐진 hero (아코디언 아님) */}
       <YearFlowCardView card={report.yearFlowCard} overview={report.yearlyOverview} />
 
