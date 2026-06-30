@@ -20,12 +20,13 @@ const TEN_GOD_ELEMENT_LABEL: Record<Element, string> = {
   water: '차분하게 정리하고 한 박자 늦춰주는',
 };
 
+// "어떤 기운이 센 사람 → 그래서 어떤 성격" — 만났을 때 바로 알아볼 수 있게 직관적으로.
 const FAVORABLE_PERSON_BY_ELEMENT: Record<Element, string> = {
-  wood: '새로운 시도와 방향을 같이 그려주는 사람',
-  fire: '밖으로 드러내고 알릴 자리를 열어주는 사람',
-  earth: '들뜬 흐름을 가라앉히고 자리를 잡아주는 사람',
-  metal: '맺고 끊는 결정을 도와 마무리를 같이 지어주는 사람',
-  water: '차분하게 정리해주고 한 박자 늦춰주는 사람',
+  wood: '나무 기운이 센 사람 — 추진력 있고 새 일을 겁 없이 벌여서, 망설이는 너의 등을 밀어준다',
+  fire: '불 기운이 센 사람 — 밝고 표현이 풍부해서, 가라앉은 너를 밖으로 끌어내 준다',
+  earth: '흙 기운이 센 사람 — 듬직하고 잘 흔들리지 않아서, 들뜬 너를 차분히 자리 잡게 해준다',
+  metal: '쇠 기운이 센 사람 — 맺고 끊음이 분명해서, 우유부단한 순간에 정리를 도와준다',
+  water: '물 기운이 센 사람 — 차분하고 생각이 깊어서, 급한 너를 한 박자 늦춰 균형을 잡아준다',
 };
 
 const COLLAB_ROLE_BY_ELEMENT: Record<Element, string> = {
@@ -37,11 +38,11 @@ const COLLAB_ROLE_BY_ELEMENT: Record<Element, string> = {
 };
 
 const AVOID_PERSON_BY_ELEMENT: Record<Element, string> = {
-  wood: '계속 새 일을 벌여 발을 못 빼게 만드는 사람',
-  fire: '과열된 분위기로 에너지를 태워버리는 사람',
-  earth: '결정을 미루며 책임만 얹어두는 사람',
-  metal: '차갑게 기준만 따지며 거리를 두는 사람',
-  water: '판단을 흐리고 불안만 키우는 사람',
+  wood: '나무 기운이 센 사람 — 새 일을 자꾸 벌이고 가만있질 못해서, 너까지 끌고 다녀 발을 못 빼게 만든다',
+  fire: '불 기운이 센 사람 — 쉽게 달아오르고 감정이 앞서서, 너의 열기까지 더 키운다',
+  earth: '흙 기운이 센 사람 — 고집 세고 굼떠서, 결정을 미루며 책임만 너에게 얹어둔다',
+  metal: '쇠 기운이 센 사람 — 원칙만 차갑게 따져서, 자꾸 거리를 두게 만든다',
+  water: '물 기운이 센 사람 — 생각이 너무 많아서, 불안과 망설임을 너에게 옮긴다',
 };
 
 function asElement(v: Element | TenGod): Element | null {

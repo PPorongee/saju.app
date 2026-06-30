@@ -9,8 +9,7 @@
 //   - 결과(SajuV4Report)와 같은 sv4 톤. 숫자 점수·운명론 없음.
 
 import React from 'react';
-import { buildPersonTrait } from '@/domain/saju/compatibility/compatExtras';
-import { ELEMENT_KO, type Element } from '@/domain/saju/rules/elements';
+import { type Element } from '@/domain/saju/rules/elements';
 
 interface IdentityKeyword {
   keyword: string;
@@ -38,20 +37,6 @@ interface Props {
   cost: number;
   onUnlock: () => void;
   onCharge: () => void;
-}
-
-const STRENGTH_LABEL: Record<string, { ko: string; en: string }> = {
-  'very-weak': { ko: '매우 신약', en: 'very weak' },
-  weak: { ko: '신약', en: 'weak' },
-  balanced: { ko: '중화', en: 'balanced' },
-  neutral: { ko: '중화', en: 'balanced' },
-  strong: { ko: '신강', en: 'strong' },
-  'very-strong': { ko: '매우 신강', en: 'very strong' },
-};
-
-function elKo(v?: string): string {
-  if (!v) return '';
-  return ELEMENT_KO[v as Element] ?? v;
 }
 
 // 결제하면 이어서 볼 섹션 — 결과(SajuV4Report) 구성과 1:1. 호기심 티저.
@@ -119,23 +104,10 @@ export default function PersonalPreviewTeaser({
   }
 
   const bc = preview.birthChart ?? {};
-  const core = preview.coreAnalysis ?? {};
-  const dayMaster = bc.dayMaster ?? '';
-  const trait = buildPersonTrait(userName, dayMaster);
-  const strengthLv = STRENGTH_LABEL[core.dayMasterStrength?.level ?? ''] ?? null;
-  const strongEls = (core.elementStrength?.strongest ?? []).map(elKo).filter(Boolean).join('·');
-  const useful = core.usefulGod?.primaryUseful;
-  const usefulKo = useful ? (useful.type === 'element' ? elKo(useful.value) : (useful.value ?? '')) : '';
   const pillars = [bc.year, bc.month, bc.day, bc.hour].filter(Boolean) as string[];
   const kws = [...(preview.identityKeywords ?? [])].sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0));
   const hookKw = kws[0];
   const tasteKws = kws.slice(0, 3);
-
-  const facts: { label: string; value: string }[] = [];
-  facts.push({ label: ko ? '일간' : 'Day master', value: trait.dayMasterKo || dayMaster || '—' });
-  if (strengthLv) facts.push({ label: ko ? '신강·신약' : 'Strength', value: ko ? strengthLv.ko : strengthLv.en });
-  if (strongEls) facts.push({ label: ko ? '강한 오행' : 'Strong elements', value: strongEls });
-  if (usefulKo) facts.push({ label: ko ? '용신' : 'Useful god', value: usefulKo });
 
   const locked = lockedSections(lang);
 
@@ -145,10 +117,6 @@ export default function PersonalPreviewTeaser({
       <section className="sv4-hero sv4-reveal">
         <div className="sv4-hero-glow" aria-hidden />
         <div className="sv4-hero-inner">
-          <div className="sv4-hero-eyebrow">
-            <span aria-hidden>✦</span>
-            <span>{ko ? '나의 사주 · 미리보기' : 'My Saju · Preview'}</span>
-          </div>
           {hookKw?.keyword && <h1 className="sv4-hero-title">{hookKw.keyword}</h1>}
           <p className="sv4-hero-desc">
             {(userName ? `${userName} · ` : '') + (pillars.length ? pillars.join(' · ') : (birthLine ?? ''))}
@@ -156,32 +124,22 @@ export default function PersonalPreviewTeaser({
         </div>
       </section>
 
-      {/* 미리보기 + 무료 맛보기 통합 카드 ("분석 마쳤어요" 헤더 제거) */}
-      <div className="card" style={{ marginTop: 14, padding: '18px 16px', background: 'linear-gradient(180deg, rgba(243,160,146,0.07), rgba(243,160,146,0.02))', border: '1px solid var(--orot-coral-faint)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {facts.map((f, i) => (
-            <div key={i} style={{ borderRadius: 12, border: '1px solid var(--orot-hair)', background: 'rgba(255,255,255,0.02)', padding: '12px 14px' }}>
-              <div style={{ fontSize: 11.5, color: 'var(--orot-ink-mute)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{f.label}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{f.value}</div>
+      {/* 무료 맛보기 — 당신을 한마디로 (결정론 identityKeyword). 일간·신강신약·강한오행·용신 사실 카드는 미노출. */}
+      {tasteKws.length > 0 && (
+        <div className="card" style={{ marginTop: 14, padding: '18px 16px', background: 'linear-gradient(180deg, rgba(243,160,146,0.07), rgba(243,160,146,0.02))', border: '1px solid var(--orot-coral-faint)' }}>
+          <div className="orot-eyebrow" style={{ marginBottom: 10, color: 'var(--orot-coral)' }}>
+            {ko ? '무료 맛보기 · 당신을 한마디로' : 'Free taste · You in a word'}
+          </div>
+          {tasteKws.map((k, i) => (
+            <div key={i} style={{ padding: '9px 0', borderTop: i > 0 ? '1px solid var(--orot-hair)' : 'none' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>“{k.keyword}”</div>
+              {k.shortDescription && (
+                <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', lineHeight: 1.6, marginTop: 3, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{k.shortDescription}</div>
+              )}
             </div>
           ))}
         </div>
-        {tasteKws.length > 0 && (
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--orot-hair)' }}>
-            <div className="orot-eyebrow" style={{ marginBottom: 10, color: 'var(--orot-coral)' }}>
-              {ko ? '무료 맛보기 · 당신을 한마디로' : 'Free taste · You in a word'}
-            </div>
-            {tasteKws.map((k, i) => (
-              <div key={i} style={{ padding: '9px 0', borderTop: i > 0 ? '1px solid var(--orot-hair)' : 'none' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>“{k.keyword}”</div>
-                {k.shortDescription && (
-                  <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', lineHeight: 1.6, marginTop: 3, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{k.shortDescription}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* 잠긴 섹션 — 호기심 티저 */}
       <div className="section-divider">{ko ? '별빛으로 열면 이어서 볼 내용' : 'Unlock to continue'}</div>
