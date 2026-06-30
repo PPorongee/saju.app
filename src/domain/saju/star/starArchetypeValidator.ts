@@ -5,7 +5,7 @@
 import type {
   StarKeywordCardData, StarValidationResult, StarValidationIssue,
 } from './starArchetypeTypes';
-import { STAR_ARCHETYPE_CATALOG, STAR_ARCHETYPE_FALLBACK } from './starArchetypeCatalog';
+import { STAR_ARCHETYPE_CATALOG, ALL_FALLBACK_ARCHETYPES } from './starArchetypeCatalog';
 
 const BANNED_PHRASES = [
   '100년에 한 번',
@@ -43,7 +43,7 @@ export function validateStarKeywordCard(card: StarKeywordCardData): StarValidati
   // 2. title이 카탈로그 기반인지 (fallback 포함)
   const knownTitles = new Set<string>([
     ...STAR_ARCHETYPE_CATALOG.map(a => a.title),
-    STAR_ARCHETYPE_FALLBACK.title,
+    ...ALL_FALLBACK_ARCHETYPES.map(a => a.title),
   ]);
   if (!knownTitles.has(card.displayTitle)) {
     push(issues, {

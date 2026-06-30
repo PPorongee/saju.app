@@ -7,7 +7,7 @@ import type { PersonalSajuGptInput } from '../report/sajuReportSchema';
 import type {
   StarArchetype, StarArchetypeScore, StarArchetypeEvidence,
 } from './starArchetypeTypes';
-import { STAR_ARCHETYPE_CATALOG, STAR_ARCHETYPE_FALLBACK } from './starArchetypeCatalog';
+import { STAR_ARCHETYPE_CATALOG, selectFallbackArchetype } from './starArchetypeCatalog';
 
 // ============================================================
 // 가중치 (사용자 spec)
@@ -230,11 +230,13 @@ export function selectStarArchetype(input: PersonalSajuGptInput): StarSelectionR
   const top = allScores[0];
   const topArchetype = STAR_ARCHETYPE_CATALOG.find(a => a.id === top.archetypeId);
 
-  // 점수가 너무 낮으면 fallback
+  // 점수가 너무 낮으면 fallback — 일간 오행별로 분기(목·화·토·금·수)해서
+  // 뚜렷한 시그널이 없는 사주끼리도 같은 한 장으로 몰리지 않게 한다.
   if (!topArchetype || top.score < 3) {
+    const fb = selectFallbackArchetype(input.birthChart.dayMaster);
     return {
-      archetype: { ...STAR_ARCHETYPE_FALLBACK, evidence: buildEvidence(STAR_ARCHETYPE_FALLBACK, [], input) },
-      score: { archetypeId: STAR_ARCHETYPE_FALLBACK.id, score: 0, matchedSignals: [] },
+      archetype: { ...fb, evidence: buildEvidence(fb, [], input) },
+      score: { archetypeId: fb.id, score: 0, matchedSignals: [] },
       allScores,
     };
   }

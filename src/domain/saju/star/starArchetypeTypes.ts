@@ -58,6 +58,9 @@ export interface StarKeywordCardData {
   shadowSide: string;
   keywords: string[];
   hashtag: '#별빛사주';
+  /** 개인 변주 — 일간 비유 기반 리드 문구. 같은 아키타입이어도 사람마다 다르게 보이게 함.
+   *  예: "큰 나무 같은 당신은". 카드 상단 titleLead 자리를 대체(없으면 기본 "당신은"). */
+  personalLead?: string;
 }
 
 // ============================================================

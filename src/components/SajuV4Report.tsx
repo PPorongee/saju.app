@@ -104,6 +104,8 @@ export interface SajuV4ApiResponse {
     shadowSide: string;
     keywords: string[];
     hashtag: string;
+    /** 개인 변주 — 일간 비유 리드("큰 나무 같은 당신은"). KO 전용, 없으면 기본 titleLead. */
+    personalLead?: string;
   };
   /** Fortune Questions Verdict V1 — flag ON일 때만 응답에 포함. 없으면 미렌더. */
   fortuneVerdict?: FortuneVerdict;
@@ -182,7 +184,7 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
       {/* ── 1. 정체성 히어로 (첫 화면) — 별빛 아키타입을 가장 먼저 보여준다.
             starKeywordCard 없으면(일부 flag 기본값) 통째로 스킵하고 바로 챕터로 넘어간다. ── */}
       {api.starKeywordCard && (
-        <SectionIdentityHero card={api.starKeywordCard} T={T} />
+        <SectionIdentityHero card={api.starKeywordCard} T={T} lang={lang === 'en' ? 'en' : 'ko'} />
       )}
 
       {/* ── 사주 원국 & 명리 근거 종합 카드 — 원국 펼침 + 용신·신살·합충형파해·오행밸런스 + 용어 ⓘ ── */}
@@ -366,11 +368,15 @@ function hasAnyNarrativeBody(narrative: ReturnType<typeof parseNarrativeReport>)
 function SectionIdentityHero({
   card,
   T,
+  lang,
 }: {
   card: NonNullable<SajuV4ApiResponse['starKeywordCard']>;
   T: (typeof NARRATIVE_TITLES)['ko'] | (typeof NARRATIVE_TITLES)['en'];
+  lang: 'ko' | 'en';
 }) {
   const keywords = (card.keywords ?? []).filter((k) => k && k.trim()).slice(0, 6);
+  // 개인 변주(C): KO일 때만 일간 비유 리드("큰 나무 같은 당신은")로 titleLead 대체.
+  const titleLead = lang === 'ko' && card.personalLead ? card.personalLead : T.star.titleLead;
   return (
     <section className="sv4-reveal" style={{ marginBottom: 4 }}>
       {/* 별 정체성 = 공유 카드 디자인 하나만 (바깥 히어로 텍스트 중첩 제거) */}
@@ -378,7 +384,7 @@ function SectionIdentityHero({
         <StarShareCardWithDownload
           serviceName={T.star.serviceName}
           label={T.star.label}
-          titleLead={T.star.titleLead}
+          titleLead={titleLead}
           archetypeTitle={card.displayTitle}
           shortDescription={card.shortDescription}
           brightSide={card.brightSide}

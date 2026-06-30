@@ -2,6 +2,9 @@
 // 16개 brand archetype. selector가 점수로 1개 선택.
 
 import type { StarArchetype } from './starArchetypeTypes';
+import type { Element } from '../rules/elements';
+import type { HeavenlyStem } from '../rules/heavenlyStems';
+import { STEM_ELEMENT } from '../rules/elements';
 
 export const STAR_ARCHETYPE_CATALOG: StarArchetype[] = [
   {
@@ -200,8 +203,75 @@ export const STAR_ARCHETYPE_CATALOG: StarArchetype[] = [
 ];
 
 // ============================================================
-// Fallback — 모든 점수가 너무 낮을 때
+// Fallback — 모든 점수가 너무 낮을 때.
+// 하나로 몰리던 'own-pace'를 일간 오행(목·화·토·금·수)별 5종으로 분기.
+// 점수가 낮은(=뚜렷한 시그널이 없는) 사주여도 최소한 일간 오행 결은 다르게 보여준다.
+// triggerSignals는 비워둔다 — 일반 점수 경쟁이 아니라 selector가 일간 오행으로 직접 고른다.
 // ============================================================
+export const STAR_ARCHETYPE_FALLBACKS_BY_ELEMENT: Record<Element, StarArchetype> = {
+  wood: {
+    id: 'own-pace-wood',
+    title: '곧게 자라나는 별',
+    subtitle: '방향을 정하면 자기 속도로 뻗어가는 사람',
+    keywords: ['성장', '방향', '뻗어남', '꾸준함', '자기 결'],
+    triggerSignals: [],
+    shortDescription: '한 번에 드러나기보다, 방향을 정하고 자기 속도로 한 뼘씩 자라날 때 더 선명해지는 별입니다. 아직 한 가지 이름으로 단정하기보다, 당신만의 결을 차분히 키워가는 흐름이 강합니다.',
+    brightSide: '뚜렷한 방향과 시간이 주어질 때, 꾸준히 자라며 빛납니다.',
+    shadowSide: '방향이 자주 바뀌거나 비교에 흔들릴 때 흐려질 수 있습니다.',
+    growthDirection: '큰 결심보다 작은 한 걸음을 반복할 때 더 크게 자랍니다.',
+    evidence: [],
+  },
+  fire: {
+    id: 'own-pace-fire',
+    title: '밝게 번지는 별',
+    subtitle: '마음이 닿는 곳에서 따뜻하게 퍼지는 사람',
+    keywords: ['표현', '온기', '활기', '진심', '자기 결'],
+    triggerSignals: [],
+    shortDescription: '한 가지로 단정하기보다, 마음이 닿는 자리에서 따뜻함과 활기를 퍼뜨릴 때 더 선명해지는 별입니다. 당신만의 결을 차분히 만들어가는 흐름이 강합니다.',
+    brightSide: '사람과 진심이 오가는 자리에서 분위기를 밝히며 빛납니다.',
+    shadowSide: '에너지를 한 번에 쏟고 금세 식을 때 흐려질 수 있습니다.',
+    growthDirection: '한꺼번에 타오르기보다 오래 가는 불씨를 지킬 때 더 밝아집니다.',
+    evidence: [],
+  },
+  earth: {
+    id: 'own-pace-earth',
+    title: '묵묵히 받쳐주는 별',
+    subtitle: '드러내지 않아도 중심을 잡아주는 사람',
+    keywords: ['안정', '신뢰', '중심', '버팀', '자기 결'],
+    triggerSignals: [],
+    shortDescription: '앞에서 빛나기보다, 자리를 지키며 주변을 받쳐줄 때 더 선명해지는 별입니다. 한 가지 이름으로 단정하기보다, 당신만의 결을 차분히 쌓아가는 흐름이 강합니다.',
+    brightSide: '믿고 맡길 수 있는 자리에서 묵묵히 중심을 잡을 때 빛납니다.',
+    shadowSide: '혼자 너무 많이 떠안고 표현하지 않을 때 지칠 수 있습니다.',
+    growthDirection: '받쳐주는 힘을 혼자 쓰지 않고 나눌 때 더 단단해집니다.',
+    evidence: [],
+  },
+  metal: {
+    id: 'own-pace-metal',
+    title: '또렷하게 다듬는 별',
+    subtitle: '기준을 세우고 차분히 정리해가는 사람',
+    keywords: ['기준', '정리', '또렷함', '꾸준함', '자기 결'],
+    triggerSignals: [],
+    shortDescription: '한 번에 결론을 내기보다, 자기 기준을 세우고 하나씩 또렷하게 다듬어갈 때 더 선명해지는 별입니다. 당신만의 결을 차분히 만들어가는 흐름이 강합니다.',
+    brightSide: '기준과 정리가 필요한 자리에서 차분히 매듭지을 때 빛납니다.',
+    shadowSide: '기준이 너무 높아 시작이 늦어질 때 흐려질 수 있습니다.',
+    growthDirection: '완벽해지기 전에도 작은 결과물을 꺼낼 때 더 밝아집니다.',
+    evidence: [],
+  },
+  water: {
+    id: 'own-pace-water',
+    title: '깊게 흐르는 별',
+    subtitle: '상황에 맞춰 유연하게 길을 찾는 사람',
+    keywords: ['사고', '유연함', '적응', '깊이', '자기 결'],
+    triggerSignals: [],
+    shortDescription: '겉으로 드러내기보다, 깊이 생각하고 상황에 맞춰 흐르며 길을 찾을 때 더 선명해지는 별입니다. 한 가지 이름으로 단정하기보다, 당신만의 결을 차분히 만들어가는 흐름이 강합니다.',
+    brightSide: '변화와 깊은 사고가 필요한 자리에서 유연하게 길을 낼 때 빛납니다.',
+    shadowSide: '생각이 너무 길어져 움직임이 늦어질 때 흐려질 수 있습니다.',
+    growthDirection: '충분히 생각했다면 작게라도 흐름을 시작할 때 더 밝아집니다.',
+    evidence: [],
+  },
+};
+
+/** 일반 fallback(오행 판별 불가 시) — 기존 own-pace 유지. */
 export const STAR_ARCHETYPE_FALLBACK: StarArchetype = {
   id: 'own-pace',
   title: '자기만의 속도로 빛나는 별',
@@ -215,6 +285,25 @@ export const STAR_ARCHETYPE_FALLBACK: StarArchetype = {
   evidence: [],
 };
 
+/** 모든 fallback 타이틀 (validator의 knownTitles 구성용). */
+export const ALL_FALLBACK_ARCHETYPES: StarArchetype[] = [
+  STAR_ARCHETYPE_FALLBACK,
+  ...Object.values(STAR_ARCHETYPE_FALLBACKS_BY_ELEMENT),
+];
+
+/** 일간 천간 글자 → 오행별 fallback 아키타입 선택. 판별 불가 시 일반 fallback. */
+export function selectFallbackArchetype(dayMaster: string | undefined | null): StarArchetype {
+  const stem = (dayMaster ?? '').trim().charAt(0) as HeavenlyStem;
+  const element = STEM_ELEMENT[stem];
+  if (element && STAR_ARCHETYPE_FALLBACKS_BY_ELEMENT[element]) {
+    return STAR_ARCHETYPE_FALLBACKS_BY_ELEMENT[element];
+  }
+  return STAR_ARCHETYPE_FALLBACK;
+}
+
 export function findArchetypeById(id: string): StarArchetype | undefined {
+  if (id === STAR_ARCHETYPE_FALLBACK.id) return STAR_ARCHETYPE_FALLBACK;
+  const fb = Object.values(STAR_ARCHETYPE_FALLBACKS_BY_ELEMENT).find(a => a.id === id);
+  if (fb) return fb;
   return STAR_ARCHETYPE_CATALOG.find(a => a.id === id);
 }
