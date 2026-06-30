@@ -156,40 +156,32 @@ export default function PersonalPreviewTeaser({
         </div>
       </section>
 
-      {/* 사실 공개 — "진짜 내 사주다" 증명 */}
-      <div className="card" style={{ marginTop: 14, padding: '18px 16px' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orot-coral)', marginBottom: 12, fontFamily: 'var(--orot-font)' }}>
-          {ko ? '✓ 당신의 사주, 이미 분석을 마쳤어요' : '✓ Your chart is already analyzed'}
-        </div>
+      {/* 미리보기 + 무료 맛보기 통합 카드 ("분석 마쳤어요" 헤더 제거) */}
+      <div className="card" style={{ marginTop: 14, padding: '18px 16px', background: 'linear-gradient(180deg, rgba(243,160,146,0.07), rgba(243,160,146,0.02))', border: '1px solid var(--orot-coral-faint)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {facts.map((f, i) => (
             <div key={i} style={{ borderRadius: 12, border: '1px solid var(--orot-hair)', background: 'rgba(255,255,255,0.02)', padding: '12px 14px' }}>
               <div style={{ fontSize: 11.5, color: 'var(--orot-ink-mute)', marginBottom: 4, fontFamily: 'var(--orot-font)' }}>{f.label}</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{f.value}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{f.value}</div>
             </div>
           ))}
         </div>
+        {tasteKws.length > 0 && (
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--orot-hair)' }}>
+            <div className="orot-eyebrow" style={{ marginBottom: 10, color: 'var(--orot-coral)' }}>
+              {ko ? '무료 맛보기 · 당신을 한마디로' : 'Free taste · You in a word'}
+            </div>
+            {tasteKws.map((k, i) => (
+              <div key={i} style={{ padding: '9px 0', borderTop: i > 0 ? '1px solid var(--orot-hair)' : 'none' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>“{k.keyword}”</div>
+                {k.shortDescription && (
+                  <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', lineHeight: 1.6, marginTop: 3, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{k.shortDescription}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* 무료 맛보기 — "나를 한마디로" 키워드 (결정론) */}
-      {tasteKws.length > 0 && (
-        <div className="card" style={{ marginTop: 12, padding: '18px 16px', background: 'linear-gradient(180deg, rgba(243,160,146,0.07), rgba(243,160,146,0.02))', border: '1px solid var(--orot-coral-faint)' }}>
-          <div className="orot-eyebrow" style={{ marginBottom: 8, color: 'var(--orot-coral)' }}>
-            {ko ? '무료 맛보기' : 'Free taste'}
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 12, fontFamily: 'var(--orot-font)' }}>
-            {ko ? '당신을 한마디로' : 'You, in a word'}
-          </div>
-          {tasteKws.map((k, i) => (
-            <div key={i} style={{ padding: '10px 0', borderTop: i > 0 ? '1px solid var(--orot-hair)' : 'none' }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>“{k.keyword}”</div>
-              {k.shortDescription && (
-                <div style={{ fontSize: 13.5, color: 'var(--orot-ink-soft)', lineHeight: 1.6, marginTop: 3, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>{k.shortDescription}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* 잠긴 섹션 — 호기심 티저 */}
       <div className="section-divider">{ko ? '별빛으로 열면 이어서 볼 내용' : 'Unlock to continue'}</div>
