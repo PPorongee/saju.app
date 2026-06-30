@@ -5578,12 +5578,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
         <section className="sv4-hero sv4-reveal" style={{ marginBottom: 16 }}>
           <div className="sv4-hero-glow" aria-hidden />
           <div className="sv4-hero-inner">
-            <div className="sv4-hero-eyebrow"><span aria-hidden>✦</span><span>{isEn ? 'Star shop' : '별빛 충전소'}</span></div>
-            <h1 className="sv4-hero-title">{isEn ? 'Light up your reading' : '별빛으로 사주를 열어요'}</h1>
-            <p className="sv4-hero-desc" style={{ marginBottom: 16 }}>
-              <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>{isEn ? 'In-person ₩50,000+' : '전문가 대면 상담 ₩50,000+'}</span>
-              {'  →  '}{isEn ? 'from ₩990' : '₩990부터'}
-            </p>
+            <div className="sv4-hero-eyebrow" style={{ marginBottom: 16 }}><span aria-hidden>✦</span><span>{isEn ? 'Star shop' : '별빛 충전소'}</span></div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '9px 16px', borderRadius: 999, background: 'rgba(243,160,146,0.14)', border: '1px solid var(--orot-coral-faint)' }}>
               <span style={{ fontSize: 13, color: 'var(--orot-ink-soft)', fontFamily: 'var(--orot-font)' }}>{isEn ? 'My stars' : '보유 별빛'}</span>
               <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--orot-coral)', fontFamily: 'var(--orot-font)', lineHeight: 1 }}>⭐ {starBalance}{isEn ? '' : '개'}</span>
@@ -5601,7 +5596,8 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               { icon: '🔮', label: isEn ? 'Personal saju' : '개인사주', cost: '⭐10' },
               { icon: '📅', label: isEn ? '2026 fortune' : '올해운세', cost: '⭐10' },
               { icon: '💕', label: isEn ? 'Compatibility' : '궁합', cost: '⭐5' },
-              { icon: '🤰', label: isEn ? 'Pregnancy' : '태교', cost: isEn ? 'Free' : '무료' },
+              { icon: '🤰', label: isEn ? 'Pregnancy' : '태교', cost: '⭐5' },
+              { icon: '🌙', label: isEn ? 'Daily fortune' : '오늘의 운세', cost: isEn ? 'Free' : '무료' },
             ].map((v, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 10, border: '1px solid var(--orot-hair)', background: 'rgba(255,255,255,0.02)' }}>
                 <span style={{ fontSize: 17, flexShrink: 0 }}>{v.icon}</span>
@@ -5625,6 +5621,7 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               padding: '18px 18px',
               marginBottom: 12,
               position: 'relative',
+              overflow: 'visible',  // top:-10 인기 배지가 잘리지 않게 (orot-card는 overflow:hidden)
               border: pkg.highlight ? '1.5px solid var(--orot-coral)' : '1px solid var(--orot-hair)',
               background: pkg.highlight
                 ? 'linear-gradient(180deg, rgba(243,160,146,0.12), rgba(243,160,146,0.04))'
@@ -5646,10 +5643,6 @@ export default function SajuApp({ version = 'v3' }: SajuAppProps = {}) {
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--orot-ink)', fontFamily: 'var(--orot-font)' }}>
                   ⭐ {pkg.stars}{isEn ? ' Stars' : '개'}
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--orot-ink-soft)', marginTop: 5, fontFamily: 'var(--orot-font)', wordBreak: 'keep-all' }}>
-                  {isEn ? `Unlock ${pkg.readings} reading${pkg.readings > 1 ? 's' : ''}` : `전체 해석 ${pkg.readings}회`}
-                  {isEn ? ` · or ${pkg.stars / 5} compat` : ` · 또는 궁합 ${pkg.stars / 5}회`}
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
