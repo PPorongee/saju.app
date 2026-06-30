@@ -31,6 +31,7 @@ import type {
   CareerSpecificAnalysis,
 } from '@/domain/saju/report/sajuReportSchema';
 import { GlanceCard } from '@/components/orot/GlanceCard';
+import { TermExplainer } from '@/components/ui/TermExplainer';
 import Sajupan, { type SajupanChart, type OrotElement } from '@/components/orot/Sajupan';
 import WuxingStrip from '@/components/orot/WuxingStrip';
 
@@ -184,23 +185,11 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
         <SectionIdentityHero card={api.starKeywordCard} T={T} />
       )}
 
-      {/* ── 1.5 통합 요약 "당신을 한마디로" — 기질·차별화·무기/함정·어울리는 일 한 카드(줄글 요약본). ── */}
+      {/* ── 사주 원국 & 명리 근거 종합 카드 — 원국 펼침 + 용신·신살·합충형파해·오행밸런스 + 용어 ⓘ ── */}
+      <SectionChartEvidence api={api} birthSummary={birthSummary} lang={lang === 'en' ? 'en' : 'ko'} />
+
+      {/* ── 통합 요약 "당신을 한마디로" — 줄글 요약본. ── */}
       <SectionOneLineSummary api={api} lang={lang} />
-
-      {/* ── 2. 사주 원국 — 히어로 아래로 강등. 기본 접힘(<details>), 내용은 그대로. ── */}
-      <details className="sv4-chart-toggle card" style={{ marginTop: api.starKeywordCard ? 14 : 0, padding: '14px 16px' }}>
-        <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13.5, color: 'var(--orot-ink-soft)', minHeight: 24 }}>
-          <span aria-hidden style={{ fontSize: 15 }}>🪐</span>
-          <span>{T.chartToggle}</span>
-          <span className="sv4-chevron" aria-hidden style={{ marginLeft: 'auto', color: 'var(--orot-ink-mute)', fontSize: 12 }}>▾</span>
-        </summary>
-        <div style={{ marginTop: 14 }}>
-          <SectionPalja api={api} birthSummary={birthSummary} />
-        </div>
-      </details>
-
-      {/* ── 오행 밸런스 (단일 막대) — 결정론. (차별화·무기/함정·어울리는 일은 위 통합 카드로 이동) ── */}
-      <SectionWuxingGlance elements={api.coreAnalysis?.elementStrength} />
 
       {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩.
             2026-05 hotfix: parser가 헤더를 못 잡았으면(7섹션 모두 비어있음)
@@ -485,6 +474,75 @@ export function SectionCareerGlance({ career, lang }: { career?: CareerSpecificA
           ))}
         </div>
       )}
+    </GlanceCard>
+  );
+}
+
+// ── 사주 원국 & 명리 근거 종합 카드 (#12) — 원국 펼침 + 용신·신살·합충형파해·오행밸런스 요약 + 용어 ⓘ 토글.
+function MyeongriRow({ label, value, termKey, lang }: { label: string; value: string; termKey: string; lang: 'ko' | 'en' }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '7px 0' }}>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--orot-ink)', flexShrink: 0, minWidth: 70 }}>
+        {label}<TermExplainer termKey={termKey} lang={lang} />
+      </span>
+      <span style={{ fontSize: 12.5, color: 'var(--orot-ink-soft)', lineHeight: 1.55, wordBreak: 'keep-all' }}>{value}</span>
+    </div>
+  );
+}
+
+export function SectionChartEvidence({ api, birthSummary, lang }: { api: SajuV4ApiResponse; birthSummary: string; lang: 'ko' | 'en' }) {
+  const ca = api.coreAnalysis;
+  if (!ca || lang === 'en') {
+    // EN은 원국만 (명리 요약은 KO 카탈로그) — 원국 카드만 펼쳐 보여준다.
+    return ca ? (
+      <GlanceCard icon="🪐" accent="#8a9bc4" title={lang === 'en' ? 'Your chart' : '사주 원국'}>
+        <SectionPalja api={api} birthSummary={birthSummary} />
+      </GlanceCard>
+    ) : null;
+  }
+  const elLabel = (v: unknown) => TEMP_ELEMENT_LABEL[String(v)]?.ko ?? String(v);
+  const level = ca.dayMasterStrength?.level;
+  const strengthKo = level ? (TEMP_STRENGTH_LABEL[level]?.ko ?? level) : '';
+  const strengthTerm = (level === 'very-weak' || level === 'weak') ? '신약' : '신강';
+  const ug = ca.usefulGod;
+  const yongsin = ug?.primaryUseful ? (ug.primaryUseful.type === 'element' ? elLabel(ug.primaryUseful.value) : String(ug.primaryUseful.value)) : '';
+  const gisin = ug?.unfavorable?.[0] != null ? elLabel(ug.unfavorable[0]) : '';
+  const shinsal = (ca.specialStars ?? []).map((s) => s.name).filter(Boolean).slice(0, 6).join(', ');
+  const cc = ca.combinationsAndConflicts;
+  const ccParts: string[] = [];
+  if (cc?.combinations?.length) ccParts.push(`합 ${cc.combinations.join('·')}`);
+  if (cc?.conflicts?.length) ccParts.push(`충 ${cc.conflicts.join('·')}`);
+  if (cc?.punishments?.length) ccParts.push(`형 ${cc.punishments.join('·')}`);
+  if (cc?.harms?.length) ccParts.push(`해 ${cc.harms.join('·')}`);
+  if (cc?.destructions?.length) ccParts.push(`파 ${cc.destructions.join('·')}`);
+  const scores = ca.elementStrength?.scores;
+  const total = scores ? (EL_BAR_ORDER.reduce((s, e) => s + (scores[e] ?? 0), 0) || 1) : 1;
+  const seg = scores ? EL_BAR_ORDER.map((e) => ({ e, pct: Math.round(((scores[e] ?? 0) / total) * 100) })) : [];
+
+  return (
+    <GlanceCard icon="🪐" accent="#8a9bc4" title="사주 원국 & 명리 근거">
+      <SectionPalja api={api} birthSummary={birthSummary} />
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--orot-hair)' }}>
+        {strengthKo && <MyeongriRow label="신강·신약" value={strengthKo} termKey={strengthTerm} lang={lang} />}
+        {yongsin && <MyeongriRow label="용신" value={gisin ? `${yongsin}  ·  기신 ${gisin}` : yongsin} termKey="용신" lang={lang} />}
+        {shinsal && <MyeongriRow label="신살" value={shinsal} termKey="신살" lang={lang} />}
+        {ccParts.length > 0 && <MyeongriRow label="합충형파해" value={ccParts.join('   ')} termKey="합" lang={lang} />}
+        {scores && (
+          <div style={{ padding: '9px 0 2px' }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--orot-ink)', marginBottom: 9 }}>오행 밸런스<TermExplainer termKey="오행" lang={lang} /></div>
+            <div style={{ display: 'flex', height: 14, borderRadius: 999, overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
+              {seg.map(({ e, pct }) => pct > 0 ? <div key={e} title={`${EL_KO[e]} ${pct}%`} style={{ width: `${pct}%`, background: EL_COLOR[e] }} /> : null)}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 12px', marginTop: 9 }}>
+              {seg.map(({ e, pct }) => (
+                <span key={e} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--orot-ink-soft)' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: EL_COLOR[e], flexShrink: 0 }} />{EL_KO[e]} {pct}%
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </GlanceCard>
   );
 }
