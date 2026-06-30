@@ -184,8 +184,8 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
         <SectionIdentityHero card={api.starKeywordCard} T={T} />
       )}
 
-      {/* ── 1.5 기질 한 컷 카드 — 정체성 아래, 줄글 전. GPT 0회. ── */}
-      <SectionTemperamentCard api={api} lang={lang} />
+      {/* ── 1.5 통합 요약 "당신을 한마디로" — 기질·차별화·무기/함정·어울리는 일 한 카드(줄글 요약본). ── */}
+      <SectionOneLineSummary api={api} lang={lang} />
 
       {/* ── 2. 사주 원국 — 히어로 아래로 강등. 기본 접힘(<details>), 내용은 그대로. ── */}
       <details className="sv4-chart-toggle card" style={{ marginTop: api.starKeywordCard ? 14 : 0, padding: '14px 16px' }}>
@@ -199,17 +199,8 @@ export function SajuV4Report({ api, birthSummary, lang = 'ko' }: Props) {
         </div>
       </details>
 
-      {/* ── 차별화 포인트 — 이 사주만의 두드러진 결을 본문 줄글 전에 카드로 강조.
-            specialPoints는 본문에도 녹지만(상위 2개), 여기서 상위 3개를 눈에 띄게 따로 보여줘
-            긴 풀이 전에 "나만의 특별함"으로 몰입시킨다. 없으면 통째 스킵(기존과 동일). ── */}
-      <SectionDiffPoints points={api.specialPoints} lang={lang === 'en' ? 'en' : 'ko'} />
-
-      {/* ── 무기 vs 함정 — 궁합 밝은면/그림자의 개인판. 결정론, GPT 0회. ── */}
-      <SectionWeaponTrap weapons={api.lifeWeapons} traps={api.lifeTraps} lang={lang === 'en' ? 'en' : 'ko'} />
-
-      {/* ── 오행 밸런스 / 어울리는 일 — 결정론 한눈 카드. ── */}
+      {/* ── 오행 밸런스 (단일 막대) — 결정론. (차별화·무기/함정·어울리는 일은 위 통합 카드로 이동) ── */}
       <SectionWuxingGlance elements={api.coreAnalysis?.elementStrength} />
-      <SectionCareerGlance career={api.careerSpecificAnalysis} lang={lang === 'en' ? 'en' : 'ko'} />
 
       {/* ── 본문: GPT narrative 7섹션(+ 옵션 미래). reportText 없으면 로딩.
             2026-05 hotfix: parser가 헤더를 못 잡았으면(7섹션 모두 비어있음)
@@ -392,28 +383,9 @@ function SectionIdentityHero({
 }) {
   const keywords = (card.keywords ?? []).filter((k) => k && k.trim()).slice(0, 6);
   return (
-    <section className="sv4-hero sv4-reveal">
-      <div className="sv4-hero-glow" aria-hidden />
-      <div className="sv4-hero-inner">
-        <div className="sv4-hero-eyebrow">
-          <span aria-hidden>✦</span>
-          <span>{T.star.label}</span>
-        </div>
-        <div className="sv4-hero-lead">{T.star.titleLead}</div>
-        <h1 className="sv4-hero-title">{card.displayTitle}</h1>
-        {card.shortDescription && (
-          <p className="sv4-hero-desc">{card.shortDescription}</p>
-        )}
-        {keywords.length > 0 && (
-          <div className="sv4-hero-chips">
-            {keywords.map((k) => (
-              <span key={k} className="sv4-chip">#{k}</span>
-            ))}
-          </div>
-        )}
-      </div>
-      {/* 공유/저장 카드 — 정체성 아래에 그대로 두어 다운로드 affordance 유지 */}
-      <div className="sv4-hero-share">
+    <section className="sv4-reveal" style={{ marginBottom: 4 }}>
+      {/* 별 정체성 = 공유 카드 디자인 하나만 (바깥 히어로 텍스트 중첩 제거) */}
+      <div>
         <StarShareCardWithDownload
           serviceName={T.star.serviceName}
           label={T.star.label}
@@ -469,26 +441,27 @@ const EL_BAR_ORDER: OrotElement[] = ['wood', 'fire', 'earth', 'metal', 'water'];
 export function SectionWuxingGlance({ elements }: { elements?: ElementStrengthAnalysis }) {
   const scores = elements?.scores;
   if (!scores) return null;
-  const max = Math.max(...EL_BAR_ORDER.map((e) => scores[e] ?? 0), 1);
+  const total = EL_BAR_ORDER.reduce((s, e) => s + (scores[e] ?? 0), 0) || 1;
+  const seg = EL_BAR_ORDER.map((e) => ({ e, pct: Math.round(((scores[e] ?? 0) / total) * 100) }));
   const strong = elements?.strongest?.[0] as OrotElement | undefined;
   const weak = elements?.weakest?.[0] as OrotElement | undefined;
   return (
     <GlanceCard icon="⚖️" accent="#8aa1c4" title="오행 밸런스">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        {EL_BAR_ORDER.map((e) => {
-          const pct = Math.round(((scores[e] ?? 0) / max) * 100);
-          return (
-            <div key={e} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ width: 16, fontSize: 13, fontWeight: 700, color: EL_COLOR[e], flexShrink: 0, textAlign: 'center' }}>{EL_KO[e]}</span>
-              <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                <div style={{ width: `${pct}%`, height: '100%', background: EL_COLOR[e], borderRadius: 999 }} />
-              </div>
-            </div>
-          );
-        })}
+      {/* 100% 단일 스택 막대 */}
+      <div style={{ display: 'flex', height: 16, borderRadius: 999, overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
+        {seg.map(({ e, pct }) => pct > 0 ? (
+          <div key={e} title={`${EL_KO[e]} ${pct}%`} style={{ width: `${pct}%`, background: EL_COLOR[e] }} />
+        ) : null)}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginTop: 12 }}>
+        {seg.map(({ e, pct }) => (
+          <span key={e} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--orot-ink-soft)' }}>
+            <span style={{ width: 9, height: 9, borderRadius: 2, background: EL_COLOR[e], flexShrink: 0 }} />{EL_KO[e]} {pct}%
+          </span>
+        ))}
       </div>
       {(strong || weak) && (
-        <p style={{ margin: '12px 0 0', fontSize: 12.5, color: 'var(--orot-ink-mute)' }}>
+        <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--orot-ink-mute)' }}>
           {strong && `강한 ${EL_KO[strong]}`}{strong && weak && ' · '}{weak && `약한 ${EL_KO[weak]}`}
         </p>
       )}
@@ -512,6 +485,70 @@ export function SectionCareerGlance({ career, lang }: { career?: CareerSpecificA
           ))}
         </div>
       )}
+    </GlanceCard>
+  );
+}
+
+// ── 통합 요약 카드 "당신을 한마디로 나타내면" — 기질·차별화·무기/함정·어울리는 일을 한 카드로.
+//    뒤에 이어질 줄글의 요약본 역할. GPT 0회. 글씨 작게 통일. KO 전용.
+export function SectionOneLineSummary({ api, lang }: { api: SajuV4ApiResponse; lang: 'ko' | 'en' }) {
+  if (lang === 'en') return null;
+  const dm = api.birthChart?.dayMaster;
+  const ca = api.coreAnalysis;
+  const meta = dm ? TEMPERAMENT_METAPHOR[dm] : undefined;
+  const hanja = dm ? (STEM_HANJA[dm] ?? '') : '';
+  const dmEl = dm ? TEMP_ELEMENT_LABEL[STEM_EL[dm] ?? 'earth'] : undefined;
+  const strongest = ca?.elementStrength?.strongest?.[0];
+  const weakest = ca?.elementStrength?.weakest?.[0];
+  const level = ca?.dayMasterStrength?.level;
+  const kwRaw = (api.identityKeywords?.[0]?.keyword || '').trim();
+  const kwCore = kwRaw.replace(/\s*(사람|타입|스타일)$/, '').trim();
+  const headline = meta ? (kwCore ? `${kwCore}, ${meta.ko} 같은 사람` : `${meta.ko} 같은 사람`) : kwRaw;
+
+  const chips: string[] = [];
+  if (dm && dmEl) chips.push(`${hanja} ${dm}${dmEl.ko}`);
+  if (level && TEMP_STRENGTH_LABEL[level]) chips.push(TEMP_STRENGTH_LABEL[level].ko);
+  if (strongest && TEMP_ELEMENT_LABEL[strongest]) chips.push(`강한 ${TEMP_ELEMENT_LABEL[strongest].ko}`);
+  if (weakest && TEMP_ELEMENT_LABEL[weakest]) chips.push(`약한 ${TEMP_ELEMENT_LABEL[weakest].ko}`);
+
+  const sp = [...(api.specialPoints ?? [])].sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))[0];
+  const spPer = sp?.rarity?.estimatedPer10000;
+  const w = [...(api.lifeWeapons ?? [])].sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))[0];
+  const t = [...(api.lifeTraps ?? [])].sort((a, b) => (b.displayPriority ?? 0) - (a.displayPriority ?? 0))[0];
+  const career = api.careerSpecificAnalysis?.topCareerMatches?.[0];
+
+  const rows: Array<{ icon: string; label: string; value: string; vColor?: string }> = [];
+  if (sp) rows.push({ icon: '🔮', label: sp.name, value: (typeof spPer === 'number' && spPer > 0) ? `만 명 중 약 ${Math.round(spPer)}명` : '특별한 결', vColor: 'var(--orot-coral)' });
+  if (w) rows.push({ icon: '⚔️', label: '무기', value: w.name });
+  if (t) rows.push({ icon: '⚠️', label: '함정', value: t.name });
+  if (career) rows.push({ icon: '🎯', label: '어울리는 일', value: career.industry });
+
+  if (!headline && rows.length === 0) return null;
+  const F = 13;
+  return (
+    <GlanceCard icon="✦" accent="#e0a96d" title="당신을 한마디로 나타내면">
+      {headline && (
+        <p style={{ margin: 0, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, color: 'var(--orot-ink)', letterSpacing: '-0.01em' }}>“{headline}”</p>
+      )}
+      {chips.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+          {chips.map((c, i) => (
+            <span key={i} style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--orot-ink-soft)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 999, padding: '4px 10px' }}>{c}</span>
+          ))}
+        </div>
+      )}
+      {rows.length > 0 && (
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 12, borderTop: '1px solid var(--orot-hair)' }}>
+          {rows.map((r, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+              <span aria-hidden style={{ fontSize: 12.5, flexShrink: 0 }}>{r.icon}</span>
+              <span style={{ fontSize: F, fontWeight: 700, color: 'var(--orot-ink)', flexShrink: 0 }}>{r.label}</span>
+              {r.value && <span style={{ fontSize: F, color: r.vColor ?? 'var(--orot-ink-soft)', fontWeight: r.vColor ? 700 : 400, lineHeight: 1.5 }}>· {r.value}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      <p style={{ margin: '13px 0 0', fontSize: 11.5, color: 'var(--orot-ink-mute)' }}>아래에서 하나씩 자세히 풀어드릴게요.</p>
     </GlanceCard>
   );
 }
