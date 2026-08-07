@@ -1284,17 +1284,20 @@ function tenGodToCategory(tg: TenGod): TenGodCategory {
 // 월천간은 갑→을→병… 순서라 연속 두 달이 같은 오행(같은 카테고리)일 수 있는데
 // (예: 갑오월·을미월 = 둘 다 관성 카테고리), 정확한 십성은 항상 달라(갑=정관, 을=편관)
 // 연속 달이 동일 키워드/시드로 collapse되는 문제를 막는다.
-const MONTH_KEYWORD_BY_TENGOD: Record<TenGod, string> = {
-  '비견': '같은 결의 사람들과 나란히 서는 달',
-  '겁재': '추진력과 경쟁이 함께 세지는 달',
-  '식신': '꾸준히 만들어 내는 결이 살아나는 달',
-  '상관': '재능을 드러내되 말이 앞서기 쉬운 달',
-  '정재': '꾸준한 보상과 현실 관리가 중요한 달',
-  '편재': '기회와 유동적인 자원이 움직이는 달',
-  '정관': '역할과 규범이 또렷해지는 달',
-  '편관': '압박과 도전이 동시에 들어오는 달',
-  '정인': '배움과 정리가 나를 받쳐 주는 달',
-  '편인': '관점이 깊어지되 흐름이 들쭉날쭉한 달',
+// 십성 × 용신효과 3버전. 같은 달·같은 십성이라도 이 사람에게 용신을 돕는 달(helpful)이냐
+// 부담이 되는 달(burdensome)이냐에 따라 문구가 갈린다 → 용신이 다른 사람끼리 월별이 달라진다.
+// (neutral/mixed = 중립 표현.) 사메니스의 최대 원흉(키워드가 십성 하나에만 묶임) 해소.
+const MONTH_KEYWORD_BY_TENGOD: Record<TenGod, { helpful: string; burdensome: string; neutral: string }> = {
+  '비견': { helpful: '함께하는 사람들에게서 힘을 얻는 달',       burdensome: '내 몫을 두고 경쟁·소모가 생기기 쉬운 달',   neutral: '같은 결의 사람들과 나란히 서는 달' },
+  '겁재': { helpful: '과감한 추진이 성과로 이어지는 달',         burdensome: '경쟁·지출로 자원이 새기 쉬운 달',         neutral: '추진력과 경쟁이 함께 세지는 달' },
+  '식신': { helpful: '만들어 낸 것이 결실로 이어지는 달',         burdensome: '늘어지며 마무리가 밀리기 쉬운 달',         neutral: '꾸준히 만들어 내는 결이 살아나는 달' },
+  '상관': { helpful: '재능과 표현이 빛을 보는 달',               burdensome: '말·표현이 앞서 마찰이 생기기 쉬운 달',     neutral: '재능을 드러내되 말이 앞서기 쉬운 달' },
+  '정재': { helpful: '성실한 관리가 안정된 보상으로 오는 달',     burdensome: '현실 조건·비용에 발목 잡히기 쉬운 달',     neutral: '꾸준한 보상과 현실 관리가 중요한 달' },
+  '편재': { helpful: '기회와 자원이 나에게 붙는 달',             burdensome: '벌여만 놓고 흩어지기 쉬운 달',           neutral: '기회와 유동적인 자원이 움직이는 달' },
+  '정관': { helpful: '역할과 자리가 인정받는 달',               burdensome: '규범·책임의 무게에 눌리기 쉬운 달',       neutral: '역할과 규범이 또렷해지는 달' },
+  '편관': { helpful: '압박을 뚫고 한 단계 단단해지는 달',         burdensome: '책임·압박이 몰려 버겁기 쉬운 달',         neutral: '압박과 도전이 동시에 들어오는 달' },
+  '정인': { helpful: '배움과 도움이 나를 든든히 받쳐 주는 달',     burdensome: '준비만 길어져 실행이 늦기 쉬운 달',       neutral: '배움과 정리가 나를 받쳐 주는 달' },
+  '편인': { helpful: '남다른 관점이 깊이로 살아나는 달',         burdensome: '생각이 많아 리듬이 흔들리기 쉬운 달',     neutral: '관점이 깊어지되 흐름이 들쭉날쭉한 달' },
 };
 
 // 월별 본문 시드 — 정확한 10십성별. (plain/scene/good/caution)
@@ -1427,15 +1430,48 @@ function computeMonthUsefulGodEffect(
   return 'neutral';
 }
 
-// ── 월운 keyword 생성 — usefulGodEffect로 톤 조정 ──────────
+// ── 원국 궁(년/월/일/시주) → 삶의 영역 ─────────────────────
+// 그 달의 간지가 내 원국 어느 기둥을 건드리느냐로 "이 사람만의" 월을 만든다(원국이 사람마다 다름).
+const PALACE_AREA_KO: Record<string, string> = {
+  '년주': '집안·뿌리·윗사람',
+  '월주': '일·사회 자리',
+  '일주': '가까운 관계·나 자신',
+  '시주': '마무리·자녀·결과물',
+};
+// 작용(합/충/형/파/해) → 결의 움직임. label 문자열(육합/삼형/천간충 등)에서 substring으로 분류.
+function motionFromLabel(label: string): string {
+  if (label.includes('충')) return '흔들리고 바뀌는';
+  if (label.includes('형')) return '삐걱대 조정이 필요한';
+  if (label.includes('파')) return '어긋나기 쉬운';
+  if (label.includes('해')) return '얽혀 신경 쓰이는';
+  if (label.includes('합')) return '맺어지고 연결되는';
+  return '변화가 닿는';
+}
+/** 강/중 강도의 "월운↔원국" 작용 1개를 골라 궁-특정 keyword로. 없으면 null. */
+function palaceLeadKeyword(interactions: Interaction[]): string | null {
+  const natal = interactions.find(
+    i => typeof i.to === 'string' && i.to.startsWith('원국-') && (i.intensity === 'strong' || i.intensity === 'medium'),
+  );
+  if (!natal) return null;
+  const palace = natal.to.replace('원국-', '');
+  const area = PALACE_AREA_KO[palace];
+  if (!area) return null;
+  return `${area}에 ${motionFromLabel(natal.label)} 흐름이 닿는 달`;
+}
+
+// ── 월운 keyword 생성 — usefulGodEffect + 원국 합충으로 차별화 ──────────
 function buildMonthKeyword(
   stemTenGod: TenGod,
   effect: MonthlyFortuneAnalysis['usefulGodEffect'],
+  interactions: Interaction[] = [],
 ): string {
-  const base = MONTH_KEYWORD_BY_TENGOD[stemTenGod];
-  // 너무 일반적인 keyword 금지 — base 자체가 구체적이므로 그대로 사용.
-  // effect별 prefix 추가는 keyword 길이를 늘리므로, plainMeaning/goodChoice 톤에서만 반영.
-  // (UI에 짧게 보여야 함)
+  // v2-a: 그 달에 원국을 강하게 건드리는 합충이 있으면 그 궁-특정 사건을 headline으로
+  //   (사람마다 원국이 다르니 진짜 고유). 없으면 v1의 십성×용신효과 문구로 폴백.
+  const v = MONTH_KEYWORD_BY_TENGOD[stemTenGod];
+  const palace = palaceLeadKeyword(interactions);
+  const base = palace
+    ?? (effect === 'helpful' ? v.helpful : effect === 'burdensome' ? v.burdensome : v.neutral);
+  // 용신효과별로 base 문구 자체가 갈린다 → 용신 다른 사람끼리 월별 차별화.
   if (effect === 'helpful') return `운이 살아나는 결로 — ${base}`;
   if (effect === 'burdensome') return `무리하지 않는 결로 — ${base}`;
   if (effect === 'mixed') return `한쪽으로 쏠리지 않는 결로 — ${base}`;
@@ -1586,7 +1622,7 @@ export function computeMonthlyFortuneAnalysis(args: {
   });
 
   const usefulGodEffect = computeMonthUsefulGodEffect(monthGanji, args.dayMaster, args.usefulGod, args.dayMasterStrength);
-  const keyword = buildMonthKeyword(stemTenGod, usefulGodEffect);
+  const keyword = buildMonthKeyword(stemTenGod, usefulGodEffect, interactions);
   const activatedTopics = collectActivatedTopics({ monthStemCategory: category, interactions });
 
   // monthLabel — 양력 월 기반 (UI 친화) + 절기 한글 부가
